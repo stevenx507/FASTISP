@@ -29,27 +29,55 @@ class MikroTikService:
         self.api = None
         self.pool_obj = None  # Store the underlying pool object
         self.router_id = None  # Store router_id for pool operations
+        self.last_connection_error = None
+        self.last_connection_stage = None
+        self.last_connection_code = None
         if router_id is not None:
             self.connect_to_router(router_id)
+
+    def _clear_connection_error(self):
+        self.last_connection_error = None
+        self.last_connection_stage = None
+        self.last_connection_code = None
+
+    def _set_connection_error(self, *, stage: str, error: object, code: Optional[str] = None):
+        self.last_connection_stage = stage
+        self.last_connection_code = code
+        if isinstance(error, BaseException):
+            self.last_connection_error = str(error).strip() or error.__class__.__name__
+        else:
+            self.last_connection_error = str(error).strip()
     
     def connect_to_router(self, router_id: int) -> bool:
         """Connect to specific router by ID using the connection pool"""
+        self._clear_connection_error()
         try:
             normalized_router_id = int(router_id)
         except (TypeError, ValueError):
-            logger.error(f"Invalid router_id provided: {router_id}")
+            self._set_connection_error(
+                stage='validation',
+                error=f"Invalid router_id provided: {router_id}",
+                code='invalid_router_id',
+            )
+            logger.error(self.last_connection_error)
             return False
 
         try:
             self.router_id = normalized_router_id
             self.router = db.session.get(MikroTikRouter, normalized_router_id)
             if not self.router:
-                logger.error(f"Router {normalized_router_id} not found in database.")
+                self._set_connection_error(
+                    stage='lookup',
+                    error=f"Router {normalized_router_id} not found in database.",
+                    code='router_not_found',
+                )
+                logger.error(self.last_connection_error)
                 return False
             
             self.api, self.pool_obj = mikrotik_connection_pool.get_connection(
                 normalized_router_id
             )
+            self._clear_connection_error()
             logger.info(f"Connected to MikroTik {self.router.ip_address} using connection from pool.")
             
             # Update last seen
@@ -59,6 +87,7 @@ class MikroTikService:
             
             return True
         except Exception as e:
+            self._set_connection_error(stage='connect', error=e)
             logger.error(f"Error getting connection from pool for router {router_id}: {e}")
             return False
     
