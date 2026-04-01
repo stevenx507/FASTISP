@@ -25,8 +25,39 @@ interface RouterListResponse {
 interface RouterCreateResponse {
   success: boolean
   router?: unknown
+  connection_tested?: boolean
   reachable?: boolean | null
+  diagnostics?: RouterConnectionDiagnosticsPayload | null
   error?: string
+}
+
+interface RouterConnectionDiagnosticsPayload {
+  success?: boolean
+  status?: string
+  summary?: string
+  host?: string
+  api_port?: number
+  host_scope?: string
+  transport_hint?: string
+  checks?: RouterReadinessCheck[]
+  recommendations?: string[]
+  runtime?: Record<string, unknown>
+}
+
+interface RouterConnectionActionResponse {
+  success?: boolean
+  error?: string
+  diagnostics?: RouterConnectionDiagnosticsPayload | null
+}
+
+interface RouterConnectionSnapshot {
+  diagnostics: RouterConnectionDiagnosticsPayload
+  checkedAt: number
+}
+
+interface RememberConnectionDiagnosticsOptions {
+  notifyOnChange?: boolean
+  routerName?: string
 }
 
 interface RouterQuickScripts {
@@ -324,6 +355,61 @@ interface RouterFormState {
   api_port: string
 }
 
+const CONNECTION_POLL_INTERVAL_MS = 60000
+
+const resolveConnectionFeedback = (
+  payload: { diagnostics?: RouterConnectionDiagnosticsPayload | null; error?: string | null } | null | undefined,
+  fallback: string
+) => {
+  const summary = String(payload?.diagnostics?.summary || '').trim()
+  if (summary) return summary
+  const error = String(payload?.error || '').trim()
+  return error || fallback
+}
+
+const describeHostScope = (scope?: string) => {
+  if (scope === 'private') return 'IP privada'
+  if (scope === 'public') return 'IP publica'
+  if (scope === 'hostname') return 'hostname'
+  if (scope === 'link_local') return 'link-local'
+  if (scope === 'loopback') return 'loopback'
+  return 'sin clasificar'
+}
+
+const buildConnectionStatusKey = (diagnostics?: RouterConnectionDiagnosticsPayload | null) => {
+  if (!diagnostics) return 'unknown'
+  if (diagnostics.success) return 'connected'
+  return String(diagnostics.status || 'failed')
+}
+
+const getConnectionStatusLabel = (diagnostics?: RouterConnectionDiagnosticsPayload | null) => {
+  if (!diagnostics) return 'Sin test'
+  if (diagnostics.success) return 'API OK'
+  const status = String(diagnostics.status || '')
+  if (status === 'dns_unresolved') return 'DNS'
+  if (status === 'tcp_unreachable') return 'Puerto'
+  if (status === 'api_auth_failed') return 'Auth'
+  if (status === 'api_service_disabled') return 'Servicio'
+  if (status === 'api_timeout') return 'Timeout'
+  if (status === 'api_tls_mismatch') return 'TLS'
+  if (status === 'api_protocol_error') return 'Protocolo'
+  if (status === 'api_pool_exhausted') return 'Pool'
+  return 'Falla API'
+}
+
+const getConnectionStatusTone = (diagnostics?: RouterConnectionDiagnosticsPayload | null) => {
+  if (!diagnostics) return 'bg-slate-100 text-slate-600'
+  return diagnostics.success ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+}
+
+const formatConnectionCheckedAt = (checkedAt?: number) => {
+  if (!checkedAt) return 'sin chequeo'
+  return new Date(checkedAt).toLocaleTimeString('es-CO', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 const normalizeRouterItem = (input: unknown): RouterItem => {
   const item = (input || {}) as Record<string, unknown>
   return {
@@ -385,6 +471,7 @@ const MikroTikManagement: React.FC = () => {
   const [quickConnect, setQuickConnect] = useState<RouterQuickConnectResponse | null>(null)
   const [quickConnectScope, setQuickConnectScope] = useState<'auto' | 'public' | 'private'>('auto')
   const [routerReadiness, setRouterReadiness] = useState<RouterReadinessPayload | null>(null)
+  const [routerConnectionSnapshots, setRouterConnectionSnapshots] = useState<Record<string, RouterConnectionSnapshot>>({})
   const [readinessLoading, setReadinessLoading] = useState(false)
   const [bootstrapResult, setBootstrapResult] = useState<RouterBackToHomeBootstrapData | null>(null)
   const [bthUserName, setBthUserName] = useState('noc-vps')
@@ -415,9 +502,12 @@ const MikroTikManagement: React.FC = () => {
   const [enterpriseChangeLog, setEnterpriseChangeLog] = useState<EnterpriseChangeLogEntry[]>([])
   const [wireGuardImporting, setWireGuardImporting] = useState(false)
   const [wireGuardImportSummary, setWireGuardImportSummary] = useState<WireGuardImportResponse | null>(null)
+  const connectionStatusRef = useRef<Record<string, string>>({})
   const token = useAuthStore((state) => state.token)
   const tenantContextId = useAuthStore((state) => state.tenantContextId)
   const logout = useAuthStore((state) => state.logout)
+  const activeConnectionSnapshot = selectedRouter ? routerConnectionSnapshots[selectedRouter.id] || null : null
+  const activeConnectionDiagnostics = activeConnectionSnapshot?.diagnostics || null
 
   const addToast = useCallback((type: Toast['type'], message: string) => {
     const id = Date.now() + Math.floor(Math.random() * 1000)
@@ -459,6 +549,36 @@ const MikroTikManagement: React.FC = () => {
     }
   }, [])
 
+  const rememberConnectionDiagnostics = useCallback(
+    (
+      routerId: string,
+      diagnostics?: RouterConnectionDiagnosticsPayload | null,
+      options: RememberConnectionDiagnosticsOptions = {}
+    ) => {
+      if (!diagnostics) return
+
+      const normalizedRouterId = String(routerId)
+      const nextStatus = buildConnectionStatusKey(diagnostics)
+      const previousStatus = connectionStatusRef.current[normalizedRouterId]
+      connectionStatusRef.current[normalizedRouterId] = nextStatus
+
+      setRouterConnectionSnapshots((prev) => ({
+        ...prev,
+        [normalizedRouterId]: {
+          diagnostics,
+          checkedAt: Date.now(),
+        },
+      }))
+
+      if (options.notifyOnChange && previousStatus && previousStatus !== nextStatus) {
+        const summary = resolveConnectionFeedback({ diagnostics }, 'Estado de conexion actualizado')
+        const routerLabel = options.routerName ? ` ${options.routerName}` : ''
+        addToast(diagnostics.success ? 'success' : 'error', `Semaforo MikroTik${routerLabel}: ${summary}`)
+      }
+    },
+    [addToast]
+  )
+
   const apiFetch = useCallback(
     (path: string, options: RequestInit = {}) => {
       const headers: Record<string, string> = {
@@ -484,6 +604,15 @@ const MikroTikManagement: React.FC = () => {
     [API_BASE, authHeaders, logout, tenantContextId]
   )
 
+  const fetchConnectionDiagnostics = useCallback(
+    async (routerId: string) => {
+      const response = await apiFetch(`/api/mikrotik/routers/${routerId}/test-connection`)
+      const payload = (await safeJson(response)) as RouterConnectionActionResponse | null
+      return { ok: response.ok, payload }
+    },
+    [apiFetch, safeJson]
+  )
+
   const loadRouters = useCallback(async () => {
     try {
       const response = await apiFetch('/api/mikrotik/routers')
@@ -492,6 +621,14 @@ const MikroTikManagement: React.FC = () => {
       const source = payload?.success && Array.isArray(payload.routers) ? payload.routers : []
       const nextRouters = source.map(normalizeRouterItem).filter((item) => item.id && item.ip_address)
       setRouters(nextRouters)
+      setRouterConnectionSnapshots((prev) => {
+        const allowedIds = new Set(nextRouters.map((item) => item.id))
+        const filtered = Object.entries(prev).filter(([routerId]) => allowedIds.has(routerId))
+        return Object.fromEntries(filtered)
+      })
+      connectionStatusRef.current = Object.fromEntries(
+        Object.entries(connectionStatusRef.current).filter(([routerId]) => nextRouters.some((item) => item.id === routerId))
+      )
       setSelectedRouter((prev) => {
         if (!nextRouters.length) return null
         if (!prev) return nextRouters[0]
@@ -649,6 +786,38 @@ const MikroTikManagement: React.FC = () => {
     setFailoverResult(null)
   }, [loadEnterpriseChangeLog, loadEnterpriseProfiles, loadQuickConnect, loadRouterReadiness, loadRouterStats, quickConnectScope, selectedRouter])
 
+  useEffect(() => {
+    if (!selectedRouter || activeTab !== 'config') return
+
+    let cancelled = false
+
+    const runPoll = async (notifyOnChange = false) => {
+      try {
+        const { payload } = await fetchConnectionDiagnostics(selectedRouter.id)
+        if (cancelled || !payload?.diagnostics) return
+        rememberConnectionDiagnostics(selectedRouter.id, payload.diagnostics, {
+          notifyOnChange,
+          routerName: selectedRouter.name,
+        })
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Error polling connection diagnostics:', error)
+        }
+      }
+    }
+
+    void runPoll(false)
+
+    const timer = window.setInterval(() => {
+      void runPoll(true)
+    }, CONNECTION_POLL_INTERVAL_MS)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [activeTab, fetchConnectionDiagnostics, rememberConnectionDiagnostics, selectedRouter])
+
   const applyEnterpriseHardening = async () => {
     if (!selectedRouter) return
     setSecurityBusy(true)
@@ -793,10 +962,10 @@ const MikroTikManagement: React.FC = () => {
     if (!selectedRouter) return
     setActionLoading(true)
     try {
-      const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/test-connection`)
-      const data = (await safeJson(response)) as { success?: boolean; error?: string } | null
-      if (response.ok && data?.success) addToast('success', 'Conexion al router exitosa')
-      else addToast('error', data?.error || 'No se pudo conectar al router')
+      const { ok, payload: data } = await fetchConnectionDiagnostics(selectedRouter.id)
+      if (data?.diagnostics) rememberConnectionDiagnostics(selectedRouter.id, data.diagnostics)
+      if (ok && data?.success) addToast('success', resolveConnectionFeedback(data, 'Conexion al router exitosa'))
+      else addToast('error', resolveConnectionFeedback(data, 'No se pudo conectar al router'))
     } catch {
       addToast('error', 'Error de red al probar conexion')
     } finally {
@@ -833,6 +1002,12 @@ const MikroTikManagement: React.FC = () => {
         setRouterStats(null)
         setQuickConnect(null)
         setRouterReadiness(null)
+        setRouterConnectionSnapshots((prev) => {
+          const next = { ...prev }
+          delete next[selectedRouter.id]
+          return next
+        })
+        delete connectionStatusRef.current[selectedRouter.id]
         setBootstrapResult(null)
         setEnterpriseProfiles(null)
         setEnterpriseChangeLog([])
@@ -1061,7 +1236,12 @@ const MikroTikManagement: React.FC = () => {
       }
 
       const createdRouter = normalizeRouterItem(payload.router)
-      addToast('success', payload.reachable === false ? 'Router agregado, pero no responde aun' : 'Router agregado correctamente')
+      if (payload.diagnostics) rememberConnectionDiagnostics(createdRouter.id, payload.diagnostics)
+      const connectionMessage = resolveConnectionFeedback(
+        payload,
+        payload.reachable === false ? 'Router agregado, pero la API aun no responde.' : 'Router agregado correctamente.'
+      )
+      addToast(payload.reachable === false ? 'error' : 'success', payload.reachable === false ? `Router agregado. ${connectionMessage}` : connectionMessage)
       setRouterForm((prev) => ({ ...prev, name: '', ip_address: '', password: '' }))
       await loadRouters()
       setSelectedRouter(createdRouter)
@@ -1104,15 +1284,15 @@ const MikroTikManagement: React.FC = () => {
     if (!selectedRouter) return
     setWizardValidating(true)
     try {
-      const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/test-connection`)
-      const payload = (await safeJson(response)) as { success?: boolean; error?: string } | null
+      const { ok, payload } = await fetchConnectionDiagnostics(selectedRouter.id)
+      if (payload?.diagnostics) rememberConnectionDiagnostics(selectedRouter.id, payload.diagnostics)
       await loadQuickConnect(selectedRouter.id, quickConnectScope)
       await loadRouterReadiness(selectedRouter.id)
       setConnectionWizardStep(3)
-      if (response.ok && payload?.success) {
-        addToast('success', 'Validacion completada: router alcanzable')
+      if (ok && payload?.success) {
+        addToast('success', resolveConnectionFeedback(payload, 'Validacion completada: router alcanzable'))
       } else {
-        addToast('error', payload?.error || 'Validacion fallida: router no alcanzable')
+        addToast('error', resolveConnectionFeedback(payload, 'Validacion fallida: router no alcanzable'))
       }
     } catch (error) {
       console.error('Error running wizard validation:', error)
@@ -1159,13 +1339,13 @@ const MikroTikManagement: React.FC = () => {
     const testConnectionStep = async (stepId: string, detailOnSuccess: string) => {
       updateStep(stepId, 'running')
       try {
-        const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/test-connection`)
-        const payload = (await safeJson(response)) as { success?: boolean; error?: string } | null
-        if (response.ok && payload?.success) {
+        const { ok, payload } = await fetchConnectionDiagnostics(selectedRouter.id)
+        if (payload?.diagnostics) rememberConnectionDiagnostics(selectedRouter.id, payload.diagnostics)
+        if (ok && payload?.success) {
           updateStep(stepId, 'success', detailOnSuccess)
           return true
         }
-        updateStep(stepId, 'failed', payload?.error || 'Router aun no responde por API')
+        updateStep(stepId, 'failed', resolveConnectionFeedback(payload, 'Router aun no responde por API'))
         return false
       } catch (error) {
         const detail = error instanceof Error ? error.message : 'Fallo de red en test'
@@ -1690,22 +1870,36 @@ const MikroTikManagement: React.FC = () => {
         <h3 className="mb-3 text-lg font-semibold text-gray-900">Seleccionar Router</h3>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
           {routers.map((router) => (
-            <button
-              key={router.id}
-              onClick={() => setSelectedRouter(router)}
-              className={`rounded-lg border p-4 text-left transition-all ${
-                selectedRouter?.id === router.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <ServerIcon className="h-6 w-6 text-green-500" />
-                <div>
-                  <div className="font-medium text-gray-900">{router.name}</div>
-                  <div className="text-sm text-gray-600">{router.ip_address}</div>
-                  <div className="text-xs text-gray-500">{router.model || '-'}</div>
-                </div>
-              </div>
-            </button>
+            (() => {
+              const snapshot = routerConnectionSnapshots[router.id]
+              const diagnostics = snapshot?.diagnostics || null
+              return (
+                <button
+                  key={router.id}
+                  onClick={() => setSelectedRouter(router)}
+                  className={`rounded-lg border p-4 text-left transition-all ${
+                    selectedRouter?.id === router.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center space-x-3">
+                      <ServerIcon className="h-6 w-6 text-green-500" />
+                      <div>
+                        <div className="font-medium text-gray-900">{router.name}</div>
+                        <div className="text-sm text-gray-600">{router.ip_address}</div>
+                        <div className="text-xs text-gray-500">{router.model || '-'}</div>
+                        <div className="mt-1 text-[11px] text-gray-500">
+                          Ultimo check: {formatConnectionCheckedAt(snapshot?.checkedAt)}
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${getConnectionStatusTone(diagnostics)}`}>
+                      {getConnectionStatusLabel(diagnostics)}
+                    </span>
+                  </div>
+                </button>
+              )
+            })()
           ))}
         </div>
         {!routers.length && <p className="mt-3 text-sm text-gray-500">No hay routers registrados todavia.</p>}
@@ -1808,6 +2002,80 @@ const MikroTikManagement: React.FC = () => {
                             </span>
                           </div>
                           <p>{quickConnect.access_profile.reason || '-'}</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                      <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">Diagnostico de conexion API</p>
+                          <p className="text-xs text-gray-500">Muestra la causa real del ultimo test: DNS, puerto, login API y ruta sugerida para el operador.</p>
+                          <p className="text-[11px] text-gray-500">
+                            Monitoreo automatico cada {Math.round(CONNECTION_POLL_INTERVAL_MS / 1000)}s mientras esta abierta esta pestaña.
+                            Ultimo check: {formatConnectionCheckedAt(activeConnectionSnapshot?.checkedAt)}
+                          </p>
+                        </div>
+                        {activeConnectionDiagnostics && (
+                          <span
+                            className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                              getConnectionStatusTone(activeConnectionDiagnostics)
+                            }`}
+                          >
+                            {getConnectionStatusLabel(activeConnectionDiagnostics)}
+                          </span>
+                        )}
+                      </div>
+                      {!activeConnectionDiagnostics && (
+                        <p className="text-xs text-gray-500">Todavia no hay un diagnostico guardado para este router. Usa "Probar conexion" o la validacion del wizard.</p>
+                      )}
+                      {activeConnectionDiagnostics && (
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                                activeConnectionDiagnostics.success ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                              }`}
+                            >
+                              {activeConnectionDiagnostics.summary || 'Sin resumen'}
+                            </span>
+                            {activeConnectionDiagnostics.transport_hint && (
+                              <span className="rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-700">
+                                Ruta sugerida: {activeConnectionDiagnostics.transport_hint}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-600">
+                            Host <strong>{activeConnectionDiagnostics.host || selectedRouter.ip_address}</strong>:{' '}
+                            <strong>{activeConnectionDiagnostics.api_port || '-'}</strong> | tipo:{' '}
+                            <strong>{describeHostScope(activeConnectionDiagnostics.host_scope)}</strong>
+                          </p>
+                          <ul className="space-y-1 text-xs text-gray-700">
+                            {(activeConnectionDiagnostics.checks || []).map((check) => {
+                              const severity = check.severity || (check.ok ? 'ok' : 'warning')
+                              const toneClass =
+                                severity === 'critical'
+                                  ? 'bg-rose-100 text-rose-700'
+                                  : severity === 'warning'
+                                    ? 'bg-amber-100 text-amber-700'
+                                    : 'bg-emerald-100 text-emerald-700'
+                              return (
+                                <li key={check.id} className="flex flex-wrap items-center gap-2">
+                                  <span className={`rounded px-2 py-0.5 font-semibold ${toneClass}`}>{check.id}</span>
+                                  <span>{check.detail || '-'}</span>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                          {(activeConnectionDiagnostics.recommendations || []).length > 0 && (
+                            <div className="rounded border border-sky-200 bg-sky-50 p-2">
+                              <p className="text-xs font-semibold uppercase text-sky-700">Mejoras sugeridas</p>
+                              <ul className="mt-1 space-y-1 text-xs text-sky-800">
+                                {(activeConnectionDiagnostics.recommendations || []).map((item, idx) => (
+                                  <li key={`${item}-${idx}`}>- {item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

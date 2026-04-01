@@ -1,6 +1,7 @@
 import app.routes.mikrotik as mikrotik_routes
 
 import io
+import socket
 import zipfile
 
 
@@ -99,6 +100,128 @@ def test_router_crud_and_quick_connect(client, app):
     assert delete_response.status_code == 200
     delete_payload = delete_response.get_json()
     assert delete_payload['success'] is True
+
+
+def test_router_create_returns_connection_diagnostics_when_requested(client, app, monkeypatch):
+    headers = _admin_headers(client, app)
+    monkeypatch.setattr(
+        mikrotik_routes,
+        '_build_router_connection_diagnostics',
+        lambda _router: {
+            'success': False,
+            'status': 'tcp_unreachable',
+            'summary': 'El puerto 8728 no es alcanzable desde el backend.',
+            'host': '10.10.10.9',
+            'api_port': 8728,
+            'host_scope': 'private',
+            'transport_hint': 'Usa WireGuard o Back To Home como canal principal de gestion.',
+            'checks': [
+                {'id': 'dns_resolution', 'ok': True, 'severity': 'ok'},
+                {'id': 'tcp_port', 'ok': False, 'severity': 'critical'},
+            ],
+            'recommendations': ['Permite 8728/TCP desde la IP del backend o desde el tunel de gestion.'],
+            'runtime': {'resolved_addresses': ['10.10.10.9']},
+        },
+    )
+
+    create_response = client.post(
+        '/api/mikrotik/routers',
+        json={
+            'name': 'Nodo-Diagnostics',
+            'ip_address': '10.10.10.9',
+            'username': 'api-admin',
+            'password': 'router-pass',
+            'api_port': 8728,
+            'test_connection': True,
+        },
+        headers=headers,
+    )
+    assert create_response.status_code == 201
+    payload = create_response.get_json()
+    assert payload['success'] is True
+    assert payload['reachable'] is False
+    assert payload['diagnostics']['status'] == 'tcp_unreachable'
+    assert payload['diagnostics']['summary'] == 'El puerto 8728 no es alcanzable desde el backend.'
+
+
+def test_router_test_connection_returns_diagnostics_payload(client, app, monkeypatch):
+    headers = _admin_headers(client, app)
+    create_response = client.post(
+        '/api/mikrotik/routers',
+        json={
+            'name': 'Nodo-Test-Connection',
+            'ip_address': '10.10.10.10',
+            'username': 'api-admin',
+            'password': 'router-pass',
+            'api_port': 8728,
+            'test_connection': False,
+        },
+        headers=headers,
+    )
+    assert create_response.status_code == 201
+    router_id = str(create_response.get_json()['router']['id'])
+
+    monkeypatch.setattr(
+        mikrotik_routes,
+        '_build_router_connection_diagnostics',
+        lambda _router: {
+            'success': False,
+            'status': 'api_auth_failed',
+            'summary': 'El puerto responde, pero el login API fue rechazado por el router.',
+            'host': '10.10.10.10',
+            'api_port': 8728,
+            'host_scope': 'private',
+            'transport_hint': 'Usa WireGuard o Back To Home como canal principal de gestion.',
+            'checks': [
+                {'id': 'dns_resolution', 'ok': True, 'severity': 'ok'},
+                {'id': 'tcp_port', 'ok': True, 'severity': 'ok'},
+                {'id': 'api_login', 'ok': False, 'severity': 'critical'},
+            ],
+            'recommendations': ['Valida usuario, password y permisos del usuario API.'],
+            'runtime': {'tcp_latency_ms': 11.4},
+        },
+    )
+
+    response = client.get(f'/api/mikrotik/routers/{router_id}/test-connection', headers=headers)
+    assert response.status_code == 502
+    payload = response.get_json()
+    assert payload['success'] is False
+    assert payload['error'] == 'El puerto responde, pero el login API fue rechazado por el router.'
+    assert payload['diagnostics']['status'] == 'api_auth_failed'
+    assert payload['diagnostics']['checks'][2]['id'] == 'api_login'
+
+
+def test_build_router_connection_diagnostics_recommends_tunnel_for_private_ip(app, monkeypatch):
+    with app.app_context():
+        router = mikrotik_routes.MikroTikRouter(
+            name='Nodo-Privado-Diag',
+            ip_address='10.20.30.40',
+            username='api-admin',
+            api_port=8728,
+        )
+        router.password = 'router-pass'
+        db.session.add(router)
+        db.session.commit()
+
+        monkeypatch.setattr(
+            mikrotik_routes.socket,
+            'getaddrinfo',
+            lambda *args, **kwargs: [
+                (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, '', ('10.20.30.40', 8728))
+            ],
+        )
+
+        def _raise_timeout(*args, **kwargs):
+            raise OSError('timed out')
+
+        monkeypatch.setattr(mikrotik_routes.socket, 'create_connection', _raise_timeout)
+
+        diagnostics = mikrotik_routes._build_router_connection_diagnostics(router)
+        assert diagnostics['success'] is False
+        assert diagnostics['status'] == 'tcp_unreachable'
+        assert diagnostics['host_scope'] == 'private'
+        assert 'WireGuard o Back To Home' in str(diagnostics['transport_hint'])
+        assert any('WireGuard o Back To Home' in item for item in diagnostics['recommendations'])
 
 
 def test_quick_connect_marks_private_ip_for_tunnel_first(client, app, monkeypatch):

@@ -21,6 +21,8 @@ import uuid
 import zipfile
 import base64
 import binascii
+import socket
+import time
 from urllib.parse import unquote_plus
 import shlex
 import subprocess
@@ -1294,12 +1296,278 @@ def _read_wireguard_config_from_upload() -> tuple[str, str]:
 
     raise ValueError('no WireGuard configuration found in archive')
 
-def _test_router_connection(router: MikroTikRouter) -> bool:
+def _describe_router_host_scope(host: str) -> Dict[str, Any]:
+    normalized_host = str(host or '').strip()
+    if not normalized_host:
+        return {'scope': 'unknown', 'is_ip': False, 'label': 'host desconocido'}
+
+    try:
+        ip_obj = ipaddress.ip_address(normalized_host)
+    except ValueError:
+        return {'scope': 'hostname', 'is_ip': False, 'label': 'hostname'}
+
+    if ip_obj.is_loopback:
+        return {'scope': 'loopback', 'is_ip': True, 'label': 'loopback'}
+    if ip_obj.is_link_local:
+        return {'scope': 'link_local', 'is_ip': True, 'label': 'link-local'}
+    if ip_obj.is_private:
+        return {'scope': 'private', 'is_ip': True, 'label': 'IP privada'}
+    return {'scope': 'public', 'is_ip': True, 'label': 'IP publica'}
+
+
+def _sanitize_connection_error(error: Any) -> str:
+    text = str(error or '').strip()
+    if not text:
+        return 'sin detalle'
+    return text[:220]
+
+
+def _classify_api_connection_error(error_message: str, default_code: Optional[str] = None) -> str:
+    if default_code:
+        return default_code
+
+    normalized = str(error_message or '').strip().lower()
+    if not normalized:
+        return 'api_connection_failed'
+    if 'invalid user' in normalized or 'invalid username' in normalized or 'invalid password' in normalized:
+        return 'api_auth_failed'
+    if 'authentication' in normalized or 'not logged in' in normalized or 'login failed' in normalized:
+        return 'api_auth_failed'
+    if 'connection refused' in normalized or 'actively refused' in normalized:
+        return 'api_service_disabled'
+    if 'timed out' in normalized or 'timeout' in normalized:
+        return 'api_timeout'
+    if 'ssl' in normalized or 'handshake' in normalized or 'wrong version number' in normalized:
+        return 'api_tls_mismatch'
+    if 'reset by peer' in normalized or 'broken pipe' in normalized:
+        return 'api_protocol_error'
+    if 'pool' in normalized and 'exhausted' in normalized:
+        return 'api_pool_exhausted'
+    return 'api_connection_failed'
+
+
+def _build_api_failure_detail(error_code: str, host: str, api_port: int, error_message: str) -> str:
+    safe_error = _sanitize_connection_error(error_message)
+    if error_code == 'api_auth_failed':
+        return 'El puerto API responde, pero el login fue rechazado. Revisa usuario, password y permisos del usuario API.'
+    if error_code == 'api_service_disabled':
+        return f'El host responde, pero el servicio API en {host}:{api_port} rechazo la sesion. Verifica /ip service api.'
+    if error_code == 'api_timeout':
+        return f'El puerto {api_port} no completo el handshake API a tiempo. Puede haber filtrado, NAT o alta latencia.'
+    if error_code == 'api_tls_mismatch':
+        return f'Hay un desajuste entre el puerto/protocolo configurado y el servicio API del router. Detalle: {safe_error}'
+    if error_code == 'api_protocol_error':
+        return f'El router cerro la sesion API inesperadamente. Revisa version RouterOS, servicio API y filtrado intermedio. Detalle: {safe_error}'
+    if error_code == 'api_pool_exhausted':
+        return 'El pool local de conexiones MikroTik se agoto temporalmente. Reintenta en unos segundos.'
+    if safe_error != 'sin detalle':
+        return f'No fue posible completar la sesion API. Detalle: {safe_error}'
+    return 'No fue posible completar la sesion API con el router.'
+
+
+def _dedupe_recommendations(recommendations: List[str]) -> List[str]:
+    seen = set()
+    ordered: List[str] = []
+    for item in recommendations:
+        normalized = str(item or '').strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        ordered.append(normalized)
+    return ordered
+
+
+def _build_router_connection_diagnostics(router: MikroTikRouter) -> Dict[str, Any]:
+    host = str(router.ip_address or '').strip()
+    api_port = _to_int(getattr(router, 'api_port', 8728), default=8728) or 8728
+    host_scope = _describe_router_host_scope(host)
+    checks: List[Dict[str, Any]] = []
+    recommendations: List[str] = []
+    runtime: Dict[str, Any] = {
+        'host_scope': host_scope.get('scope'),
+        'host_label': host_scope.get('label'),
+        'resolved_addresses': [],
+    }
+
+    if host_scope.get('scope') in ('private', 'link_local', 'loopback'):
+        transport_hint = 'Usa WireGuard o Back To Home como canal principal de gestion; no dependas de API directa por WAN.'
+        recommendations.append('Como el router usa direccion no publica, prioriza WireGuard o Back To Home para operacion diaria y soporte remoto.')
+    else:
+        transport_hint = 'Puedes usar API directa si el sitio esta publicado, pero para produccion sigue siendo mejor encapsular la gestion por VPN.'
+
+    if api_port == 8728:
+        recommendations.append('Si el router estara expuesto fuera de la LAN, evita publicar 8728 en claro; usa WireGuard/BTH o migra a API-SSL 8729.')
+
+    try:
+        resolve_started = time.perf_counter()
+        resolved = socket.getaddrinfo(host, api_port, type=socket.SOCK_STREAM, proto=socket.IPPROTO_TCP)
+        resolve_elapsed_ms = round((time.perf_counter() - resolve_started) * 1000, 1)
+        resolved_addresses: List[str] = []
+        for _family, _socktype, _proto, _canonname, sockaddr in resolved:
+            address = str((sockaddr or ('',))[0] or '').strip()
+            if address and address not in resolved_addresses:
+                resolved_addresses.append(address)
+        runtime['dns_lookup_ms'] = resolve_elapsed_ms
+        runtime['resolved_addresses'] = resolved_addresses
+        checks.append(
+            {
+                'id': 'dns_resolution',
+                'ok': True,
+                'detail': f'Host resuelto correctamente ({", ".join(resolved_addresses[:3]) or host}) en {resolve_elapsed_ms} ms.',
+                'severity': 'ok',
+            }
+        )
+    except socket.gaierror as exc:
+        checks.append(
+            {
+                'id': 'dns_resolution',
+                'ok': False,
+                'detail': f'No se pudo resolver {host}. Detalle: {_sanitize_connection_error(exc)}',
+                'severity': 'critical',
+            }
+        )
+        recommendations.append('Corrige el hostname o habilita DDNS estable antes de automatizar conexion y soporte remoto.')
+        return {
+            'success': False,
+            'status': 'dns_unresolved',
+            'summary': f'El backend no puede resolver el host {host}.',
+            'host': host,
+            'api_port': api_port,
+            'host_scope': host_scope.get('scope'),
+            'transport_hint': transport_hint,
+            'checks': checks,
+            'recommendations': _dedupe_recommendations(recommendations),
+            'runtime': runtime,
+        }
+
+    tcp_error: Optional[BaseException] = None
+    tcp_latency_ms: Optional[float] = None
+    tcp_target = ''
+    for _family, _socktype, _proto, _canonname, sockaddr in resolved[:3]:
+        try:
+            target_host = str((sockaddr or ('',))[0] or '').strip()
+            attempt_started = time.perf_counter()
+            with socket.create_connection(sockaddr, timeout=3.0):
+                tcp_latency_ms = round((time.perf_counter() - attempt_started) * 1000, 1)
+            tcp_target = target_host or host
+            break
+        except OSError as exc:
+            tcp_error = exc
+
+    if tcp_latency_ms is None:
+        checks.append(
+            {
+                'id': 'tcp_port',
+                'ok': False,
+                'detail': f'No fue posible abrir TCP hacia {host}:{api_port}. Detalle: {_sanitize_connection_error(tcp_error)}',
+                'severity': 'critical',
+            }
+        )
+        recommendations.append(f'Permite {api_port}/TCP desde la IP del backend o desde el tunel de gestion.')
+        recommendations.append('Confirma que el servicio API este habilitado en MikroTik y asociado a la interfaz correcta.')
+        return {
+            'success': False,
+            'status': 'tcp_unreachable',
+            'summary': f'El host responde a nivel DNS/IP, pero el puerto {api_port} no es alcanzable desde el backend.',
+            'host': host,
+            'api_port': api_port,
+            'host_scope': host_scope.get('scope'),
+            'transport_hint': transport_hint,
+            'checks': checks,
+            'recommendations': _dedupe_recommendations(recommendations),
+            'runtime': runtime,
+        }
+
+    runtime['tcp_latency_ms'] = tcp_latency_ms
+    runtime['tcp_target'] = tcp_target
+    checks.append(
+        {
+            'id': 'tcp_port',
+            'ok': True,
+            'detail': f'Puerto {api_port}/TCP accesible en {tcp_target}:{api_port} ({tcp_latency_ms} ms).',
+            'severity': 'ok',
+        }
+    )
+
+    service_error = ''
+    service_error_code = ''
+    api_connected = False
     try:
         with MikroTikService(router.id) as service:
-            return bool(service.api)
-    except Exception:
-        return False
+            api_connected = bool(service.api)
+            service_error = str(getattr(service, 'last_connection_error', '') or '').strip()
+            service_error_code = str(getattr(service, 'last_connection_code', '') or '').strip()
+    except Exception as exc:
+        service_error = _sanitize_connection_error(exc)
+
+    if api_connected:
+        checks.append(
+            {
+                'id': 'api_login',
+                'ok': True,
+                'detail': 'Sesion API autenticada correctamente con las credenciales configuradas.',
+                'severity': 'ok',
+            }
+        )
+        return {
+            'success': True,
+            'status': 'connected',
+            'summary': 'Conexion API operativa y lista para automatizaciones.',
+            'host': host,
+            'api_port': api_port,
+            'host_scope': host_scope.get('scope'),
+            'transport_hint': transport_hint,
+            'checks': checks,
+            'recommendations': _dedupe_recommendations(recommendations),
+            'runtime': runtime,
+        }
+
+    error_code = _classify_api_connection_error(service_error, default_code=service_error_code or None)
+    checks.append(
+        {
+            'id': 'api_login',
+            'ok': False,
+            'detail': _build_api_failure_detail(error_code, host, api_port, service_error),
+            'severity': 'critical',
+        }
+    )
+
+    if error_code == 'api_auth_failed':
+        recommendations.append('Valida usuario, password y que el grupo tenga permisos api/read/write/policy segun el flujo que vas a ejecutar.')
+    elif error_code == 'api_service_disabled':
+        recommendations.append('Habilita el servicio API en MikroTik o ajusta el puerto configurado en FASTISP para que coincida con el router.')
+    elif error_code == 'api_tls_mismatch':
+        recommendations.append('Verifica si el router expone API simple (8728) o API-SSL (8729) y alinea la configuracion del sitio con FASTISP.')
+    elif error_code in ('api_timeout', 'api_protocol_error', 'api_connection_failed'):
+        recommendations.append('Si el host y el puerto responden pero la sesion API falla, revisa filtrado intermedio, NAT, version RouterOS y salud del servicio API.')
+    elif error_code == 'api_pool_exhausted':
+        recommendations.append('Reduce pruebas simultaneas o aumenta el pool si esperas operaciones concurrentes sobre el mismo router.')
+
+    summary_by_code = {
+        'api_auth_failed': 'El puerto responde, pero el login API fue rechazado por el router.',
+        'api_service_disabled': 'El host responde, pero el servicio API no esta aceptando sesiones.',
+        'api_timeout': 'El puerto responde de forma inestable y el handshake API expiro.',
+        'api_tls_mismatch': 'El router responde, pero el puerto/protocolo configurado no coincide con el servicio API esperado.',
+        'api_protocol_error': 'El router cierra la sesion API antes de completar la autenticacion.',
+        'api_pool_exhausted': 'FASTISP agoto temporalmente su pool local de conexiones para este router.',
+    }
+
+    return {
+        'success': False,
+        'status': error_code,
+        'summary': summary_by_code.get(error_code, 'No fue posible completar la sesion API con el router.'),
+        'host': host,
+        'api_port': api_port,
+        'host_scope': host_scope.get('scope'),
+        'transport_hint': transport_hint,
+        'checks': checks,
+        'recommendations': _dedupe_recommendations(recommendations),
+        'runtime': runtime,
+    }
+
+
+def _test_router_connection(router: MikroTikRouter) -> bool:
+    return bool(_build_router_connection_diagnostics(router).get('success'))
 
 def _to_int(value: Any, default: int = 0) -> int:
     try:
@@ -2079,13 +2347,15 @@ def create_router():
     db.session.commit()
 
     test_connection = _as_bool(data.get('test_connection'), default=True)
-    reachable = _test_router_connection(router) if test_connection else None
+    diagnostics = _build_router_connection_diagnostics(router) if test_connection else None
+    reachable = diagnostics.get('success') if diagnostics else None
     return jsonify(
         {
             'success': True,
             'router': router.to_dict(),
             'connection_tested': test_connection,
             'reachable': reachable,
+            'diagnostics': diagnostics,
         }
     ), 201
 
@@ -3225,8 +3495,12 @@ def test_connection(router_id):
         router = db.session.get(MikroTikRouter, router_id)
         if not router:
             return jsonify({'success': False, 'error': 'Router not found'}), 404
-        ok = _test_router_connection(router)
-        return jsonify({'success': ok}), (200 if ok else 502)
+        diagnostics = _build_router_connection_diagnostics(router)
+        ok = bool(diagnostics.get('success'))
+        payload = {'success': ok, 'diagnostics': diagnostics}
+        if not ok:
+            payload['error'] = diagnostics.get('summary') or 'No se pudo conectar al router'
+        return jsonify(payload), (200 if ok else 502)
     except Exception as e:
         logger.error(f"Error testing connection: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
