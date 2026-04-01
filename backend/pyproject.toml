@@ -1,0 +1,15 @@
+# backend/pyproject.toml
+[tool.ruff]
+# Same as Black.
+line-length = 88
+
+# Select a base set of rules. "E" is pycodestyle errors, "F" is pyflakes.
+# "I" is for isort (import sorting).
+select = ["E", "F", "I", "W", "C90", "N"]
+
+# Ignore some rules if necessary, for now we will be strict.
+ignore = []
+
+[tool.ruff.isort]
+# Sort imports by type
+known-first-party = ["app"]

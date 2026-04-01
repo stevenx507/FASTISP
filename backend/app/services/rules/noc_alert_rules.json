@@ -1,0 +1,29 @@
+[
+  {
+    "id": "health_score_low",
+    "metric": "health_score",
+    "operator": "lt",
+    "threshold": 70,
+    "severity": "high",
+    "message": "Router health score is below threshold",
+    "recommended_action": "Run diagnostics and inspect interfaces, CPU and memory saturation"
+  },
+  {
+    "id": "cpu_load_high",
+    "metric": "cpu_load",
+    "operator": "gt",
+    "threshold": 85,
+    "severity": "critical",
+    "message": "Router CPU usage is too high",
+    "recommended_action": "Review queue/firewall rules and active sessions"
+  },
+  {
+    "id": "issue_count_spike",
+    "metric": "issues_count",
+    "operator": "gt",
+    "threshold": 3,
+    "severity": "medium",
+    "message": "Router has multiple concurrent issues",
+    "recommended_action": "Escalate to NOC and trigger preventive failover if available"
+  }
+]

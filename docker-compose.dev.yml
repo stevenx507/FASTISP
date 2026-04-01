@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://ispmax:password@postgres:5432/ispmax_dev
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev-secret-key
+      - JWT_SECRET_KEY=dev-jwt-key
+      - CORS_ORIGINS=http://localhost:3000
+    env_file:
+      - .env.influx
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__
+    depends_on:
+      - postgres
+      - redis
+      - influxdb
+    networks:
+      - ispmax-dev
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - ispmax-dev
+
+  # PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ispmax_dev
+      POSTGRES_USER: ispmax
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ispmax-dev
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - ispmax-dev
+  
+  # InfluxDB
+  influxdb:
+    image: influxdb:2.7
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    env_file:
+      - .env.influx
+    networks:
+      - ispmax-dev
+
+  # Grafana
+  grafana:
+    image: grafana/grafana-oss:latest
+    ports:
+      - "3001:3000" # Port changed to 3001 to avoid conflict with frontend
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - influxdb
+    env_file:
+      - .env.influx
+    networks:
+      - ispmax-dev
+
+  # PGAdmin (Optional)
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@ispmax.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - ispmax-dev
+
+networks:
+  ispmax-dev:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  influxdb_data:
+  grafana_data:

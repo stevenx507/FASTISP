@@ -1,0 +1,7 @@
+http:
+  middlewares:
+    geoip2:
+      plugin:
+        geoip2:
+          databasePath: /geoip/GeoLite2-Country.mmdb
+          header: X-Country-Code

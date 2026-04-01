@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ispfast-worker
+  namespace: ispfast
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ispfast-worker
+  template:
+    metadata:
+      labels:
+        app: ispfast-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/stevenx507/ispfast-backend:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - celery
+            - -A
+            - app.celery
+            - worker
+            - --loglevel=INFO
+            - --concurrency=4
+          env:
+            - name: FLASK_ENV
+              value: production
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ispfast-secrets
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ispfast-secrets
+                  key: REDIS_URL
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ispfast-secrets
+                  key: SECRET_KEY
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ispfast-secrets
+                  key: JWT_SECRET_KEY
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ispfast-secrets
+                  key: ENCRYPTION_KEY
+            - name: CORS_ORIGINS
+              value: https://app.example.com
+            - name: MIKROTIK_DEFAULT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ispfast-secrets
+                  key: MIKROTIK_DEFAULT_USERNAME
+            - name: MIKROTIK_DEFAULT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ispfast-secrets
+                  key: MIKROTIK_DEFAULT_PASSWORD
+          resources:
+            requests:
+              cpu: "300m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ispfast-worker-hpa
+  namespace: ispfast
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ispfast-worker
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75

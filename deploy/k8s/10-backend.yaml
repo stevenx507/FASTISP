@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ispfast-backend
+  namespace: ispfast
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ispfast-backend
+  template:
+    metadata:
+      labels:
+        app: ispfast-backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/stevenx507/ispfast-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          env:
+            - name: FLASK_ENV
+              value: production
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ispfast-secrets
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ispfast-secrets
+                  key: REDIS_URL
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ispfast-secrets
+                  key: SECRET_KEY
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ispfast-secrets
+                  key: JWT_SECRET_KEY
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ispfast-secrets
+                  key: ENCRYPTION_KEY
+            - name: CORS_ORIGINS
+              value: https://app.example.com
+            - name: MIKROTIK_DEFAULT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ispfast-secrets
+                  key: MIKROTIK_DEFAULT_USERNAME
+            - name: MIKROTIK_DEFAULT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ispfast-secrets
+                  key: MIKROTIK_DEFAULT_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ispfast-backend
+  namespace: ispfast
+spec:
+  selector:
+    app: ispfast-backend
+  ports:
+    - name: http
+      protocol: TCP
+      port: 5000
+      targetPort: 5000
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ispfast-backend-hpa
+  namespace: ispfast
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ispfast-backend
+  minReplicas: 3
+  maxReplicas: 12
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
