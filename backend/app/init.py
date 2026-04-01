@@ -35,7 +35,12 @@ celery = Celery(__name__, broker=Config.CELERY_BROKER_URL, backend=Config.CELERY
 def create_app(config_name_or_class='development'):
     """Application factory"""
     app = Flask(__name__)
-    from app.tenancy import TenantResolutionError, resolve_tenant_id
+    from app.tenancy import (
+        ExpiredTenantTokenError,
+        InvalidTenantTokenError,
+        TenantResolutionError,
+        resolve_tenant_id,
+    )
     
     # Load configuration (accepts a config class or a key name)
     if isinstance(config_name_or_class, str):
@@ -87,6 +92,22 @@ def create_app(config_name_or_class='development'):
     metrics.init_app(app)
     cache.init_app(app)
 
+    @jwt.expired_token_loader
+    def handle_expired_jwt(jwt_header, jwt_payload):
+        return jsonify({'error': 'JWT token expired'}), 401
+
+    @jwt.invalid_token_loader
+    def handle_invalid_jwt(error_message):
+        return jsonify({'error': 'Invalid JWT token'}), 401
+
+    @jwt.unauthorized_loader
+    def handle_missing_jwt(error_message):
+        return jsonify({'error': 'Authorization token is required'}), 401
+
+    @jwt.revoked_token_loader
+    def handle_revoked_jwt(jwt_header, jwt_payload):
+        return jsonify({'error': 'JWT token revoked'}), 401
+
     # --- CORS: allow frontend -> API with proper preflight handling ---
     allowed_origins = app.config.get('CORS_ORIGINS') or []
     if isinstance(allowed_origins, str):
@@ -118,6 +139,10 @@ def create_app(config_name_or_class='development'):
                 return jsonify({'error': 'GeoIP blocked'}), 451
         try:
             g.tenant_id = resolve_tenant_id()
+        except ExpiredTenantTokenError as exc:
+            return jsonify({'error': str(exc)}), 401
+        except InvalidTenantTokenError as exc:
+            return jsonify({'error': str(exc)}), 401
         except TenantResolutionError as exc:
             return jsonify({'error': str(exc)}), 400
 

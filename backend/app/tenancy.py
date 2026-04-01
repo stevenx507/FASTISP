@@ -8,7 +8,7 @@ from typing import Any, Optional
 from flask import current_app, g, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required, verify_jwt_in_request
 from flask_jwt_extended.exceptions import JWTExtendedException, NoAuthorizationError
-from jwt.exceptions import InvalidTokenError
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
 from app import db
 from app.models import Tenant, User
@@ -16,6 +16,14 @@ from app.models import Tenant, User
 
 class TenantResolutionError(ValueError):
     """Raised when tenant information is malformed or inconsistent."""
+
+
+class InvalidTenantTokenError(TenantResolutionError):
+    """Raised when the request carries an invalid JWT token."""
+
+
+class ExpiredTenantTokenError(InvalidTenantTokenError):
+    """Raised when the request carries an expired JWT token."""
 
 
 def _coerce_tenant_id(value: Any) -> Optional[int]:
@@ -89,8 +97,10 @@ def resolve_tenant_id() -> Optional[int]:
         verify_jwt_in_request(optional=True)
     except NoAuthorizationError:
         jwt_tenant = None
+    except ExpiredSignatureError as exc:
+        raise ExpiredTenantTokenError('JWT token expired') from exc
     except (JWTExtendedException, InvalidTokenError) as exc:
-        raise TenantResolutionError('Invalid JWT token') from exc
+        raise InvalidTenantTokenError('Invalid JWT token') from exc
     else:
         claims = get_jwt() or {}
         jwt_tenant = _coerce_tenant_id(claims.get('tenant_id'))
