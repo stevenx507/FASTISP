@@ -20,14 +20,14 @@ def test_password_forgot_and_reset_flow(client, app):
 
     reset_response = client.post(
         '/api/auth/password/reset',
-        json={'token': forgot_payload['reset_token'], 'new_password': 'new-password-123'},
+        json={'token': forgot_payload['reset_token'], 'new_password': 'NewPassword123!'},
     )
     assert reset_response.status_code == 200
     assert reset_response.get_json()['success'] is True
 
     login_response = client.post(
         '/api/auth/login',
-        json={'email': 'reset-flow@test.local', 'password': 'new-password-123'},
+        json={'email': 'reset-flow@test.local', 'password': 'NewPassword123!'},
     )
     assert login_response.status_code == 200
     assert login_response.get_json().get('token')
@@ -53,7 +53,7 @@ def test_password_reset_rejects_invalid_or_reused_token(client, app):
 
     invalid_response = client.post(
         '/api/auth/password/reset',
-        json={'token': 'not-a-real-token', 'new_password': 'new-password-123'},
+        json={'token': 'not-a-real-token', 'new_password': 'NewPassword123!'},
     )
     assert invalid_response.status_code == 400
 
@@ -65,12 +65,12 @@ def test_password_reset_rejects_invalid_or_reused_token(client, app):
 
     first_reset = client.post(
         '/api/auth/password/reset',
-        json={'token': token, 'new_password': 'new-password-123'},
+        json={'token': token, 'new_password': 'NewPassword123!'},
     )
     assert first_reset.status_code == 200
 
     second_reset = client.post(
         '/api/auth/password/reset',
-        json={'token': token, 'new_password': 'another-password-123'},
+        json={'token': token, 'new_password': 'AnotherPassword123!'},
     )
     assert second_reset.status_code == 400

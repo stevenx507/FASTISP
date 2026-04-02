@@ -157,7 +157,7 @@ def test_update_password_success(client, app):
 
     response = client.post(
         '/api/auth/password',
-        json={'current_password': 'oldpassword123', 'new_password': 'newpassword123'},
+        json={'current_password': 'oldpassword123', 'new_password': 'NewPassword123!'},
         headers={'Authorization': f'Bearer {auth_token}'},
     )
 
@@ -168,7 +168,7 @@ def test_update_password_success(client, app):
     with app.app_context():
         updated = db.session.get(User, user_id)
         assert updated is not None
-        assert updated.check_password('newpassword123')
+        assert updated.check_password('NewPassword123!')
 
 
 def test_update_password_rejects_wrong_current_password(client, app):

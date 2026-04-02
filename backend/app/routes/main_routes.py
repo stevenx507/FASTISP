@@ -1901,7 +1901,7 @@ def platform_create_tenant():
         if int(tenant.max_admins or 0) < 1:
             db.session.rollback()
             return jsonify({"error": "El plan del tenant no permite crear admins"}), 409
-        admin_password = str(data.get('admin_password') or '').strip() or secrets.token_urlsafe(12)
+        admin_password = str(data.get('admin_password') or '').strip() or _generate_router_password()
         admin_user = User(
             name=admin_name,
             email=admin_email,
@@ -2045,7 +2045,7 @@ def platform_create_tenant_admin(tenant_id):
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "email ya existe"}), 409
 
-    password = str(data.get('password') or '').strip() or secrets.token_urlsafe(12)
+    password = str(data.get('password') or '').strip() or _generate_router_password()
     valid_password, password_error = _validate_password_policy(password, tenant.id)
     if not valid_password:
         return jsonify({"error": password_error}), 400
@@ -3771,7 +3771,7 @@ def admin_create_client():
             return jsonify({"error": "email es requerido cuando create_portal_access=true"}), 400
         if User.query.filter_by(email=email).first():
             return jsonify({"error": "email ya existe"}), 409
-        generated_password = requested_password or secrets.token_urlsafe(12)
+        generated_password = requested_password or _generate_router_password()
         user = User(
             name=name,
             email=email,
@@ -3930,7 +3930,7 @@ def _create_client_from_payload(payload: dict, tenant_id) -> tuple[Client, User 
     generated_password = None
 
     if payload["create_portal_access"]:
-        generated_password = payload["requested_password"] or secrets.token_urlsafe(12)
+        generated_password = payload["requested_password"] or _generate_router_password()
         user = User(
             name=payload["name"],
             email=payload["email"],
@@ -4119,7 +4119,7 @@ def _apply_bulk_update_payload(payload: dict, tenant_id) -> dict:
     user = client.user
     portal_mode = payload.get("portal_mode")
     if portal_mode == 'create':
-        generated_password = payload.get("portal_password") or secrets.token_urlsafe(12)
+        generated_password = payload.get("portal_password") or _generate_router_password()
         user = User(
             name=client.full_name or 'Cliente',
             email=payload.get("portal_email"),
@@ -4143,7 +4143,7 @@ def _apply_bulk_update_payload(payload: dict, tenant_id) -> dict:
             user.tenant_id = client.tenant_id
 
     if user is not None and payload.get("reset_portal_password"):
-        generated_password = payload.get("portal_password") or secrets.token_urlsafe(12)
+        generated_password = payload.get("portal_password") or _generate_router_password()
         user.set_password(generated_password)
         changed_fields.append("portal_password")
 
@@ -4790,7 +4790,7 @@ def admin_staff_create():
         return jsonify({"error": "Ya existe un usuario con ese email"}), 409
 
     supplied_password = (data.get('password') or '').strip()
-    temporary_password = supplied_password or secrets.token_urlsafe(10)
+    temporary_password = supplied_password or _generate_router_password()
     valid_password, password_error = _validate_password_policy(temporary_password, tenant_id)
     if not valid_password:
         return jsonify({"error": password_error}), 400
