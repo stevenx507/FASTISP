@@ -44,15 +44,21 @@ export const apiClient = {
 
     // Add timeout to prevent indefinite hanging
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000) // 5s timeout
+    const timeoutId = setTimeout(() => controller.abort(new DOMException('Request timeout after 30s', 'TimeoutError')), 30000) // 30s timeout
 
     let response: Response
     try {
       response = await fetch(buildUrl(endpoint), {
         ...options,
         headers,
-        signal: controller.signal,
+        signal: options.signal ?? controller.signal,
       })
+    } catch (fetchError) {
+      clearTimeout(timeoutId)
+      if (fetchError instanceof DOMException && (fetchError.name === 'AbortError' || fetchError.name === 'TimeoutError')) {
+        throw new ApiError('El servidor no respondió a tiempo. Verifica tu conexión o intenta de nuevo.', 0)
+      }
+      throw fetchError
     } finally {
       clearTimeout(timeoutId)
     }

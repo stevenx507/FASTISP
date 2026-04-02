@@ -20,6 +20,23 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   AcademicCapIcon,
+  HomeIcon,
+  WrenchScrewdriverIcon,
+  DocumentTextIcon,
+  CubeIcon,
+  UsersIcon,
+  ShieldCheckIcon,
+  ClipboardDocumentListIcon,
+  FireIcon,
+  SignalIcon,
+  BanknotesIcon,
+  CalendarDaysIcon,
+  PhotoIcon,
+  PresentationChartLineIcon,
+  ArrowTrendingUpIcon,
+  TicketIcon,
+  CircleStackIcon,
+  BuildingStorefrontIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../store/authStore'
 import { safeStorage } from '../lib/storage'
@@ -58,6 +75,138 @@ import InteractiveDocs from '../components/admin/InteractiveDocs'
 import { apiClient } from '../lib/apiClient'
 import { normalizeRole } from '../lib/roles'
 
+// ── Tipos ──────────────────────────────────────────────────────────────────────
+type NotificationType = 'error' | 'warning' | 'info'
+interface Notification {
+  id: string
+  message: string
+  time: string
+  read: boolean
+  type: NotificationType
+  source: string
+}
+
+// ── Grupos de navegación con colores ──────────────────────────────────────────
+interface NavItem {
+  id: string
+  name: string
+  icon: React.ElementType
+  badge?: string
+}
+interface NavGroup {
+  id: string
+  label: string
+  color: string        // color del acento (Tailwind class fragment)
+  bgColor: string      // fondo del grupo
+  items: NavItem[]
+}
+
+const ALL_NAV_GROUPS: NavGroup[] = [
+  {
+    id: 'core',
+    label: 'Principal',
+    color: 'text-cyan-300',
+    bgColor: 'from-cyan-500/20 to-blue-500/10',
+    items: [
+      { id: 'dashboard',   name: 'Dashboard',        icon: HomeIcon },
+      { id: 'clients',     name: 'Clientes',          icon: UserGroupIcon },
+      { id: 'network',     name: 'MikroTik',          icon: WifiIcon },
+      { id: 'olt',         name: 'OLT',               icon: ServerIcon },
+      { id: 'maps',        name: 'Mapa de Red',       icon: MapIcon },
+      { id: 'billing',     name: 'Facturación',       icon: CreditCardIcon },
+      { id: 'monitoring',  name: 'Monitoreo',         icon: SignalIcon },
+      { id: 'noc',         name: 'NOC',               icon: PresentationChartLineIcon },
+      { id: 'alerts',      name: 'Alertas',           icon: BellAlertIcon },
+      { id: 'tickets',     name: 'Tickets',           icon: TicketIcon },
+      { id: 'backups',     name: 'Backups',           icon: CircleStackIcon },
+      { id: 'settings',    name: 'Configuración',     icon: CogIcon },
+      { id: 'academy',     name: 'Documentación',     icon: AcademicCapIcon },
+    ],
+  },
+  {
+    id: 'clientes',
+    label: 'Gestión Clientes',
+    color: 'text-emerald-300',
+    bgColor: 'from-emerald-500/20 to-green-500/10',
+    items: [
+      { id: 'clients-search', name: 'Buscar Clientes',    icon: MagnifyingGlassIcon },
+      { id: 'installations',  name: 'Instalaciones',      icon: WrenchScrewdriverIcon },
+      { id: 'screen-alerts',  name: 'Avisos en Pantalla', icon: PhotoIcon },
+      { id: 'traffic',        name: 'Tráfico',            icon: ArrowTrendingUpIcon },
+      { id: 'stats',          name: 'Estadísticas',       icon: ChartBarIcon },
+      { id: 'push',           name: 'Push Notifications', icon: BellAlertIcon },
+      { id: 'extras',         name: 'Servicios Extra',    icon: BuildingStorefrontIcon },
+    ],
+  },
+  {
+    id: 'finanzas',
+    label: 'Finanzas',
+    color: 'text-amber-300',
+    bgColor: 'from-amber-500/20 to-orange-500/10',
+    items: [
+      { id: 'finance',           name: 'Finanzas',          icon: BanknotesIcon },
+      { id: 'billing-promises',  name: 'Promesas de Pago',  icon: CalendarDaysIcon },
+    ],
+  },
+  {
+    id: 'sistema',
+    label: 'Sistema',
+    color: 'text-violet-300',
+    bgColor: 'from-violet-500/20 to-indigo-500/10',
+    items: [
+      { id: 'system',      name: 'Sistema',     icon: CogIcon },
+      { id: 'permissions', name: 'Permisos',    icon: ShieldCheckIcon },
+      { id: 'audit',       name: 'Auditoría',   icon: ClipboardDocumentListIcon },
+    ],
+  },
+  {
+    id: 'nocx',
+    label: 'NOC Avanzado',
+    color: 'text-rose-300',
+    bgColor: 'from-rose-500/20 to-red-500/10',
+    items: [
+      { id: 'maintenance', name: 'Mantenimientos', icon: WrenchScrewdriverIcon },
+    ],
+  },
+  {
+    id: 'hotspot',
+    label: 'Hotspot',
+    color: 'text-pink-300',
+    bgColor: 'from-pink-500/20 to-fuchsia-500/10',
+    items: [
+      { id: 'hotspot', name: 'Fichas Hotspot', icon: FireIcon },
+    ],
+  },
+  {
+    id: 'soporte',
+    label: 'Soporte Técnico',
+    color: 'text-sky-300',
+    bgColor: 'from-sky-500/20 to-blue-500/10',
+    items: [
+      { id: 'support', name: 'Soporte Técnico', icon: WrenchScrewdriverIcon },
+    ],
+  },
+  {
+    id: 'almacen',
+    label: 'Almacén',
+    color: 'text-teal-300',
+    bgColor: 'from-teal-500/20 to-cyan-500/10',
+    items: [
+      { id: 'inventory', name: 'Inventario', icon: CubeIcon },
+    ],
+  },
+  {
+    id: 'staff',
+    label: 'Staff',
+    color: 'text-orange-300',
+    bgColor: 'from-orange-500/20 to-amber-500/10',
+    items: [
+      { id: 'staff', name: 'Staff', icon: UsersIcon },
+    ],
+  },
+]
+
+// ── Componente principal ───────────────────────────────────────────────────────
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate()
   const [activeView, setActiveView] = useState('dashboard')
@@ -72,16 +221,6 @@ const AdminPanel: React.FC = () => {
   })
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ core: true })
   const { logout, user, tenantContextId, setTenantContext } = useAuthStore()
-
-  type NotificationType = 'error' | 'warning' | 'info'
-  interface Notification {
-    id: string
-    message: string
-    time: string
-    read: boolean
-    type: NotificationType
-    source: string
-  }
 
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loadingNotifications, setLoadingNotifications] = useState(false)
@@ -102,7 +241,7 @@ const AdminPanel: React.FC = () => {
               message: item.message,
               time: item.time || new Date().toISOString(),
               read: Boolean(item.read),
-              type: 'info',
+              type: 'info' as NotificationType,
               source: 'feed',
             }))
           : []
@@ -114,7 +253,7 @@ const AdminPanel: React.FC = () => {
               message: `${item.title} (${item.channel})`,
               time: item.sent_at || new Date().toISOString(),
               read: true,
-              type: 'info',
+              type: 'info' as NotificationType,
               source: 'campaign',
             }))
           : []
@@ -126,17 +265,13 @@ const AdminPanel: React.FC = () => {
               message: item.message,
               time: item.since || new Date().toISOString(),
               read: false,
-              type: item.severity === 'critical' ? 'error' : item.severity === 'warning' ? 'warning' : 'info',
+              type: (item.severity === 'critical' ? 'error' : item.severity === 'warning' ? 'warning' : 'info') as NotificationType,
               source: 'network',
             }))
           : []
 
       const merged = [...networkItems, ...feedItems, ...historyItems]
-        .sort((a, b) => {
-          const aTs = new Date(a.time).getTime()
-          const bTs = new Date(b.time).getTime()
-          return bTs - aTs
-        })
+        .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
         .slice(0, 30)
 
       setNotifications((prev) => {
@@ -156,7 +291,7 @@ const AdminPanel: React.FC = () => {
     return () => clearInterval(timer)
   }, [loadNotifications])
 
-  const unreadNotificationsCount = notifications.filter(n => !n.read).length
+  const unreadCount = notifications.filter((n) => !n.read).length
   const isPlatformAdminMode = normalizeRole(user?.role) === 'platform_admin'
 
   const handleExitTenantMode = () => {
@@ -164,135 +299,142 @@ const AdminPanel: React.FC = () => {
     navigate('/platform')
   }
 
-  const menuItems = React.useMemo(() => ([
-    { id: 'dashboard', name: 'Dashboard', icon: ChartBarIcon },
-    { id: 'clients', name: 'Clientes', icon: UserGroupIcon },
-    { id: 'clients-search', name: 'Buscar Clientes', icon: MagnifyingGlassIcon },
-    { id: 'installations', name: 'Instalaciones', icon: Bars3Icon },
-    { id: 'screen-alerts', name: 'Avisos en Pantalla', icon: BellAlertIcon },
-    { id: 'traffic', name: 'Tráfico', icon: ServerIcon },
-    { id: 'stats', name: 'Estadísticas', icon: ChartBarIcon },
-    { id: 'push', name: 'Notificaciones Push', icon: BellAlertIcon },
-    { id: 'extras', name: 'Servicios Adicionales', icon: WifiIcon },
-    { id: 'finance', name: 'Finanzas', icon: CreditCardIcon },
-    { id: 'billing-promises', name: 'Promesas de Pago', icon: CreditCardIcon },
-    { id: 'system', name: 'Sistema', icon: CogIcon },
-    { id: 'permissions', name: 'Permisos', icon: CogIcon },
-    { id: 'audit', name: 'Auditoria', icon: InformationCircleIcon },
-    { id: 'maintenance', name: 'Mantenimientos NOC', icon: BellAlertIcon },
-    { id: 'hotspot', name: 'Fichas Hotspot', icon: WifiIcon },
-    { id: 'support', name: 'Soporte Técnico', icon: BellAlertIcon },
-    { id: 'inventory', name: 'Almacén', icon: ServerIcon },
-    { id: 'staff', name: 'Staff', icon: UserGroupIcon },
-    { id: 'network', name: 'Gestión MikroTik', icon: WifiIcon },
-    { id: 'olt', name: 'Gestión OLT', icon: ServerIcon },
-    { id: 'academy', name: 'Documentacion Interactiva', icon: AcademicCapIcon },
-    { id: 'maps', name: 'Mapa de Red', icon: MapIcon },
-    { id: 'billing', name: 'Facturación', icon: CreditCardIcon },
-    { id: 'monitoring', name: 'Monitoreo', icon: ServerIcon },
-    { id: 'noc', name: 'NOC', icon: ServerIcon },
-    { id: 'alerts', name: 'Alertas', icon: BellAlertIcon },
-    { id: 'tickets', name: 'Tickets', icon: BellAlertIcon },
-    { id: 'backups', name: 'Backups', icon: ServerIcon },
-    { id: 'settings', name: 'Configuración', icon: CogIcon }
-  ]), [])
-  const coreMenuIds = React.useMemo(
-    () => new Set(['dashboard','clients','network','olt','academy','maps','billing','monitoring','noc','alerts','tickets','backups','settings']),
-    []
-  )
-  const groups = React.useMemo(() => {
-    const core = { id: 'core', label: 'Principal', items: menuItems.filter(m => coreMenuIds.has(m.id)) }
-    if (!showAdvancedMenu) return [core]
-    return [
-      core,
-      { id: 'clientes', label: 'Clientes', items: menuItems.filter(m => ['clients','clients-search','installations','screen-alerts','traffic','stats','push','extras'].includes(m.id)) },
-      { id: 'finanzas', label: 'Finanzas', items: menuItems.filter(m => ['finance', 'billing-promises'].includes(m.id)) },
-      { id: 'sistema', label: 'Sistema', items: menuItems.filter(m => ['system', 'permissions', 'audit'].includes(m.id)) },
-      { id: 'nocx', label: 'NOC Avanzado', items: menuItems.filter(m => ['maintenance'].includes(m.id)) },
-      { id: 'hotspot', label: 'Fichas Hotspot', items: menuItems.filter(m => ['hotspot'].includes(m.id)) },
-      { id: 'soporte', label: 'Soporte Técnico', items: menuItems.filter(m => ['support'].includes(m.id)) },
-      { id: 'almacen', label: 'Almacén', items: menuItems.filter(m => ['inventory'].includes(m.id)) },
-      { id: 'staff', label: 'Staff', items: menuItems.filter(m => ['staff'].includes(m.id)) },
-    ]
-  }, [showAdvancedMenu, coreMenuIds, menuItems])
+  // Grupos visibles según modo avanzado
+  const visibleGroups = showAdvancedMenu ? ALL_NAV_GROUPS : ALL_NAV_GROUPS.slice(0, 1)
 
-  useEffect(() => {
-    // reset open groups when toggling advanced modules
-    setOpenGroups((prev) => ({ core: true, ...prev }))
-  }, [showAdvancedMenu])
+  // Nombre de la vista activa
+  const activeLabel = ALL_NAV_GROUPS.flatMap((g) => g.items).find((i) => i.id === activeView)?.name ?? 'Panel'
 
-  const handleMarkAsRead = (id: string) => {
+  const handleMarkAsRead = (id: string) =>
     setNotifications((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)))
-  }
-
-  const handleMarkAllAsRead = () => {
+  const handleMarkAllAsRead = () =>
     setNotifications((prev) => prev.map((item) => ({ ...item, read: true })))
-  }
+  const handleClearAll = () => setNotifications([])
 
-  const handleClearAll = () => {
-    setNotifications([])
-  }
-
-  const notificationIcons: { [key in NotificationType]: React.ElementType } = {
+  const notifIcons: Record<NotificationType, React.ElementType> = {
     error: ExclamationTriangleIcon,
     warning: InformationCircleIcon,
     info: CheckCircleIcon,
   }
-
-  const notificationIconColors: { [key in NotificationType]: string } = {
-    error: 'text-red-500',
-    warning: 'text-yellow-500',
-    info: 'text-green-500',
+  const notifColors: Record<NotificationType, string> = {
+    error: 'text-red-400',
+    warning: 'text-amber-400',
+    info: 'text-emerald-400',
   }
 
-  const NavigationItems: React.FC<{ isMobile?: boolean }> = ({ isMobile = false }) => (
-    <nav className={`mt-5 ${isMobile ? 'px-2 space-y-1' : 'flex-1 px-4 space-y-2'}`}>
-      {groups.map((group) => {
-        const isOpen = openGroups[group.id] ?? false
-        return (
-          <div key={group.id} className="border border-white/10 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setOpenGroups((prev) => ({ ...prev, [group.id]: !isOpen }))}
-              className="w-full flex items-center justify-between px-3 py-2 text-sm font-semibold text-slate-100 bg-white/5 hover:bg-white/10"
-            >
-              <span className="flex items-center gap-2">
-                <ChevronRightIcon className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
-                {group.label}
-              </span>
-              <span className="text-xs text-slate-300">{group.items.length}</span>
-            </button>
-            {isOpen && (
-              <div className="py-1">
-                {group.items.map((item) => (
-                  <a
-                    key={item.id}
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      setActiveView(item.id)
-                      if (isMobile) setSidebarOpen(false)
-                    }}
-                    className={`group flex items-center w-full rounded-md ${
-                      isMobile ? 'px-3 py-2 text-base font-medium' : 'px-4 py-2 text-sm font-medium'
-                    } ${
-                      activeView === item.id
-                        ? 'bg-white/10 text-cyan-200'
-                        : 'text-slate-200 hover:bg-white/5 hover:text-white'
-                    }`}
-                  >
-                    <item.icon className={`mr-3 h-5 w-5`} />
-                    {item.name}
-                  </a>
-                ))}
-              </div>
+  // ── Sidebar content ──────────────────────────────────────────────────────────
+  const SidebarContent: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => (
+    <div className="flex h-full flex-col">
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 shadow-lg shadow-cyan-500/30">
+          <span className="text-sm font-black text-white">IM</span>
+        </div>
+        <div>
+          <p className="text-base font-black text-white leading-tight">ISPMAX</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300">Panel Admin</p>
+        </div>
+      </div>
+
+      {/* Toggle módulos avanzados */}
+      <div className="px-4 py-3 border-b border-white/10">
+        <label className="flex cursor-pointer items-center gap-2.5 text-xs text-slate-300 hover:text-white transition-colors">
+          <div className="relative">
+            <input
+              type="checkbox"
+              checked={showAdvancedMenu}
+              onChange={(e) => {
+                const val = e.target.checked
+                setShowAdvancedMenu(val)
+                safeStorage.setItem('showAdvancedMenu', String(val))
+              }}
+              className="sr-only"
+            />
+            <div className={`h-5 w-9 rounded-full transition-colors ${showAdvancedMenu ? 'bg-cyan-500' : 'bg-slate-600'}`} />
+            <div className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${showAdvancedMenu ? 'translate-x-4' : ''}`} />
+          </div>
+          <span>Módulos avanzados</span>
+        </label>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
+        {visibleGroups.map((group) => {
+          const isOpen = openGroups[group.id] ?? false
+          return (
+            <div key={group.id} className="rounded-xl overflow-hidden border border-white/8">
+              <button
+                onClick={() => setOpenGroups((prev) => ({ ...prev, [group.id]: !isOpen }))}
+                className={`w-full flex items-center justify-between px-3 py-2.5 text-xs font-bold uppercase tracking-[0.12em] bg-gradient-to-r ${group.bgColor} hover:brightness-110 transition-all`}
+              >
+                <span className={`flex items-center gap-2 ${group.color}`}>
+                  <ChevronRightIcon className={`h-3.5 w-3.5 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+                  {group.label}
+                </span>
+                <span className={`text-[10px] rounded-full px-1.5 py-0.5 bg-white/10 ${group.color}`}>
+                  {group.items.length}
+                </span>
+              </button>
+              {isOpen && (
+                <div className="bg-slate-900/60 py-1">
+                  {group.items.map((item) => {
+                    const isActive = activeView === item.id
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setActiveView(item.id)
+                          if (mobile) setSidebarOpen(false)
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all rounded-lg mx-1 my-0.5 ${
+                          isActive
+                            ? `bg-gradient-to-r ${group.bgColor} ${group.color} shadow-sm`
+                            : 'text-slate-300 hover:text-white hover:bg-white/5'
+                        }`}
+                        style={{ width: 'calc(100% - 8px)' }}
+                      >
+                        <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? group.color : 'text-slate-400'}`} />
+                        <span className="truncate">{item.name}</span>
+                        {isActive && (
+                          <span className={`ml-auto h-1.5 w-1.5 rounded-full bg-current flex-shrink-0`} />
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </nav>
+
+      {/* User info */}
+      <div className="border-t border-white/10 px-4 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 text-sm font-bold text-white shadow">
+            {(user?.name?.[0] ?? 'A').toUpperCase()}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-white">{user?.name || 'Admin ISP'}</p>
+            <p className="truncate text-xs text-slate-400">{user?.email || 'admin@ispmax.com'}</p>
+            {isPlatformAdminMode && (
+              <p className="text-[10px] text-amber-300 font-semibold">Tenant: {tenantContextId}</p>
             )}
           </div>
-        )
-      })}
-    </nav>
+          <button
+            onClick={logout}
+            title="Cerrar sesión"
+            className="flex-shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors"
+          >
+            <ArrowLeftOnRectangleIcon className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </div>
   )
 
-  const viewComponents: { [key: string]: React.ReactNode } = {
+  // ── View components ──────────────────────────────────────────────────────────
+  const viewComponents: Record<string, React.ReactNode> = {
     dashboard: <ProfessionalDashboard />,
     clients: <ClientsManagement />,
     'clients-search': <SearchClients />,
@@ -317,7 +459,7 @@ const AdminPanel: React.FC = () => {
     academy: <InteractiveDocs onNavigateToModule={(moduleId) => setActiveView(moduleId)} />,
     maps: <NetworkMap />,
     billing: (
-      <div className="relative space-y-4">
+      <div className="space-y-4">
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => {
@@ -327,7 +469,7 @@ const AdminPanel: React.FC = () => {
               setSelectedClientId(parsed)
               setShowPlanModal(true)
             }}
-            className="px-4 py-2 rounded-lg bg-cyan-500 text-white font-semibold hover:bg-cyan-400"
+            className="px-4 py-2 rounded-xl bg-cyan-500 text-white font-semibold hover:bg-cyan-400 transition-colors shadow"
           >
             Cambiar plan
           </button>
@@ -350,195 +492,236 @@ const AdminPanel: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100">
-      {/* Sidebar for Mobile */}
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+
+      {/* ── Mobile sidebar ── */}
       <Transition.Root show={sidebarOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-40 lg:hidden" onClose={setSidebarOpen}>
-          <Transition.Child as={Fragment} enter="transition-opacity ease-linear duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="transition-opacity ease-linear duration-300" leaveFrom="opacity-100" leaveTo="opacity-0">
-            <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm" />
+        <Dialog as="div" className="relative z-50 lg:hidden" onClose={setSidebarOpen}>
+          <Transition.Child
+            as={Fragment}
+            enter="transition-opacity ease-linear duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="transition-opacity ease-linear duration-300"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" />
           </Transition.Child>
-          <div className="fixed inset-0 z-40 flex">
-            <Transition.Child as={Fragment} enter="transition ease-in-out duration-300 transform" enterFrom="-translate-x-full" enterTo="translate-x-0" leave="transition ease-in-out duration-300 transform" leaveFrom="translate-x-0" leaveTo="-translate-x-full">
-              <Dialog.Panel className="relative flex w-full max-w-xs flex-1 flex-col enterprise-sidebar pt-5 pb-4 text-slate-100">
-                <Transition.Child as={Fragment} enter="ease-in-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in-out duration-300" leaveFrom="opacity-100" leaveTo="opacity-0">
-                  <div className="absolute top-0 right-0 -mr-12 pt-2">
-                    <button 
-                      type="button" 
-                      title="Cerrar menu"
-                      className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" 
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <XMarkIcon className="h-6 w-6 text-white" />
-                    </button>
-                  </div>
-                </Transition.Child>
-                <div className="flex flex-shrink-0 items-center px-4">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center"><span className="text-white font-bold text-lg">IM</span></div>
-                  <div className="ml-3"><h1 className="text-lg font-bold text-slate-100">ISPMAX</h1><p className="text-xs text-slate-300">Panel Admin</p></div>
+          <div className="fixed inset-0 z-50 flex">
+            <Transition.Child
+              as={Fragment}
+              enter="transition ease-in-out duration-300 transform"
+              enterFrom="-translate-x-full"
+              enterTo="translate-x-0"
+              leave="transition ease-in-out duration-300 transform"
+              leaveFrom="translate-x-0"
+              leaveTo="-translate-x-full"
+            >
+              <Dialog.Panel className="relative flex w-72 flex-col bg-slate-900 border-r border-white/10 shadow-2xl">
+                <div className="absolute top-3 right-3">
+                  <button
+                    onClick={() => setSidebarOpen(false)}
+                    className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
                 </div>
-                <div className="mt-5 h-0 flex-1 overflow-y-auto">
-                  <NavigationItems isMobile />
-                </div>
+                <SidebarContent mobile />
               </Dialog.Panel>
             </Transition.Child>
-            <div className="w-14 flex-shrink-0" />
           </div>
         </Dialog>
       </Transition.Root>
 
-      {/* Static sidebar for desktop */}
-      <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 pointer-events-auto z-30">
-          <div className="flex flex-grow flex-col overflow-y-auto enterprise-sidebar">
-          <div className="flex flex-col flex-shrink-0 pt-5 pb-4">
-            <div className="flex items-center flex-shrink-0 px-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center"><span className="text-white font-bold text-lg">IM</span></div>
-              <div className="ml-3"><h1 className="text-lg font-bold text-slate-100">ISPMAX</h1><p className="text-xs text-slate-300">Panel Admin</p></div>
-            </div>
-            <div className="mt-3 px-4">
-              <label className="flex items-center gap-2 text-xs text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={showAdvancedMenu}
-                  onChange={(e) => {
-                    const val = e.target.checked
-                    setShowAdvancedMenu(val)
-                    safeStorage.setItem('showAdvancedMenu', String(val))
-                  }}
-                  className="rounded border-slate-500 bg-slate-800 text-blue-500 focus:ring-blue-500"
-                />
-                Mostrar módulos avanzados
-              </label>
-            </div>
-            <NavigationItems />
-          </div>
-          <div className="flex-shrink-0 flex border-t border-white/10 p-4">
-            <div className="flex items-center w-full">
-              <div className="ml-3">
-                <p className="text-sm font-medium text-slate-100">{user?.name || 'Admin ISP'}</p>
-                <p className="text-xs text-slate-300">{user?.email || 'admin@ispmax.com'}</p>
-                {isPlatformAdminMode && (
-                  <p className="text-[10px] text-amber-200">Tenant: {tenantContextId ?? 'no seleccionado'}</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* ── Desktop sidebar ── */}
+      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col z-30 border-r border-white/10 bg-slate-900 shadow-xl">
+        <SidebarContent />
       </div>
 
-      {/* Main content */}
-      <div className="lg:pl-64 flex flex-col enterprise-main relative z-10">
+      {/* ── Main content ── */}
+      <div className="lg:pl-64 flex flex-col min-h-screen">
+
+        {/* Platform admin banner */}
         {isPlatformAdminMode && (
-          <div className="mx-4 mt-4 rounded-lg border border-amber-300/30 bg-amber-500/15 px-4 py-2 text-xs text-amber-100">
-            Modo Admin ISP por tenant. Tenant activo: {tenantContextId ?? 'no seleccionado'}.
-            <button onClick={handleExitTenantMode} className="ml-2 font-semibold underline">
-              Volver a Admin Total
+          <div className="mx-4 mt-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-100 flex items-center justify-between">
+            <span>
+              <span className="font-bold text-amber-300">Modo Admin ISP</span> — Tenant activo:{' '}
+              <span className="font-mono font-bold">{tenantContextId}</span>
+            </span>
+            <button
+              onClick={handleExitTenantMode}
+              className="ml-4 rounded-lg border border-amber-400/40 bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-100 hover:bg-amber-500/30 transition-colors"
+            >
+              ← Volver a Admin Total
             </button>
           </div>
         )}
-        {/* Top navbar */}
-        <div className="sticky top-0 z-10 flex-shrink-0 flex h-16 enterprise-header border-b border-white/10">
-          <button
-            type="button"
-            className="px-4 border-r border-gray-200 text-gray-500 lg:hidden"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <span className="sr-only">Abrir menu</span>
-            <Bars3Icon className="h-6 w-6" />
-          </button>
-          <div className="flex-1 px-4 flex justify-between">
-            <div className="flex-1 flex">
-              <h2 className="text-lg font-semibold text-slate-100 my-auto">
-                {menuItems.find(item => item.id === activeView)?.name}
-              </h2>
-            </div>
-            <div className="ml-4 flex items-center md:ml-6">
-              {/* Notifications Dropdown */}
-              <Menu as="div" className="relative">
-                <Menu.Button className="relative p-2 text-slate-200 hover:text-white hover:bg-white/10 rounded-lg">
-                  <span className="sr-only">Ver notificaciones</span>
-                  <BellAlertIcon className="h-6 w-6" />
-                  {unreadNotificationsCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                      {unreadNotificationsCount}
-                    </span>
-                  )}
-                </Menu.Button>
-                <Transition as={Fragment} enter="transition ease-out duration-100" enterFrom="transform opacity-0 scale-95" enterTo="transform opacity-100 scale-100" leave="transition ease-in duration-75" leaveFrom="transform opacity-100 scale-100" leaveTo="transform opacity-0 scale-95">
-                  <Menu.Items className="absolute right-0 z-10 mt-2 w-96 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                    <div className="px-4 py-3 border-b flex justify-between items-center">
-                      <p className="text-sm font-semibold">Alertas y Notificaciones</p>
-                      <div className="flex items-center space-x-2">
-                        <button onClick={loadNotifications} className="text-xs text-gray-600 hover:underline disabled:text-gray-400" disabled={loadingNotifications}>
-                          {loadingNotifications ? 'Actualizando...' : 'Refrescar'}
-                        </button>
-                        <button onClick={handleMarkAllAsRead} className="text-xs text-blue-600 hover:underline disabled:text-gray-400" disabled={unreadNotificationsCount === 0}>Marcar todas leidas</button>
-                        <button onClick={handleClearAll} className="text-xs text-gray-500 hover:underline disabled:text-gray-400" disabled={notifications.length === 0}>Limpiar</button>
-                      </div>
-                    </div>
-                    <div className="py-1 max-h-80 overflow-y-auto">
-                    {notifications.length > 0 ? notifications.map(n => {
-                      const Icon = notificationIcons[n.type]
-                      return (
-                        <Menu.Item key={n.id}>
-                          {({ active }) => (
-                            <a href="#" onClick={(e) => { e.preventDefault(); handleMarkAsRead(n.id); }} className={`${active ? 'bg-gray-50' : ''} flex items-start px-4 py-3 text-sm text-gray-800`}>
-                              {!n.read && <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 mr-3 flex-shrink-0"></div>}
-                              <Icon className={`w-5 h-5 ${notificationIconColors[n.type]} mr-3 flex-shrink-0 mt-0.5 ${n.read ? 'ml-5' : ''}`} />
-                              <div className="flex-1">
-                                <p className={`font-medium ${!n.read ? 'text-gray-800' : 'text-gray-600'}`}>{n.message}</p>
-                                <p className="text-xs text-gray-500 mt-1">{n.time.replace('T', ' ').slice(0, 16)} | {n.source}</p>
-                              </div>
-                            </a>
-                          )}
-                        </Menu.Item>
-                      );
-                    }) : (
-                      <div className="text-center text-sm text-gray-500 py-6">No hay notificaciones</div>
-                    )}
-                    </div>
-                  </Menu.Items>
-                </Transition>
-              </Menu>
 
-              {/* Profile Dropdown */}
-              <Menu as="div" className="relative ml-3">
-                <Menu.Button className="flex items-center rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center"><span className="text-white font-bold">A</span></div>
-                </Menu.Button>
-                <Transition as={Fragment} enter="transition ease-out duration-100" enterFrom="transform opacity-0 scale-95" enterTo="transform opacity-100 scale-100" leave="transition ease-in duration-75" leaveFrom="transform opacity-100 scale-100" leaveTo="transform opacity-0 scale-95">
-                  <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                    {isPlatformAdminMode && (
-                      <Menu.Item>
-                        {({ active }) => (
-                          <button onClick={handleExitTenantMode} className={`${active ? 'bg-gray-100' : ''} group flex w-full items-center px-4 py-2 text-sm text-slate-700`}>
-                            <ArrowLeftOnRectangleIcon className="mr-2 h-5 w-5 text-slate-500" />Volver a Admin Total
-                          </button>
-                        )}
-                      </Menu.Item>
+        {/* ── Top navbar ── */}
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-white/10 bg-slate-900/80 backdrop-blur-md px-4 shadow-sm">
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <Bars3Icon className="h-5 w-5" />
+          </button>
+
+          {/* Breadcrumb / title */}
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <span className="text-xs text-slate-500 hidden sm:block">ISPMAX</span>
+            <ChevronRightIcon className="h-3 w-3 text-slate-600 hidden sm:block" />
+            <h2 className="text-sm font-bold text-white truncate">{activeLabel}</h2>
+          </div>
+
+          {/* Right actions */}
+          <div className="flex items-center gap-2">
+
+            {/* Notifications */}
+            <Menu as="div" className="relative">
+              <Menu.Button className="relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-colors">
+                <BellAlertIcon className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Menu.Button>
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <Menu.Items className="absolute right-0 z-30 mt-2 w-96 origin-top-right rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl focus:outline-none overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
+                    <p className="text-sm font-bold text-white">Notificaciones</p>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={loadNotifications}
+                        disabled={loadingNotifications}
+                        className="text-xs text-slate-400 hover:text-white disabled:opacity-50 transition-colors"
+                      >
+                        {loadingNotifications ? 'Actualizando...' : 'Refrescar'}
+                      </button>
+                      <button
+                        onClick={handleMarkAllAsRead}
+                        disabled={unreadCount === 0}
+                        className="text-xs text-cyan-400 hover:text-cyan-300 disabled:opacity-40 transition-colors"
+                      >
+                        Leer todas
+                      </button>
+                      <button
+                        onClick={handleClearAll}
+                        disabled={notifications.length === 0}
+                        className="text-xs text-slate-500 hover:text-slate-300 disabled:opacity-40 transition-colors"
+                      >
+                        Limpiar
+                      </button>
+                    </div>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-800">
+                    {notifications.length > 0 ? (
+                      notifications.map((n) => {
+                        const Icon = notifIcons[n.type]
+                        return (
+                          <Menu.Item key={n.id}>
+                            {({ active }) => (
+                              <button
+                                onClick={() => handleMarkAsRead(n.id)}
+                                className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors ${active ? 'bg-white/5' : ''}`}
+                              >
+                                {!n.read && (
+                                  <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-cyan-400" />
+                                )}
+                                <Icon className={`mt-0.5 h-4 w-4 flex-shrink-0 ${notifColors[n.type]} ${n.read ? 'ml-4' : ''}`} />
+                                <div className="min-w-0 flex-1">
+                                  <p className={`text-xs leading-snug ${n.read ? 'text-slate-400' : 'text-slate-100 font-medium'}`}>
+                                    {n.message}
+                                  </p>
+                                  <p className="mt-0.5 text-[10px] text-slate-500">
+                                    {n.time.replace('T', ' ').slice(0, 16)} · {n.source}
+                                  </p>
+                                </div>
+                              </button>
+                            )}
+                          </Menu.Item>
+                        )
+                      })
+                    ) : (
+                      <div className="py-10 text-center text-sm text-slate-500">Sin notificaciones</div>
                     )}
+                  </div>
+                </Menu.Items>
+              </Transition>
+            </Menu>
+
+            {/* Profile */}
+            <Menu as="div" className="relative">
+              <Menu.Button className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 text-sm font-bold text-white shadow hover:brightness-110 transition-all">
+                {(user?.name?.[0] ?? 'A').toUpperCase()}
+              </Menu.Button>
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <Menu.Items className="absolute right-0 z-30 mt-2 w-52 origin-top-right rounded-2xl border border-slate-700 bg-slate-900 py-1 shadow-2xl focus:outline-none overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-700">
+                    <p className="text-sm font-semibold text-white truncate">{user?.name || 'Admin ISP'}</p>
+                    <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+                  </div>
+                  {isPlatformAdminMode && (
                     <Menu.Item>
                       {({ active }) => (
-                        <button onClick={logout} className={`${active ? 'bg-white/10' : ''} group flex w-full items-center px-4 py-2 text-sm text-red-300`}>
-                          <ArrowLeftOnRectangleIcon className="mr-2 h-5 w-5 text-red-500" />Cerrar Sesion
+                        <button
+                          onClick={handleExitTenantMode}
+                          className={`flex w-full items-center gap-2 px-4 py-2.5 text-sm text-amber-300 transition-colors ${active ? 'bg-white/5' : ''}`}
+                        >
+                          <ArrowLeftOnRectangleIcon className="h-4 w-4" />
+                          Volver a Admin Total
                         </button>
                       )}
                     </Menu.Item>
-                  </Menu.Items>
-                </Transition>
-              </Menu>
-            </div>
+                  )}
+                  <Menu.Item>
+                    {({ active }) => (
+                      <button
+                        onClick={logout}
+                        className={`flex w-full items-center gap-2 px-4 py-2.5 text-sm text-rose-400 transition-colors ${active ? 'bg-white/5' : ''}`}
+                      >
+                        <ArrowLeftOnRectangleIcon className="h-4 w-4" />
+                        Cerrar sesión
+                      </button>
+                    )}
+                  </Menu.Item>
+                </Menu.Items>
+              </Transition>
+            </Menu>
           </div>
-        </div>
+        </header>
 
-        {/* Main content area */}
-        <main className="flex-1 text-slate-900">
-          <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              {viewComponents[activeView] || <div>Vista no encontrada</div>}
-            </div>
+        {/* ── Main area ── */}
+        <main className="flex-1 bg-slate-950">
+          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            {viewComponents[activeView] ?? (
+              <div className="flex items-center justify-center py-20 text-slate-500">
+                Vista no encontrada
+              </div>
+            )}
           </div>
         </main>
       </div>
+
+      {/* ── Modals ── */}
       <PlanChangeModal
         clientId={selectedClientId || 0}
         open={showPlanModal}
@@ -556,17 +739,3 @@ const AdminPanel: React.FC = () => {
 }
 
 export default AdminPanel
-
-
-
-
-
-
-
-
-
-
-
-
-
-
