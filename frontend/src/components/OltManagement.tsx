@@ -211,6 +211,12 @@ const formatRunMode = (value?: string | null) => {
   return 'simulate'
 }
 
+const panelBaseClass = 'rounded-2xl border border-white/10 bg-slate-900/70 p-4 shadow-sm shadow-black/10'
+const inputClass = 'rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 outline-none transition'
+const buttonPrimaryClass = 'rounded-lg px-3 py-2 text-sm font-semibold transition duration-150 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/25'
+const buttonSecondaryClass = 'rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-100 transition duration-150 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500/10'
+const buttonDangerClass = 'rounded-lg border border-rose-400/40 bg-rose-500/20 px-3 py-2 text-sm text-rose-200 transition duration-150 hover:bg-rose-500/30 focus:outline-none focus:ring-2 focus:ring-rose-500/15'
+
 const intentLabel = (value: OltActionIntent) => {
   if (value === 'authorize') return 'Autorizar'
   if (value === 'suspend') return 'Suspender'
@@ -1056,7 +1062,7 @@ const OltManagement: React.FC = () => {
           <select
             value={deviceForm.vendor}
             onChange={(e) => setDeviceForm((prev) => ({ ...prev, vendor: e.target.value }))}
-            className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+            className={inputClass}
           >
             {vendors.map((vendor) => (
               <option key={vendor.id} value={vendor.id}>
@@ -1068,18 +1074,18 @@ const OltManagement: React.FC = () => {
             value={deviceForm.name}
             onChange={(e) => setDeviceForm((prev) => ({ ...prev, name: e.target.value }))}
             placeholder="Nombre OLT"
-            className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+            className={inputClass}
           />
           <input
             value={deviceForm.host}
             onChange={(e) => setDeviceForm((prev) => ({ ...prev, host: e.target.value }))}
             placeholder="Host/IP"
-            className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+            className={inputClass}
           />
           <select
             value={deviceForm.transport}
             onChange={(e) => setDeviceForm((prev) => ({ ...prev, transport: e.target.value }))}
-            className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+            className={inputClass}
           >
             <option value="ssh">ssh</option>
             <option value="telnet">telnet</option>
@@ -1089,12 +1095,12 @@ const OltManagement: React.FC = () => {
               value={deviceForm.port}
               onChange={(e) => setDeviceForm((prev) => ({ ...prev, port: e.target.value }))}
               placeholder="Puerto"
-              className="w-24 rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+              className={`w-24 ${inputClass}`}
             />
             <button
               onClick={createDevice}
               disabled={savingDevice}
-              className="rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-900 disabled:opacity-60"
+              className={`${buttonPrimaryClass} bg-cyan-500 text-slate-900 disabled:opacity-60`}
             >
               {savingDevice ? 'Guardando...' : 'Agregar'}
             </button>
@@ -1105,33 +1111,33 @@ const OltManagement: React.FC = () => {
             value={deviceForm.username}
             onChange={(e) => setDeviceForm((prev) => ({ ...prev, username: e.target.value }))}
             placeholder="Usuario"
-            className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+            className={inputClass}
           />
           <input
             value={deviceForm.model}
             onChange={(e) => setDeviceForm((prev) => ({ ...prev, model: e.target.value }))}
             placeholder="Modelo"
-            className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+            className={inputClass}
           />
           <input
             value={deviceForm.site}
             onChange={(e) => setDeviceForm((prev) => ({ ...prev, site: e.target.value }))}
             placeholder="Sitio"
-            className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+            className={inputClass}
           />
           <input
             type="password"
             value={deviceForm.password}
             onChange={(e) => setDeviceForm((prev) => ({ ...prev, password: e.target.value }))}
             placeholder="Password (opcional)"
-            className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+            className={inputClass}
           />
           <input
             type="password"
             value={deviceForm.enable_password}
             onChange={(e) => setDeviceForm((prev) => ({ ...prev, enable_password: e.target.value }))}
             placeholder="Enable pass (opcional)"
-            className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+            className={inputClass}
           />
         </div>
       </div>
@@ -1142,7 +1148,7 @@ const OltManagement: React.FC = () => {
           <select
             value={selectedVendor}
             onChange={(e) => setSelectedVendor(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+            className={`mt-1 w-full ${inputClass}`}
           >
             {!vendors.length && <option value="">Sin vendors</option>}
             {vendors.map((v) => (
@@ -1158,7 +1164,7 @@ const OltManagement: React.FC = () => {
           <select
             value={selectedDeviceId}
             onChange={(e) => setSelectedDeviceId(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+            className={`mt-1 w-full ${inputClass}`}
           >
             {!filteredDevices.length && <option value="">Sin OLTs</option>}
             {filteredDevices.map((d) => (
@@ -1197,7 +1203,7 @@ const OltManagement: React.FC = () => {
           <select
             value={runMode}
             onChange={(e) => setRunMode(e.target.value as RunMode)}
-            className="mt-1 w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+            className={`mt-1 w-full ${inputClass}`}
           >
             <option value="simulate">simulate</option>
             <option value="dry-run">dry-run</option>
@@ -1217,7 +1223,7 @@ const OltManagement: React.FC = () => {
                 value={changeTicket}
                 onChange={(e) => setChangeTicket(e.target.value)}
                 placeholder="Ticket de cambio (ej. CHG-2026-001)"
-                className="mt-2 w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+                className={`mt-2 w-full ${inputClass}`}
               />
               <label className="mt-2 flex items-center gap-2 text-xs text-slate-300">
                 <input
@@ -1235,21 +1241,21 @@ const OltManagement: React.FC = () => {
           <button
             onClick={loadCatalog}
             disabled={loadingCatalog || busy}
-            className="w-full rounded-lg bg-cyan-500 px-3 py-2 font-semibold text-slate-900 disabled:opacity-60"
+            className={`${buttonPrimaryClass} bg-cyan-500 text-slate-900 disabled:opacity-60 w-full`}
           >
             {loadingCatalog ? 'Cargando...' : 'Recargar catalogo'}
           </button>
           <button
             onClick={loadAudit}
             disabled={busy}
-            className="w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-slate-100 disabled:opacity-60"
+            className={`${buttonSecondaryClass} disabled:opacity-60 w-full`}
           >
             Recargar auditoria
           </button>
           <button
             onClick={removeCustomDevice}
             disabled={busy || !selectedDevice || selectedDevice.origin !== 'custom'}
-            className="w-full rounded-lg border border-rose-400/40 bg-rose-500/20 px-3 py-2 text-rose-200 disabled:opacity-50"
+            className={`${buttonDangerClass} disabled:opacity-50 w-full`}
           >
             Eliminar OLT custom
           </button>
@@ -1260,16 +1266,16 @@ const OltManagement: React.FC = () => {
         <div className="space-y-4 rounded-xl border border-white/10 bg-slate-900/70 p-5">
           <h3 className="text-lg font-semibold text-white">Operaciones ONU</h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="Serial ONU" className="col-span-2 rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100" />
-            <input value={frame} onChange={(e) => setFrame(e.target.value)} placeholder="Frame" className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100" />
-            <input value={slot} onChange={(e) => setSlot(e.target.value)} placeholder="Slot" className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100" />
-            <input value={pon} onChange={(e) => setPon(e.target.value)} placeholder="PON" className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100" />
-            <input value={onu} onChange={(e) => setOnu(e.target.value)} placeholder="ONU ID" className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100" />
-            <input value={vlan} onChange={(e) => setVlan(e.target.value)} placeholder="VLAN" className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100" />
+            <input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="Serial ONU" className={`col-span-2 ${inputClass}`} />
+            <input value={frame} onChange={(e) => setFrame(e.target.value)} placeholder="Frame" className={inputClass} />
+            <input value={slot} onChange={(e) => setSlot(e.target.value)} placeholder="Slot" className={inputClass} />
+            <input value={pon} onChange={(e) => setPon(e.target.value)} placeholder="PON" className={inputClass} />
+            <input value={onu} onChange={(e) => setOnu(e.target.value)} placeholder="ONU ID" className={inputClass} />
+            <input value={vlan} onChange={(e) => setVlan(e.target.value)} placeholder="VLAN" className={inputClass} />
             <select
               value={selectedTemplateId}
               onChange={(e) => setSelectedTemplateId(e.target.value)}
-              className="col-span-2 rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+              className={`col-span-2 ${inputClass}`}
             >
               <option value="">Template de servicio (opcional)</option>
               {templateOptions.map((template) => (
@@ -1278,8 +1284,8 @@ const OltManagement: React.FC = () => {
                 </option>
               ))}
             </select>
-            <input value={lineProfile} onChange={(e) => setLineProfile(e.target.value)} placeholder="Line profile" className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100" />
-            <input value={srvProfile} onChange={(e) => setSrvProfile(e.target.value)} placeholder="Srv profile" className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100" />
+            <input value={lineProfile} onChange={(e) => setLineProfile(e.target.value)} placeholder="Line profile" className={inputClass} />
+            <input value={srvProfile} onChange={(e) => setSrvProfile(e.target.value)} placeholder="Srv profile" className={inputClass} />
           </div>
 
           <div className="rounded-lg border border-white/10 bg-slate-800/60 p-3">
@@ -1339,15 +1345,15 @@ const OltManagement: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-            <button onClick={discoverOnu} disabled={busy} className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100 disabled:opacity-60">Autofind</button>
-            <button onClick={checkOpticalPower} disabled={busy} className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100 disabled:opacity-60">Potencia</button>
-            <button onClick={runTr064Probe} disabled={busy} className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100 disabled:opacity-60">TR-064</button>
-            <button onClick={refreshSnapshot} disabled={busy} className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100 disabled:opacity-60">Snapshot</button>
-            <button onClick={testConnection} disabled={busy} className="rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-900 disabled:opacity-60">Test conexion</button>
-            <button onClick={() => runOnuAction('authorize')} disabled={busy} className="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-slate-900 disabled:opacity-60">Autorizar</button>
-            <button onClick={() => runOnuAction('suspend')} disabled={busy} className="rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-slate-900 disabled:opacity-60">Suspender</button>
-            <button onClick={() => runOnuAction('activate')} disabled={busy} className="rounded-lg bg-green-500 px-3 py-2 text-sm font-semibold text-slate-900 disabled:opacity-60">Activar</button>
-            <button onClick={() => runOnuAction('reboot')} disabled={busy} className="rounded-lg bg-rose-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">Reiniciar ONU</button>
+            <button onClick={discoverOnu} disabled={busy} className={`${buttonSecondaryClass} disabled:opacity-60`}>Autofind</button>
+            <button onClick={checkOpticalPower} disabled={busy} className={`${buttonSecondaryClass} disabled:opacity-60`}>Potencia</button>
+            <button onClick={runTr064Probe} disabled={busy} className={`${buttonSecondaryClass} disabled:opacity-60`}>TR-064</button>
+            <button onClick={refreshSnapshot} disabled={busy} className={`${buttonSecondaryClass} disabled:opacity-60`}>Snapshot</button>
+            <button onClick={testConnection} disabled={busy} className={`${buttonPrimaryClass} bg-cyan-500 text-slate-900 disabled:opacity-60`}>Test conexion</button>
+            <button onClick={() => runOnuAction('authorize')} disabled={busy} className={`${buttonPrimaryClass} bg-emerald-500 text-slate-900 disabled:opacity-60`}>Autorizar</button>
+            <button onClick={() => runOnuAction('suspend')} disabled={busy} className={`${buttonPrimaryClass} bg-amber-500 text-slate-900 disabled:opacity-60`}>Suspender</button>
+            <button onClick={() => runOnuAction('activate')} disabled={busy} className={`${buttonPrimaryClass} bg-emerald-500 text-slate-900 disabled:opacity-60`}>Activar</button>
+            <button onClick={() => runOnuAction('reboot')} disabled={busy} className={`${buttonDangerClass} disabled:opacity-60`}>Reiniciar ONU</button>
           </div>
 
           {liveModeBlocked && (
@@ -1362,7 +1368,7 @@ const OltManagement: React.FC = () => {
           <select
             value={customAction}
             onChange={(e) => setCustomAction(e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+            className={`w-full ${inputClass}`}
           >
             {(selectedVendorData?.actions || ['show_pon_summary']).map((action) => (
               <option key={action} value={action}>{action}</option>
@@ -1375,10 +1381,10 @@ const OltManagement: React.FC = () => {
             className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-xs font-mono text-slate-100"
           />
           <div className="grid grid-cols-2 gap-2">
-            <button onClick={runCustomScript} disabled={busy} className="rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-900 disabled:opacity-60">
+            <button onClick={runCustomScript} disabled={busy} className={`${buttonPrimaryClass} bg-cyan-500 text-slate-900 disabled:opacity-60`}>
               Generar + Ejecutar
             </button>
-            <button onClick={generateQuickScript} disabled={busy} className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100 disabled:opacity-60">
+            <button onClick={generateQuickScript} disabled={busy} className={`${buttonSecondaryClass} disabled:opacity-60`}>
               Quick script
             </button>
           </div>
@@ -1435,15 +1441,15 @@ const OltManagement: React.FC = () => {
             <div className="space-y-2 text-xs">
               <div className="flex items-center justify-between gap-2">
                 <code className="truncate text-slate-100">{remoteOptions?.options?.direct_login || '-'}</code>
-                <button onClick={() => copyOption('login directo', remoteOptions?.options?.direct_login)} className="rounded bg-slate-700 px-2 py-1 text-[10px] text-slate-100">Copiar</button>
+                <button onClick={() => copyOption('login directo', remoteOptions?.options?.direct_login)} className={`${buttonSecondaryClass} px-2 py-1 text-[10px]`}>Copiar</button>
               </div>
               <div className="flex items-center justify-between gap-2">
                 <code className="truncate text-slate-100">{remoteOptions?.options?.jump_host_ssh || '-'}</code>
-                <button onClick={() => copyOption('jump host', remoteOptions?.options?.jump_host_ssh)} className="rounded bg-slate-700 px-2 py-1 text-[10px] text-slate-100">Copiar</button>
+                <button onClick={() => copyOption('jump host', remoteOptions?.options?.jump_host_ssh)} className={`${buttonSecondaryClass} px-2 py-1 text-[10px]`}>Copiar</button>
               </div>
               <div className="flex items-center justify-between gap-2">
                 <code className="truncate text-slate-100">{remoteOptions?.options?.reverse_tunnel_template || '-'}</code>
-                <button onClick={() => copyOption('reverse tunnel', remoteOptions?.options?.reverse_tunnel_template)} className="rounded bg-slate-700 px-2 py-1 text-[10px] text-slate-100">Copiar</button>
+                <button onClick={() => copyOption('reverse tunnel', remoteOptions?.options?.reverse_tunnel_template)} className={`${buttonSecondaryClass} px-2 py-1 text-[10px]`}>Copiar</button>
               </div>
             </div>
             {(remoteOptions?.readiness?.checks || []).length > 0 && (
@@ -1489,7 +1495,7 @@ const OltManagement: React.FC = () => {
                 </button>
                 <button
                   onClick={() => openExternal(remoteOptions?.grafana?.dashboard_url || '')}
-                  className="rounded bg-cyan-500 px-2 py-1 text-[10px] font-semibold text-slate-900"
+                  className={`${buttonPrimaryClass} px-2 py-1 text-[10px] bg-cyan-500 text-slate-900`}
                 >
                   Abrir Grafana
                 </button>

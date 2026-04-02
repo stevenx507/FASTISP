@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { apiClient } from '../../lib/apiClient'
@@ -55,7 +55,7 @@ const AuditTrail: React.FC = () => {
   const [entityFilter, setEntityFilter] = useState('')
   const [userIdFilter, setUserIdFilter] = useState('')
 
-  const load = async (nextOffset = offset) => {
+  const load = useCallback(async (nextOffset = offset) => {
     setLoading(true)
     try {
       const params = new URLSearchParams({
@@ -79,11 +79,11 @@ const AuditTrail: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [actionFilter, entityFilter, userIdFilter, offset])
 
   useEffect(() => {
     load(0)
-  }, [])
+  }, [load])
 
   const hasPrev = offset > 0
   const hasNext = offset + LIMIT < total

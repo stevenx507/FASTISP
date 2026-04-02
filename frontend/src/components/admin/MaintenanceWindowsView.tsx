@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { apiClient } from '../../lib/apiClient'
@@ -34,7 +34,7 @@ const MaintenanceWindowsView: React.FC = () => {
   const [note, setNote] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'scheduled' | 'active' | 'finished'>('all')
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       const query = statusFilter === 'all' ? '' : `?status=${statusFilter}`
@@ -46,11 +46,11 @@ const MaintenanceWindowsView: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [statusFilter])
 
   useEffect(() => {
     load()
-  }, [statusFilter])
+  }, [load])
 
   const createWindow = async (event: React.FormEvent) => {
     event.preventDefault()

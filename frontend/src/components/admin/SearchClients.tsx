@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline"
 import { apiClient } from "../../lib/apiClient"
 
@@ -151,7 +151,7 @@ const SearchClients: React.FC = () => {
   const [updateResults, setUpdateResults] = useState<ImportResultRow[]>([])
   const [updateSummary, setUpdateSummary] = useState<ImportSummary | null>(null)
 
-  const loadRows = async () => {
+  const loadRows = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -162,11 +162,11 @@ const SearchClients: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [statusFilter])
 
   useEffect(() => {
     loadRows()
-  }, [statusFilter])
+  }, [loadRows])
 
   const filtered = useMemo(
     () =>

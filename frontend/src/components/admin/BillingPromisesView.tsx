@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { apiClient } from '../../lib/apiClient'
@@ -23,7 +23,7 @@ const BillingPromisesView: React.FC = () => {
   const [notes, setNotes] = useState('')
   const [filter, setFilter] = useState<'all' | 'pending' | 'kept' | 'broken' | 'cancelled'>('all')
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       const query = filter === 'all' ? '' : `?status=${filter}`
@@ -35,11 +35,11 @@ const BillingPromisesView: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filter])
 
   useEffect(() => {
     load()
-  }, [filter])
+  }, [load])
 
   const createPromise = async (event: React.FormEvent) => {
     event.preventDefault()

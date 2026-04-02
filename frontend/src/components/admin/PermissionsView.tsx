@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { apiClient } from '../../lib/apiClient'
@@ -29,7 +29,7 @@ const PermissionsView: React.FC = () => {
   const [formPermission, setFormPermission] = useState('')
   const [formAllowed, setFormAllowed] = useState(true)
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       const response = await apiClient.get('/admin/permissions') as {
@@ -50,11 +50,11 @@ const PermissionsView: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [formPermission])
 
   useEffect(() => {
     load()
-  }, [])
+  }, [load])
 
   const saveOverride = async (event: React.FormEvent) => {
     event.preventDefault()

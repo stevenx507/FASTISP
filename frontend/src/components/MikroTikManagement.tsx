@@ -508,7 +508,7 @@ const decodeWireGuardQrFromImage = async (file: File): Promise<string> => {
     return payload
   } finally {
     if (typeof (bitmap as ImageBitmap).close === 'function') {
-      ;(bitmap as ImageBitmap).close()
+      (bitmap as ImageBitmap).close()
     }
   }
 }
