@@ -754,3 +754,455 @@ class NocMaintenanceWindow(db.Model):
             "created_by": self.created_by,
             "created_at": _iso_datetime(self.created_at),
         }
+
+
+# Gestión de Almacén - Modelos para productos, categorías, proveedores y movimientos de inventario
+
+class ProductCategory(db.Model):
+    __tablename__ = 'product_categories'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
+
+    tenant = db.relationship('Tenant', back_populates='product_categories')
+    products = db.relationship('Product', back_populates='category')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'tenant_id': self.tenant_id,
+        }
+
+
+class Supplier(db.Model):
+    __tablename__ = 'suppliers'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    contact_email = db.Column(db.String(120), nullable=True)
+    contact_phone = db.Column(db.String(20), nullable=True)
+    address = db.Column(db.Text, nullable=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
+
+    tenant = db.relationship('Tenant', back_populates='suppliers')
+    products = db.relationship('Product', back_populates='supplier')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'contact_email': self.contact_email,
+            'contact_phone': self.contact_phone,
+            'address': self.address,
+            'tenant_id': self.tenant_id,
+        }
+
+
+class Product(db.Model):
+    __tablename__ = 'products'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    sku = db.Column(db.String(50), unique=True, nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('product_categories.id'), nullable=True)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=True)
+    unit_cost = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    unit_price = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    stock_quantity = db.Column(db.Integer, nullable=False, default=0)
+    min_stock_level = db.Column(db.Integer, nullable=False, default=0)
+    max_stock_level = db.Column(db.Integer, nullable=True)
+    location = db.Column(db.String(120), nullable=True)  # Ubicación en almacén
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
+
+    tenant = db.relationship('Tenant', back_populates='products')
+    category = db.relationship('ProductCategory', back_populates='products')
+    supplier = db.relationship('Supplier', back_populates='products')
+    inventory_movements = db.relationship('InventoryMovement', back_populates='product')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'sku': self.sku,
+            'category_id': self.category_id,
+            'supplier_id': self.supplier_id,
+            'unit_cost': float(self.unit_cost or 0),
+            'unit_price': float(self.unit_price or 0),
+            'stock_quantity': self.stock_quantity,
+            'min_stock_level': self.min_stock_level,
+            'max_stock_level': self.max_stock_level,
+            'location': self.location,
+            'tenant_id': self.tenant_id,
+        }
+
+
+class InventoryMovement(db.Model):
+    __tablename__ = 'inventory_movements'
+
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    movement_type = db.Column(db.String(20), nullable=False)  # 'in', 'out', 'adjustment'
+    quantity = db.Column(db.Integer, nullable=False)
+    reason = db.Column(db.String(120), nullable=True)
+    reference = db.Column(db.String(120), nullable=True)  # Número de orden, factura, etc.
+    unit_cost = db.Column(db.Numeric(10, 2), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    product = db.relationship('Product', back_populates='inventory_movements')
+    user = db.relationship('User')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'movement_type': self.movement_type,
+            'quantity': self.quantity,
+            'reason': self.reason,
+            'reference': self.reference,
+            'unit_cost': float(self.unit_cost or 0),
+            'notes': self.notes,
+            'created_by': self.created_by,
+            'tenant_id': self.tenant_id,
+            'created_at': _iso_datetime(self.created_at),
+        }
+
+
+# Agregar relaciones a Tenant para almacén
+Tenant.product_categories = db.relationship('ProductCategory', back_populates='tenant')
+Tenant.suppliers = db.relationship('Supplier', back_populates='tenant')
+Tenant.products = db.relationship('Product', back_populates='tenant')
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Módulo de Red: NAPs, mufas, splitters, nodos de infraestructura
+# ─────────────────────────────────────────────────────────────────────────────
+
+class NetworkNode(db.Model):
+    """Nodo de red: NAP, mufa, splitter, caja de distribución, antena, etc."""
+    __tablename__ = 'network_nodes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
+    name = db.Column(db.String(120), nullable=False)
+    node_type = db.Column(db.String(30), nullable=False, default='nap')
+    # node_type: nap | mufa | splitter | antenna | olt | router | caja | poste | otro
+    technology = db.Column(db.String(20), nullable=False, default='fiber')
+    # technology: fiber | wireless | coax | copper
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    address = db.Column(db.String(255), nullable=True)
+    zone = db.Column(db.String(80), nullable=True)
+    capacity = db.Column(db.Integer, nullable=True)          # puertos / clientes máx
+    used_ports = db.Column(db.Integer, nullable=False, default=0)
+    parent_node_id = db.Column(db.Integer, db.ForeignKey('network_nodes.id'), nullable=True)
+    router_id = db.Column(db.Integer, db.ForeignKey('mikrotik_routers.id'), nullable=True)
+    status = db.Column(db.String(20), nullable=False, default='active')
+    # status: active | inactive | maintenance | fault
+    notes = db.Column(db.Text, nullable=True)
+    installed_at = db.Column(db.DateTime, nullable=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    tenant = db.relationship('Tenant', back_populates='network_nodes')
+    parent = db.relationship('NetworkNode', remote_side=[id], backref='children')
+    router = db.relationship('MikroTikRouter')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'name': self.name,
+            'node_type': self.node_type,
+            'technology': self.technology,
+            'latitude': self.latitude,
+            'longitude': self.longitude,
+            'address': self.address or '',
+            'zone': self.zone or '',
+            'capacity': self.capacity,
+            'used_ports': self.used_ports,
+            'parent_node_id': self.parent_node_id,
+            'router_id': self.router_id,
+            'status': self.status,
+            'notes': self.notes or '',
+            'installed_at': _iso_datetime(self.installed_at),
+            'created_by': self.created_by,
+            'created_at': _iso_datetime(self.created_at),
+            'updated_at': _iso_datetime(self.updated_at),
+        }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Módulo de Reuso de Ancho de Banda por Plan
+# ─────────────────────────────────────────────────────────────────────────────
+
+class PlanBandwidthReuse(db.Model):
+    """Configuración de reuso de ancho de banda por plan (1:1, 1:2, 1:4, 1:8)."""
+    __tablename__ = 'plan_bandwidth_reuse'
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
+    plan_id = db.Column(db.Integer, db.ForeignKey('plans.id'), index=True, nullable=False)
+    reuse_ratio = db.Column(db.String(10), nullable=False, default='1:1')
+    # reuse_ratio: 1:1 | 1:2 | 1:4 | 1:8
+    queue_type = db.Column(db.String(20), nullable=False, default='simple')
+    # queue_type: simple | tree | mangle_tree
+    queue_algorithm = db.Column(db.String(20), nullable=False, default='default')
+    # queue_algorithm: default | pcq | cake
+    parent_queue_name = db.Column(db.String(80), nullable=True)
+    # Nombre de la cola padre en Queue Tree (si aplica)
+    auto_adjust = db.Column(db.Boolean, nullable=False, default=True)
+    # Si True, recalcula límites automáticamente cuando cambia el nº de clientes activos
+    last_adjusted_at = db.Column(db.DateTime, nullable=True)
+    last_active_clients = db.Column(db.Integer, nullable=True)
+    last_effective_down = db.Column(db.Integer, nullable=True)  # Mbps efectivos tras reuso
+    last_effective_up = db.Column(db.Integer, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    plan = db.relationship('Plan', back_populates='bandwidth_reuse')
+
+    __table_args__ = (
+        db.UniqueConstraint('tenant_id', 'plan_id', name='uq_plan_bandwidth_reuse_tenant_plan'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'plan_id': self.plan_id,
+            'reuse_ratio': self.reuse_ratio,
+            'queue_type': self.queue_type,
+            'queue_algorithm': self.queue_algorithm,
+            'parent_queue_name': self.parent_queue_name or '',
+            'auto_adjust': bool(self.auto_adjust),
+            'last_adjusted_at': _iso_datetime(self.last_adjusted_at),
+            'last_active_clients': self.last_active_clients,
+            'last_effective_down': self.last_effective_down,
+            'last_effective_up': self.last_effective_up,
+            'created_at': _iso_datetime(self.created_at),
+            'updated_at': _iso_datetime(self.updated_at),
+        }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Módulo de Consulta de Deuda Pública (sin login)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ClientDebtQuery(db.Model):
+    """Registro de consultas de deuda realizadas por clientes (auditoría)."""
+    __tablename__ = 'client_debt_queries'
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
+    document_number = db.Column(db.String(30), nullable=False, index=True)
+    ip_address = db.Column(db.String(64), nullable=True)
+    result_found = db.Column(db.Boolean, nullable=False, default=False)
+    queried_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'document_number': self.document_number,
+            'ip_address': self.ip_address,
+            'result_found': bool(self.result_found),
+            'queried_at': _iso_datetime(self.queried_at),
+        }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Extensiones de Client: tipo de red, documento, historial técnico
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ClientNetworkProfile(db.Model):
+    """Perfil de red extendido del cliente (fibra óptica, antena, etc.)."""
+    __tablename__ = 'client_network_profiles'
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), unique=True, nullable=False)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
+
+    # Tipo de acceso
+    access_technology = db.Column(db.String(20), nullable=False, default='fiber')
+    # access_technology: fiber | wireless | coax | copper | docsis
+
+    # Fibra óptica
+    olt_id = db.Column(db.String(80), nullable=True)
+    olt_port = db.Column(db.String(40), nullable=True)
+    onu_serial = db.Column(db.String(80), nullable=True)
+    onu_model = db.Column(db.String(80), nullable=True)
+    splitter_id = db.Column(db.Integer, db.ForeignKey('network_nodes.id'), nullable=True)
+    nap_id = db.Column(db.Integer, db.ForeignKey('network_nodes.id'), nullable=True)
+    fiber_color = db.Column(db.String(30), nullable=True)   # color del hilo de fibra
+    fiber_port = db.Column(db.String(10), nullable=True)
+
+    # Antena / Wireless
+    antenna_model = db.Column(db.String(80), nullable=True)
+    antenna_ssid = db.Column(db.String(80), nullable=True)
+    antenna_frequency = db.Column(db.String(20), nullable=True)  # 2.4GHz, 5GHz, 60GHz
+    signal_level_dbm = db.Column(db.Float, nullable=True)
+    ap_node_id = db.Column(db.Integer, db.ForeignKey('network_nodes.id'), nullable=True)
+
+    # Documento de identidad (para consulta de deuda)
+    document_type = db.Column(db.String(20), nullable=True)   # CC, RUC, DNI, NIT, etc.
+    document_number = db.Column(db.String(30), nullable=True, index=True)
+
+    # Facturación
+    billing_type = db.Column(db.String(20), nullable=False, default='postpaid')
+    # billing_type: prepaid | postpaid | date_to_date
+    billing_day = db.Column(db.Integer, nullable=True)        # día del mes para cobro
+    billing_start_date = db.Column(db.Date, nullable=True)    # para date_to_date
+    discount_percent = db.Column(db.Numeric(5, 2), nullable=False, default=0)
+    discount_reason = db.Column(db.String(120), nullable=True)
+    loyalty_months = db.Column(db.Integer, nullable=False, default=0)
+
+    # Notas técnicas e historial
+    installation_notes = db.Column(db.Text, nullable=True)
+    technical_notes = db.Column(db.Text, nullable=True)
+    internal_emails = db.Column(db.JSON, nullable=True)  # lista de correos internos
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    client = db.relationship('Client', back_populates='network_profile')
+    splitter = db.relationship('NetworkNode', foreign_keys=[splitter_id])
+    nap = db.relationship('NetworkNode', foreign_keys=[nap_id])
+    ap_node = db.relationship('NetworkNode', foreign_keys=[ap_node_id])
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'client_id': self.client_id,
+            'tenant_id': self.tenant_id,
+            'access_technology': self.access_technology,
+            'olt_id': self.olt_id,
+            'olt_port': self.olt_port,
+            'onu_serial': self.onu_serial,
+            'onu_model': self.onu_model,
+            'splitter_id': self.splitter_id,
+            'nap_id': self.nap_id,
+            'fiber_color': self.fiber_color,
+            'fiber_port': self.fiber_port,
+            'antenna_model': self.antenna_model,
+            'antenna_ssid': self.antenna_ssid,
+            'antenna_frequency': self.antenna_frequency,
+            'signal_level_dbm': self.signal_level_dbm,
+            'ap_node_id': self.ap_node_id,
+            'document_type': self.document_type,
+            'document_number': self.document_number,
+            'billing_type': self.billing_type,
+            'billing_day': self.billing_day,
+            'billing_start_date': self.billing_start_date.isoformat() if self.billing_start_date else None,
+            'discount_percent': float(self.discount_percent or 0),
+            'discount_reason': self.discount_reason or '',
+            'loyalty_months': self.loyalty_months,
+            'installation_notes': self.installation_notes or '',
+            'technical_notes': self.technical_notes or '',
+            'internal_emails': self.internal_emails or [],
+            'created_at': _iso_datetime(self.created_at),
+            'updated_at': _iso_datetime(self.updated_at),
+        }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NAT Remoto: reglas de redirección para acceso sin IP pública
+# ─────────────────────────────────────────────────────────────────────────────
+
+class RemoteNatRule(db.Model):
+    """Regla NAT para acceso remoto a nodos sin IP pública."""
+    __tablename__ = 'remote_nat_rules'
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
+    router_id = db.Column(db.Integer, db.ForeignKey('mikrotik_routers.id'), nullable=False)
+    name = db.Column(db.String(120), nullable=False)
+    protocol = db.Column(db.String(10), nullable=False, default='tcp')
+    src_port = db.Column(db.Integer, nullable=False)          # Puerto externo en el router principal
+    dst_address = db.Column(db.String(45), nullable=False)    # IP interna del nodo destino
+    dst_port = db.Column(db.Integer, nullable=False)          # Puerto en el nodo destino
+    description = db.Column(db.String(255), nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    mikrotik_rule_id = db.Column(db.String(20), nullable=True)  # ID de la regla en RouterOS
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    router = db.relationship('MikroTikRouter')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'router_id': self.router_id,
+            'name': self.name,
+            'protocol': self.protocol,
+            'src_port': self.src_port,
+            'dst_address': self.dst_address,
+            'dst_port': self.dst_port,
+            'description': self.description or '',
+            'is_active': bool(self.is_active),
+            'mikrotik_rule_id': self.mikrotik_rule_id,
+            'created_by': self.created_by,
+            'created_at': _iso_datetime(self.created_at),
+            'updated_at': _iso_datetime(self.updated_at),
+        }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Extensiones de Plan: descuentos, tipo de facturación
+# ─────────────────────────────────────────────────────────────────────────────
+
+class PlanDiscount(db.Model):
+    """Descuentos y promociones aplicables a un plan."""
+    __tablename__ = 'plan_discounts'
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
+    plan_id = db.Column(db.Integer, db.ForeignKey('plans.id'), index=True, nullable=False)
+    name = db.Column(db.String(120), nullable=False)
+    discount_type = db.Column(db.String(20), nullable=False, default='percent')
+    # discount_type: percent | fixed
+    discount_value = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    min_loyalty_months = db.Column(db.Integer, nullable=False, default=0)
+    # Meses mínimos de fidelidad para aplicar el descuento
+    valid_from = db.Column(db.Date, nullable=True)
+    valid_until = db.Column(db.Date, nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    plan = db.relationship('Plan', back_populates='discounts')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'plan_id': self.plan_id,
+            'name': self.name,
+            'discount_type': self.discount_type,
+            'discount_value': float(self.discount_value or 0),
+            'min_loyalty_months': self.min_loyalty_months,
+            'valid_from': self.valid_from.isoformat() if self.valid_from else None,
+            'valid_until': self.valid_until.isoformat() if self.valid_until else None,
+            'is_active': bool(self.is_active),
+            'created_at': _iso_datetime(self.created_at),
+        }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Agregar relaciones nuevas a modelos existentes
+# ─────────────────────────────────────────────────────────────────────────────
+
+Tenant.network_nodes = db.relationship('NetworkNode', back_populates='tenant')
+Plan.bandwidth_reuse = db.relationship('PlanBandwidthReuse', back_populates='plan', uselist=False)
+Plan.discounts = db.relationship('PlanDiscount', back_populates='plan')
+Client.network_profile = db.relationship('ClientNetworkProfile', back_populates='client', uselist=False, cascade='all, delete-orphan')

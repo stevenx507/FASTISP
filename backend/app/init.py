@@ -178,6 +178,7 @@ def create_app(config_name_or_class='development'):
     from app.routes.main_routes import main_bp
     from app.routes.mikrotik import mikrotik_bp
     from app.routes.olt import olt_bp
+    from app.routes.network import network_bp
     app.register_blueprint(main_bp, url_prefix='/api')
     app.register_blueprint(mikrotik_bp, url_prefix='/api/mikrotik')
     app.register_blueprint(olt_bp, url_prefix='/api/olt')
@@ -186,6 +187,8 @@ def create_app(config_name_or_class='development'):
         mikrotik_bp, url_prefix='/api/v1/mikrotik', name='mikrotik_v1'
     )
     app.register_blueprint(olt_bp, url_prefix='/api/v1/olt', name='olt_v1')
+    app.register_blueprint(network_bp, url_prefix='/api/network')
+    app.register_blueprint(network_bp, url_prefix='/api/v1/network', name='network_v1')
 
     # Explicit OPTIONS responder so CORS preflights never 404/405
     @app.route('/api/<path:any_path>', methods=['OPTIONS'])
