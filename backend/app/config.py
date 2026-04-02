@@ -138,6 +138,10 @@ class Config:
     MIKROTIK_WG_VPS_SSH_KEY_PATH = os.environ.get('MIKROTIK_WG_VPS_SSH_KEY_PATH', '')
     MIKROTIK_WG_VPS_SSH_TIMEOUT_SECONDS = os.environ.get('MIKROTIK_WG_VPS_SSH_TIMEOUT_SECONDS', '8')
     MIKROTIK_WG_VPS_SSH_USE_SUDO = _as_bool(os.environ.get('MIKROTIK_WG_VPS_SSH_USE_SUDO'), default=True)
+    MIKROTIK_MANAGEMENT_ALLOWED_CIDR = os.environ.get('MIKROTIK_MANAGEMENT_ALLOWED_CIDR', 'YOUR_PUBLIC_IP/32')
+    VPS_PUBLIC_HOST = os.environ.get('VPS_PUBLIC_HOST', '')
+    VPS_PUBLIC_SSH_USER = os.environ.get('VPS_PUBLIC_SSH_USER', 'noc')
+    VPS_PUBLIC_SSH_PORT = int(os.environ.get('VPS_PUBLIC_SSH_PORT', '22') or 22)
     ROTATE_PASSWORDS_DRY_RUN = _as_bool(os.environ.get('ROTATE_PASSWORDS_DRY_RUN'), default=False)
     PASSWORD_ROTATION_LENGTH = os.environ.get('PASSWORD_ROTATION_LENGTH', '24')
     

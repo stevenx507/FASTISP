@@ -3088,7 +3088,8 @@ def router_quick_connect(router_id):
 
     onboarding_profile = _resolve_mikrotik_onboarding_profile()
     ip_scope = request.args.get('ip_scope')
-    allowed_mgmt = str(request.args.get('allowed_mgmt') or 'YOUR_PUBLIC_IP/32').strip() or 'YOUR_PUBLIC_IP/32'
+    default_allowed_mgmt = str(current_app.config.get('MIKROTIK_MANAGEMENT_ALLOWED_CIDR') or 'YOUR_PUBLIC_IP/32').strip() or 'YOUR_PUBLIC_IP/32'
+    allowed_mgmt = str(request.args.get('allowed_mgmt') or default_allowed_mgmt).strip() or default_allowed_mgmt
     wireguard_profile = _resolve_wireguard_profile(dict(request.args or {}))
     wg_endpoint = str(wireguard_profile.get('endpoint') or WG_PROFILE_ENDPOINT_DEFAULT).strip() or WG_PROFILE_ENDPOINT_DEFAULT
     wg_server_public_key = str(
@@ -3158,6 +3159,16 @@ def router_quick_connect(router_id):
             f"ssh {router.username}@{router.ip_address} -p 22"
             if public_reachable
             else f"# Requiere tunel: ssh {router.username}@{router.ip_address} -p 22 (via WG/BTH)"
+        ),
+        'windows_tunnel_login': (
+            f"ssh -J {str(current_app.config.get('VPS_PUBLIC_SSH_USER') or 'noc')}@{str(current_app.config.get('VPS_PUBLIC_HOST') or 'YOUR_VPS_HOST')}:{int(current_app.config.get('VPS_PUBLIC_SSH_PORT') or 22)} {router.username}@{router.ip_address} -p 22"
+            if not public_reachable
+            else ''
+        ),
+        'linux_tunnel_login': (
+            f"ssh -J {str(current_app.config.get('VPS_PUBLIC_SSH_USER') or 'noc')}@{str(current_app.config.get('VPS_PUBLIC_HOST') or 'YOUR_VPS_HOST')}:{int(current_app.config.get('VPS_PUBLIC_SSH_PORT') or 22)} {router.username}@{router.ip_address} -p 22"
+            if not public_reachable
+            else ''
         ),
         'bth_enable_minimal_script': (
             '/ip/cloud/set ddns-enabled=yes update-time=yes\n'

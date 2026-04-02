@@ -1341,19 +1341,25 @@ def remote_options(device_id):
     transport = str(device.get("transport") or "ssh").strip().lower()
     login = f"telnet {host} {port}" if transport == "telnet" else f"ssh {user}@{host} -p {port}"
 
+    vps_host = str(current_app.config.get('VPS_PUBLIC_HOST') or '').strip()
+    vps_user = str(current_app.config.get('VPS_PUBLIC_SSH_USER') or 'noc').strip() or 'noc'
+    vps_port = int(current_app.config.get('VPS_PUBLIC_SSH_PORT') or 22)
+    jump_host_target = vps_host or 'YOUR_VPS_PUBLIC_IP'
+    jump_host_user = vps_user or 'noc'
+
     options = {
         "direct_login": login,
         "tcp_probe_windows": f"Test-NetConnection -ComputerName {host} -Port {port}",
         "tcp_probe_linux": f"nc -vz {host} {port}",
         "jump_host_ssh": (
-            f"ssh -J noc@YOUR_VPS_PUBLIC_IP {user}@{host} -p {port}"
+            f"ssh -J {jump_host_user}@{jump_host_target}:{vps_port} {user}@{host} -p {port}"
             if transport == "ssh"
-            else f"ssh -J noc@YOUR_VPS_PUBLIC_IP -L 2323:{host}:{port} noc@YOUR_VPS_PUBLIC_IP"
+            else f"ssh -J {jump_host_user}@{jump_host_target}:{vps_port} -L 2323:{host}:{port} {jump_host_user}@{jump_host_target}"
         ),
         "reverse_tunnel_template": (
-            f"ssh -N -R 22{port}:{host}:{port} noc@YOUR_VPS_PUBLIC_IP"
+            f"ssh -N -R 22{port}:{host}:{port} {jump_host_user}@{jump_host_target}:{vps_port}"
             if transport == "ssh"
-            else f"ssh -N -R 23{port}:{host}:{port} noc@YOUR_VPS_PUBLIC_IP"
+            else f"ssh -N -R 23{port}:{host}:{port} {jump_host_user}@{jump_host_target}:{vps_port}"
         ),
         "recommendations": [
             "Preferir enlace privado VPN (WireGuard/IPsec) entre POP y VPS para gestion OLT.",
