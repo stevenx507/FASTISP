@@ -518,7 +518,9 @@ const normalizeUiError = (error: unknown, fallback: string): string => {
   if (!message) return fallback
   const lowered = message.toLowerCase()
   if (lowered.includes('unauthorized')) return 'Sesion expirada. Vuelve a iniciar sesion.'
-  if (lowered.includes('failed to fetch')) return 'No se pudo conectar al backend. Verifica VPS, dominio y red.'
+  if (lowered.includes('failed to fetch') || lowered.includes('networkerror') || lowered.includes('network request failed')) {
+    return 'No se pudo conectar al backend. Verifica VPS, dominio, red y que el proxy/API estén activos.'
+  }
   if (lowered.includes('abort')) return 'Solicitud interrumpida. Reintenta con sesion activa.'
   if (lowered.includes('qr')) return message
   if (lowered.includes('decode')) return 'No se pudo leer la imagen QR. Usa PNG/JPG nítido o importa ZIP/CONF.'
@@ -724,11 +726,12 @@ const MikroTikManagement: React.FC = () => {
       setOnboardingProfile(null)
     } catch (error) {
       console.error('Error loading onboarding profile:', error)
+      addToast('error', normalizeUiError(error, 'No se pudo cargar el perfil de onboarding'))
       setOnboardingProfile(null)
     } finally {
       setOnboardingProfileLoading(false)
     }
-  }, [apiFetch, applyOnboardingProfileDefaults, safeJson])
+  }, [addToast, apiFetch, applyOnboardingProfileDefaults, safeJson])
 
   const saveOnboardingProfile = useCallback(async () => {
     if (!onboardingProfile) return
@@ -786,7 +789,7 @@ const MikroTikManagement: React.FC = () => {
       })
     } catch (error) {
       console.error('Error loading routers:', error)
-      addToast('error', 'No se pudieron cargar los routers')
+      addToast('error', normalizeUiError(error, 'No se pudieron cargar los routers'))
     }
   }, [addToast, apiFetch, safeJson])
 
@@ -816,7 +819,7 @@ const MikroTikManagement: React.FC = () => {
       } catch (error) {
         console.error('Error loading router stats:', error)
         setRouterStats({ health: null, queues: [], connections: [] })
-        addToast('error', 'Error de red al cargar estadisticas del router')
+        addToast('error', normalizeUiError(error, 'Error de red al cargar estadísticas del router'))
       } finally {
         setIsLoading(false)
       }
@@ -838,15 +841,17 @@ const MikroTikManagement: React.FC = () => {
           setQuickConnect(payload)
         } else {
           setQuickConnect(null)
+          addToast('error', 'No se pudo cargar la conexión rápida')
         }
       } catch (error) {
         console.error('Error loading quick connect:', error)
         setQuickConnect(null)
+        addToast('error', normalizeUiError(error, 'No se pudo cargar la conexión rápida'))
       } finally {
         setQuickLoading(false)
       }
     },
-    [apiFetch, applyOnboardingProfileDefaults, safeJson]
+    [addToast, apiFetch, applyOnboardingProfileDefaults, safeJson]
   )
 
   const loadRouterReadiness = useCallback(
@@ -868,7 +873,7 @@ const MikroTikManagement: React.FC = () => {
         console.error('Error loading router readiness:', error)
         setRouterReadiness(null)
         if (runWriteProbe) {
-          addToast('error', 'Error de red ejecutando readiness')
+          addToast('error', normalizeUiError(error, 'Error de red ejecutando readiness'))
         }
       } finally {
         setReadinessLoading(false)
