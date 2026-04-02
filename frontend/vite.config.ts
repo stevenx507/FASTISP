@@ -55,12 +55,15 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    chunkSizeWarningLimit: 1200,
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           charts: ['chart.js', 'react-chartjs-2'],
-          maps: ['leaflet', 'react-leaflet']
+          maps: ['leaflet', 'react-leaflet'],
+          ui: ['@heroicons/react', 'react-hot-toast', 'framer-motion'],
+          data: ['axios', 'date-fns', 'zustand', 'qrcode.react']
         }
       }
     }
