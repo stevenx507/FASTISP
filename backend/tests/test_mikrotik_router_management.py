@@ -1168,6 +1168,53 @@ def test_wireguard_zip_import_returns_onboarding_suggestions(client, app):
     assert payload['suggestions']['bth_private_key'] == 'AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE='
 
 
+def test_onboarding_profile_routes_and_import_use_account_defaults(client, app):
+    headers = _admin_headers(client, app)
+
+    update_response = client.post(
+        '/api/mikrotik/onboarding/profile',
+        json={
+            'account_label': 'ISP Norte',
+            'account_slug': 'isp-norte',
+            'router_name_prefix': 'ispnorte',
+            'default_username': 'tenant-api',
+            'default_api_port': 8729,
+            'default_bth_user_name': 'ispnorte-noc',
+            'default_allow_lan': False,
+            'auto_vps_link': False,
+            'auto_bootstrap_bth': False,
+            'comment_prefix': 'ISP Norte NOC',
+        },
+        headers=headers,
+    )
+    assert update_response.status_code == 200
+    update_payload = update_response.get_json()
+    assert update_payload['success'] is True
+    assert update_payload['profile']['account_label'] == 'ISP Norte'
+    assert update_payload['profile']['default_api_port'] == 8729
+
+    get_response = client.get('/api/mikrotik/onboarding/profile', headers=headers)
+    assert get_response.status_code == 200
+    get_payload = get_response.get_json()
+    assert get_payload['success'] is True
+    assert get_payload['profile']['router_name_prefix'] == 'ispnorte'
+
+    response = client.post(
+        '/api/mikrotik/wireguard/import',
+        data={'archive': (_build_wireguard_archive(), 'wireguard-export.zip')},
+        headers=headers,
+        content_type='multipart/form-data',
+    )
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload['success'] is True
+    assert payload['suggestions']['router_name'].startswith('ispnorte-')
+    assert payload['suggestions']['api_port'] == 8729
+    assert payload['suggestions']['default_username'] == 'tenant-api'
+    assert payload['suggestions']['bth_user_name'] == 'ispnorte-noc'
+    assert payload['onboarding_profile']['account_label'] == 'ISP Norte'
+
+
 def test_wireguard_import_supports_qr_config_text_payload(client, app):
     headers = _admin_headers(client, app)
     response = client.post(
@@ -1378,6 +1425,65 @@ def test_wireguard_onboard_updates_existing_router(client, app, monkeypatch):
     assert payload['reused_existing'] is True
     assert payload['updated_existing'] is True
     assert payload['router']['name'] == 'Nodo-Actualizado'
+
+
+def test_wireguard_onboard_uses_onboarding_profile_defaults_for_account_isolation(client, app, monkeypatch):
+    headers = _admin_headers(client, app)
+    monkeypatch.setattr(mikrotik_routes, 'MikroTikService', _DummyMikrotikOnboardNoApiService)
+    monkeypatch.setattr(
+        mikrotik_routes,
+        '_build_router_readiness_payload',
+        lambda _service, run_write_probe=False: {
+            'score': 28,
+            'checks': [{'id': 'api_connectivity', 'ok': False, 'severity': 'critical'}],
+            'blockers': [{'id': 'api_connectivity', 'detail': 'unreachable'}],
+            'recommendations': ['Completa conectividad API antes de live.'],
+            'runtime': {'reachable': False},
+            'write_probe_enabled': bool(run_write_probe),
+        },
+    )
+
+    profile_response = client.post(
+        '/api/mikrotik/onboarding/profile',
+        json={
+            'account_label': 'ISP Caribe',
+            'account_slug': 'isp-caribe',
+            'router_name_prefix': 'caribe',
+            'default_username': 'api-tenant',
+            'default_api_port': 8729,
+            'default_bth_user_name': 'caribe-noc',
+            'default_allow_lan': False,
+            'auto_vps_link': False,
+            'auto_bootstrap_bth': False,
+            'comment_prefix': 'ISP Caribe NOC',
+        },
+        headers=headers,
+    )
+    assert profile_response.status_code == 200
+
+    response = client.post(
+        '/api/mikrotik/wireguard/onboard',
+        data={
+            'archive': (_build_wireguard_archive(), 'wireguard-export.zip'),
+            'password': 'router-pass',
+        },
+        headers=headers,
+        content_type='multipart/form-data',
+    )
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload['success'] is True
+    assert payload['onboarding_profile']['account_label'] == 'ISP Caribe'
+    assert payload['tenant_scope']['actor_email'] == 'mk-admin@test.local'
+    assert payload['vps_sync']['success'] is False
+    assert payload['vps_sync']['message'] == 'No ejecutado'
+
+    with app.app_context():
+        router = mikrotik_routes.MikroTikRouter.query.filter_by(ip_address='10.66.66.2').first()
+        assert router is not None
+        assert router.name.startswith('caribe-')
+        assert router.username == 'api-tenant'
+        assert router.api_port == 8729
 
 
 def test_wireguard_onboard_auto_links_vps_from_config_without_api(client, app, monkeypatch):

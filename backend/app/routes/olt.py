@@ -3,6 +3,7 @@ OLT enterprise API endpoints (ZTE, Huawei, VSOL).
 """
 from __future__ import annotations
 
+import ipaddress
 import socket
 import ssl
 import time
@@ -365,10 +366,102 @@ def _resolve_olt_credentials(service: OLTScriptService, device: dict) -> dict:
     }
 
 
-def _build_remote_readiness(service: OLTScriptService, device: dict) -> dict:
+def _sanitize_olt_device(device: dict | None) -> dict:
+    safe_device = dict(device or {})
+    safe_device.pop("password", None)
+    safe_device.pop("enable_password", None)
+    return safe_device
+
+
+def _classify_management_host(host: str) -> dict:
+    host = str(host or "").strip()
+    if not host:
+        return {
+            "kind": "missing",
+            "label": "Sin host",
+            "detail": "Define host o IP de gestion para habilitar pruebas remotas.",
+            "recommended_path": "configure_host",
+            "vpn_recommended": True,
+        }
+
+    try:
+        parsed = ipaddress.ip_address(host)
+    except ValueError:
+        return {
+            "kind": "hostname",
+            "label": "Hostname / DDNS",
+            "detail": "Gestion por nombre. Verifica DNS o DDNS desde el backend.",
+            "recommended_path": "resolve_dns",
+            "vpn_recommended": False,
+        }
+
+    if parsed.is_loopback:
+        return {
+            "kind": "loopback_ip",
+            "label": "Loopback",
+            "detail": "La IP apunta al loopback y no sirve para gestionar la OLT desde la VPS.",
+            "recommended_path": "fix_host",
+            "vpn_recommended": False,
+        }
+    if parsed.is_link_local:
+        return {
+            "kind": "link_local_ip",
+            "label": "Link-local",
+            "detail": "La IP es link-local y normalmente solo sirve dentro del mismo segmento.",
+            "recommended_path": "vpn_or_jump_host",
+            "vpn_recommended": True,
+        }
+    if parsed.is_private:
+        return {
+            "kind": "private_ip",
+            "label": "IP privada",
+            "detail": "La OLT usa direccion privada. La gestion remota requiere VPN, ACL o jump host.",
+            "recommended_path": "vpn_or_jump_host",
+            "vpn_recommended": True,
+        }
+    return {
+        "kind": "public_ip",
+        "label": "IP publica",
+        "detail": "La OLT es alcanzable por IP publica. Mantener ACL y preferir SSH.",
+        "recommended_path": "direct_or_vpn",
+        "vpn_recommended": False,
+    }
+
+
+def _summarize_olt_readiness(readiness: dict | None) -> dict:
+    readiness = readiness or {}
+    checks = readiness.get("checks") if isinstance(readiness.get("checks"), list) else []
+    score = int(readiness.get("score") or 0)
+    failed_critical = any(
+        isinstance(check, dict) and not check.get("ok") and str(check.get("severity") or "") == "critical"
+        for check in checks
+    )
+    failed_warning = any(isinstance(check, dict) and not check.get("ok") for check in checks)
+
+    if failed_critical:
+        return {
+            "status": "blocked",
+            "label": "Bloqueado",
+            "summary": "La OLT no esta lista para ejecucion live desde backend.",
+        }
+    if failed_warning or score < 85:
+        return {
+            "status": "degraded",
+            "label": "Degradado",
+            "summary": "La OLT responde, pero todavia hay guardrails o mejoras pendientes.",
+        }
+    return {
+        "status": "ready",
+        "label": "Listo",
+        "summary": "La OLT esta lista para operacion remota controlada.",
+    }
+
+
+def _build_remote_readiness(service: OLTScriptService, device: dict, timeout_seconds: float = 2.5) -> dict:
     host = str(device.get("host") or "").strip()
     port = int(device.get("port") or 22)
     transport = str(device.get("transport") or "ssh").strip().lower()
+    host_analysis = _classify_management_host(host)
 
     credentials = _resolve_olt_credentials(service, device)
     username = str(credentials.get("username") or "").strip()
@@ -376,7 +469,7 @@ def _build_remote_readiness(service: OLTScriptService, device: dict) -> dict:
 
     tcp_probe = {"reachable": False, "latency_ms": None, "error": "Host is empty"}
     if host:
-        tcp_probe = _probe_tcp(host=host, port=port, timeout_seconds=2.5)
+        tcp_probe = _probe_tcp(host=host, port=port, timeout_seconds=timeout_seconds)
 
     checks = [
         {
@@ -445,6 +538,8 @@ def _build_remote_readiness(service: OLTScriptService, device: dict) -> dict:
         missing.append("Migrar gestion a SSH o aislar Telnet dentro de tunel privado.")
     if not has_password:
         missing.append("Definir credenciales OLT en OLT_CREDENTIALS_JSON u OLT_DEFAULT_PASSWORD.")
+    if host_analysis.get("recommended_path") == "resolve_dns":
+        missing.append("Confirmar que el hostname o DDNS resuelva desde la VPS.")
 
     recommendations = [
         "Usar WireGuard/IPsec entre POP y VPS para gestion OLT.",
@@ -455,6 +550,10 @@ def _build_remote_readiness(service: OLTScriptService, device: dict) -> dict:
         recommendations.append("Verificar NAT/forwarding y route policy entre VPS y red de acceso.")
     if transport != "ssh":
         recommendations.append("Priorizar SSH para auditoria y seguridad operacional.")
+    if host_analysis.get("vpn_recommended"):
+        recommendations.append("Usar tunel privado o jump host para llegar a la red de gestion de la OLT.")
+
+    readiness_summary = _summarize_olt_readiness({"checks": checks, "score": score})
 
     return {
         "score": max(0, min(100, int(score))),
@@ -462,6 +561,70 @@ def _build_remote_readiness(service: OLTScriptService, device: dict) -> dict:
         "tcp_probe": tcp_probe,
         "missing": missing,
         "recommendations": recommendations,
+        "host_analysis": host_analysis,
+        "management_path": {
+            "id": str(host_analysis.get("recommended_path") or "configure_host"),
+            "label": (
+                "Configurar host"
+                if host_analysis.get("recommended_path") == "configure_host"
+                else "Corregir host"
+                if host_analysis.get("recommended_path") == "fix_host"
+                else "VPN o jump host"
+                if host_analysis.get("recommended_path") == "vpn_or_jump_host"
+                else "Validar DNS o DDNS"
+                if host_analysis.get("recommended_path") == "resolve_dns"
+                else "Directo o VPN"
+            ),
+        },
+        "status": readiness_summary["status"],
+        "status_label": readiness_summary["label"],
+        "summary": readiness_summary["summary"],
+        "checked_at": int(time.time()),
+    }
+
+
+def _build_connection_diagnostics(service: OLTScriptService, device: dict, timeout_seconds: float = 2.5) -> dict:
+    readiness = _build_remote_readiness(service=service, device=device, timeout_seconds=timeout_seconds)
+    connection = service.test_connection(device_id=str(device.get("id") or ""), timeout_seconds=timeout_seconds)
+    safe_device = _sanitize_olt_device(device)
+
+    status = str(readiness.get("status") or "blocked")
+    summary = str(readiness.get("summary") or "")
+    next_step = None
+    if readiness.get("missing"):
+        next_step = str(readiness["missing"][0])
+    elif readiness.get("recommendations"):
+        next_step = str(readiness["recommendations"][0])
+
+    if connection.get("success") and status == "blocked":
+        summary = "La OLT responde por TCP, pero aun faltan guardrails o credenciales para operar en live."
+    elif connection.get("success") and status == "ready":
+        summary = "La OLT responde y la ruta de gestion esta lista para operacion remota controlada."
+    elif not connection.get("success") and not next_step:
+        next_step = "Validar reachability TCP y ruta de gestion antes de ejecutar acciones ONU."
+
+    recommendations = []
+    for item in readiness.get("recommendations") or []:
+        text = str(item or "").strip()
+        if text and text not in recommendations:
+            recommendations.append(text)
+    if connection.get("error"):
+        recommendations.append("Revisar el error de socket y comparar contra ACL, VPN y puertos de gestion.")
+    recommendations = recommendations[:6]
+
+    return {
+        "success": bool(connection.get("success")),
+        "status": status,
+        "status_label": readiness.get("status_label"),
+        "summary": summary,
+        "next_step": next_step,
+        "device": safe_device,
+        "connection": connection,
+        "readiness": readiness,
+        "host_analysis": readiness.get("host_analysis"),
+        "management_path": readiness.get("management_path"),
+        "recommendations": recommendations,
+        "checked_at": readiness.get("checked_at"),
     }
 
 
@@ -795,14 +958,22 @@ def test_connection():
     timeout = max(0.5, min(timeout, 10.0))
 
     service = _service()
-    result = service.test_connection(device_id=device_id, timeout_seconds=timeout)
+    device = service.get_device(device_id)
+    if not device:
+        return jsonify({"success": False, "error": "OLT not found"}), 404
+
+    result = _build_connection_diagnostics(service=service, device=device, timeout_seconds=timeout)
     _audit(
         "olt_test_connection",
         entity_type="olt",
         entity_id=device_id,
-        metadata={"success": result.get("success"), "latency_ms": result.get("latency_ms")},
+        metadata={
+            "success": result.get("success"),
+            "status": result.get("status"),
+            "latency_ms": (result.get("connection") or {}).get("latency_ms"),
+        },
     )
-    return jsonify(result), (200 if result.get("success") else 502)
+    return jsonify(result), 200
 
 
 @olt_bp.route("/devices/<device_id>/script/generate", methods=["POST"])
@@ -1192,14 +1363,10 @@ def remote_options(device_id):
     }
     readiness = _build_remote_readiness(service=service, device=device)
     grafana = _build_grafana_status()
-
-    safe_device = dict(device)
-    safe_device.pop("password", None)
-    safe_device.pop("enable_password", None)
     return jsonify(
         {
             "success": True,
-            "device": safe_device,
+            "device": _sanitize_olt_device(device),
             "options": options,
             "readiness": readiness,
             "grafana": grafana,

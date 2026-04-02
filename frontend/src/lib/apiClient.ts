@@ -1,13 +1,15 @@
 import { useAuthStore } from '../store/authStore'
 import config from './config'
 
-class ApiError extends Error {
+export class ApiError extends Error {
   status: number
+  payload?: unknown
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, payload?: unknown) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.payload = payload
   }
 }
 
@@ -66,7 +68,7 @@ export const apiClient = {
         try {
           const errorData = await response.json()
           const message = errorData?.error || errorData?.message || `HTTP Error: ${response.status}`
-          throw new ApiError(String(message), response.status)
+          throw new ApiError(String(message), response.status, errorData)
         } catch (jsonError) {
           if (jsonError instanceof ApiError) {
             throw jsonError

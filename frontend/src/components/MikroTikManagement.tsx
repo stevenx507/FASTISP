@@ -28,6 +28,8 @@ interface RouterCreateResponse {
   connection_tested?: boolean
   reachable?: boolean | null
   diagnostics?: RouterConnectionDiagnosticsPayload | null
+  onboarding_profile?: RouterOnboardingProfile | null
+  tenant_scope?: TenantScopePayload | null
   error?: string
 }
 
@@ -170,6 +172,8 @@ interface RouterQuickConnectResponse {
   access_profile?: RouterAccessProfile
   connection_plan?: RouterConnectionPlan
   wireguard_profile?: RouterWireGuardProfile
+  onboarding_profile?: RouterOnboardingProfile | null
+  tenant_scope?: TenantScopePayload | null
   scripts?: RouterQuickScripts
   guidance?: RouterQuickGuidance
   back_to_home?: RouterBackToHomeStatus
@@ -300,10 +304,12 @@ interface WireGuardImportSuggestions {
   router_name?: string
   router_ip_or_host?: string
   api_port?: number
+  default_username?: string
   bth_private_key?: string
   bth_user_name?: string
   router_tunnel_ip?: string | null
   router_management_ip_required?: boolean
+  account_label?: string
 }
 
 interface WireGuardImportResponse {
@@ -312,6 +318,8 @@ interface WireGuardImportResponse {
   source_file?: string
   wireguard?: WireGuardImportData
   suggestions?: WireGuardImportSuggestions
+  onboarding_profile?: RouterOnboardingProfile | null
+  tenant_scope?: TenantScopePayload | null
 }
 
 interface RouterReadinessCheck {
@@ -352,6 +360,37 @@ interface WireGuardOnboardResponse {
   readiness?: RouterReadinessPayload
   bootstrap?: RouterBackToHomeBootstrapData
   vps_sync?: RouterWireGuardRegisterVpsSync
+  onboarding_profile?: RouterOnboardingProfile | null
+  tenant_scope?: TenantScopePayload | null
+}
+
+interface TenantScopePayload {
+  tenant_id?: number | null
+  tenant_slug?: string | null
+  tenant_name?: string | null
+  actor_email?: string | null
+  actor_name?: string | null
+}
+
+interface RouterOnboardingProfile {
+  account_label?: string
+  account_slug?: string
+  router_name_prefix?: string
+  default_username?: string
+  default_api_port?: number
+  default_bth_user_name?: string
+  default_allow_lan?: boolean
+  auto_vps_link?: boolean
+  auto_bootstrap_bth?: boolean
+  comment_prefix?: string
+  tenant_scope?: TenantScopePayload | null
+}
+
+interface RouterOnboardingProfileResponse {
+  success?: boolean
+  error?: string
+  profile?: RouterOnboardingProfile | null
+  tenant_scope?: TenantScopePayload | null
 }
 
 interface RouterFormState {
@@ -528,6 +567,9 @@ const MikroTikManagement: React.FC = () => {
   const [wireGuardWriteProbe, setWireGuardWriteProbe] = useState(false)
   const [wireGuardBootstrapOnboard, setWireGuardBootstrapOnboard] = useState(false)
   const [wireGuardOnboarding, setWireGuardOnboarding] = useState(false)
+  const [onboardingProfile, setOnboardingProfile] = useState<RouterOnboardingProfile | null>(null)
+  const [onboardingProfileLoading, setOnboardingProfileLoading] = useState(false)
+  const [savingOnboardingProfile, setSavingOnboardingProfile] = useState(false)
   const [routerForm, setRouterForm] = useState<RouterFormState>({
     name: '',
     ip_address: '',
@@ -550,6 +592,7 @@ const MikroTikManagement: React.FC = () => {
   const [wireGuardImportSummary, setWireGuardImportSummary] = useState<WireGuardImportResponse | null>(null)
   const connectionStatusRef = useRef<Record<string, string>>({})
   const token = useAuthStore((state) => state.token)
+  const user = useAuthStore((state) => state.user)
   const tenantContextId = useAuthStore((state) => state.tenantContextId)
   const logout = useAuthStore((state) => state.logout)
   const activeConnectionSnapshot = selectedRouter ? routerConnectionSnapshots[selectedRouter.id] || null : null
@@ -593,6 +636,25 @@ const MikroTikManagement: React.FC = () => {
     } catch {
       return null
     }
+  }, [])
+
+  const applyOnboardingProfileDefaults = useCallback((profile?: RouterOnboardingProfile | null) => {
+    if (!profile) return
+    setOnboardingProfile(profile)
+    setRouterForm((prev) => ({
+      ...prev,
+      username:
+        prev.username.trim() && prev.username.trim() !== 'admin'
+          ? prev.username
+          : String(profile.default_username || prev.username || 'admin'),
+      api_port:
+        prev.api_port.trim() && prev.api_port.trim() !== '8728'
+          ? prev.api_port
+          : String(profile.default_api_port || prev.api_port || '8728'),
+    }))
+    setBthUserName((prev) => (prev.trim() && prev.trim() !== 'noc-vps' ? prev : String(profile.default_bth_user_name || prev || 'noc-vps')))
+    setBthAllowLan(Boolean(profile.default_allow_lan))
+    setWireGuardBootstrapOnboard(Boolean(profile.auto_bootstrap_bth))
   }, [])
 
   const rememberConnectionDiagnostics = useCallback(
@@ -649,6 +711,48 @@ const MikroTikManagement: React.FC = () => {
     },
     [API_BASE, authHeaders, logout, tenantContextId]
   )
+
+  const loadOnboardingProfile = useCallback(async () => {
+    setOnboardingProfileLoading(true)
+    try {
+      const response = await apiFetch('/api/mikrotik/onboarding/profile')
+      const payload = (await safeJson(response)) as RouterOnboardingProfileResponse | null
+      if (response.ok && payload?.success && payload.profile) {
+        applyOnboardingProfileDefaults(payload.profile)
+        return
+      }
+      setOnboardingProfile(null)
+    } catch (error) {
+      console.error('Error loading onboarding profile:', error)
+      setOnboardingProfile(null)
+    } finally {
+      setOnboardingProfileLoading(false)
+    }
+  }, [apiFetch, applyOnboardingProfileDefaults, safeJson])
+
+  const saveOnboardingProfile = useCallback(async () => {
+    if (!onboardingProfile) return
+    setSavingOnboardingProfile(true)
+    try {
+      const response = await apiFetch('/api/mikrotik/onboarding/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(onboardingProfile),
+      })
+      const payload = (await safeJson(response)) as RouterOnboardingProfileResponse | null
+      if (response.ok && payload?.success && payload.profile) {
+        applyOnboardingProfileDefaults(payload.profile)
+        addToast('success', 'Perfil MikroTik guardado para esta cuenta ISP')
+      } else {
+        addToast('error', payload?.error || 'No se pudo guardar el perfil MikroTik')
+      }
+    } catch (error) {
+      console.error('Error saving onboarding profile:', error)
+      addToast('error', 'Error de red guardando perfil MikroTik')
+    } finally {
+      setSavingOnboardingProfile(false)
+    }
+  }, [addToast, apiFetch, applyOnboardingProfileDefaults, onboardingProfile, safeJson])
 
   const fetchConnectionDiagnostics = useCallback(
     async (routerId: string) => {
@@ -728,6 +832,9 @@ const MikroTikManagement: React.FC = () => {
         const response = await apiFetch(`/api/mikrotik/routers/${routerId}/quick-connect${query}`)
         const payload = (await safeJson(response)) as RouterQuickConnectResponse | null
         if (response.ok && payload?.success) {
+          if (payload.onboarding_profile) {
+            applyOnboardingProfileDefaults(payload.onboarding_profile)
+          }
           setQuickConnect(payload)
         } else {
           setQuickConnect(null)
@@ -739,7 +846,7 @@ const MikroTikManagement: React.FC = () => {
         setQuickLoading(false)
       }
     },
-    [apiFetch, safeJson]
+    [apiFetch, applyOnboardingProfileDefaults, safeJson]
   )
 
   const loadRouterReadiness = useCallback(
@@ -813,7 +920,8 @@ const MikroTikManagement: React.FC = () => {
 
   useEffect(() => {
     loadRouters()
-  }, [loadRouters])
+    loadOnboardingProfile()
+  }, [loadOnboardingProfile, loadRouters])
 
   useEffect(() => {
     if (!selectedRouter) return
@@ -1105,12 +1213,16 @@ const MikroTikManagement: React.FC = () => {
         }
 
         setWireGuardImportSummary(payload)
+        if (payload.onboarding_profile) {
+          applyOnboardingProfileDefaults(payload.onboarding_profile)
+        }
         const suggestions = payload.suggestions || {}
         const suggestedIpOrHost = String(suggestions.router_ip_or_host || '').trim()
         setRouterForm((prev) => ({
           ...prev,
           name: prev.name.trim() ? prev.name : String(suggestions.router_name || prev.name || ''),
           ip_address: prev.ip_address.trim() ? prev.ip_address : (suggestedIpOrHost || String(prev.ip_address || '')),
+          username: prev.username.trim() ? prev.username : String(suggestions.default_username || prev.username || ''),
           api_port: String(suggestions.api_port || prev.api_port || '8728'),
         }))
 
@@ -1135,7 +1247,7 @@ const MikroTikManagement: React.FC = () => {
         setWireGuardImporting(false)
       }
     },
-    [addToast, apiFetch, appendWireGuardSourceToFormData, bthPrivateKey, bthUserName, routerForm.ip_address, safeJson]
+    [addToast, apiFetch, appendWireGuardSourceToFormData, applyOnboardingProfileDefaults, bthPrivateKey, bthUserName, routerForm.ip_address, safeJson]
   )
 
   const onboardRouterFromWireGuardArchive = useCallback(
@@ -1186,6 +1298,9 @@ const MikroTikManagement: React.FC = () => {
           return
         }
 
+        if (payload.onboarding_profile) {
+          applyOnboardingProfileDefaults(payload.onboarding_profile)
+        }
         setRouterReadiness(payload.readiness || null)
         if (payload.bootstrap) {
           setBootstrapResult(payload.bootstrap)
@@ -1245,6 +1360,7 @@ const MikroTikManagement: React.FC = () => {
       wireGuardBootstrapOnboard,
       wireGuardWriteProbe,
       appendWireGuardSourceToFormData,
+      applyOnboardingProfileDefaults,
     ]
   )
 
@@ -1304,6 +1420,9 @@ const MikroTikManagement: React.FC = () => {
         return
       }
 
+      if (payload.onboarding_profile) {
+        applyOnboardingProfileDefaults(payload.onboarding_profile)
+      }
       const createdRouter = normalizeRouterItem(payload.router)
       if (payload.diagnostics) rememberConnectionDiagnostics(createdRouter.id, payload.diagnostics)
       const connectionMessage = resolveConnectionFeedback(
@@ -1807,6 +1926,114 @@ const MikroTikManagement: React.FC = () => {
         <p className="mb-3 text-sm text-gray-600">
           Agrega routers nuevos con sus credenciales de API. Luego usa la pestana Configuracion para scripts de conexion remota.
         </p>
+        <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">Cuenta ISP actual</p>
+              <p className="mt-1 text-sm text-emerald-900">
+                {onboardingProfile?.account_label || user?.name || user?.email || 'Cuenta actual'}
+              </p>
+              <p className="text-xs text-emerald-700">
+                {onboardingProfile?.tenant_scope?.tenant_name || onboardingProfile?.tenant_scope?.tenant_slug || user?.email || 'Sin tenant explicito'}
+                {onboardingProfile?.tenant_scope?.tenant_id !== null && onboardingProfile?.tenant_scope?.tenant_id !== undefined
+                  ? ` | tenant #${onboardingProfile?.tenant_scope?.tenant_id}`
+                  : ''}
+              </p>
+              <p className="mt-1 text-xs text-emerald-700">
+                Este perfil aplica solo a la cuenta ISP/tenant seleccionada. Cada ISP puede usar sus propios defaults de nombre, API y Back To Home.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => applyOnboardingProfileDefaults(onboardingProfile)}
+                disabled={!onboardingProfile}
+                className="rounded-lg bg-white px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60"
+              >
+                Aplicar defaults
+              </button>
+              <button
+                onClick={() => void saveOnboardingProfile()}
+                disabled={savingOnboardingProfile || !onboardingProfile}
+                className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+              >
+                {savingOnboardingProfile ? 'Guardando...' : 'Guardar perfil ISP'}
+              </button>
+            </div>
+          </div>
+
+          {onboardingProfileLoading && <p className="mt-2 text-xs text-emerald-700">Cargando perfil de onboarding...</p>}
+          {onboardingProfile && (
+            <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
+              <input
+                value={onboardingProfile.account_label || ''}
+                onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), account_label: e.target.value }))}
+                placeholder="Nombre de cuenta ISP"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-gray-900"
+              />
+              <input
+                value={onboardingProfile.router_name_prefix || ''}
+                onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), router_name_prefix: e.target.value }))}
+                placeholder="Prefijo de routers"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-gray-900"
+              />
+              <input
+                value={onboardingProfile.comment_prefix || ''}
+                onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), comment_prefix: e.target.value }))}
+                placeholder="Prefijo de comentarios"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-gray-900"
+              />
+              <input
+                value={onboardingProfile.default_username || ''}
+                onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), default_username: e.target.value }))}
+                placeholder="Usuario API por defecto"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-gray-900"
+              />
+              <input
+                value={String(onboardingProfile.default_api_port || '')}
+                onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), default_api_port: Number(e.target.value || '8728') }))}
+                placeholder="Puerto API por defecto"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-gray-900"
+              />
+              <input
+                value={onboardingProfile.default_bth_user_name || ''}
+                onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), default_bth_user_name: e.target.value }))}
+                placeholder="Usuario BTH por defecto"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-gray-900"
+              />
+            </div>
+          )}
+          {onboardingProfile && (
+            <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-emerald-800 md:grid-cols-3">
+              <label className="flex items-center gap-2 rounded border border-emerald-200 bg-white px-2 py-1">
+                <input
+                  type="checkbox"
+                  checked={Boolean(onboardingProfile.default_allow_lan)}
+                  onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), default_allow_lan: e.target.checked }))}
+                  className="h-4 w-4"
+                />
+                BTH allow-lan por defecto
+              </label>
+              <label className="flex items-center gap-2 rounded border border-emerald-200 bg-white px-2 py-1">
+                <input
+                  type="checkbox"
+                  checked={Boolean(onboardingProfile.auto_vps_link)}
+                  onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), auto_vps_link: e.target.checked }))}
+                  className="h-4 w-4"
+                />
+                Auto vincular VPS por defecto
+              </label>
+              <label className="flex items-center gap-2 rounded border border-emerald-200 bg-white px-2 py-1">
+                <input
+                  type="checkbox"
+                  checked={Boolean(onboardingProfile.auto_bootstrap_bth)}
+                  onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), auto_bootstrap_bth: e.target.checked }))}
+                  className="h-4 w-4"
+                />
+                Bootstrap BTH por defecto
+              </label>
+            </div>
+          )}
+        </div>
         <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -1866,6 +2093,9 @@ const MikroTikManagement: React.FC = () => {
           </div>
           {wireGuardImportSummary?.success && (
             <div className="mt-2 rounded border border-blue-300 bg-white p-2 text-xs text-blue-900">
+              <p>
+                Cuenta ISP: <strong>{wireGuardImportSummary.onboarding_profile?.account_label || onboardingProfile?.account_label || '-'}</strong>
+              </p>
               <p>
                 Archivo: <strong>{wireGuardImportSummary.source_file || '-'}</strong>
               </p>
@@ -2029,6 +2259,21 @@ const MikroTikManagement: React.FC = () => {
                 {activeTab === 'config' && (
                   <div className="space-y-4">
                     <h4 className="text-lg font-semibold text-gray-900">Conexion remota rapida</h4>
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-emerald-800">Aislamiento por cuenta ISP</p>
+                          <p className="text-xs text-emerald-700">
+                            Perfil activo: <strong>{quickConnect?.onboarding_profile?.account_label || onboardingProfile?.account_label || user?.email || 'Cuenta actual'}</strong>
+                            {' '}| prefijo routers <strong>{quickConnect?.onboarding_profile?.router_name_prefix || onboardingProfile?.router_name_prefix || '-'}</strong>
+                            {' '}| usuario BTH <strong>{quickConnect?.onboarding_profile?.default_bth_user_name || onboardingProfile?.default_bth_user_name || '-'}</strong>
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
+                          tenant {quickConnect?.tenant_scope?.tenant_slug || onboardingProfile?.tenant_scope?.tenant_slug || tenantContextId || 'global'}
+                        </span>
+                      </div>
+                    </div>
                     <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="text-sm font-semibold text-gray-800">Perfil de acceso WAN</p>

@@ -5,7 +5,7 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import get_jwt_identity
 from app.routes.main_routes import admin_required
 from app import db
-from app.models import AdminSystemSetting, MikroTikRouter, Client, Plan, User
+from app.models import AdminSystemSetting, MikroTikRouter, Client, Plan, Tenant, User
 from app.services.mikrotik_service import MikroTikService
 from app.services.mikrotik_advanced_service import MikroTikAdvancedService
 from app.services.ai_diagnostic_service import AIDiagnosticService
@@ -52,6 +52,7 @@ WG_VPS_SYNC_MODE_DEFAULT = 'auto'
 WG_VPS_INTERFACE_DEFAULT = 'wg0'
 QR_SOURCE_DEFAULT_NAME = 'wireguard-qr.txt'
 WG_VPS_SYNC_PROFILE_SETTING_KEY = 'mikrotik_wg_vps_sync_profile'
+MIKROTIK_ONBOARDING_PROFILE_SETTING_KEY = 'mikrotik_onboarding_profile'
 
 
 def _decode_text_payload(raw_payload: bytes) -> str:
@@ -1947,6 +1948,148 @@ def _tenant_setting_upsert(key_name: str, value: Any, tenant_id: Any = _TENANT_S
     return row
 
 
+def _current_actor_user() -> Optional[User]:
+    try:
+        identity = get_jwt_identity()
+        if not identity:
+            return None
+        return db.session.get(User, identity)
+    except Exception:
+        return None
+
+
+def _tenant_context_payload() -> Dict[str, Any]:
+    tenant_id = current_tenant_id()
+    tenant = db.session.get(Tenant, tenant_id) if tenant_id is not None else None
+    user = _current_actor_user()
+    return {
+        'tenant_id': tenant_id,
+        'tenant_slug': str(getattr(tenant, 'slug', '') or '').strip() or None,
+        'tenant_name': str(getattr(tenant, 'name', '') or '').strip() or None,
+        'actor_email': str(getattr(user, 'email', '') or '').strip() or None,
+        'actor_name': str(getattr(user, 'name', '') or '').strip() or None,
+    }
+
+
+def _slugify_scope_token(value: Any, fallback: str = 'isp') -> str:
+    token = re.sub(r'[^a-z0-9]+', '-', str(value or '').strip().lower()).strip('-')
+    return token[:32] or fallback
+
+
+def _normalize_router_name_prefix(value: Any, fallback: str) -> str:
+    normalized = re.sub(r'[^a-zA-Z0-9._ -]+', '-', str(value or '').strip()).strip()
+    normalized = re.sub(r'\s+', '-', normalized).strip('-')
+    return normalized[:32] or fallback[:32] or 'isp'
+
+
+def _normalize_bth_user_name(value: Any, fallback: str) -> str:
+    normalized = re.sub(r'[^a-zA-Z0-9._-]+', '-', str(value or '').strip()).strip('-')
+    return normalized[:48] or fallback[:48] or 'noc-vps'
+
+
+def _suggest_router_name(base_name: str, prefix: str) -> str:
+    safe_base = re.sub(r'[^a-zA-Z0-9._ -]+', '-', str(base_name or '').strip()).strip()
+    safe_base = re.sub(r'\s+', '-', safe_base).strip('-')
+    safe_prefix = _normalize_router_name_prefix(prefix, fallback='isp')
+    if not safe_base:
+        return safe_prefix
+    lowered_base = safe_base.lower()
+    lowered_prefix = safe_prefix.lower()
+    if lowered_base == lowered_prefix or lowered_base.startswith(f'{lowered_prefix}-'):
+        return safe_base[:80]
+    return f'{safe_prefix}-{safe_base}'[:80]
+
+
+def _default_mikrotik_onboarding_profile() -> Dict[str, Any]:
+    tenant_context = _tenant_context_payload()
+    tenant_slug = str(tenant_context.get('tenant_slug') or '').strip()
+    tenant_name = str(tenant_context.get('tenant_name') or '').strip()
+    actor_name = str(tenant_context.get('actor_name') or '').strip()
+    actor_email = str(tenant_context.get('actor_email') or '').strip()
+    tenant_id = tenant_context.get('tenant_id')
+
+    account_label = tenant_name or actor_name or actor_email or (
+        f'ISP Tenant {tenant_id}' if tenant_id is not None else 'Cuenta principal'
+    )
+    account_slug = tenant_slug or _slugify_scope_token(account_label, fallback='isp')
+    router_name_prefix = _normalize_router_name_prefix(account_slug, fallback='isp')
+    default_bth_user_name = _normalize_bth_user_name(f'{account_slug}-noc', fallback='noc-vps')
+
+    return {
+        'account_label': account_label[:120],
+        'account_slug': account_slug,
+        'router_name_prefix': router_name_prefix,
+        'default_username': 'admin',
+        'default_api_port': 8728,
+        'default_bth_user_name': default_bth_user_name,
+        'default_allow_lan': True,
+        'auto_vps_link': True,
+        'auto_bootstrap_bth': False,
+        'comment_prefix': account_label[:120],
+        'tenant_scope': tenant_context,
+    }
+
+
+def _normalize_mikrotik_onboarding_profile(raw_payload: Dict[str, Any], existing: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    base = dict(existing or _default_mikrotik_onboarding_profile())
+    payload = raw_payload or {}
+
+    account_label = str(payload.get('account_label') or base.get('account_label') or '').strip()
+    if not account_label:
+        raise ValueError('account_label is required')
+
+    requested_slug = str(payload.get('account_slug') or base.get('account_slug') or '').strip()
+    account_slug = _slugify_scope_token(requested_slug or account_label, fallback='isp')
+
+    requested_prefix = payload.get('router_name_prefix')
+    if requested_prefix in (None, ''):
+        requested_prefix = base.get('router_name_prefix') or account_slug
+    router_name_prefix = _normalize_router_name_prefix(requested_prefix, fallback=account_slug)
+
+    requested_username = str(payload.get('default_username') or base.get('default_username') or 'admin').strip()
+    default_username = requested_username[:80] or 'admin'
+
+    try:
+        default_api_port = int(payload.get('default_api_port') or base.get('default_api_port') or 8728)
+    except (TypeError, ValueError) as exc:
+        raise ValueError('default_api_port must be integer') from exc
+    if default_api_port < 1 or default_api_port > 65535:
+        raise ValueError('default_api_port must be between 1 and 65535')
+
+    requested_bth_user = payload.get('default_bth_user_name')
+    if requested_bth_user in (None, ''):
+        requested_bth_user = base.get('default_bth_user_name') or f'{account_slug}-noc'
+    default_bth_user_name = _normalize_bth_user_name(requested_bth_user, fallback=f'{account_slug}-noc')
+
+    requested_comment = payload.get('comment_prefix')
+    if requested_comment in (None, ''):
+        requested_comment = base.get('comment_prefix') or account_label
+    comment_prefix = str(requested_comment or '').strip()[:120] or account_label[:120]
+
+    return {
+        'account_label': account_label[:120],
+        'account_slug': account_slug,
+        'router_name_prefix': router_name_prefix,
+        'default_username': default_username,
+        'default_api_port': default_api_port,
+        'default_bth_user_name': default_bth_user_name,
+        'default_allow_lan': _as_bool(payload.get('default_allow_lan'), default=bool(base.get('default_allow_lan', True))),
+        'auto_vps_link': _as_bool(payload.get('auto_vps_link'), default=bool(base.get('auto_vps_link', True))),
+        'auto_bootstrap_bth': _as_bool(payload.get('auto_bootstrap_bth'), default=bool(base.get('auto_bootstrap_bth', False))),
+        'comment_prefix': comment_prefix,
+        'tenant_scope': _tenant_context_payload(),
+    }
+
+
+def _resolve_mikrotik_onboarding_profile() -> Dict[str, Any]:
+    defaults = _default_mikrotik_onboarding_profile()
+    row = _tenant_setting_row(MIKROTIK_ONBOARDING_PROFILE_SETTING_KEY)
+    stored = row.value if row and isinstance(row.value, dict) else {}
+    if not isinstance(stored, dict):
+        stored = {}
+    return _normalize_mikrotik_onboarding_profile(stored, existing=defaults)
+
+
 def _secret_fernet() -> Fernet:
     encryption_key = current_app.config.get('ENCRYPTION_KEY')
     if not encryption_key:
@@ -2318,20 +2461,24 @@ def import_wireguard_archive():
         if not parsed.get('is_wireguard_config'):
             return jsonify({'success': False, 'error': 'File is not a valid WireGuard config'}), 400
 
+        onboarding_profile = _resolve_mikrotik_onboarding_profile()
         tunnel_host = _first_wireguard_interface_host(parsed)
         is_bth_profile = _is_back_to_home_client_profile(parsed)
         endpoint_host = str(parsed.get('endpoint_host') or '').strip()
         safe_host = re.sub(r'[^a-zA-Z0-9.-]+', '-', endpoint_host).strip('-') if endpoint_host else ''
-        suggested_name = f'Nodo-{safe_host}'[:80] if safe_host else ''
+        base_name = f'Nodo-{safe_host}'[:80] if safe_host else 'Nodo-MikroTik'
+        suggested_name = _suggest_router_name(base_name, str(onboarding_profile.get('router_name_prefix') or 'isp'))
 
         suggestions = {
             'router_name': suggested_name,
             'router_ip_or_host': '' if is_bth_profile else (tunnel_host or endpoint_host),
-            'api_port': 8728,
+            'api_port': int(onboarding_profile.get('default_api_port') or 8728),
             'bth_private_key': str(parsed.get('interface_private_key') or ''),
-            'bth_user_name': 'noc-vps',
+            'bth_user_name': str(onboarding_profile.get('default_bth_user_name') or 'noc-vps'),
             'router_tunnel_ip': tunnel_host or None,
             'router_management_ip_required': bool(is_bth_profile),
+            'default_username': str(onboarding_profile.get('default_username') or 'admin'),
+            'account_label': str(onboarding_profile.get('account_label') or ''),
         }
 
         return jsonify(
@@ -2340,6 +2487,8 @@ def import_wireguard_archive():
                 'source_file': source_file,
                 'wireguard': parsed,
                 'suggestions': suggestions,
+                'onboarding_profile': onboarding_profile,
+                'tenant_scope': onboarding_profile.get('tenant_scope') or {},
             }
         ), 200
     except zipfile.BadZipFile:
@@ -2390,11 +2539,15 @@ def onboard_router_from_wireguard_archive():
     if not endpoint_host:
         return jsonify({'success': False, 'error': 'ip_address or WireGuard endpoint host is required'}), 400
 
+    onboarding_profile = _resolve_mikrotik_onboarding_profile()
     safe_host = re.sub(r'[^a-zA-Z0-9.-]+', '-', endpoint_host).strip('-')
-    suggested_name = f'Nodo-{safe_host}'[:80] if safe_host else 'Nodo-MikroTik'
+    suggested_name = _suggest_router_name(
+        f'Nodo-{safe_host}'[:80] if safe_host else 'Nodo-MikroTik',
+        str(onboarding_profile.get('router_name_prefix') or 'isp'),
+    )
 
     name = str(form.get('name') or suggested_name).strip() or suggested_name
-    username = str(form.get('username') or '').strip()
+    username = str(form.get('username') or onboarding_profile.get('default_username') or '').strip()
     password = str(form.get('password') or '').strip()
     if not username:
         return jsonify({'success': False, 'error': 'username is required'}), 400
@@ -2404,7 +2557,7 @@ def onboard_router_from_wireguard_archive():
     raw_api_port = form.get('api_port')
     try:
         if raw_api_port in (None, ''):
-            api_port = 8728
+            api_port = int(onboarding_profile.get('default_api_port') or 8728)
         else:
             api_port = int(raw_api_port)
     except (TypeError, ValueError):
@@ -2414,22 +2567,23 @@ def onboard_router_from_wireguard_archive():
 
     update_existing = _as_bool(form.get('update_existing'), default=True)
     run_write_probe = _as_bool(form.get('write_probe'), default=True)
-    auto_vps_link = _as_bool(form.get('auto_vps_link'), default=True)
-    bootstrap_bth = _as_bool(form.get('bootstrap_bth'), default=False)
+    auto_vps_link = _as_bool(form.get('auto_vps_link'), default=bool(onboarding_profile.get('auto_vps_link', True)))
+    bootstrap_bth = _as_bool(form.get('bootstrap_bth'), default=bool(onboarding_profile.get('auto_bootstrap_bth', False)))
     requested_bth_user_name = str(form.get('bth_user_name') or '').strip()
-    bth_user_name = requested_bth_user_name or 'noc-vps'
+    bth_user_name = requested_bth_user_name or str(onboarding_profile.get('default_bth_user_name') or 'noc-vps')
     provided_bth_private_key = str(form.get('bth_private_key') or parsed.get('interface_private_key') or '').strip()
     bth_key_resolution = _resolve_bth_key_for_request(provided_bth_private_key, preferred_user_name=bth_user_name)
     bth_private_key = str(bth_key_resolution.get('private_key') or '').strip()
     bth_identity = bth_key_resolution.get('identity') or {}
     if not requested_bth_user_name and isinstance(bth_identity, dict):
         bth_user_name = str(bth_identity.get('user_name') or bth_user_name).strip() or bth_user_name
-    bth_allow_lan = _as_bool(form.get('bth_allow_lan'), default=True)
+    bth_allow_lan = _as_bool(form.get('bth_allow_lan'), default=bool(onboarding_profile.get('default_allow_lan', True)))
     replace_existing_user = _as_bool(form.get('replace_existing_user'), default=True)
     update_time = _as_bool(form.get('update_time'), default=True)
     ddns_enabled = _as_bool(form.get('ddns_enabled'), default=True)
     enable_vpn = _as_bool(form.get('enable_vpn'), default=True)
-    comment = str(form.get('comment') or 'FastISP VPS').strip() or 'FastISP VPS'
+    default_comment = str(onboarding_profile.get('comment_prefix') or 'FastISP VPS').strip() or 'FastISP VPS'
+    comment = str(form.get('comment') or f'{default_comment} | FastISP VPS').strip() or f'{default_comment} | FastISP VPS'
 
     if bootstrap_bth:
         guard_error = _live_guard(require_preflight=True, required_default=True)
@@ -2611,6 +2765,8 @@ def onboard_router_from_wireguard_archive():
         'private_key_source': bth_key_resolution.get('source') or 'tenant_managed',
         'wireguard_router_identity': parsed_identity,
         'vps_sync': vps_sync_payload,
+        'onboarding_profile': onboarding_profile,
+        'tenant_scope': onboarding_profile.get('tenant_scope') or {},
     }
     if bootstrap_payload is not None:
         payload['bootstrap'] = bootstrap_payload
@@ -2653,10 +2809,11 @@ def get_routers():
 @admin_required()
 def create_router():
     data = request.get_json() or {}
+    onboarding_profile = _resolve_mikrotik_onboarding_profile()
     name = str(data.get('name') or '').strip()
     raw_ip_address = str(data.get('ip_address') or '').strip()
     ip_address, parsed_ip_port = _normalize_router_host(raw_ip_address)
-    username = str(data.get('username') or '').strip()
+    username = str(data.get('username') or onboarding_profile.get('default_username') or '').strip()
     password = str(data.get('password') or '').strip()
 
     if not name:
@@ -2671,7 +2828,7 @@ def create_router():
     raw_api_port = data.get('api_port')
     try:
         if raw_api_port in (None, ''):
-            api_port = int(parsed_ip_port or 8728)
+            api_port = int(parsed_ip_port or onboarding_profile.get('default_api_port') or 8728)
         else:
             api_port = int(raw_api_port)
     except (TypeError, ValueError):
@@ -2705,6 +2862,8 @@ def create_router():
             'connection_tested': test_connection,
             'reachable': reachable,
             'diagnostics': diagnostics,
+            'onboarding_profile': onboarding_profile,
+            'tenant_scope': onboarding_profile.get('tenant_scope') or {},
         }
     ), 201
 
@@ -2824,6 +2983,28 @@ def delete_router(router_id):
     return jsonify({'success': True, 'deleted_id': str(router.id)}), 200
 
 
+@mikrotik_bp.route('/onboarding/profile', methods=['GET'])
+@admin_required()
+def get_mikrotik_onboarding_profile():
+    profile = _resolve_mikrotik_onboarding_profile()
+    return jsonify({'success': True, 'profile': profile, 'tenant_scope': profile.get('tenant_scope') or {}}), 200
+
+
+@mikrotik_bp.route('/onboarding/profile', methods=['POST'])
+@admin_required()
+def update_mikrotik_onboarding_profile():
+    payload = request.get_json(silent=True) or {}
+    existing = _resolve_mikrotik_onboarding_profile()
+    try:
+        profile = _normalize_mikrotik_onboarding_profile(payload, existing=existing)
+    except ValueError as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 400
+
+    _tenant_setting_upsert(MIKROTIK_ONBOARDING_PROFILE_SETTING_KEY, profile)
+    stored = _resolve_mikrotik_onboarding_profile()
+    return jsonify({'success': True, 'profile': stored, 'tenant_scope': stored.get('tenant_scope') or {}}), 200
+
+
 @mikrotik_bp.route('/wireguard/profile', methods=['GET'])
 @admin_required()
 def get_wireguard_profile():
@@ -2905,6 +3086,7 @@ def router_quick_connect(router_id):
     if not router:
         return jsonify({'success': False, 'error': 'Router not found'}), 404
 
+    onboarding_profile = _resolve_mikrotik_onboarding_profile()
     ip_scope = request.args.get('ip_scope')
     allowed_mgmt = str(request.args.get('allowed_mgmt') or 'YOUR_PUBLIC_IP/32').strip() or 'YOUR_PUBLIC_IP/32'
     wireguard_profile = _resolve_wireguard_profile(dict(request.args or {}))
@@ -2916,8 +3098,8 @@ def router_quick_connect(router_id):
         wireguard_profile.get('allowed_subnets') or WG_PROFILE_ALLOWED_SUBNETS_DEFAULT
     ).strip() or WG_PROFILE_ALLOWED_SUBNETS_DEFAULT
     requested_bth_user = str(request.args.get('bth_user') or '').strip()
-    bth_user = requested_bth_user or 'noc-vps'
-    bth_allow_lan = _as_bool(request.args.get('bth_allow_lan'), default=True)
+    bth_user = requested_bth_user or str(onboarding_profile.get('default_bth_user_name') or 'noc-vps')
+    bth_allow_lan = _as_bool(request.args.get('bth_allow_lan'), default=bool(onboarding_profile.get('default_allow_lan', True)))
     requested_bth_private_key = str(request.args.get('bth_private_key') or '').strip()
     bth_key_resolution = _resolve_bth_key_for_request(requested_bth_private_key, preferred_user_name=bth_user)
     bth_private_key = str(bth_key_resolution.get('private_key') or '').strip() or '<BASE64_WG_PRIVATE_KEY>'
@@ -2928,22 +3110,28 @@ def router_quick_connect(router_id):
 
     wg_endpoint_host = str(wireguard_profile.get('endpoint_host') or '')
     wg_endpoint_port = int(wireguard_profile.get('endpoint_port') or 51820)
+    account_label = str(onboarding_profile.get('account_label') or 'Cuenta ISP').strip() or 'Cuenta ISP'
+    comment_prefix = str(onboarding_profile.get('comment_prefix') or account_label).strip() or account_label
 
     router_peer_ip = f'10.250.{int(router.id) % 250}.2/32'
     public_reachable = bool(access_profile.get('allows_direct_inbound'))
-    direct_script_title = '# Perfil publico: habilitar acceso directo con ACL estricta.\n' if public_reachable else '# Perfil privado/NAT: acceso directo WAN puede no funcionar; prioriza WireGuard/BTH.\n'
+    direct_script_title = (
+        f'# Cuenta ISP: {account_label}\n# Perfil publico: habilitar acceso directo con ACL estricta.\n'
+        if public_reachable
+        else f'# Cuenta ISP: {account_label}\n# Perfil privado/NAT: acceso directo WAN puede no funcionar; prioriza WireGuard/BTH.\n'
+    )
     wg_script_header = (
-        '# Perfil WireGuard listo: aplica tunel FastISP.\n'
+        f'# Cuenta ISP: {account_label}\n# Perfil WireGuard listo: aplica tunel FastISP.\n'
         if bool(wireguard_profile.get('ready'))
-        else '# Perfil WireGuard incompleto: configura endpoint/public key en /api/mikrotik/wireguard/profile antes de ejecutar.\n'
+        else f'# Cuenta ISP: {account_label}\n# Perfil WireGuard incompleto: configura endpoint/public key en /api/mikrotik/wireguard/profile antes de ejecutar.\n'
     )
     scripts = {
         'direct_api_script': (
             direct_script_title
             + f"/ip service set api disabled=no port={router.api_port}\n"
             + "/ip service set ssh disabled=no port=22\n"
-            + f"/ip firewall address-list add list=fastisp-management address={allowed_mgmt} comment=\"FastISP NOC\"\n"
-            + f"/ip firewall filter add chain=input action=accept protocol=tcp dst-port={router.api_port},22 src-address-list=fastisp-management comment=\"FastISP remote access\"\n"
+            + f"/ip firewall address-list add list=fastisp-management address={allowed_mgmt} comment=\"{_script_escape(account_label)} NOC\"\n"
+            + f"/ip firewall filter add chain=input action=accept protocol=tcp dst-port={router.api_port},22 src-address-list=fastisp-management comment=\"{_script_escape(account_label)} remote access\"\n"
             + "/ip firewall filter add chain=input action=drop protocol=tcp dst-port=22,8728,8729 in-interface-list=WAN comment=\"Drop unmanaged remote\"\n"
         ),
         'wireguard_site_to_vps_script': (
@@ -2998,7 +3186,7 @@ def router_quick_connect(router_id):
             ),
             'add_vps_user_script': (
                 f'/ip/cloud/back-to-home-users/add name="{bth_user}" private-key="{bth_private_key}" '
-                f'allow-lan={"yes" if bth_allow_lan else "no"} comment="FastISP VPS" disabled=no\n'
+                f'allow-lan={"yes" if bth_allow_lan else "no"} comment="{_script_escape(comment_prefix)} | FastISP VPS" disabled=no\n'
                 f'/interface/wireguard/peers/show-client-config {bth_user}\n'
             ),
             'generate_private_key_hint': 'wg genkey | base64 -w0',
@@ -3107,6 +3295,8 @@ def router_quick_connect(router_id):
             'access_profile': access_profile,
             'connection_plan': connection_plan,
             'wireguard_profile': wireguard_profile,
+            'onboarding_profile': onboarding_profile,
+            'tenant_scope': onboarding_profile.get('tenant_scope') or {},
             'scripts': scripts,
             'guidance': guidance,
             'back_to_home': back_to_home,

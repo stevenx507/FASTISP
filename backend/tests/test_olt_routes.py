@@ -130,6 +130,55 @@ def test_pon_power_uses_show_optical_power_action(client, app, monkeypatch):
     assert payload["action"] == "show_optical_power"
 
 
+class _DummyDiagnosticService:
+    def __init__(self):
+        pass
+
+    def get_device(self, device_id):
+        return {
+            "id": device_id,
+            "name": "OLT Diagnostico",
+            "vendor": "zte",
+            "host": "10.20.30.40",
+            "transport": "telnet",
+            "port": 23,
+            "username": "admin",
+        }
+
+
+def test_test_connection_returns_diagnostics_payload_even_when_blocked(client, app, monkeypatch):
+    headers = _admin_headers(client, app)
+    monkeypatch.setattr(olt_routes, "OLTScriptService", _DummyDiagnosticService)
+    monkeypatch.setattr(
+        olt_routes,
+        "_build_connection_diagnostics",
+        lambda service, device, timeout_seconds=2.5: {
+            "success": False,
+            "status": "blocked",
+            "status_label": "Bloqueado",
+            "summary": "La OLT no esta lista para live.",
+            "next_step": "Abrir ruta TCP desde backend/VPS hacia OLT (ACL + VPN).",
+            "device": device,
+            "connection": {"success": False, "reachable": False, "latency_ms": 12.4, "error": "timed out"},
+            "readiness": {"score": 35, "status": "blocked"},
+            "management_path": {"id": "vpn_or_jump_host", "label": "VPN o jump host"},
+        },
+    )
+
+    response = client.post(
+        "/api/olt/devices/test-connection",
+        json={"device_id": "OLT-ZTE-001", "timeout": 2.5},
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["success"] is False
+    assert payload["status"] == "blocked"
+    assert payload["management_path"]["label"] == "VPN o jump host"
+    assert payload["connection"]["reachable"] is False
+
+
 class _SocketContext:
     def __enter__(self):
         return self
