@@ -136,6 +136,11 @@ def create_app(config_name_or_class='development'):
         if request.method == 'OPTIONS':
             return None
 
+        # Short-circuit for health check: no tenant resolution needed
+        if request.path in ('/api/health', '/health', '/api/v1/health'):
+            g.tenant_id = None
+            return None
+
         # GeoIP allowlist based on upstream header (e.g., from Traefik/Cloudflare)
         allowed_countries = app.config.get('GEOIP_ALLOWLIST') or []
         if allowed_countries:
