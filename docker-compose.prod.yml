@@ -41,6 +41,7 @@ services:
       - CACHE_TYPE=SimpleCache
       - CACHE_REDIS_URL=
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - ALLOW_GOOGLE_LOGIN=false
       - ALLOW_INSECURE_GOOGLE_LOGIN=${ALLOW_INSECURE_GOOGLE_LOGIN:-false}
     command: ["/bin/sh","-c","CACHE_TYPE=SimpleCache CACHE_REDIS_URL= gunicorn --bind 0.0.0.0:5000 --workers 2 wsgi:app"]
     depends_on:
@@ -79,7 +80,7 @@ services:
       context: ./frontend
       target: production
       args:
-        - VITE_API_URL=${API_URL}
+        - VITE_API_URL=${API_URL:-/api}
         - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
         - VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
         - VITE_GRAFANA_URL=${VITE_GRAFANA_URL}
@@ -87,7 +88,7 @@ services:
     env_file:
       - .env.prod
     environment:
-      - VITE_API_URL=${API_URL}
+      - VITE_API_URL=${API_URL:-/api}
       - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
       - VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
     networks:
@@ -174,9 +175,10 @@ services:
       start_period: 20s
 
   traefik:
-    # Traefik v2.6 es compatible con Docker Engine antiguo (API 1.24+)
-    # Si actualizas Docker en el VPS puedes subir a traefik:v2.10
-    image: traefik:v2.6
+    # Traefik v2.10 + DOCKER_API_VERSION=1.41 requerido por Docker Engine 27+ (API min 1.40)
+    image: traefik:v2.10
+    environment:
+      - DOCKER_API_VERSION=1.41
     command:
       - --api.insecure=false
       - --providers.docker=true
