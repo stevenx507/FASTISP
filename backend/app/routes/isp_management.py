@@ -10,6 +10,7 @@ Endpoints REST para:
 
 from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 bp = Blueprint('isp_management', __name__, url_prefix='/api')
 
@@ -26,10 +27,23 @@ def receive_heartbeat():
 
     Body: { "router_id": 1, "vpn_ip": "10.100.1.10" }
     """
-    # Solo aceptar desde red VPN interna (10.100.x.x) o localhost
+    # Solo aceptar desde red VPN interna (10.100.x.x), red Docker (172.16-31.x.x) o localhost
     client_ip = request.remote_addr or ""
-    if not (client_ip.startswith("10.100.") or client_ip.startswith("127.") or
-            client_ip.startswith("172.") or client_ip == "::1"):
+    # Obtener IP real si viene detrás de proxy
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        client_ip = forwarded_for.split(",")[0].strip()
+    
+    allowed = (
+        client_ip.startswith("10.100.")   # Red VPN SSTP
+        or client_ip.startswith("10.0.")   # Red interna alternativa
+        or client_ip.startswith("127.")    # Localhost
+        or client_ip == "::1"             # Localhost IPv6
+        or (client_ip.startswith("172.") and  # Solo redes Docker privadas (172.16-31.x.x)
+            any(client_ip.startswith(f"172.{i}.") for i in range(16, 32)))
+    )
+    if not allowed:
+        current_app.logger.warning(f"Heartbeat rechazado desde IP: {client_ip}")
         return jsonify({"error": "Acceso denegado"}), 403
 
     data = request.get_json(silent=True) or {}
@@ -49,6 +63,7 @@ def receive_heartbeat():
 
 
 @bp.route('/connectivity', methods=['GET'])
+@jwt_required()
 def get_connectivity_dashboard():
     """
     Dashboard de conectividad de todos los routers.
@@ -65,6 +80,7 @@ def get_connectivity_dashboard():
 
 
 @bp.route('/connectivity/<int:router_id>', methods=['GET'])
+@jwt_required()
 def check_router_status(router_id):
     """
     Verifica el estado de un router específico en tiempo real.
@@ -86,6 +102,7 @@ def check_router_status(router_id):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @bp.route('/routers/<int:router_id>/suspend-client', methods=['POST'])
+@jwt_required()
 def suspend_client(router_id):
     """
     Suspende un cliente por falta de pago (Address List morosos).
@@ -109,6 +126,7 @@ def suspend_client(router_id):
 
 
 @bp.route('/routers/<int:router_id>/restore-client', methods=['POST'])
+@jwt_required()
 def restore_client(router_id):
     """
     Reactiva un cliente eliminándolo de la lista de morosos.
@@ -131,6 +149,7 @@ def restore_client(router_id):
 
 
 @bp.route('/routers/<int:router_id>/set-bandwidth', methods=['POST'])
+@jwt_required()
 def set_bandwidth(router_id):
     """
     Configura el ancho de banda de un cliente (Simple Queue).
@@ -156,6 +175,7 @@ def set_bandwidth(router_id):
 
 
 @bp.route('/routers/<int:router_id>/traffic/<client_ip>', methods=['GET'])
+@jwt_required()
 def get_client_traffic(router_id, client_ip):
     """
     Lee el tráfico actual de un cliente.
@@ -171,6 +191,7 @@ def get_client_traffic(router_id, client_ip):
 
 
 @bp.route('/routers/<int:router_id>/interfaces', methods=['GET'])
+@jwt_required()
 def get_interfaces(router_id):
     """
     Lee estadísticas de interfaces del router.
@@ -187,6 +208,7 @@ def get_interfaces(router_id):
 
 
 @bp.route('/routers/<int:router_id>/connections', methods=['GET'])
+@jwt_required()
 def get_connections(router_id):
     """
     Retorna las conexiones activas del router.
@@ -206,6 +228,7 @@ def get_connections(router_id):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @bp.route('/routers/<int:router_id>/provision-vpn', methods=['POST'])
+@jwt_required()
 def provision_vpn(router_id):
     """
     Provisiona o re-provisiona el VPN de un router.
@@ -221,6 +244,7 @@ def provision_vpn(router_id):
 
 
 @bp.route('/routers/<int:router_id>/vpn-status', methods=['GET'])
+@jwt_required()
 def vpn_status(router_id):
     """
     Verifica el estado del usuario VPN de un router.
@@ -243,6 +267,7 @@ def vpn_status(router_id):
 
 
 @bp.route('/vpn/sessions', methods=['GET'])
+@jwt_required()
 def vpn_sessions():
     """
     Lista las sesiones VPN activas en SoftEther.
@@ -262,6 +287,7 @@ def vpn_sessions():
 # ══════════════════════════════════════════════════════════════════════════════
 
 @bp.route('/routers/<int:router_id>/secure-api', methods=['POST'])
+@jwt_required()
 def secure_api(router_id):
     """
     Configura el MikroTik para que solo acepte API desde el servidor FASTISP.
@@ -286,6 +312,7 @@ def secure_api(router_id):
 
 
 @bp.route('/routers/<int:router_id>/onboarding-script', methods=['GET'])
+@jwt_required()
 def onboarding_script(router_id):
     """
     Genera el script RouterOS completo de onboarding para un router.
