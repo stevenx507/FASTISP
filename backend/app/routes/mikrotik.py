@@ -2808,64 +2808,70 @@ def get_routers():
 @mikrotik_bp.route('/routers', methods=['POST'])
 @admin_required()
 def create_router():
-    data = request.get_json() or {}
-    onboarding_profile = _resolve_mikrotik_onboarding_profile()
-    name = str(data.get('name') or '').strip()
-    raw_ip_address = str(data.get('ip_address') or '').strip()
-    ip_address, parsed_ip_port = _normalize_router_host(raw_ip_address)
-    username = str(data.get('username') or onboarding_profile.get('default_username') or '').strip()
-    password = str(data.get('password') or '').strip()
-
-    if not name:
-        return jsonify({'success': False, 'error': 'name is required'}), 400
-    if not ip_address:
-        return jsonify({'success': False, 'error': 'ip_address is required'}), 400
-    if not username:
-        return jsonify({'success': False, 'error': 'username is required'}), 400
-    if not password:
-        return jsonify({'success': False, 'error': 'password is required'}), 400
-
-    raw_api_port = data.get('api_port')
     try:
-        if raw_api_port in (None, ''):
-            api_port = int(parsed_ip_port or onboarding_profile.get('default_api_port') or 8728)
-        else:
-            api_port = int(raw_api_port)
-    except (TypeError, ValueError):
-        return jsonify({'success': False, 'error': 'api_port must be integer'}), 400
-    if api_port < 1 or api_port > 65535:
-        return jsonify({'success': False, 'error': 'api_port must be between 1 and 65535'}), 400
+        data = request.get_json() or {}
+        onboarding_profile = _resolve_mikrotik_onboarding_profile()
+        name = str(data.get('name') or '').strip()
+        raw_ip_address = str(data.get('ip_address') or '').strip()
+        ip_address, parsed_ip_port = _normalize_router_host(raw_ip_address)
+        username = str(data.get('username') or onboarding_profile.get('default_username') or '').strip()
+        password = str(data.get('password') or '').strip()
 
-    duplicate = _tenant_router_query().filter_by(ip_address=ip_address).first()
-    if duplicate:
-        return jsonify({'success': False, 'error': 'A router with this IP already exists'}), 409
+        if not name:
+            return jsonify({'success': False, 'error': 'name is required'}), 400
+        if not ip_address:
+            return jsonify({'success': False, 'error': 'ip_address is required'}), 400
+        if not username:
+            return jsonify({'success': False, 'error': 'username is required'}), 400
+        if not password:
+            return jsonify({'success': False, 'error': 'password is required'}), 400
 
-    router = MikroTikRouter(
-        name=name,
-        ip_address=ip_address,
-        username=username,
-        api_port=api_port,
-        is_active=_as_bool(data.get('is_active'), default=True),
-        tenant_id=current_tenant_id(),
-    )
-    router.password = password
-    db.session.add(router)
-    db.session.commit()
+        raw_api_port = data.get('api_port')
+        try:
+            if raw_api_port in (None, ''):
+                api_port = int(parsed_ip_port or onboarding_profile.get('default_api_port') or 8728)
+            else:
+                api_port = int(raw_api_port)
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'error': 'api_port must be integer'}), 400
+        if api_port < 1 or api_port > 65535:
+            return jsonify({'success': False, 'error': 'api_port must be between 1 and 65535'}), 400
 
-    test_connection = _as_bool(data.get('test_connection'), default=True)
-    diagnostics = _build_router_connection_diagnostics(router) if test_connection else None
-    reachable = diagnostics.get('success') if diagnostics else None
-    return jsonify(
-        {
-            'success': True,
-            'router': router.to_dict(),
-            'connection_tested': test_connection,
-            'reachable': reachable,
-            'diagnostics': diagnostics,
-            'onboarding_profile': onboarding_profile,
-            'tenant_scope': onboarding_profile.get('tenant_scope') or {},
-        }
-    ), 201
+        duplicate = _tenant_router_query().filter_by(ip_address=ip_address).first()
+        if duplicate:
+            return jsonify({'success': False, 'error': 'A router with this IP already exists'}), 409
+
+        router = MikroTikRouter(
+            name=name,
+            ip_address=ip_address,
+            username=username,
+            api_port=api_port,
+            is_active=_as_bool(data.get('is_active'), default=True),
+            tenant_id=current_tenant_id(),
+        )
+        router.password = password
+        db.session.add(router)
+        db.session.commit()
+
+        test_connection = _as_bool(data.get('test_connection'), default=True)
+        diagnostics = _build_router_connection_diagnostics(router) if test_connection else None
+        reachable = diagnostics.get('success') if diagnostics else None
+        return jsonify(
+            {
+                'success': True,
+                'router': router.to_dict(),
+                'connection_tested': test_connection,
+                'reachable': reachable,
+                'diagnostics': diagnostics,
+                'onboarding_profile': onboarding_profile,
+                'tenant_scope': onboarding_profile.get('tenant_scope') or {},
+            }
+        ), 201
+    except Exception as exc:
+        db.session.rollback()
+        logger.error('Error creating router: %s', exc, exc_info=True)
+        return jsonify({'success': False, 'error': str(exc)}), 500
+
 
 @mikrotik_bp.route('/routers/<router_id>', methods=['GET'])
 @admin_required()
@@ -2986,8 +2992,12 @@ def delete_router(router_id):
 @mikrotik_bp.route('/onboarding/profile', methods=['GET'])
 @admin_required()
 def get_mikrotik_onboarding_profile():
-    profile = _resolve_mikrotik_onboarding_profile()
-    return jsonify({'success': True, 'profile': profile, 'tenant_scope': profile.get('tenant_scope') or {}}), 200
+    try:
+        profile = _resolve_mikrotik_onboarding_profile()
+        return jsonify({'success': True, 'profile': profile, 'tenant_scope': profile.get('tenant_scope') or {}}), 200
+    except Exception as exc:
+        logger.error('Error loading onboarding profile: %s', exc, exc_info=True)
+        return jsonify({'success': False, 'profile': {}, 'error': str(exc)}), 500
 
 
 @mikrotik_bp.route('/onboarding/profile', methods=['POST'])
