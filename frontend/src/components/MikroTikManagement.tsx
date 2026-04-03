@@ -2477,23 +2477,6 @@ const MikroTikManagement: React.FC = () => {
                                 {quickConnect.connection_plan.recommended_transport || '-'}
                               </span>
                             </div>
-                            {quickConnect.wireguard_profile && (
-                              <div className={`mt-2 rounded border p-2 text-xs ${
-                                quickConnect.wireguard_profile.ready
-                                  ? 'border-emerald-200 bg-emerald-100 text-emerald-800'
-                                  : 'border-amber-200 bg-amber-50 text-amber-800'
-                              }`}>
-                                <p>
-                                  Perfil WG: <strong>{quickConnect.wireguard_profile.ready ? 'listo' : 'incompleto'}</strong> | endpoint:{' '}
-                                  <strong>{quickConnect.wireguard_profile.endpoint || '-'}</strong>
-                                </p>
-                                {!quickConnect.wireguard_profile.ready && (quickConnect.wireguard_profile.issues || []).length > 0 && (
-                                  <p className="mt-1">
-                                    {(quickConnect.wireguard_profile.issues || []).join(' | ')}
-                                  </p>
-                                )}
-                              </div>
-                            )}
                             <div className="mt-2 flex flex-wrap gap-2">
                               {[1, 2, 3].map((step) => (
                                 <button
@@ -2514,7 +2497,7 @@ const MikroTikManagement: React.FC = () => {
                               <div className="mt-2 rounded border border-emerald-200 bg-white p-3">
                                 <p className="text-xs font-semibold uppercase text-emerald-800">Paso 1: Deteccion</p>
                                 <p className="mt-1 text-xs text-emerald-700">
-                                  Detecta automaticamente si conviene conexion directa o tunel (WireGuard/BTH).
+                                  Detecta automaticamente si el router es alcanzable para provisionar el tunel SoftEther SSTP.
                                 </p>
                                 <div className="mt-2 flex flex-wrap items-center gap-2">
                                   <button
@@ -2536,46 +2519,20 @@ const MikroTikManagement: React.FC = () => {
 
                             {connectionWizardStep === 2 && (
                               <div className="mt-2 rounded border border-emerald-200 bg-white p-3">
-                                <p className="text-xs font-semibold uppercase text-emerald-800">Paso 2: Ejecutar conexion</p>
+                                <p className="text-xs font-semibold uppercase text-emerald-800">Paso 2: Provisionar SoftEther SSTP</p>
                                 <p className="mt-1 text-xs text-emerald-700">
-                                  Conexion Express intenta Back To Home primero y usa WireGuard solo como opcion de respaldo.
+                                  El router MikroTik se conecta al VPS exclusivamente via tunel SoftEther SSTP. Ve al panel de Provisioning SSTP para crear o gestionar el tunel de este router.
                                 </p>
-                                <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-1">
-                                  <input
-                                    value={bthUserName}
-                                    onChange={(e) => setBthUserName(e.target.value)}
-                                    placeholder="Usuario BTH (ej: noc-vps)"
-                                    className="rounded border border-emerald-300 px-2 py-1 text-xs text-gray-900"
-                                  />
+                                <div className="mt-2 rounded border border-emerald-200 bg-emerald-50 px-3 py-2">
+                                  <p className="text-xs font-semibold text-emerald-800">Canal activo: SoftEther SSTP</p>
+                                  <p className="mt-1 text-xs text-emerald-700">Usa el panel "Provisioning SSTP" desde el menu para generar credenciales y el script de configuracion para este router.</p>
                                 </div>
-                                <label className="mt-2 flex items-center gap-2 text-xs text-emerald-800">
-                                  <input
-                                    type="checkbox"
-                                    checked={bthAllowLan}
-                                    onChange={(e) => setBthAllowLan(e.target.checked)}
-                                    className="rounded border-emerald-300"
-                                  />
-                                  Permitir acceso LAN en fallback BTH
-                                </label>
-                                <p className="mt-2 text-xs text-emerald-700">
-                                  Identidad BTH:{' '}
-                                  <strong>
-                                    {quickConnect.back_to_home?.managed_identity?.enabled ? 'automatica por tenant' : 'pendiente'}
-                                  </strong>
-                                </p>
                                 <div className="mt-2 flex flex-wrap items-center gap-2">
                                   <button
-                                    onClick={() => void runConnectionExpress()}
-                                    disabled={expressConnecting || bthActionLoading || quickLoading}
-                                    className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
-                                  >
-                                    {expressConnecting ? 'Conectando...' : 'Conectar Router Ahora'}
-                                  </button>
-                                  <button
                                     onClick={() => setConnectionWizardStep(3)}
-                                    className="rounded bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-300"
+                                    className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-800"
                                   >
-                                    Ir al paso 3
+                                    Ir al paso 3 → Validar
                                   </button>
                                 </div>
                               </div>
@@ -2591,11 +2548,8 @@ const MikroTikManagement: React.FC = () => {
                                   <span className={`rounded px-2 py-1 text-xs font-semibold ${routerReadiness?.checks?.find((item) => item.id === 'api_connectivity')?.ok ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
                                     API {routerReadiness?.checks?.find((item) => item.id === 'api_connectivity')?.ok ? 'OK' : 'pendiente'}
                                   </span>
-                                  <span className={`rounded px-2 py-1 text-xs font-semibold ${quickConnect.back_to_home?.reachable ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                                    Reachability {quickConnect.back_to_home?.reachable ? 'OK' : 'sin confirmar'}
-                                  </span>
-                                  <span className={`rounded px-2 py-1 text-xs font-semibold ${expressSteps.some((step) => step.status === 'failed') ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'}`}>
-                                    Fallback {expressSteps.some((step) => step.status === 'failed') ? 'con incidencias' : 'sin incidencias'}
+                                  <span className="rounded px-2 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700">
+                                    Canal: SoftEther SSTP
                                   </span>
                                 </div>
                                 <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -2704,224 +2658,12 @@ const MikroTikManagement: React.FC = () => {
                             {quickConnect.scripts.direct_api_script}
                           </pre>
                         </div>
-                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                          <div className="mb-2 flex items-center justify-between">
-                            <p className="text-sm font-semibold text-gray-800">Script WireGuard sitio a VPS</p>
-                            <button
-                              onClick={() => copyScript('script WireGuard', quickConnect.scripts?.wireguard_site_to_vps_script || '')}
-                              className="rounded bg-gray-800 px-2 py-1 text-xs font-semibold text-white hover:bg-gray-700"
-                            >
-                              Copiar
-                            </button>
-                          </div>
-                          <pre className="max-h-52 overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-100">
-                            {quickConnect.scripts.wireguard_site_to_vps_script}
-                          </pre>
-                        </div>
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                          <div className="rounded-lg border border-gray-200 p-3">
-                            <p className="text-xs font-semibold uppercase text-gray-500">Login Windows/Linux</p>
-                            <p className="mt-2 rounded bg-slate-900 px-2 py-1 text-xs text-slate-100">{quickConnect.scripts.windows_login}</p>
-                            <p className="mt-2 rounded bg-slate-900 px-2 py-1 text-xs text-slate-100">{quickConnect.scripts.linux_login}</p>
-                          </div>
-                          <div className="rounded-lg border border-gray-200 p-3">
-                            <p className="text-xs font-semibold uppercase text-gray-500">Back To Home</p>
-                            <ul className="mt-2 space-y-1 text-xs text-gray-700">
-                              {(quickConnect.guidance?.back_to_home || []).map((step, idx) => (
-                                <li key={idx}>- {step}</li>
-                              ))}
-                            </ul>
-                          </div>
+                        <div className="rounded-lg border border-gray-200 p-3">
+                          <p className="text-xs font-semibold uppercase text-gray-500">Login Windows/Linux</p>
+                          <p className="mt-2 rounded bg-slate-900 px-2 py-1 text-xs text-slate-100">{quickConnect.scripts.windows_login}</p>
+                          <p className="mt-2 rounded bg-slate-900 px-2 py-1 text-xs text-slate-100">{quickConnect.scripts.linux_login}</p>
                         </div>
 
-                        {quickConnect.back_to_home && (
-                          <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className={`rounded-full px-2 py-1 text-xs font-semibold ${quickConnect.back_to_home.reachable ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                                {quickConnect.back_to_home.reachable ? 'router reachable' : 'router unreachable'}
-                              </span>
-                              <span className={`rounded-full px-2 py-1 text-xs font-semibold ${quickConnect.back_to_home.supported ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                                {quickConnect.back_to_home.supported ? 'BTH soportado' : 'BTH no confirmado'}
-                              </span>
-                              {quickConnect.back_to_home.routeros_version && (
-                                <span className="rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700">
-                                  RouterOS {quickConnect.back_to_home.routeros_version}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-700">
-                              DDNS: <strong>{String(quickConnect.back_to_home.ddns_enabled ?? 'unknown')}</strong> | BTH VPN: <strong>{quickConnect.back_to_home.back_to_home_vpn || '-'}</strong> | Estado: <strong>{quickConnect.back_to_home.vpn_status || '-'}</strong>
-                            </p>
-                            <p className="text-xs text-gray-700">
-                              DNS: <strong>{quickConnect.back_to_home.vpn_dns_name || '-'}</strong> | Interfaz: <strong>{quickConnect.back_to_home.vpn_interface || '-'}</strong> | Puerto: <strong>{quickConnect.back_to_home.vpn_port || '-'}</strong>
-                            </p>
-
-                            <div className="rounded border border-gray-300 bg-white p-3">
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <p className="text-xs font-semibold uppercase text-gray-600">Acciones operativas BTH</p>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={confirmBootstrapBackToHome}
-                                    disabled={bthActionLoading || !quickConnect.back_to_home.reachable}
-                                    className="rounded bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-                                  >
-                                    {bthActionLoading ? 'Procesando...' : 'Bootstrap 1 clic'}
-                                  </button>
-                                  <button
-                                    onClick={confirmEnableBackToHome}
-                                    disabled={bthActionLoading || !quickConnect.back_to_home.reachable}
-                                    className="rounded bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-                                  >
-                                    {bthActionLoading ? 'Procesando...' : 'Solo habilitar BTH'}
-                                  </button>
-                                </div>
-                              </div>
-                              <p className="mt-2 text-xs text-gray-600">
-                                Bootstrap 1 clic aplica DDNS + BTH + usuario VPS. "Solo habilitar" mantiene el flujo manual.
-                              </p>
-
-                              <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-1">
-                                <input
-                                  value={bthUserName}
-                                  onChange={(e) => setBthUserName(e.target.value)}
-                                  placeholder="Usuario BTH (ej: noc-vps)"
-                                  className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
-                                />
-                              </div>
-
-                              <label className="mt-2 flex items-center gap-2 text-xs text-gray-700">
-                                <input
-                                  type="checkbox"
-                                  checked={bthAllowLan}
-                                  onChange={(e) => setBthAllowLan(e.target.checked)}
-                                  className="rounded border-gray-300"
-                                />
-                                Permitir acceso LAN desde este usuario BTH
-                              </label>
-                              <p className="mt-2 text-xs text-gray-600">
-                                Identidad BTH:{' '}
-                                <strong>
-                                  {quickConnect.back_to_home?.managed_identity?.enabled ? 'automatica por tenant' : 'automatica pendiente'}
-                                </strong>
-                              </p>
-
-                              <div className="mt-3">
-                                <button
-                                  onClick={confirmCreateBackToHomeUser}
-                                  disabled={bthActionLoading || quickConnect.back_to_home.bth_users_supported === false}
-                                  className="rounded bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-                                >
-                                  {bthActionLoading ? 'Procesando...' : 'Crear usuario BTH para VPS'}
-                                </button>
-                                {quickConnect.back_to_home.bth_users_supported === false && (
-                                  <p className="mt-2 text-xs text-amber-700">
-                                    Este router no expone API de usuarios BTH. Requiere RouterOS 7.14+.
-                                  </p>
-                                )}
-                              </div>
-
-                              {bootstrapResult && (
-                                <div className="mt-3 rounded border border-slate-300 bg-slate-50 p-2">
-                                  <p className="text-xs font-semibold uppercase text-slate-700">Resultado bootstrap</p>
-                                  <p className="mt-1 text-xs text-slate-700">
-                                    Usuario visible despues de ejecutar: <strong>{String(bootstrapResult.user_visible_after_run ?? false)}</strong>
-                                  </p>
-                                  {Array.isArray(bootstrapResult.missing) && bootstrapResult.missing.length > 0 && (
-                                    <ul className="mt-2 space-y-1 text-xs text-amber-700">
-                                      {bootstrapResult.missing.map((item, idx) => (
-                                        <li key={`${item}-${idx}`}>- {item}</li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                  {Array.isArray(bootstrapResult.next_steps) && bootstrapResult.next_steps.length > 0 && (
-                                    <ul className="mt-2 space-y-1 text-xs text-slate-700">
-                                      {bootstrapResult.next_steps.map((item, idx) => (
-                                        <li key={`${item}-${idx}`}>- {item}</li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            {quickConnect.back_to_home.scripts?.enable_script && (
-                              <div className="rounded border border-gray-300 bg-white p-2">
-                                <div className="mb-2 flex items-center justify-between">
-                                  <p className="text-xs font-semibold uppercase text-gray-600">Script habilitar Back To Home</p>
-                                  <button
-                                    onClick={() => copyScript('script BTH enable', quickConnect.back_to_home?.scripts?.enable_script || '')}
-                                    className="rounded bg-gray-800 px-2 py-1 text-xs font-semibold text-white hover:bg-gray-700"
-                                  >
-                                    Copiar
-                                  </button>
-                                </div>
-                                <pre className="max-h-40 overflow-auto rounded bg-slate-950 p-2 text-xs text-slate-100">
-                                  {quickConnect.back_to_home.scripts.enable_script}
-                                </pre>
-                              </div>
-                            )}
-
-                            {quickConnect.back_to_home.scripts?.add_vps_user_script && (
-                              <div className="rounded border border-gray-300 bg-white p-2">
-                                <div className="mb-2 flex items-center justify-between">
-                                  <p className="text-xs font-semibold uppercase text-gray-600">Script usuario BTH para VPS</p>
-                                  <button
-                                    onClick={() => copyScript('script BTH VPS', quickConnect.back_to_home?.scripts?.add_vps_user_script || '')}
-                                    className="rounded bg-gray-800 px-2 py-1 text-xs font-semibold text-white hover:bg-gray-700"
-                                  >
-                                    Copiar
-                                  </button>
-                                </div>
-                                <pre className="max-h-40 overflow-auto rounded bg-slate-950 p-2 text-xs text-slate-100">
-                                  {quickConnect.back_to_home.scripts.add_vps_user_script}
-                                </pre>
-                                <p className="mt-2 text-xs text-gray-600">
-                                  Generar private key WireGuard en VPS: <code>{quickConnect.back_to_home.scripts.generate_private_key_hint}</code>
-                                </p>
-                              </div>
-                            )}
-
-                            {Array.isArray(quickConnect.back_to_home.users) && quickConnect.back_to_home.users.length > 0 && (
-                              <div className="rounded border border-gray-300 bg-white p-2">
-                                <p className="text-xs font-semibold uppercase text-gray-600">Usuarios BTH actuales</p>
-                                <ul className="mt-2 space-y-2 text-xs text-gray-700">
-                                  {quickConnect.back_to_home.users.map((user, idx) => (
-                                    <li key={`${user.name}-${idx}`} className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 px-2 py-1">
-                                      <span>
-                                        {user.name} | allow-lan: {String(user.allow_lan)} | disabled: {String(user.disabled)} | expires: {user.expires || '-'}
-                                      </span>
-                                      <button
-                                        onClick={() => confirmRemoveBackToHomeUser(user.name)}
-                                        disabled={bthActionLoading || !user.name}
-                                        className="rounded bg-rose-600 px-2 py-1 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
-                                      >
-                                        Eliminar
-                                      </button>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-
-                            {Array.isArray(quickConnect.back_to_home.limitations) && quickConnect.back_to_home.limitations.length > 0 && (
-                              <div className="rounded border border-gray-300 bg-white p-2">
-                                <p className="text-xs font-semibold uppercase text-gray-600">Limitaciones BTH</p>
-                                <ul className="mt-2 space-y-1 text-xs text-gray-700">
-                                  {quickConnect.back_to_home.limitations.map((item, idx) => (
-                                    <li key={idx}>- {item}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-
-                            {quickConnect.back_to_home.users_error && (
-                              <p className="text-xs text-amber-700">No fue posible leer usuarios BTH: {quickConnect.back_to_home.users_error}</p>
-                            )}
-                            {quickConnect.back_to_home.error && (
-                              <p className="text-xs text-rose-700">Error BTH: {quickConnect.back_to_home.error}</p>
-                            )}
-                          </div>
-                        )}
                         </>
                         )}
                       </>
