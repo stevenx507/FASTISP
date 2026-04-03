@@ -55,7 +55,8 @@ export const apiClient = {
       })
     } catch (fetchError) {
       clearTimeout(timeoutId)
-      if (fetchError instanceof DOMException && (fetchError.name === 'AbortError' || fetchError.name === 'TimeoutError')) {
+      const abortName = (fetchError as { name?: string })?.name
+      if (abortName === 'AbortError' || abortName === 'TimeoutError') {
         throw new ApiError('El servidor no respondió a tiempo. Verifica tu conexión o intenta de nuevo.', 0)
       }
       throw fetchError
