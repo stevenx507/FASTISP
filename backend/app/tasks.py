@@ -300,3 +300,145 @@ def run_backups() -> Dict[str, Any]:
     # Delegamos la logica a backup_service para mantener una sola fuente.
     from app.services.backup_service import run_backups as run_full_backups
     return run_full_backups()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pilar 2: Heartbeat / Monitor de conectividad VPN
+# ─────────────────────────────────────────────────────────────────────────────
+
+@celery.task(
+    bind=True,
+    name='app.tasks.heartbeat_check',
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_kwargs={'max_retries': 2},
+)
+def heartbeat_check(self) -> Dict[str, Any]:
+    """
+    Verifica la conectividad de todos los MikroTik via VPN.
+    Ejecutado cada minuto por Celery Beat.
+    Genera alertas si un router se detecta offline.
+    """
+    lock_key = f"tasks:heartbeat_check:{datetime.utcnow().strftime('%Y%m%d%H%M')}"
+    lock_client, lock_token, acquired = _try_acquire_lock(lock_key, ttl_seconds=55)
+    if not acquired:
+        current_app.logger.info('Skipping heartbeat_check: lock already held.')
+        return {}
+
+    try:
+        from app.services.heartbeat_service import run_heartbeat_check
+        result = run_heartbeat_check()
+        current_app.logger.info(
+            'Heartbeat check: online=%s offline=%s total=%s',
+            result.get('online', 0), result.get('offline', 0), result.get('total', 0)
+        )
+        return result
+    finally:
+        _release_lock(lock_client, lock_key, lock_token)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pilar 1: Orquestador VPN — tareas asíncronas
+# ─────────────────────────────────────────────────────────────────────────────
+
+@celery.task(
+    bind=True,
+    name='app.tasks.provision_router_vpn',
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_kwargs={'max_retries': 3},
+)
+def provision_router_vpn_task(self, router_id: int) -> Dict[str, Any]:
+    """
+    Provisiona el VPN de un router de forma asíncrona.
+    Llamado cuando se crea un nuevo MikroTikRouter.
+    """
+    try:
+        from app.services.vpn_orchestrator import provision_router_vpn
+        result = provision_router_vpn(router_id)
+        current_app.logger.info(
+            'VPN provisioned for router %s: %s',
+            router_id, result.get('vpn_username', 'N/A')
+        )
+        return result
+    except Exception as exc:
+        current_app.logger.error('Error provisioning VPN for router %s: %s', router_id, exc)
+        raise
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pilar 4: Comandos MikroTik — corte, QoS, tráfico
+# ─────────────────────────────────────────────────────────────────────────────
+
+@celery.task(
+    bind=True,
+    name='app.tasks.suspend_client_billing',
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_kwargs={'max_retries': 3},
+)
+def suspend_client_billing(self, router_id: int, client_ip: str,
+                            client_name: str = "") -> Dict[str, Any]:
+    """
+    Suspende un cliente por falta de pago via Address List en MikroTik.
+    """
+    try:
+        from app.services.mikrotik_commands import suspend_client_by_ip
+        result = suspend_client_by_ip(router_id, client_ip, client_name)
+        current_app.logger.info(
+            'Client %s (%s) suspended on router %s: %s',
+            client_name, client_ip, router_id, result.get('action')
+        )
+        return result
+    except Exception as exc:
+        current_app.logger.error(
+            'Error suspending client %s on router %s: %s', client_ip, router_id, exc
+        )
+        raise
+
+
+@celery.task(
+    bind=True,
+    name='app.tasks.restore_client_billing',
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_kwargs={'max_retries': 3},
+)
+def restore_client_billing(self, router_id: int, client_ip: str) -> Dict[str, Any]:
+    """Reactiva un cliente eliminándolo de la Address List de morosos."""
+    try:
+        from app.services.mikrotik_commands import restore_client_by_ip
+        result = restore_client_by_ip(router_id, client_ip)
+        current_app.logger.info(
+            'Client %s restored on router %s: %s', client_ip, router_id, result.get('action')
+        )
+        return result
+    except Exception as exc:
+        current_app.logger.error(
+            'Error restoring client %s on router %s: %s', client_ip, router_id, exc
+        )
+        raise
+
+
+@celery.task(
+    bind=True,
+    name='app.tasks.update_client_bandwidth',
+)
+def update_client_bandwidth(self, router_id: int, client_ip: str,
+                              client_name: str, download_mbps: int,
+                              upload_mbps: int) -> Dict[str, Any]:
+    """Actualiza el ancho de banda de un cliente en tiempo real."""
+    try:
+        from app.services.mikrotik_commands import set_client_bandwidth
+        result = set_client_bandwidth(router_id, client_ip, client_name,
+                                       download_mbps, upload_mbps)
+        current_app.logger.info(
+            'Bandwidth updated for %s on router %s: %sMbps/%sMbps',
+            client_ip, router_id, download_mbps, upload_mbps
+        )
+        return result
+    except Exception as exc:
+        current_app.logger.error(
+            'Error updating bandwidth for %s: %s', client_ip, exc
+        )
+        raise

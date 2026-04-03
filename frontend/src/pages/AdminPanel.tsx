@@ -72,6 +72,7 @@ import PermissionsView from '../components/admin/PermissionsView'
 import PlanChangeModal from '../components/admin/PlanChangeModal'
 import ManualPaymentModal from '../components/admin/ManualPaymentModal'
 import InteractiveDocs from '../components/admin/InteractiveDocs'
+import SstpProvisioning from './SstpProvisioning'
 import { apiClient } from '../lib/apiClient'
 import { normalizeRole } from '../lib/roles'
 
@@ -112,6 +113,7 @@ const ALL_NAV_GROUPS: NavGroup[] = [
       { id: 'clients',     name: 'Clientes',          icon: UserGroupIcon },
       { id: 'network',     name: 'MikroTik',          icon: WifiIcon },
       { id: 'olt',         name: 'OLT',               icon: ServerIcon },
+      { id: 'sstp',        name: 'Túneles SSTP',      icon: ShieldCheckIcon },
       { id: 'maps',        name: 'Mapa de Red',       icon: MapIcon },
       { id: 'billing',     name: 'Facturación',       icon: CreditCardIcon },
       { id: 'monitoring',  name: 'Monitoreo',         icon: SignalIcon },
@@ -456,6 +458,7 @@ const AdminPanel: React.FC = () => {
     staff: <StaffView />,
     network: <MikroTikManagement />,
     olt: <OltManagement />,
+    sstp: <SstpProvisioning />,
     academy: <InteractiveDocs onNavigateToModule={(moduleId) => setActiveView(moduleId)} />,
     maps: <NetworkMap />,
     billing: (
@@ -522,6 +525,8 @@ const AdminPanel: React.FC = () => {
                 <div className="absolute top-3 right-3">
                   <button
                     onClick={() => setSidebarOpen(false)}
+                    title="Cerrar menú"
+                    aria-label="Cerrar menú"
                     className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
                   >
                     <XMarkIcon className="h-5 w-5" />
@@ -563,6 +568,8 @@ const AdminPanel: React.FC = () => {
           {/* Mobile menu button */}
           <button
             onClick={() => setSidebarOpen(true)}
+            title="Abrir menú"
+            aria-label="Abrir menú"
             className="lg:hidden rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
           >
             <Bars3Icon className="h-5 w-5" />

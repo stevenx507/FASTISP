@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import ClientDashboard from './pages/ClientDashboard'
 import BillingPortal from './pages/BillingPortal'
 import AdminPanel from './pages/AdminPanel'
+import SstpProvisioning from './pages/SstpProvisioning'
 import TechApp from './pages/TechApp'
 import ClientUsage from './pages/ClientUsage'
 import ClientSupport from './pages/ClientSupport'
@@ -34,6 +35,7 @@ function App() {
             <Route path="/dashboard/profile" element={<ProtectedRoute allowedRoles={['client']}><ClientProfile /></ProtectedRoute>} />
             <Route path="/tech" element={<ProtectedRoute allowedRoles={['admin', 'platform_admin', 'tech', 'support', 'billing', 'noc', 'operator']}><TechApp /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin', 'platform_admin', 'tech', 'support', 'billing', 'noc', 'operator']}><AdminPanel /></ProtectedRoute>} />
+            <Route path="/admin/sstp" element={<ProtectedRoute allowedRoles={['admin', 'platform_admin', 'tech', 'noc', 'operator']}><SstpProvisioning /></ProtectedRoute>} />
             <Route path="/platform" element={<ProtectedRoute allowedRoles={['platform_admin']}><PlatformAdmin /></ProtectedRoute>} />
             <Route path="/platform/bootstrap" element={isAuthenticated ? <Navigate to={authHome} /> : <PlatformBootstrap />} />
             <Route path="*" element={<Navigate to={isAuthenticated ? authHome : "/login"} />} />

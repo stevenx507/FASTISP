@@ -74,6 +74,11 @@ def create_app(config_name_or_class='development'):
             'task': 'app.tasks.run_backups',
             'schedule': crontab(minute=0, hour=2),
         },
+        # Pilar 2: Heartbeat — verifica conectividad VPN cada minuto
+        'heartbeat-check-every-minute': {
+            'task': 'app.tasks.heartbeat_check',
+            'schedule': 60.0,
+        },
     }
 
     # Define the Celery task context
@@ -179,9 +184,12 @@ def create_app(config_name_or_class='development'):
     from app.routes.mikrotik import mikrotik_bp
     from app.routes.olt import olt_bp
     from app.routes.network import network_bp
+    from app.routes.sstp import sstp_bp
+    from app.routes.isp_management import bp as isp_management_bp
     app.register_blueprint(main_bp, url_prefix='/api')
     app.register_blueprint(mikrotik_bp, url_prefix='/api/mikrotik')
     app.register_blueprint(olt_bp, url_prefix='/api/olt')
+    app.register_blueprint(sstp_bp, url_prefix='/api/sstp')
     app.register_blueprint(main_bp, url_prefix='/api/v1', name='main_v1')
     app.register_blueprint(
         mikrotik_bp, url_prefix='/api/v1/mikrotik', name='mikrotik_v1'
@@ -189,6 +197,9 @@ def create_app(config_name_or_class='development'):
     app.register_blueprint(olt_bp, url_prefix='/api/v1/olt', name='olt_v1')
     app.register_blueprint(network_bp, url_prefix='/api/network')
     app.register_blueprint(network_bp, url_prefix='/api/v1/network', name='network_v1')
+    app.register_blueprint(sstp_bp, url_prefix='/api/v1/sstp', name='sstp_v1')
+    # Pilar 1-4: ISP Management (heartbeat, VPN, comandos MikroTik, seguridad)
+    app.register_blueprint(isp_management_bp)
 
     # Explicit OPTIONS responder so CORS preflights never 404/405
     @app.route('/api/<path:any_path>', methods=['OPTIONS'])

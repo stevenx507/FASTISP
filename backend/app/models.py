@@ -227,6 +227,11 @@ class MikroTikRouter(db.Model):
     last_seen = db.Column(db.DateTime)
     alert_config = db.Column(db.JSON, nullable=True)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True)
+    # ── Campos VPN (Pilar 1: Orquestador) ──────────────────────────────────
+    vpn_username = db.Column(db.String(120), nullable=True, unique=True, index=True)
+    vpn_password_encrypted = db.Column(db.LargeBinary, nullable=True)
+    vpn_ip_address = db.Column(db.String(45), nullable=True)
+    vpn_provisioned_at = db.Column(db.DateTime, nullable=True)
 
     tenant = db.relationship('Tenant', back_populates='routers')
     clients = db.relationship('Client', back_populates='router')
@@ -1206,3 +1211,69 @@ Tenant.network_nodes = db.relationship('NetworkNode', back_populates='tenant')
 Plan.bandwidth_reuse = db.relationship('PlanBandwidthReuse', back_populates='plan', uselist=False)
 Plan.discounts = db.relationship('PlanDiscount', back_populates='plan')
 Client.network_profile = db.relationship('ClientNetworkProfile', back_populates='client', uselist=False, cascade='all, delete-orphan')
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SstpTunnel - SSTP VPN tunnel provisioning per MikroTik router
+# ─────────────────────────────────────────────────────────────────────────────
+
+class SstpTunnel(db.Model):
+    """Stores SSTP tunnel credentials and state for each ISP client MikroTik."""
+    __tablename__ = 'sstp_tunnels'
+
+    id = db.Column(db.Integer, primary_key=True)
+    router_id = db.Column(db.Integer, db.ForeignKey('mikrotik_routers.id', ondelete='CASCADE'), nullable=False, index=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id', ondelete='CASCADE'), nullable=True, index=True)
+    username = db.Column(db.String(120), nullable=False, unique=True)
+    # password stored encrypted with Fernet (same key as router passwords)
+    _password_encrypted = db.Column(db.LargeBinary, nullable=False, name='password_plain')
+    server_ip = db.Column(db.String(45), nullable=False)
+    client_ip = db.Column(db.String(45), nullable=False)
+    server_host = db.Column(db.String(255), nullable=False, default='fastisp.cloud')
+    server_port = db.Column(db.Integer, nullable=False, default=443)
+    status = db.Column(db.String(20), nullable=False, default='active')  # active, revoked, pending
+    last_seen = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    revoked_at = db.Column(db.DateTime, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+
+    router = db.relationship('MikroTikRouter', backref=db.backref('sstp_tunnel', uselist=False))
+    tenant = db.relationship('Tenant')
+
+    @property
+    def password(self):
+        if self._password_encrypted:
+            try:
+                fernet = _get_fernet()
+                return fernet.decrypt(self._password_encrypted).decode('utf-8')
+            except Exception:
+                return None
+        return None
+
+    @password.setter
+    def password(self, plaintext):
+        if plaintext:
+            fernet = _get_fernet()
+            self._password_encrypted = fernet.encrypt(plaintext.encode('utf-8'))
+        else:
+            self._password_encrypted = None
+
+    def to_dict(self, include_password=False):
+        d = {
+            'id': self.id,
+            'router_id': self.router_id,
+            'tenant_id': self.tenant_id,
+            'username': self.username,
+            'server_ip': self.server_ip,
+            'client_ip': self.client_ip,
+            'server_host': self.server_host,
+            'server_port': self.server_port,
+            'status': self.status,
+            'last_seen': self.last_seen.isoformat() if self.last_seen else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'revoked_at': self.revoked_at.isoformat() if self.revoked_at else None,
+            'router_name': self.router.name if self.router else None,
+        }
+        if include_password:
+            d['password'] = self.password
+        return d

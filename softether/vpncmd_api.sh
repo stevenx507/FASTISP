@@ -1,0 +1,115 @@
+#!/bin/bash
+# vpncmd_api.sh - API shell para gestionar usuarios SSTP en SoftEther
+# Usado por el backend de FASTISP para provisionar/revocar túneles
+#
+# Uso:
+#   vpncmd_api.sh create_user <username> <password>
+#   vpncmd_api.sh delete_user <username>
+#   vpncmd_api.sh list_users
+#   vpncmd_api.sh user_exists <username>
+#   vpncmd_api.sh list_sessions
+#   vpncmd_api.sh kick_user <username>
+#   vpncmd_api.sh server_status
+
+VPNCMD="/opt/vpnserver/vpncmd"
+HOST="localhost:${SOFTETHER_MGMT_PORT:-5555}"
+ADMIN_PASS="${SOFTETHER_ADMIN_PASSWORD:-FastISP_VPN_2026!}"
+HUB="${SOFTETHER_HUB_NAME:-FASTISP}"
+HUB_PASS="${SOFTETHER_HUB_PASSWORD:-FastISP_Hub_2026!}"
+
+CMD="$1"
+USERNAME="$2"
+PASSWORD="$3"
+
+case "$CMD" in
+
+  create_user)
+    if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
+      echo '{"error": "username y password requeridos"}' >&2
+      exit 1
+    fi
+    # Crear usuario
+    $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD UserCreate \
+      "$USERNAME" /GROUP:none /REALNAME:"MikroTik SSTP" /NOTE:"Provisioned by FASTISP" 2>&1
+    # Establecer password
+    $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD UserPasswordSet \
+      "$USERNAME" /PASSWORD:"$PASSWORD" 2>&1
+    echo '{"status": "ok", "action": "created", "username": "'"$USERNAME"'"}'
+    ;;
+
+  delete_user)
+    if [ -z "$USERNAME" ]; then
+      echo '{"error": "username requerido"}' >&2
+      exit 1
+    fi
+    # Desconectar sesiones activas del usuario
+    $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD SessionList 2>&1 | \
+      grep -i "$USERNAME" | awk '{print $1}' | while read session; do
+        $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD SessionDelete \
+          /NAME:"$session" 2>&1 || true
+      done
+    # Eliminar usuario
+    $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD UserDelete \
+      "$USERNAME" 2>&1
+    echo '{"status": "ok", "action": "deleted", "username": "'"$USERNAME"'"}'
+    ;;
+
+  update_password)
+    if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
+      echo '{"error": "username y password requeridos"}' >&2
+      exit 1
+    fi
+    $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD UserPasswordSet \
+      "$USERNAME" /PASSWORD:"$PASSWORD" 2>&1
+    echo '{"status": "ok", "action": "password_updated", "username": "'"$USERNAME"'"}'
+    ;;
+
+  user_exists)
+    if [ -z "$USERNAME" ]; then
+      echo '{"error": "username requerido"}' >&2
+      exit 1
+    fi
+    RESULT=$($VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD UserGet \
+      "$USERNAME" 2>&1)
+    if echo "$RESULT" | grep -q "User Name"; then
+      echo '{"exists": true, "username": "'"$USERNAME"'"}'
+    else
+      echo '{"exists": false, "username": "'"$USERNAME"'"}'
+    fi
+    ;;
+
+  list_users)
+    OUTPUT=$($VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD UserList 2>&1)
+    USERS=$(echo "$OUTPUT" | grep "^User Name" | awk -F': ' '{print $2}' | tr '\n' ',' | sed 's/,$//')
+    echo '{"users": ['"$(echo $USERS | sed 's/,/","/g' | sed 's/^/"/' | sed 's/$/"/')"']}'
+    ;;
+
+  list_sessions)
+    OUTPUT=$($VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD SessionList 2>&1)
+    echo "$OUTPUT"
+    ;;
+
+  kick_user)
+    if [ -z "$USERNAME" ]; then
+      echo '{"error": "username requerido"}' >&2
+      exit 1
+    fi
+    $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD SessionList 2>&1 | \
+      grep -i "$USERNAME" | awk '{print $1}' | while read session; do
+        $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD SessionDelete \
+          /NAME:"$session" 2>&1
+      done
+    echo '{"status": "ok", "action": "kicked", "username": "'"$USERNAME"'"}'
+    ;;
+
+  server_status)
+    OUTPUT=$($VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /CMD ServerStatus 2>&1)
+    SESSIONS=$($VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD SessionList 2>&1 | grep -c "^SES" || echo 0)
+    echo '{"status": "running", "active_sessions": '"$SESSIONS"'}'
+    ;;
+
+  *)
+    echo '{"error": "Comando desconocido: '"$CMD"'", "available": ["create_user", "delete_user", "update_password", "user_exists", "list_users", "list_sessions", "kick_user", "server_status"]}' >&2
+    exit 1
+    ;;
+esac

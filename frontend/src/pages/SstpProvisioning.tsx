@@ -1,0 +1,626 @@
+/**
+ * SSTP VPN Provisioning Panel
+ * ============================
+ * Panel para gestionar túneles SSTP para routers MikroTik de clientes ISP.
+ */
+
+import React, { useState, useEffect, useCallback } from 'react'
+import {
+  ShieldCheckIcon,
+  PlusIcon,
+  ArrowDownTrayIcon,
+  ClipboardDocumentIcon,
+  ArrowPathIcon,
+  TrashIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ClockIcon,
+  CommandLineIcon,
+  WifiIcon,
+  KeyIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+} from '@heroicons/react/24/outline'
+import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
+import { apiClient } from '../lib/apiClient'
+
+// ── Types ──────────────────────────────────────────────────────────────────────
+interface SstpTunnel {
+  id: number
+  router_id: number
+  router_name: string
+  tenant_id: number | null
+  username: string
+  password?: string
+  server_ip: string
+  client_ip: string
+  server_host: string
+  server_port: number
+  status: 'active' | 'revoked' | 'pending'
+  last_seen: string | null
+  created_at: string
+  revoked_at: string | null
+  script?: string
+  verification_script?: string
+}
+
+interface Router {
+  id: number
+  name: string
+  ip_address: string
+  status: string
+}
+
+interface SstpStatus {
+  total_tunnels: number
+  active_tunnels: number
+  revoked_tunnels: number
+  certificate_fingerprint: string
+  server_host: string
+  server_port: number
+  ip_pool: string
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+const statusColor = (status: string) => {
+  switch (status) {
+    case 'active': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30'
+    case 'revoked': return 'text-red-400 bg-red-400/10 border-red-400/30'
+    default: return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30'
+  }
+}
+
+const statusLabel = (status: string) => {
+  switch (status) {
+    case 'active': return 'Activo'
+    case 'revoked': return 'Revocado'
+    default: return 'Pendiente'
+  }
+}
+
+// ── Script Modal ───────────────────────────────────────────────────────────────
+const ScriptModal: React.FC<{
+  tunnel: SstpTunnel
+  onClose: () => void
+  onDownload: () => void
+}> = ({ tunnel, onClose, onDownload }) => {
+  const [copied, setCopied] = useState(false)
+  const [showVerify, setShowVerify] = useState(false)
+
+  const handleCopy = async (text: string) => {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+              <CommandLineIcon className="w-5 h-5 text-cyan-400" />
+            </div>
+            <div>
+              <h2 className="text-white font-semibold">Script de Aprovisionamiento</h2>
+              <p className="text-gray-400 text-sm">{tunnel.router_name} · {tunnel.username}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors text-xl">✕</button>
+        </div>
+
+        {/* Info banner */}
+        <div className="mx-5 mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex gap-2">
+          <InformationCircleIcon className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+          <p className="text-blue-300 text-sm">
+            Abre <strong>Winbox</strong> o <strong>SSH</strong> en el MikroTik del cliente, ve a <strong>New Terminal</strong> y pega este script completo.
+          </p>
+        </div>
+
+        {/* Credentials summary */}
+        <div className="mx-5 mt-3 grid grid-cols-2 gap-2">
+          <div className="bg-gray-800 rounded-lg p-3">
+            <p className="text-gray-400 text-xs mb-1">Servidor SSTP</p>
+            <p className="text-white font-mono text-sm">{tunnel.server_host}:{tunnel.server_port}</p>
+          </div>
+          <div className="bg-gray-800 rounded-lg p-3">
+            <p className="text-gray-400 text-xs mb-1">Usuario</p>
+            <p className="text-white font-mono text-sm">{tunnel.username}</p>
+          </div>
+          <div className="bg-gray-800 rounded-lg p-3">
+            <p className="text-gray-400 text-xs mb-1">IP VPS (servidor)</p>
+            <p className="text-white font-mono text-sm">{tunnel.server_ip}</p>
+          </div>
+          <div className="bg-gray-800 rounded-lg p-3">
+            <p className="text-gray-400 text-xs mb-1">IP Cliente (MikroTik)</p>
+            <p className="text-white font-mono text-sm">{tunnel.client_ip}</p>
+          </div>
+        </div>
+
+        {/* Script tabs */}
+        <div className="flex gap-2 mx-5 mt-3">
+          <button
+            onClick={() => setShowVerify(false)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              !showVerify ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Script de Aprovisionamiento
+          </button>
+          <button
+            onClick={() => setShowVerify(true)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              showVerify ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Script de Verificación
+          </button>
+        </div>
+
+        {/* Script content */}
+        <div className="flex-1 overflow-hidden mx-5 mt-2 mb-5">
+          <div className="relative">
+            <pre className="bg-gray-950 border border-gray-700 rounded-xl p-4 text-xs text-green-300 font-mono overflow-auto h-64 leading-relaxed whitespace-pre-wrap">
+              {showVerify ? tunnel.verification_script : tunnel.script}
+            </pre>
+            <button
+              onClick={() => handleCopy(showVerify ? tunnel.verification_script || '' : tunnel.script || '')}
+              className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded-lg transition-colors"
+            >
+              {copied
+                ? <CheckCircleSolid className="w-3.5 h-3.5 text-emerald-400" />
+                : <ClipboardDocumentIcon className="w-3.5 h-3.5" />}
+              {copied ? 'Copiado!' : 'Copiar'}
+            </button>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-3 px-5 pb-5">
+          <button
+            onClick={onDownload}
+            className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            <ArrowDownTrayIcon className="w-4 h-4" />
+            Descargar .rsc
+          </button>
+          <button
+            onClick={onClose}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Provision Modal ────────────────────────────────────────────────────────────
+const ProvisionModal: React.FC<{
+  routers: Router[]
+  onClose: () => void
+  onProvision: (routerId: number, notes: string) => Promise<void>
+  loading: boolean
+}> = ({ routers, onClose, onProvision, loading }) => {
+  const [selectedRouter, setSelectedRouter] = useState<number | null>(null)
+  const [notes, setNotes] = useState('')
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between p-5 border-b border-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+              <PlusIcon className="w-5 h-5 text-emerald-400" />
+            </div>
+            <h2 className="text-white font-semibold">Provisionar Túnel SSTP</h2>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors text-xl">✕</button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div>
+            <label htmlFor="sstp-router-select" className="block text-gray-300 text-sm font-medium mb-2">
+              Router MikroTik
+            </label>
+            <select
+              id="sstp-router-select"
+              title="Seleccionar router MikroTik"
+              value={selectedRouter || ''}
+              onChange={e => setSelectedRouter(Number(e.target.value))}
+              className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500"
+            >
+              <option value="">Seleccionar router...</option>
+              {routers.map(r => (
+                <option key={r.id} value={r.id}>
+                  {r.name} ({r.ip_address})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="sstp-notes" className="block text-gray-300 text-sm font-medium mb-2">
+              Notas (opcional)
+            </label>
+            <textarea
+              id="sstp-notes"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Ej: Router principal sede norte..."
+              rows={3}
+              className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500 resize-none"
+            />
+          </div>
+
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 flex gap-2">
+            <ExclamationTriangleIcon className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+            <p className="text-yellow-300 text-xs">
+              Se generarán credenciales únicas para este router. El script resultante debe pegarse en el terminal del MikroTik del cliente.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-3 px-5 pb-5">
+          <button
+            onClick={() => selectedRouter && onProvision(selectedRouter, notes)}
+            disabled={!selectedRouter || loading}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            {loading
+              ? <ArrowPathIcon className="w-4 h-4 animate-spin" />
+              : <ShieldCheckIcon className="w-4 h-4" />}
+            {loading ? 'Provisionando...' : 'Generar Túnel SSTP'}
+          </button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
+const SstpProvisioning: React.FC = () => {
+  const [tunnels, setTunnels] = useState<SstpTunnel[]>([])
+  const [routers, setRouters] = useState<Router[]>([])
+  const [status, setStatus] = useState<SstpStatus | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [provisionLoading, setProvisionLoading] = useState(false)
+  const [showProvisionModal, setShowProvisionModal] = useState(false)
+  const [selectedTunnel, setSelectedTunnel] = useState<SstpTunnel | null>(null)
+  const [showScriptModal, setShowScriptModal] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'revoked'>('all')
+
+  const showSuccess = (msg: string) => {
+    setSuccessMsg(msg)
+    setTimeout(() => setSuccessMsg(null), 4000)
+  }
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true)
+      const [tunnelsData, routersData, statusData] = await Promise.all([
+        apiClient.get('/sstp/tunnels') as Promise<SstpTunnel[]>,
+        apiClient.get('/mikrotik/routers') as Promise<Router[]>,
+        apiClient.get('/sstp/status') as Promise<SstpStatus>,
+      ])
+      setTunnels(Array.isArray(tunnelsData) ? tunnelsData : [])
+      setRouters(Array.isArray(routersData) ? routersData : [])
+      setStatus(statusData)
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error cargando datos'
+      setError(msg)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { loadData() }, [loadData])
+
+  const handleProvision = async (routerId: number, notes: string) => {
+    try {
+      setProvisionLoading(true)
+      const newTunnel = await apiClient.post('/sstp/tunnels', { router_id: routerId, notes }) as SstpTunnel
+      setTunnels(prev => [newTunnel, ...prev])
+      setShowProvisionModal(false)
+      setSelectedTunnel(newTunnel)
+      setShowScriptModal(true)
+      showSuccess('Túnel SSTP provisionado exitosamente')
+      loadData()
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error al provisionar'
+      setError(msg)
+    } finally {
+      setProvisionLoading(false)
+    }
+  }
+
+  const handleViewScript = async (tunnel: SstpTunnel) => {
+    try {
+      const data = await apiClient.get(`/sstp/tunnels/${tunnel.id}`) as SstpTunnel
+      setSelectedTunnel(data)
+      setShowScriptModal(true)
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error cargando script'
+      setError(msg)
+    }
+  }
+
+  const handleDownloadScript = async (tunnel: SstpTunnel) => {
+    try {
+      // Use fetch directly for blob download
+      const token = localStorage.getItem('access_token') || ''
+      const apiBase = (window as unknown as { __API_BASE__?: string }).__API_BASE__ || '/api'
+      const response = await fetch(`${apiBase}/sstp/tunnels/${tunnel.id}/script`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const text = await response.text()
+      const blob = new Blob([text], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `fastisp-sstp-${tunnel.username}.rsc`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error descargando script'
+      setError(msg)
+    }
+  }
+
+  const handleRegenerate = async (tunnel: SstpTunnel) => {
+    if (!confirm(`¿Regenerar credenciales para ${tunnel.router_name}? El script anterior dejará de funcionar.`)) return
+    try {
+      const data = await apiClient.post(`/sstp/tunnels/${tunnel.id}/regenerate`) as SstpTunnel
+      setSelectedTunnel(data)
+      setShowScriptModal(true)
+      showSuccess('Credenciales regeneradas. Aplica el nuevo script en el MikroTik.')
+      loadData()
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error regenerando credenciales'
+      setError(msg)
+    }
+  }
+
+  const handleRevoke = async (tunnel: SstpTunnel) => {
+    if (!confirm(`¿Revocar el túnel de ${tunnel.router_name}? El MikroTik perderá conectividad.`)) return
+    try {
+      await apiClient.delete(`/sstp/tunnels/${tunnel.id}`)
+      showSuccess(`Túnel ${tunnel.username} revocado`)
+      loadData()
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error revocando túnel'
+      setError(msg)
+    }
+  }
+
+  const filteredTunnels = tunnels.filter(t =>
+    filterStatus === 'all' ? true : t.status === filterStatus
+  )
+
+  return (
+    <div className="min-h-screen bg-gray-950 text-white p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
+            <ShieldCheckIcon className="w-6 h-6 text-cyan-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Túneles SSTP</h1>
+            <p className="text-gray-400 text-sm">Aprovisionamiento automático para MikroTik clientes ISP</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowProvisionModal(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm font-medium transition-colors shadow-lg shadow-cyan-500/20"
+        >
+          <PlusIcon className="w-4 h-4" />
+          Nuevo Túnel SSTP
+        </button>
+      </div>
+
+      {/* Alerts */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-2 text-red-300 text-sm">
+          <XCircleIcon className="w-4 h-4 flex-shrink-0" />
+          {error}
+          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-200">✕</button>
+        </div>
+      )}
+      {successMsg && (
+        <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-2 text-emerald-300 text-sm">
+          <CheckCircleIcon className="w-4 h-4 flex-shrink-0" />
+          {successMsg}
+        </div>
+      )}
+
+      {/* Stats */}
+      {status && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-4">
+            <p className="text-gray-400 text-xs mb-1">Túneles Activos</p>
+            <p className="text-2xl font-bold text-emerald-400">{status.active_tunnels}</p>
+          </div>
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-4">
+            <p className="text-gray-400 text-xs mb-1">Total Túneles</p>
+            <p className="text-2xl font-bold text-white">{status.total_tunnels}</p>
+          </div>
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-4">
+            <p className="text-gray-400 text-xs mb-1">Servidor SSTP</p>
+            <p className="text-sm font-mono text-cyan-400">{status.server_host}:{status.server_port}</p>
+          </div>
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-4">
+            <p className="text-gray-400 text-xs mb-1">Pool de IPs</p>
+            <p className="text-sm font-mono text-purple-400">{status.ip_pool}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Certificate info */}
+      {status?.certificate_fingerprint && status.certificate_fingerprint !== 'UNKNOWN' && (
+        <div className="mb-6 p-3 bg-gray-900 border border-gray-700 rounded-xl flex items-center gap-3">
+          <KeyIcon className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+          <div>
+            <p className="text-gray-400 text-xs">Huella del certificado SSL (SHA256)</p>
+            <p className="text-yellow-300 font-mono text-xs break-all">{status.certificate_fingerprint}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Filter */}
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {(['all', 'active', 'revoked'] as const).map(f => (
+          <button
+            key={f}
+            onClick={() => setFilterStatus(f)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              filterStatus === f
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                : 'text-gray-400 hover:text-white border border-transparent'
+            }`}
+          >
+            {f === 'all' ? 'Todos' : f === 'active' ? 'Activos' : 'Revocados'}
+          </button>
+        ))}
+        <button
+          onClick={loadData}
+          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-gray-400 hover:text-white text-sm transition-colors"
+        >
+          <ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          Actualizar
+        </button>
+      </div>
+
+      {/* Tunnels list */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <ArrowPathIcon className="w-8 h-8 text-cyan-400 animate-spin" />
+        </div>
+      ) : filteredTunnels.length === 0 ? (
+        <div className="text-center py-20">
+          <ShieldCheckIcon className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+          <p className="text-gray-400">No hay túneles SSTP configurados</p>
+          <p className="text-gray-500 text-sm mt-1">Haz clic en "Nuevo Túnel SSTP" para comenzar</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredTunnels.map(tunnel => (
+            <div
+              key={tunnel.id}
+              className="bg-gray-900 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className={`p-2 rounded-lg border flex-shrink-0 ${
+                    tunnel.status === 'active'
+                      ? 'bg-emerald-500/10 border-emerald-500/20'
+                      : 'bg-red-500/10 border-red-500/20'
+                  }`}>
+                    <WifiIcon className={`w-4 h-4 ${tunnel.status === 'active' ? 'text-emerald-400' : 'text-red-400'}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-white font-medium">{tunnel.router_name}</h3>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${statusColor(tunnel.status)}`}>
+                        {tunnel.status === 'active'
+                          ? <CheckCircleIcon className="w-3 h-3" />
+                          : tunnel.status === 'revoked'
+                          ? <XCircleIcon className="w-3 h-3" />
+                          : <ClockIcon className="w-3 h-3" />}
+                        {statusLabel(tunnel.status)}
+                      </span>
+                    </div>
+                    <div className="mt-1.5 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1">
+                      <div>
+                        <p className="text-gray-500 text-xs">Usuario</p>
+                        <p className="text-gray-300 font-mono text-xs truncate">{tunnel.username}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs">IP VPS</p>
+                        <p className="text-gray-300 font-mono text-xs">{tunnel.server_ip}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs">IP Cliente</p>
+                        <p className="text-gray-300 font-mono text-xs">{tunnel.client_ip}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs">Creado</p>
+                        <p className="text-gray-300 text-xs">
+                          {new Date(tunnel.created_at).toLocaleDateString('es-CO')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                {tunnel.status === 'active' && (
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => handleViewScript(tunnel)}
+                      title="Ver script de aprovisionamiento"
+                      className="p-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
+                    >
+                      <CommandLineIcon className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDownloadScript(tunnel)}
+                      title="Descargar script .rsc"
+                      className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                    >
+                      <ArrowDownTrayIcon className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleRegenerate(tunnel)}
+                      title="Regenerar credenciales"
+                      className="p-2 text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors"
+                    >
+                      <ArrowPathIcon className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleRevoke(tunnel)}
+                      title="Revocar túnel"
+                      className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modals */}
+      {showProvisionModal && (
+        <ProvisionModal
+          routers={routers.filter(r => r.status === 'online' || r.status === 'active')}
+          onClose={() => setShowProvisionModal(false)}
+          onProvision={handleProvision}
+          loading={provisionLoading}
+        />
+      )}
+
+      {showScriptModal && selectedTunnel && (
+        <ScriptModal
+          tunnel={selectedTunnel}
+          onClose={() => { setShowScriptModal(false); setSelectedTunnel(null) }}
+          onDownload={() => handleDownloadScript(selectedTunnel)}
+        />
+      )}
+    </div>
+  )
+}
+
+export default SstpProvisioning
