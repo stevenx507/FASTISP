@@ -23,6 +23,7 @@ FROM python:3.11-slim-bookworm as production
 # Install only runtime system dependencies
 RUN apt-get update && apt-get install -y \
     postgresql-client \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -46,4 +47,4 @@ EXPOSE 5000
 ENV GUNICORN_WORKERS=4
 
 # Run application
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "${GUNICORN_WORKERS}", "--worker-class", "gevent", "wsgi:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:5000 --workers ${GUNICORN_WORKERS:-4} --worker-class gevent wsgi:app"]
