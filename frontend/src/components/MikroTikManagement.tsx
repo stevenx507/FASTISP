@@ -52,6 +52,23 @@ interface RouterConnectionActionResponse {
   diagnostics?: RouterConnectionDiagnosticsPayload | null
 }
 
+interface SstpTunnelData {
+  id: number
+  router_id: number
+  username: string
+  password?: string
+  server_host: string
+  server_port: number
+  server_ip: string
+  client_ip: string
+  status: string
+  script?: string
+  verification_script?: string
+  created_at?: string
+  router_name?: string
+  error?: string
+}
+
 interface RouterConnectionSnapshot {
   diagnostics: RouterConnectionDiagnosticsPayload
   checkedAt: number
@@ -592,6 +609,11 @@ const MikroTikManagement: React.FC = () => {
   const [enterpriseChangeLog, setEnterpriseChangeLog] = useState<EnterpriseChangeLogEntry[]>([])
   const [wireGuardImporting, setWireGuardImporting] = useState(false)
   const [wireGuardImportSummary, setWireGuardImportSummary] = useState<WireGuardImportResponse | null>(null)
+  const [sstpTunnel, setSstpTunnel] = useState<SstpTunnelData | null>(null)
+  const [sstpScript, setSstpScript] = useState('')
+  const [sstpProvisioning, setSstpProvisioning] = useState(false)
+  const [sstpScriptCopied, setSstpScriptCopied] = useState(false)
+  const [sstpLoadingForRouter, setSstpLoadingForRouter] = useState<number | null>(null)
   const connectionStatusRef = useRef<Record<string, string>>({})
   const token = useAuthStore((state) => state.token)
   const user = useAuthStore((state) => state.user)
@@ -756,6 +778,59 @@ const MikroTikManagement: React.FC = () => {
       setSavingOnboardingProfile(false)
     }
   }, [addToast, apiFetch, applyOnboardingProfileDefaults, onboardingProfile, safeJson])
+
+  const loadSstpTunnelForRouter = useCallback(async (routerId: number) => {
+    setSstpLoadingForRouter(routerId)
+    try {
+      const response = await apiFetch('/api/sstp/tunnels')
+      const payload = await safeJson(response)
+      const list = Array.isArray(payload) ? (payload as SstpTunnelData[]) : []
+      if (response.ok && list.length > 0) {
+        const active = list.find((t) => t.router_id === routerId && t.status === 'active')
+        if (active) {
+          const detailRes = await apiFetch(`/api/sstp/tunnels/${active.id}`)
+          const detail = (await safeJson(detailRes)) as SstpTunnelData | null
+          if (detailRes.ok && detail) {
+            setSstpTunnel(detail)
+            setSstpScript(detail.script || '')
+            return
+          }
+        }
+      }
+      setSstpTunnel(null)
+      setSstpScript('')
+    } catch {
+      setSstpTunnel(null)
+      setSstpScript('')
+    } finally {
+      setSstpLoadingForRouter(null)
+    }
+  }, [apiFetch, safeJson])
+
+  const provisionSstpForRouter = useCallback(async () => {
+    if (!selectedRouter) return
+    setSstpProvisioning(true)
+    try {
+      const response = await apiFetch('/api/sstp/tunnels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ router_id: selectedRouter.id }),
+      })
+      const payload = (await safeJson(response)) as SstpTunnelData | null
+      if (!response.ok || payload?.error) {
+        addToast('error', payload?.error || `Error ${response.status} al provisionar SSTP`)
+        return
+      }
+      setSstpTunnel(payload)
+      setSstpScript(payload?.script || '')
+      addToast('success', 'Túnel SSTP provisionado. Copia el script y aplícalo en el MikroTik.')
+      setConnectionWizardStep(3)
+    } catch (error: unknown) {
+      addToast('error', normalizeUiError(error, 'Error al provisionar SSTP'))
+    } finally {
+      setSstpProvisioning(false)
+    }
+  }, [addToast, apiFetch, safeJson, selectedRouter])
 
   const fetchConnectionDiagnostics = useCallback(
     async (routerId: string) => {
@@ -943,7 +1018,11 @@ const MikroTikManagement: React.FC = () => {
     setRouterReadiness(null)
     setHardeningResult(null)
     setFailoverResult(null)
-  }, [loadEnterpriseChangeLog, loadEnterpriseProfiles, loadQuickConnect, loadRouterReadiness, loadRouterStats, quickConnectScope, selectedRouter])
+    setSstpTunnel(null)
+    setSstpScript('')
+    setSstpScriptCopied(false)
+    void loadSstpTunnelForRouter(selectedRouter.id)
+  }, [loadEnterpriseChangeLog, loadEnterpriseProfiles, loadQuickConnect, loadRouterReadiness, loadRouterStats, loadSstpTunnelForRouter, quickConnectScope, selectedRouter])
 
   useEffect(() => {
     if (!selectedRouter || activeTab !== 'config') return
@@ -2152,8 +2231,8 @@ const MikroTikManagement: React.FC = () => {
                           <p className="text-sm font-semibold text-emerald-800">Aislamiento por cuenta ISP</p>
                           <p className="text-xs text-emerald-700">
                             Perfil activo: <strong>{quickConnect?.onboarding_profile?.account_label || onboardingProfile?.account_label || user?.email || 'Cuenta actual'}</strong>
-                            {' '}| prefijo routers <strong>{quickConnect?.onboarding_profile?.router_name_prefix || onboardingProfile?.router_name_prefix || '-'}</strong>
-                            {' '}| usuario BTH <strong>{quickConnect?.onboarding_profile?.default_bth_user_name || onboardingProfile?.default_bth_user_name || '-'}</strong>
+                            {' '}| prefijo routers: <strong>{quickConnect?.onboarding_profile?.router_name_prefix || onboardingProfile?.router_name_prefix || '-'}</strong>
+                            {' '}| VPN: <strong>SoftEther SSTP</strong>
                           </p>
                         </div>
                         <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
@@ -2400,22 +2479,75 @@ const MikroTikManagement: React.FC = () => {
                             )}
 
                             {connectionWizardStep === 2 && (
-                              <div className="mt-2 rounded border border-emerald-200 bg-white p-3">
-                                <p className="text-xs font-semibold uppercase text-emerald-800">Paso 2: Provisionar SoftEther SSTP</p>
-                                <p className="mt-1 text-xs text-emerald-700">
-                                  El router MikroTik se conecta al VPS exclusivamente via tunel SoftEther SSTP. Ve al panel de Provisioning SSTP para crear o gestionar el tunel de este router.
-                                </p>
-                                <div className="mt-2 rounded border border-emerald-200 bg-emerald-50 px-3 py-2">
-                                  <p className="text-xs font-semibold text-emerald-800">Canal activo: SoftEther SSTP</p>
-                                  <p className="mt-1 text-xs text-emerald-700">Usa el panel "Provisioning SSTP" desde el menu para generar credenciales y el script de configuracion para este router.</p>
+                              <div className="mt-2 rounded border border-emerald-200 bg-white p-3 space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-xs font-semibold uppercase text-emerald-800">Paso 2: Túnel SoftEther SSTP</p>
+                                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">VPN SSTP</span>
                                 </div>
-                                <div className="mt-2 flex flex-wrap items-center gap-2">
-                                  <button
-                                    onClick={() => setConnectionWizardStep(3)}
-                                    className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-800"
-                                  >
-                                    Ir al paso 3 → Validar
-                                  </button>
+
+                                {sstpLoadingForRouter === selectedRouter?.id && (
+                                  <p className="text-xs text-emerald-600 animate-pulse">Verificando túnel existente...</p>
+                                )}
+
+                                {!sstpLoadingForRouter && !sstpTunnel && (
+                                  <div className="rounded border border-amber-200 bg-amber-50 p-2">
+                                    <p className="text-xs font-semibold text-amber-800">Sin túnel SSTP activo</p>
+                                    <p className="mt-1 text-xs text-amber-700">Este router no tiene un túnel SSTP provisionado. Haz clic en "Provisionar SSTP" para crear credenciales y generar el script de configuración.</p>
+                                    <button
+                                      onClick={() => void provisionSstpForRouter()}
+                                      disabled={sstpProvisioning}
+                                      className="mt-2 rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+                                    >
+                                      {sstpProvisioning ? 'Provisionando...' : '⚡ Provisionar SSTP'}
+                                    </button>
+                                  </div>
+                                )}
+
+                                {!sstpLoadingForRouter && sstpTunnel && (
+                                  <div className="space-y-2">
+                                    <div className="rounded border border-emerald-200 bg-emerald-50 p-2">
+                                      <div className="flex items-center justify-between">
+                                        <p className="text-xs font-semibold text-emerald-800">✅ Túnel SSTP activo</p>
+                                        <span className="rounded-full bg-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">{sstpTunnel.status}</span>
+                                      </div>
+                                      <div className="mt-1 grid grid-cols-2 gap-x-3 text-[11px] text-emerald-700">
+                                        <span>Usuario: <strong className="text-emerald-900">{sstpTunnel.username}</strong></span>
+                                        <span>Servidor: <strong className="text-emerald-900">{sstpTunnel.server_host}:{sstpTunnel.server_port}</strong></span>
+                                        {sstpTunnel.password && <span className="col-span-2">Password: <strong className="text-emerald-900 font-mono">{sstpTunnel.password}</strong></span>}
+                                      </div>
+                                    </div>
+
+                                    {sstpScript && (
+                                      <div className="rounded border border-slate-200 bg-slate-50">
+                                        <div className="flex items-center justify-between border-b border-slate-200 px-3 py-1.5">
+                                          <p className="text-[11px] font-semibold text-slate-700">Script MikroTik (.rsc)</p>
+                                          <button
+                                            onClick={async () => {
+                                              await copyToClipboard(sstpScript)
+                                              setSstpScriptCopied(true)
+                                              setTimeout(() => setSstpScriptCopied(false), 2500)
+                                            }}
+                                            className="rounded bg-emerald-700 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-emerald-800"
+                                          >
+                                            {sstpScriptCopied ? '✅ Copiado' : 'Copiar script'}
+                                          </button>
+                                        </div>
+                                        <pre className="max-h-48 overflow-y-auto p-3 text-[10px] leading-relaxed text-slate-800 whitespace-pre-wrap">{sstpScript}</pre>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                <div className="flex flex-wrap items-center gap-2 border-t border-emerald-100 pt-2">
+                                  {sstpTunnel && (
+                                    <button
+                                      onClick={() => setConnectionWizardStep(3)}
+                                      className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-800"
+                                    >
+                                      Continuar → Paso 3 Validar
+                                    </button>
+                                  )}
+                                  <p className="text-[11px] text-emerald-700">Pega el script en MikroTik: New Terminal → pegar → Enter</p>
                                 </div>
                               </div>
                             )}
