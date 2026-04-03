@@ -20,8 +20,10 @@ import {
   KeyIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
+  ServerIcon,
+  SignalIcon,
 } from '@heroicons/react/24/outline'
-import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
+import { CheckCircleIcon as CheckCircleSolid, SignalIcon as SignalSolid } from '@heroicons/react/24/solid'
 import { apiClient } from '../lib/apiClient'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -76,6 +78,21 @@ const statusLabel = (status: string) => {
     case 'revoked': return 'Revocado'
     default: return 'Pendiente'
   }
+}
+
+const isRecentlySeen = (lastSeen: string | null): boolean => {
+  if (!lastSeen) return false
+  const diff = Date.now() - new Date(lastSeen).getTime()
+  return diff < 5 * 60 * 1000
+}
+
+const formatLastSeen = (lastSeen: string | null): string => {
+  if (!lastSeen) return 'Sin actividad'
+  const diff = Math.floor((Date.now() - new Date(lastSeen).getTime()) / 1000)
+  if (diff < 60) return `Hace ${diff}s`
+  if (diff < 3600) return `Hace ${Math.floor(diff / 60)}m`
+  if (diff < 86400) return `Hace ${Math.floor(diff / 3600)}h`
+  return new Date(lastSeen).toLocaleDateString('es-CO')
 }
 
 // ── Script Modal ───────────────────────────────────────────────────────────────
@@ -410,23 +427,29 @@ const SstpProvisioning: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
-            <ShieldCheckIcon className="w-6 h-6 text-cyan-400" />
+      <div className="relative mb-8 rounded-2xl overflow-hidden bg-gradient-to-r from-gray-900 via-cyan-950/40 to-gray-900 border border-cyan-500/20 p-6">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-cyan-500/10 via-transparent to-transparent pointer-events-none" />
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-cyan-500/15 rounded-2xl border border-cyan-500/30 shadow-lg shadow-cyan-500/10">
+              <ShieldCheckIcon className="w-8 h-8 text-cyan-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-white">Túneles SoftEther SSTP</h1>
+                <span className="px-2 py-0.5 bg-cyan-500/20 border border-cyan-500/30 rounded-full text-cyan-300 text-xs font-medium">VPN</span>
+              </div>
+              <p className="text-gray-400 text-sm mt-0.5">Aprovisionamiento automático via SoftEther para MikroTik clientes ISP</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">Túneles SSTP</h1>
-            <p className="text-gray-400 text-sm">Aprovisionamiento automático para MikroTik clientes ISP</p>
-          </div>
+          <button
+            onClick={() => setShowProvisionModal(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 hover:-translate-y-0.5"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Nuevo Túnel SSTP
+          </button>
         </div>
-        <button
-          onClick={() => setShowProvisionModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm font-medium transition-colors shadow-lg shadow-cyan-500/20"
-        >
-          <PlusIcon className="w-4 h-4" />
-          Nuevo Túnel SSTP
-        </button>
       </div>
 
       {/* Alerts */}
@@ -447,21 +470,37 @@ const SstpProvisioning: React.FC = () => {
       {/* Stats */}
       {status && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-4">
-            <p className="text-gray-400 text-xs mb-1">Túneles Activos</p>
-            <p className="text-2xl font-bold text-emerald-400">{status.active_tunnels}</p>
+          <div className="bg-gray-900 border border-emerald-500/20 rounded-xl p-4 hover:border-emerald-500/40 transition-colors">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-gray-400 text-xs">Túneles Activos</p>
+              <SignalSolid className="w-4 h-4 text-emerald-400" />
+            </div>
+            <p className="text-3xl font-bold text-emerald-400">{status.active_tunnels}</p>
+            <p className="text-gray-500 text-xs mt-1">de {status.total_tunnels} totales</p>
           </div>
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-4">
-            <p className="text-gray-400 text-xs mb-1">Total Túneles</p>
-            <p className="text-2xl font-bold text-white">{status.total_tunnels}</p>
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-colors">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-gray-400 text-xs">Total Túneles</p>
+              <WifiIcon className="w-4 h-4 text-gray-400" />
+            </div>
+            <p className="text-3xl font-bold text-white">{status.total_tunnels}</p>
+            <p className="text-gray-500 text-xs mt-1">{status.revoked_tunnels} revocados</p>
           </div>
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-4">
-            <p className="text-gray-400 text-xs mb-1">Servidor SSTP</p>
-            <p className="text-sm font-mono text-cyan-400">{status.server_host}:{status.server_port}</p>
+          <div className="bg-gray-900 border border-cyan-500/20 rounded-xl p-4 hover:border-cyan-500/40 transition-colors">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-gray-400 text-xs">Servidor SoftEther</p>
+              <ServerIcon className="w-4 h-4 text-cyan-400" />
+            </div>
+            <p className="text-sm font-mono text-cyan-400 font-bold">{status.server_host}</p>
+            <p className="text-gray-500 text-xs mt-1">Puerto {status.server_port}</p>
           </div>
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-4">
-            <p className="text-gray-400 text-xs mb-1">Pool de IPs</p>
-            <p className="text-sm font-mono text-purple-400">{status.ip_pool}</p>
+          <div className="bg-gray-900 border border-purple-500/20 rounded-xl p-4 hover:border-purple-500/40 transition-colors">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-gray-400 text-xs">Pool de IPs</p>
+              <SignalIcon className="w-4 h-4 text-purple-400" />
+            </div>
+            <p className="text-sm font-mono text-purple-400 font-bold">{status.ip_pool}</p>
+            <p className="text-gray-500 text-xs mt-1">SSTP VPN Pool</p>
           </div>
         </div>
       )}
@@ -507,30 +546,43 @@ const SstpProvisioning: React.FC = () => {
           <ArrowPathIcon className="w-8 h-8 text-cyan-400 animate-spin" />
         </div>
       ) : filteredTunnels.length === 0 ? (
-        <div className="text-center py-20">
-          <ShieldCheckIcon className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400">No hay túneles SSTP configurados</p>
-          <p className="text-gray-500 text-sm mt-1">Haz clic en "Nuevo Túnel SSTP" para comenzar</p>
+        <div className="text-center py-24 rounded-2xl border border-dashed border-gray-700 bg-gray-900/50">
+          <div className="p-4 bg-cyan-500/10 rounded-2xl border border-cyan-500/20 inline-flex mb-4">
+            <ShieldCheckIcon className="w-10 h-10 text-cyan-500/60" />
+          </div>
+          <p className="text-gray-300 font-medium text-lg">Sin túneles SoftEther SSTP</p>
+          <p className="text-gray-500 text-sm mt-1 max-w-xs mx-auto">Aprovisiona el primer túnel para conectar un router MikroTik de cliente ISP</p>
+          <button
+            onClick={() => setShowProvisionModal(true)}
+            className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm font-semibold transition-all"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Nuevo Túnel SSTP
+          </button>
         </div>
       ) : (
         <div className="space-y-3">
           {filteredTunnels.map(tunnel => (
             <div
               key={tunnel.id}
-              className="bg-gray-900 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-colors"
+              className={`bg-gray-900 border rounded-xl p-4 transition-all hover:-translate-y-0.5 ${
+                tunnel.status === 'active'
+                  ? 'border-gray-700 hover:border-emerald-500/40 hover:shadow-lg hover:shadow-emerald-500/5'
+                  : 'border-gray-800 opacity-70 hover:border-gray-700'
+              }`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className={`p-2 rounded-lg border flex-shrink-0 ${
+                  <div className={`p-2.5 rounded-xl border flex-shrink-0 ${
                     tunnel.status === 'active'
                       ? 'bg-emerald-500/10 border-emerald-500/20'
                       : 'bg-red-500/10 border-red-500/20'
                   }`}>
-                    <WifiIcon className={`w-4 h-4 ${tunnel.status === 'active' ? 'text-emerald-400' : 'text-red-400'}`} />
+                    <WifiIcon className={`w-5 h-5 ${tunnel.status === 'active' ? 'text-emerald-400' : 'text-red-400'}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-white font-medium">{tunnel.router_name}</h3>
+                      <h3 className="text-white font-semibold">{tunnel.router_name}</h3>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${statusColor(tunnel.status)}`}>
                         {tunnel.status === 'active'
                           ? <CheckCircleIcon className="w-3 h-3" />
@@ -539,10 +591,22 @@ const SstpProvisioning: React.FC = () => {
                           : <ClockIcon className="w-3 h-3" />}
                         {statusLabel(tunnel.status)}
                       </span>
+                      {tunnel.status === 'active' && (
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
+                          isRecentlySeen(tunnel.last_seen)
+                            ? 'text-cyan-400 bg-cyan-400/10 border-cyan-400/30'
+                            : 'text-gray-500 bg-gray-500/10 border-gray-500/20'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            isRecentlySeen(tunnel.last_seen) ? 'bg-cyan-400 animate-pulse' : 'bg-gray-500'
+                          }`} />
+                          {isRecentlySeen(tunnel.last_seen) ? 'En línea' : formatLastSeen(tunnel.last_seen)}
+                        </span>
+                      )}
                     </div>
-                    <div className="mt-1.5 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1">
+                    <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1.5">
                       <div>
-                        <p className="text-gray-500 text-xs">Usuario</p>
+                        <p className="text-gray-500 text-xs">Usuario SSTP</p>
                         <p className="text-gray-300 font-mono text-xs truncate">{tunnel.username}</p>
                       </div>
                       <div>
@@ -550,7 +614,7 @@ const SstpProvisioning: React.FC = () => {
                         <p className="text-gray-300 font-mono text-xs">{tunnel.server_ip}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs">IP Cliente</p>
+                        <p className="text-gray-500 text-xs">IP MikroTik</p>
                         <p className="text-gray-300 font-mono text-xs">{tunnel.client_ip}</p>
                       </div>
                       <div>
