@@ -1929,7 +1929,7 @@ const MikroTikManagement: React.FC = () => {
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow">
         <h3 className="mb-3 text-lg font-semibold text-gray-900">Alta rapida de MikroTik</h3>
         <p className="mb-3 text-sm text-gray-600">
-          Agrega routers nuevos con sus credenciales de API. Luego usa la pestana Configuracion para scripts de conexion remota.
+          Agrega routers nuevos con sus credenciales de API. Luego usa la pestana Configuracion para provisionar el tunel SoftEther SSTP.
         </p>
         <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1945,7 +1945,7 @@ const MikroTikManagement: React.FC = () => {
                   : ''}
               </p>
               <p className="mt-1 text-xs text-emerald-700">
-                Este perfil aplica solo a la cuenta ISP/tenant seleccionada. Cada ISP puede usar sus propios defaults de nombre, API y Back To Home.
+                Este perfil aplica solo a la cuenta ISP/tenant seleccionada. Cada ISP puede usar sus propios defaults de nombre y API.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -1999,125 +1999,7 @@ const MikroTikManagement: React.FC = () => {
                 placeholder="Puerto API por defecto"
                 className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-gray-900"
               />
-              <input
-                value={onboardingProfile.default_bth_user_name || ''}
-                onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), default_bth_user_name: e.target.value }))}
-                placeholder="Usuario BTH por defecto"
-                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-gray-900"
-              />
             </div>
-          )}
-          {onboardingProfile && (
-            <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-emerald-800 md:grid-cols-3">
-              <label className="flex items-center gap-2 rounded border border-emerald-200 bg-white px-2 py-1">
-                <input
-                  type="checkbox"
-                  checked={Boolean(onboardingProfile.default_allow_lan)}
-                  onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), default_allow_lan: e.target.checked }))}
-                  className="h-4 w-4"
-                />
-                BTH allow-lan por defecto
-              </label>
-              <label className="flex items-center gap-2 rounded border border-emerald-200 bg-white px-2 py-1">
-                <input
-                  type="checkbox"
-                  checked={Boolean(onboardingProfile.auto_vps_link)}
-                  onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), auto_vps_link: e.target.checked }))}
-                  className="h-4 w-4"
-                />
-                Auto vincular VPS por defecto
-              </label>
-              <label className="flex items-center gap-2 rounded border border-emerald-200 bg-white px-2 py-1">
-                <input
-                  type="checkbox"
-                  checked={Boolean(onboardingProfile.auto_bootstrap_bth)}
-                  onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), auto_bootstrap_bth: e.target.checked }))}
-                  className="h-4 w-4"
-                />
-                Bootstrap BTH por defecto
-              </label>
-            </div>
-          )}
-        </div>
-        <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-800">Importar QR / WireGuard</p>
-              <p className="text-xs text-blue-700">
-                Sube QR en imagen o ZIP/CONF para autocompletar tunel y vincular rapido. Back To Home usa identidad automatica por tenant.
-              </p>
-            </div>
-            <button
-              onClick={handleWireGuardOnboardFilePick}
-              disabled={wireGuardOnboarding}
-              className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-            >
-              {wireGuardOnboarding ? 'Conectando...' : 'QR/ZIP + conexion auto'}
-            </button>
-            <button
-              onClick={handleWireGuardFilePick}
-              disabled={wireGuardImporting}
-              className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-            >
-              {wireGuardImporting ? 'Importando...' : 'Solo leer QR/ZIP'}
-            </button>
-            <input
-              ref={wireGuardFileInputRef}
-              type="file"
-              accept=".zip,.conf,.cfg,.txt,image/png,image/jpeg,image/webp,image/bmp"
-              className="hidden"
-              onChange={handleWireGuardFileChange}
-            />
-            <input
-              ref={wireGuardOnboardFileInputRef}
-              type="file"
-              accept=".zip,.conf,.cfg,.txt,image/png,image/jpeg,image/webp,image/bmp"
-              className="hidden"
-              onChange={handleWireGuardOnboardFileChange}
-            />
-          </div>
-          <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-blue-800 md:grid-cols-2">
-            <label className="flex items-center gap-2 rounded border border-blue-200 bg-white px-2 py-1">
-              <input
-                type="checkbox"
-                checked={wireGuardWriteProbe}
-                onChange={(e) => setWireGuardWriteProbe(e.target.checked)}
-                className="h-4 w-4"
-              />
-              Ejecutar write probe API durante onboarding
-            </label>
-            <label className="flex items-center gap-2 rounded border border-blue-200 bg-white px-2 py-1">
-              <input
-                type="checkbox"
-                checked={wireGuardBootstrapOnboard}
-                onChange={(e) => setWireGuardBootstrapOnboard(e.target.checked)}
-                className="h-4 w-4"
-              />
-              Bootstrap Back To Home automatico
-            </label>
-          </div>
-          {wireGuardImportSummary?.success && (
-            <div className="mt-2 rounded border border-blue-300 bg-white p-2 text-xs text-blue-900">
-              <p>
-                Cuenta ISP: <strong>{wireGuardImportSummary.onboarding_profile?.account_label || onboardingProfile?.account_label || '-'}</strong>
-              </p>
-              <p>
-                Archivo: <strong>{wireGuardImportSummary.source_file || '-'}</strong>
-              </p>
-              <p>
-                Endpoint: <strong>{wireGuardImportSummary.wireguard?.endpoint_host || '-'}</strong>
-                {wireGuardImportSummary.wireguard?.endpoint_port ? `:${wireGuardImportSummary.wireguard?.endpoint_port}` : ''}
-              </p>
-              <p>
-                Allowed IPs:{' '}
-                <strong>{(wireGuardImportSummary.wireguard?.peer_allowed_ips || []).join(', ') || '-'}</strong>
-              </p>
-            </div>
-          )}
-          {wireGuardBootstrapOnboard && (
-            <p className="mt-2 text-xs text-blue-700">
-              Bootstrap en vivo requiere `change_ticket` y `preflight_ack=true` en este panel.
-            </p>
           )}
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
