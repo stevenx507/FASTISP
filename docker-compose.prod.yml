@@ -175,10 +175,8 @@ services:
       start_period: 20s
 
   traefik:
-    # Traefik v2.10 + DOCKER_API_VERSION=1.41 requerido por Docker Engine 27+ (API min 1.40)
-    image: traefik:v2.10
-    environment:
-      - DOCKER_API_VERSION=1.41
+    # Traefik v3 usa Docker API 1.41+ nativamente (compatible con Docker Engine 27+)
+    image: traefik:v3.3
     command:
       - --api.insecure=false
       - --providers.docker=true
@@ -214,9 +212,7 @@ services:
       - "traefik.http.middlewares.secure-headers.headers.stsSeconds=63072000"
       - "traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true"
       - "traefik.http.middlewares.secure-headers.headers.stsPreload=true"
-      - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=${WAF_IP_ALLOWLIST:-0.0.0.0/0}"
-      - "traefik.http.middlewares.geoip2.plugin.geoip2.databasePath=/geoip/GeoLite2-Country.mmdb"
-      - "traefik.http.middlewares.geoip2.plugin.geoip2.header=X-Country-Code"
+      - "traefik.http.middlewares.ipwhitelist.ipallowlist.sourcerange=${WAF_IP_ALLOWLIST:-0.0.0.0/0}"
 
 volumes:
   pgdata:
