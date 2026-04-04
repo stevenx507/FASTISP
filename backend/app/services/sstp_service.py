@@ -261,7 +261,8 @@ def ensure_sstp_certificate() -> dict:
 
 def generate_mikrotik_sstp_script(prov: dict) -> str:
     """
-    Genera el script .rsc de MikroTik para configurar el túnel SSTP.
+    Genera el script .rsc de MikroTik para configurar el túnel SSTP hacia FastISP.
+    Inspirado en el enfoque de WispHub: limpieza, usuario local, scheduler de reconexión.
     Compatible con RouterOS 6.x y 7.x.
     """
     username = prov.get("username", "")
@@ -269,79 +270,30 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
     server_host = prov.get("server_host", SSTP_SERVER_HOST)
     server_port = prov.get("server_port", SSTP_SERVER_PORT)
     router_name = prov.get("router_name", "mikrotik")
-    fingerprint = prov.get("fingerprint", "")
     provisioned_at = prov.get("provisioned_at", datetime.utcnow().isoformat())
 
-    # Nombre del perfil y interfaz
-    profile_name = f"fastisp-sstp"
-    iface_name = f"sstp-fastisp"
+    profile_name = "fastisp-profile"
+    iface_name = "FastISPVPN"
+    group_name = "fastisp"
+    # Subred VPN interna — solo IPs de esta red pueden usar la API vía el túnel
+    vpn_subnet = os.environ.get("VPN_MGMT_SUBNET", "10.100.0.0/16")
+    # Scheduler
+    scheduler_comment = "Reconectar FastISP"
 
-    script = f"""# ============================================================
-# FASTISP — Script de Configuración SSTP
-# Router: {router_name}
-# Generado: {provisioned_at}
-# Servidor: {server_host}:{server_port}
-# ============================================================
-# INSTRUCCIONES:
-# 1. Abrir Winbox o terminal SSH en el MikroTik
-# 2. Ir a New Terminal
-# 3. Pegar este script completo
-# 4. Verificar que la interfaz sstp-fastisp aparece como "R" (Running)
-# ============================================================
-
-# ── Paso 1: Crear perfil PPP ──────────────────────────────
-/ppp profile
-add name="{profile_name}" \\
-    use-encryption=yes \\
-    use-compression=no \\
-    use-mpls=no \\
-    only-one=yes \\
-    comment="FASTISP SSTP Profile"
-
-# ── Paso 2: Crear secreto PPP (credenciales) ─────────────
-/ppp secret
-remove [find name="{username}"]
-add name="{username}" \\
-    password="{password}" \\
-    profile="{profile_name}" \\
-    service=sstp \\
-    comment="FASTISP SSTP - {router_name}"
-
-# ── Paso 3: Crear interfaz SSTP Client ───────────────────
-/interface sstp-client
-remove [find name="{iface_name}"]
-add name="{iface_name}" \\
-    connect-to={server_host} \\
-    port={server_port} \\
-    user="{username}" \\
-    password="{password}" \\
-    profile="{profile_name}" \\
-    verify-server-certificate=no \\
-    disabled=no \\
-    comment="FASTISP VPN - {router_name}"
-
-# ── Paso 4: Verificar conexión ───────────────────────────
-:delay 5s
-:local status [/interface sstp-client get {iface_name} running]
-:if ($status = true) do={{
-    :log info "FASTISP SSTP: Conexion establecida exitosamente"
-    :put "✅ SSTP conectado a {server_host}:{server_port}"
-}} else={{
-    :log warning "FASTISP SSTP: Verificar credenciales y conectividad"
-    :put "⚠️  SSTP no conectado. Verificar logs: /log print where topics~sstp"
-}}
-
-# ── Paso 5: Ruta hacia el servidor FASTISP ───────────────
-# (Opcional) Agregar ruta específica para el tráfico de gestión
-# /ip route add dst-address=10.100.0.0/16 gateway={iface_name}
-
-# ============================================================
-# VERIFICACIÓN:
-#   /interface sstp-client print
-#   /interface sstp-client monitor {iface_name}
-#   /log print where topics~sstp
-# ============================================================
-"""
+    script = f"""/ip service set api port=8728 disabled=no address={vpn_subnet};
+/interface sstp-client remove [find where comment~"FastISP" or name="{iface_name}"];
+/ppp profile remove [find where name="{profile_name}"];
+/ppp profile add name="{profile_name}" use-encryption=yes use-compression=no use-mpls=no only-one=yes comment="FastISP SSTP Profile";
+/interface sstp-client add comment="FastISP VPN" connect-to={server_host} port={server_port} name="{iface_name}" user="{username}" password="{password}" profile="{profile_name}" verify-server-certificate=no disabled=no;
+/ip route remove [find where dst-address="{vpn_subnet}"];
+/ip route add distance=1 dst-address={vpn_subnet} gateway={iface_name};
+/user group remove [find where name="{group_name}"];
+/user group add name={group_name} policy=local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive;
+/user remove [find where name="{username}"];
+/user add name="{username}" password="{password}" group={group_name};
+/system scheduler remove [find where comment="{scheduler_comment}"];
+/system scheduler add comment="{scheduler_comment}" interval=1d name="{scheduler_comment}" on-event="/interface set {iface_name} disabled=yes\r\n:delay 4s\r\n/interface set {iface_name} disabled=no\r\n:log info \\\"FastISP VPN reconectado\\\"";
+:log info "FastISP VPN configurado para {router_name}. Generado: {provisioned_at}";"""
     return script
 
 

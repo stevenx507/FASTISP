@@ -481,6 +481,12 @@ const normalizeRouterItem = (input: unknown): RouterItem => {
     ip_address: String(item.ip_address ?? ''),
     model: item.model ? String(item.model) : undefined,
     status: item.status ? String(item.status) : undefined,
+    username: item.username ? String(item.username) : undefined,
+    api_port: item.api_port ? Number(item.api_port) : 8728,
+    sstp_active: Boolean(item.sstp_active),
+    sstp_username: item.sstp_username ? String(item.sstp_username) : undefined,
+    vpn_ip: item.vpn_ip ? String(item.vpn_ip) : undefined,
+    last_seen: item.last_seen ? String(item.last_seen) : undefined,
   }
 }
 
@@ -614,6 +620,11 @@ const MikroTikManagement: React.FC = () => {
   const [sstpProvisioning, setSstpProvisioning] = useState(false)
   const [sstpScriptCopied, setSstpScriptCopied] = useState(false)
   const [sstpLoadingForRouter, setSstpLoadingForRouter] = useState<string | null>(null)
+  // Herramientas
+  const [herramientasOpen, setHerramientasOpen] = useState(false)
+  const [herramientasModal, setHerramientasModal] = useState<'arp' | 'ppp' | null>(null)
+  const [herramientasData, setHerramientasData] = useState<Record<string, unknown>[]>([])
+  const [herramientasLoading, setHerramientasLoading] = useState(false)
   const connectionStatusRef = useRef<Record<string, string>>({})
   const token = useAuthStore((state) => state.token)
   const user = useAuthStore((state) => state.user)
@@ -2118,40 +2129,76 @@ const MikroTikManagement: React.FC = () => {
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow">
-        <h3 className="mb-3 text-lg font-semibold text-gray-900">Seleccionar Router</h3>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
-          {routers.map((router) => (
-            (() => {
-              const snapshot = routerConnectionSnapshots[router.id]
-              const diagnostics = snapshot?.diagnostics || null
-              return (
-                <button
-                  key={router.id}
-                  onClick={() => setSelectedRouter(router)}
-                  className={`rounded-lg border p-4 text-left transition-all ${
-                    selectedRouter?.id === router.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center space-x-3">
-                      <ServerIcon className="h-6 w-6 text-green-500" />
-                      <div>
-                        <div className="font-medium text-gray-900">{router.name}</div>
-                        <div className="text-sm text-gray-600">{router.ip_address}</div>
-                        <div className="text-xs text-gray-500">{router.model || '-'}</div>
-                        <div className="mt-1 text-[11px] text-gray-500">
-                          Ultimo check: {formatConnectionCheckedAt(snapshot?.checkedAt)}
-                        </div>
+        <h3 className="mb-3 text-lg font-semibold text-gray-900">Lista Routers</h3>
+
+        {/* WispHub-style table */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50 text-xs font-semibold uppercase text-gray-500">
+                <th className="px-3 py-2 text-left">Nombre</th>
+                <th className="px-3 py-2 text-left">IP</th>
+                <th className="px-3 py-2 text-left">Usuario</th>
+                <th className="px-3 py-2 text-center">API</th>
+                <th className="px-3 py-2 text-center">Puerto</th>
+                <th className="px-3 py-2 text-center">Script SSTP</th>
+                <th className="px-3 py-2 text-center">VPN IP</th>
+                <th className="px-3 py-2 text-right">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {routers.map((router) => {
+                const snapshot = routerConnectionSnapshots[router.id]
+                const diagnostics = snapshot?.diagnostics || null
+                const isSelected = selectedRouter?.id === router.id
+                const apiOk = diagnostics?.success === true
+                return (
+                  <tr
+                    key={router.id}
+                    onClick={() => setSelectedRouter(router)}
+                    className={`cursor-pointer border-b border-gray-100 transition-colors ${
+                      isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <ServerIcon className="h-4 w-4 text-green-500 shrink-0" />
+                        <span className="font-medium text-gray-900">{router.name}</span>
                       </div>
-                    </div>
-                    <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${getConnectionStatusTone(diagnostics)}`}>
-                      {getConnectionStatusLabel(diagnostics)}
-                    </span>
-                  </div>
-                </button>
-              )
-            })()
-          ))}
+                    </td>
+                    <td className="px-3 py-2 font-mono text-gray-700 text-xs">{router.ip_address}</td>
+                    <td className="px-3 py-2 text-gray-500 text-xs">{router.username || '-'}</td>
+                    <td className="px-3 py-2 text-center">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        apiOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                      }`}>
+                        {apiOk ? 'True' : 'False'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-center text-xs text-gray-500">{router.api_port || 8728}</td>
+                    <td className="px-3 py-2 text-center">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        router.sstp_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {router.sstp_active ? 'Si' : 'No'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-center font-mono text-[10px] text-gray-500">
+                      {router.vpn_ip || '-'}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedRouter(router) }}
+                        className="rounded bg-emerald-600 px-2 py-1 text-[10px] font-semibold text-white hover:bg-emerald-500"
+                      >
+                        Gestionar
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
         {!routers.length && <p className="mt-3 text-sm text-gray-500">No hay routers registrados todavia.</p>}
       </div>
@@ -2161,6 +2208,121 @@ const MikroTikManagement: React.FC = () => {
           <div className="my-4">
             <AIDiagnosis isLoading={isAiLoading} analysis={aiAnalysis} error={aiError} />
           </div>
+
+          {/* ── Herramientas toolbar (WispHub-style) ── */}
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+            <div className="flex items-center gap-2">
+              <ServerIcon className="h-4 w-4 text-gray-500" />
+              <span className="text-sm font-semibold text-gray-700">{selectedRouter.name}</span>
+              <span className="font-mono text-xs text-gray-500">{selectedRouter.ip_address}</span>
+              {selectedRouter.sstp_active ? (
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">SSTP ✔</span>
+              ) : (
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">Sin SSTP</span>
+              )}
+            </div>
+            <div className="relative flex items-center gap-2">
+              {/* Reboot */}
+              <button
+                onClick={() => openConfirm(`¿Reiniciar el router ${selectedRouter.name}?`, async () => {
+                  try {
+                    const res = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/reboot`, { method: 'POST' })
+                    const d = await res.json().catch(() => ({}))
+                    if (res.ok) addToast('success', 'Router reiniciado')
+                    else addToast('error', (d as {error?: string}).error || 'Error al reiniciar')
+                  } catch { addToast('error', 'Error de red') }
+                })}
+                className="rounded bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-200"
+              >
+                🔄 Reiniciar
+              </button>
+              {/* Herramientas dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setHerramientasOpen((p) => !p)}
+                  className="rounded bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-500"
+                >
+                  🔧 Herramientas ▾
+                </button>
+                {herramientasOpen && (
+                  <div className="absolute right-0 top-full z-50 mt-1 min-w-[180px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                    {[
+                      { label: '📍 Lista ARP', action: async () => {
+                        setHerramientasLoading(true); setHerramientasOpen(false); setHerramientasModal('arp')
+                        try {
+                          const r = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/arp`)
+                          const d = await r.json().catch(() => ({}))
+                          setHerramientasData((d as {arp?: Record<string, unknown>[]}).arp || [])
+                        } catch { addToast('error', 'Error cargando ARP') }
+                        setHerramientasLoading(false)
+                      }},
+                      { label: '📶 PPP Active Connections', action: async () => {
+                        setHerramientasLoading(true); setHerramientasOpen(false); setHerramientasModal('ppp')
+                        try {
+                          const r = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/ppp/active`)
+                          const d = await r.json().catch(() => ({}))
+                          setHerramientasData((d as {sessions?: Record<string, unknown>[]}).sessions || [])
+                        } catch { addToast('error', 'Error cargando PPP') }
+                        setHerramientasLoading(false)
+                      }},
+                      { label: '📄 Logs del Router', action: () => { setSidePanel('logs'); setHerramientasOpen(false) }},
+                      { label: '💻 Clientes DHCP', action: () => { setSidePanel('dhcp'); setHerramientasOpen(false) }},
+                      { label: '📡 Clientes WiFi', action: () => { setSidePanel('wifi'); setHerramientasOpen(false) }},
+                    ].map((item) => (
+                      <button
+                        key={item.label}
+                        onClick={() => void item.action()}
+                        className="block w-full px-4 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Herramientas result modal */}
+          {herramientasModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setHerramientasModal(null)}>
+              <div className="w-full max-w-3xl rounded-xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="font-bold text-gray-900">
+                    {herramientasModal === 'arp' ? '📍 Lista ARP' : '📶 PPP Active Connections'} — {selectedRouter.name}
+                  </h3>
+                  <button onClick={() => setHerramientasModal(null)} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+                </div>
+                {herramientasLoading ? (
+                  <div className="py-8 text-center text-sm text-gray-500">Cargando...</div>
+                ) : herramientasData.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-gray-500">Sin datos disponibles.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-xs">
+                      <thead>
+                        <tr className="border-b bg-gray-50 text-[10px] font-semibold uppercase text-gray-500">
+                          {Object.keys(herramientasData[0]).map((k) => (
+                            <th key={k} className="px-3 py-1.5 text-left">{k}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {herramientasData.map((row, i) => (
+                          <tr key={i} className="border-b hover:bg-gray-50">
+                            {Object.values(row).map((v, j) => (
+                              <td key={j} className="px-3 py-1.5 font-mono text-gray-700">{String(v ?? '-')}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <p className="mt-2 text-right text-[11px] text-gray-400">{herramientasData.length} registros</p>
+              </div>
+            </div>
+          )}
 
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8">

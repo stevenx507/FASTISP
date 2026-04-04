@@ -6,6 +6,12 @@ export interface RouterItem {
   ip_address: string;
   model?: string;
   status?: string;
+  username?: string;
+  api_port?: number;
+  sstp_active?: boolean;
+  sstp_username?: string;
+  vpn_ip?: string;
+  last_seen?: string;
 }
 
 export interface HealthRouterInfo {

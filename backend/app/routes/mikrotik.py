@@ -4173,6 +4173,66 @@ def reboot_router(router_id):
         logger.error(f"Error rebooting router: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@mikrotik_bp.route('/routers/<router_id>/arp', methods=['GET'])
+@jwt_required()
+@admin_required()
+def list_arp(router_id):
+    """Return ARP table from MikroTik router (Lista ARP)."""
+    try:
+        with MikroTikService(router_id) as service:
+            if not service.api:
+                return jsonify({'success': False, 'error': 'No se pudo conectar al router'}), 500
+            arp_res = service.api.get_resource('/ip/arp')
+            entries = arp_res.get()
+            result = []
+            for e in entries:
+                result.append({
+                    'address': e.get('address', ''),
+                    'mac_address': e.get('mac-address', ''),
+                    'interface': e.get('interface', ''),
+                    'status': e.get('status', ''),
+                    'complete': e.get('complete', 'false'),
+                    'disabled': e.get('disabled', 'false'),
+                    'invalid': e.get('invalid', 'false'),
+                    'dynamic': e.get('dynamic', 'false'),
+                })
+        return jsonify({'success': True, 'arp': result, 'total': len(result)}), 200
+    except Exception as e:
+        logger.error(f"Error getting ARP list for router {router_id}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@mikrotik_bp.route('/routers/<router_id>/ppp/active', methods=['GET'])
+@jwt_required()
+@admin_required()
+def list_ppp_active(router_id):
+    """Return active PPP sessions from MikroTik router (PPP Active Connections)."""
+    try:
+        with MikroTikService(router_id) as service:
+            if not service.api:
+                return jsonify({'success': False, 'error': 'No se pudo conectar al router'}), 500
+            ppp_res = service.api.get_resource('/ppp/active')
+            sessions = ppp_res.get()
+            result = []
+            for s in sessions:
+                result.append({
+                    'name': s.get('name', ''),
+                    'service': s.get('service', ''),
+                    'caller_id': s.get('caller-id', ''),
+                    'address': s.get('address', ''),
+                    'uptime': s.get('uptime', ''),
+                    'encoding': s.get('encoding', ''),
+                    'session_id': s.get('session-id', ''),
+                    'limit_bytes_in': s.get('limit-bytes-in', ''),
+                    'limit_bytes_out': s.get('limit-bytes-out', ''),
+                    'radius': s.get('radius', 'false'),
+                })
+        return jsonify({'success': True, 'sessions': result, 'total': len(result)}), 200
+    except Exception as e:
+        logger.error(f"Error getting PPP active sessions for router {router_id}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @mikrotik_bp.route('/routers/<router_id>/execute-script', methods=['POST'])
 @admin_required()
 def execute_script(router_id):

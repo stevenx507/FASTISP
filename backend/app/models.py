@@ -280,12 +280,20 @@ class MikroTikRouter(db.Model):
             self._password_encrypted = None
 
     def to_dict(self):
+        sstp = getattr(self, 'sstp_tunnel', None)
         return {
             'id': self.id,
             'name': self.name,
             'ip_address': self.ip_address,
-            'status': 'online' if self.is_active else 'offline', # Simplified status
+            'username': self.username,
+            'api_port': self.api_port or 8728,
+            'status': 'online' if self.is_active else 'offline',
             'tenant_id': self.tenant_id,
+            'vpn_ip': self.vpn_ip_address,
+            'vpn_username': self.vpn_username,
+            'sstp_active': sstp is not None and getattr(sstp, 'status', None) == 'active',
+            'sstp_username': sstp.username if sstp else None,
+            'last_seen': self.last_seen.isoformat() if self.last_seen else None,
         }
 
 
