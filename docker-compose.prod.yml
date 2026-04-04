@@ -53,6 +53,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
+    ports:
+      - "2055:2055/udp"
     volumes:
       - backups:/app/backups
     networks:

@@ -625,6 +625,16 @@ const MikroTikManagement: React.FC = () => {
   const [herramientasModal, setHerramientasModal] = useState<'arp' | 'ppp' | null>(null)
   const [herramientasData, setHerramientasData] = useState<Record<string, unknown>[]>([])
   const [herramientasLoading, setHerramientasLoading] = useState(false)
+  // Traffic Flow
+  const [tfScripts, setTfScripts] = useState<{ros6: string; ros7_lan: string; ros7_wan: string} | null>(null)
+  const [tfCollector, setTfCollector] = useState<{ip: string; port: number} | null>(null)
+  const [tfStats, setTfStats] = useState<{src_ip: string; mb_total: number; bytes_total: number; packets_total: number; last_seen: string | null}[]>([])
+  const [tfLoading, setTfLoading] = useState(false)
+  const [tfStatsLoading, setTfStatsLoading] = useState(false)
+  const [tfLanGw, setTfLanGw] = useState('')
+  const [tfWanGw, setTfWanGw] = useState('')
+  const [tfCopied, setTfCopied] = useState<string | null>(null)
+  const [tfHours, setTfHours] = useState(24)
   const connectionStatusRef = useRef<Record<string, string>>({})
   const token = useAuthStore((state) => state.token)
   const user = useAuthStore((state) => state.user)
@@ -2332,10 +2342,11 @@ const MikroTikManagement: React.FC = () => {
                 { id: 'connections', name: 'Conexiones', icon: WifiIcon },
                 { id: 'config', name: 'Configuracion', icon: CogIcon },
                 { id: 'security', name: 'Seguridad', icon: ShieldCheckIcon },
+                { id: 'traffic_flow', name: 'Traffic Flow', icon: ChartBarIcon },
               ].map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as 'overview' | 'queues' | 'connections' | 'config' | 'security')}
+                  onClick={() => setActiveTab(tab.id as 'overview' | 'queues' | 'connections' | 'config' | 'security' | 'traffic_flow')}
                   className={`flex items-center space-x-2 border-b-2 px-1 py-3 text-sm font-medium ${
                     activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
@@ -2962,6 +2973,197 @@ const MikroTikManagement: React.FC = () => {
                           </div>
                         ))}
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'traffic_flow' && (
+                  <div className="space-y-5">
+                    {/* Header */}
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h4 className="text-lg font-bold text-gray-900">📊 Script de Traffic Flow</h4>
+                        <p className="mt-0.5 text-xs text-gray-500">
+                          Equivalente al Traffic Flow de WispHub. Habilita NetFlow v5 en el MikroTik para enviar métricas de consumo por cliente a FASTISP.
+                        </p>
+                        {tfCollector && (
+                          <p className="mt-1 text-xs text-emerald-700 font-mono">
+                            Colector: <strong>{tfCollector.ip}:{tfCollector.port}</strong>
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={async () => {
+                          setTfLoading(true)
+                          try {
+                            const params = new URLSearchParams()
+                            if (tfLanGw) params.set('lan_gateways', tfLanGw)
+                            if (tfWanGw) params.set('wan_gateways', tfWanGw)
+                            const r = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/traffic-flow/script?${params}`)
+                            const d = await r.json().catch(() => ({})) as {success?: boolean; scripts?: {ros6: string; ros7_lan: string; ros7_wan: string}; collector_ip?: string; collector_port?: number}
+                            if (d.success && d.scripts) {
+                              setTfScripts(d.scripts)
+                              setTfCollector({ ip: d.collector_ip || '', port: d.collector_port || 2055 })
+                            } else {
+                              addToast('error', 'Error generando script de Traffic Flow')
+                            }
+                          } catch { addToast('error', 'Error de red') }
+                          setTfLoading(false)
+                        }}
+                        disabled={tfLoading}
+                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60 transition"
+                      >
+                        {tfLoading ? 'Generando...' : '⚡ Generar scripts'}
+                      </button>
+                    </div>
+
+                    {/* Gateway inputs */}
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                          IPs Puerta de Enlace LAN (separadas por coma)
+                        </label>
+                        <input
+                          type="text"
+                          value={tfLanGw}
+                          onChange={(e) => setTfLanGw(e.target.value)}
+                          placeholder="192.168.1.1, 192.168.2.1"
+                          className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-mono text-gray-900"
+                        />
+                        <p className="mt-0.5 text-[10px] text-gray-400">Solo RouterOS 7 — Opción 1 (LAN gateway)</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                          IPs Puerta de Enlace WAN (separadas por coma)
+                        </label>
+                        <input
+                          type="text"
+                          value={tfWanGw}
+                          onChange={(e) => setTfWanGw(e.target.value)}
+                          placeholder="203.0.113.1"
+                          className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-mono text-gray-900"
+                        />
+                        <p className="mt-0.5 text-[10px] text-gray-400">Solo RouterOS 7 — Opción 2 (WAN gateway)</p>
+                      </div>
+                    </div>
+
+                    {/* Scripts */}
+                    {tfScripts && (
+                      <div className="space-y-4">
+                        {[
+                          { key: 'ros6', label: '📋 RouterOS 6.x o inferior', desc: 'Un solo target sin src-address' },
+                          { key: 'ros7_lan', label: '📋 RouterOS 7.x — Opción 1 (LAN gateways)', desc: 'Un target por IP de puerta de enlace LAN' },
+                          { key: 'ros7_wan', label: '📋 RouterOS 7.x — Opción 2 (WAN gateways)', desc: 'Un target por IP de puerta de enlace WAN' },
+                        ].map((item) => {
+                          const script = tfScripts[item.key as keyof typeof tfScripts]
+                          return (
+                            <div key={item.key} className="rounded-lg border border-slate-200 bg-slate-950 overflow-hidden">
+                              <div className="flex items-center justify-between px-4 py-2 border-b border-slate-700">
+                                <div>
+                                  <p className="text-xs font-semibold text-slate-200">{item.label}</p>
+                                  <p className="text-[10px] text-slate-400">{item.desc}</p>
+                                </div>
+                                <button
+                                  onClick={async () => {
+                                    await copyToClipboard(script)
+                                    setTfCopied(item.key)
+                                    setTimeout(() => setTfCopied(null), 2500)
+                                  }}
+                                  className="rounded-md bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-emerald-500 transition"
+                                >
+                                  {tfCopied === item.key ? '✅ Copiado' : '📋 Copiar'}
+                                </button>
+                              </div>
+                              <pre className="overflow-x-auto p-4 text-[10px] leading-relaxed text-emerald-300 whitespace-pre-wrap">{script}</pre>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {/* Stats: top consumers */}
+                    <div className="rounded-lg border border-gray-200 bg-white p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div>
+                          <h5 className="font-semibold text-gray-900">📈 Top Consumidores</h5>
+                          <p className="text-xs text-gray-500">Clientes con mayor consumo según NetFlow recibido.</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={tfHours}
+                            onChange={(e) => setTfHours(Number(e.target.value))}
+                            className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
+                          >
+                            {[1, 6, 12, 24, 48, 168].map((h) => (
+                              <option key={h} value={h}>{h === 168 ? '7 días' : `${h}h`}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={async () => {
+                              setTfStatsLoading(true)
+                              try {
+                                const r = await apiFetch(`/api/mikrotik/traffic-flow/stats/router/${selectedRouter.id}?hours=${tfHours}&limit=50`)
+                                const d = await r.json().catch(() => ({})) as {success?: boolean; stats?: typeof tfStats}
+                                if (d.success) setTfStats(d.stats || [])
+                                else addToast('error', 'Error cargando estadísticas de Traffic Flow')
+                              } catch { addToast('error', 'Error de red') }
+                              setTfStatsLoading(false)
+                            }}
+                            disabled={tfStatsLoading}
+                            className="rounded bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
+                          >
+                            {tfStatsLoading ? 'Cargando...' : '🔄 Actualizar'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {tfStats.length === 0 && !tfStatsLoading && (
+                        <div className="py-6 text-center">
+                          <p className="text-sm text-gray-400">Sin datos de tráfico aún.</p>
+                          <p className="mt-1 text-xs text-gray-400">
+                            Aplica el script en el MikroTik, espera 1-2 minutos y presiona Actualizar.
+                          </p>
+                        </div>
+                      )}
+
+                      {tfStats.length > 0 && (
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full text-xs">
+                            <thead>
+                              <tr className="border-b bg-gray-50 text-[10px] font-semibold uppercase text-gray-500">
+                                <th className="px-3 py-1.5 text-left">#</th>
+                                <th className="px-3 py-1.5 text-left">IP Cliente</th>
+                                <th className="px-3 py-1.5 text-right">MB Total</th>
+                                <th className="px-3 py-1.5 text-right">Bytes</th>
+                                <th className="px-3 py-1.5 text-right">Paquetes</th>
+                                <th className="px-3 py-1.5 text-left">Último flujo</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {tfStats.map((row, i) => (
+                                <tr key={row.src_ip} className="border-b hover:bg-gray-50">
+                                  <td className="px-3 py-1.5 text-gray-400">{i + 1}</td>
+                                  <td className="px-3 py-1.5 font-mono font-semibold text-gray-900">{row.src_ip}</td>
+                                  <td className="px-3 py-1.5 text-right font-semibold text-blue-700">{row.mb_total.toLocaleString()} MB</td>
+                                  <td className="px-3 py-1.5 text-right text-gray-500">{(row.bytes_total || 0).toLocaleString()}</td>
+                                  <td className="px-3 py-1.5 text-right text-gray-500">{(row.packets_total || 0).toLocaleString()}</td>
+                                  <td className="px-3 py-1.5 text-gray-400 font-mono text-[10px]">{row.last_seen ? new Date(row.last_seen).toLocaleString() : '-'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Instructions */}
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 space-y-1">
+                      <p className="font-semibold">📌 Instrucciones (igual que WispHub):</p>
+                      <p>1. Genera los scripts con el botón de arriba.</p>
+                      <p>2. Copia el script correspondiente a tu versión de RouterOS.</p>
+                      <p>3. En Winbox → New Terminal → pega el script → Enter.</p>
+                      <p>4. Espera 5-10 minutos para ver el primer consumo en la tabla de Top Consumidores.</p>
+                      <p>5. Si en 24h no aparecen datos, usa la Opción 2 (WAN gateway) para RouterOS 7.</p>
                     </div>
                   </div>
                 )}

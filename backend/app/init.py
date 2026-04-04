@@ -229,5 +229,16 @@ def create_app(config_name_or_class='development'):
     @app.errorhandler(429)
     def ratelimit_handler(e):
         return jsonify({'error': 'Rate limit exceeded'}), 429
-    
+
+    # ── NetFlow v5 collector (Traffic Flow) ───────────────────────────────────
+    # Only start in the web/gunicorn process, not in celery workers.
+    import os as _os
+    if not _os.environ.get('CELERY_WORKER_RUNNING'):
+        try:
+            from app.services.traffic_flow_service import start_collector
+            start_collector(app)
+            app.logger.info("NetFlow v5 collector started.")
+        except Exception as _tf_err:
+            app.logger.warning(f"NetFlow collector could not start: {_tf_err}")
+
     return app

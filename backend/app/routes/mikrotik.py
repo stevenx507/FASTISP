@@ -12,7 +12,7 @@ from app.services.ai_diagnostic_service import AIDiagnosticService
 from app.services.monitoring_service import monitoring_service
 from app.tenancy import current_tenant_id, tenant_access_allowed
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 import ipaddress
 import io
@@ -5088,3 +5088,177 @@ def provision_sstp_for_router(router_id):
         logger.error(f"Error provisioning SSTP for router {router_id}: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
+# ── Traffic Flow (NetFlow v5) — WispHub-equivalent ────────────────────────────
+
+@mikrotik_bp.route('/routers/<int:router_id>/traffic-flow/script', methods=['GET'])
+@jwt_required()
+@admin_required()
+def get_traffic_flow_script(router_id):
+    """
+    Return Traffic Flow configuration scripts for this router.
+    RouterOS 6.x and 7.x variants (LAN/WAN gateways).
+    Equivalent to WispHub's 'Script de Traffic Flow' tab.
+    """
+    try:
+        from app.services.traffic_flow_service import (
+            generate_traffic_flow_script_ros6,
+            generate_traffic_flow_script_ros7_lan,
+            generate_traffic_flow_script_ros7_wan,
+            COLLECTOR_IP, COLLECTOR_PORT,
+        )
+
+        router = db.session.get(MikroTikRouter, router_id)
+        if not router:
+            return jsonify({'success': False, 'error': 'Router no encontrado'}), 404
+
+        # Optional gateway hints from query params
+        lan_gw_raw = request.args.get('lan_gateways', '')
+        wan_gw_raw = request.args.get('wan_gateways', '')
+        lan_gateways = [g.strip() for g in lan_gw_raw.split(',') if g.strip()] or None
+        wan_gateways = [g.strip() for g in wan_gw_raw.split(',') if g.strip()] or None
+
+        return jsonify({
+            'success': True,
+            'collector_ip': COLLECTOR_IP,
+            'collector_port': COLLECTOR_PORT,
+            'router_name': router.name,
+            'scripts': {
+                'ros6': generate_traffic_flow_script_ros6(router.name),
+                'ros7_lan': generate_traffic_flow_script_ros7_lan(router.name, lan_gateways),
+                'ros7_wan': generate_traffic_flow_script_ros7_wan(router.name, wan_gateways),
+            },
+        }), 200
+    except Exception as e:
+        logger.error(f"Error generating traffic flow script for router {router_id}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@mikrotik_bp.route('/traffic-flow/stats', methods=['GET'])
+@jwt_required()
+@admin_required()
+def get_traffic_flow_stats():
+    """
+    Return aggregated NetFlow stats.
+    Query params:
+      router_id  — filter by router
+      hours      — lookback window in hours (default 24)
+      limit      — top N IPs (default 50)
+    """
+    try:
+        from app.models import TrafficFlowStats
+        from app.tenancy import current_tenant_id
+        from sqlalchemy import func
+
+        tid = current_tenant_id()
+        router_id = request.args.get('router_id', type=int)
+        hours     = request.args.get('hours', 24, type=int)
+        limit     = min(request.args.get('limit', 50, type=int), 200)
+
+        since = datetime.utcnow() - timedelta(hours=hours)
+
+        q = TrafficFlowStats.query.filter(
+            TrafficFlowStats.tenant_id == tid,
+            TrafficFlowStats.bucket >= since,
+        )
+        if router_id:
+            q = q.filter(TrafficFlowStats.router_id == router_id)
+
+        # Aggregate by src_ip
+        agg = (
+            db.session.query(
+                TrafficFlowStats.src_ip,
+                TrafficFlowStats.router_id,
+                func.sum(TrafficFlowStats.bytes_total).label('bytes_total'),
+                func.sum(TrafficFlowStats.packets_total).label('packets_total'),
+                func.max(TrafficFlowStats.bucket).label('last_seen'),
+            )
+            .filter(
+                TrafficFlowStats.tenant_id == tid,
+                TrafficFlowStats.bucket >= since,
+                *([TrafficFlowStats.router_id == router_id] if router_id else []),
+            )
+            .group_by(TrafficFlowStats.src_ip, TrafficFlowStats.router_id)
+            .order_by(func.sum(TrafficFlowStats.bytes_total).desc())
+            .limit(limit)
+            .all()
+        )
+
+        result = []
+        for row in agg:
+            mb = round((row.bytes_total or 0) / 1_048_576, 2)
+            result.append({
+                'src_ip':        row.src_ip,
+                'router_id':     row.router_id,
+                'bytes_total':   row.bytes_total or 0,
+                'mb_total':      mb,
+                'packets_total': row.packets_total or 0,
+                'last_seen':     row.last_seen.isoformat() if row.last_seen else None,
+            })
+
+        return jsonify({
+            'success': True,
+            'stats': result,
+            'total': len(result),
+            'hours': hours,
+        }), 200
+    except Exception as e:
+        logger.error(f"Error fetching traffic flow stats: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@mikrotik_bp.route('/traffic-flow/stats/router/<int:router_id>', methods=['GET'])
+@jwt_required()
+@admin_required()
+def get_router_traffic_flow_stats(router_id):
+    """Top consumers for a specific router in the last N hours."""
+    try:
+        from app.models import TrafficFlowStats
+        from sqlalchemy import func
+
+        hours = request.args.get('hours', 24, type=int)
+        limit = min(request.args.get('limit', 50, type=int), 200)
+        since = datetime.utcnow() - timedelta(hours=hours)
+
+        router = db.session.get(MikroTikRouter, router_id)
+        if not router:
+            return jsonify({'success': False, 'error': 'Router no encontrado'}), 404
+
+        agg = (
+            db.session.query(
+                TrafficFlowStats.src_ip,
+                func.sum(TrafficFlowStats.bytes_total).label('bytes_total'),
+                func.sum(TrafficFlowStats.packets_total).label('packets_total'),
+                func.max(TrafficFlowStats.bucket).label('last_seen'),
+            )
+            .filter(
+                TrafficFlowStats.router_id == router_id,
+                TrafficFlowStats.bucket >= since,
+            )
+            .group_by(TrafficFlowStats.src_ip)
+            .order_by(func.sum(TrafficFlowStats.bytes_total).desc())
+            .limit(limit)
+            .all()
+        )
+
+        result = [
+            {
+                'src_ip':        r.src_ip,
+                'bytes_total':   r.bytes_total or 0,
+                'mb_total':      round((r.bytes_total or 0) / 1_048_576, 2),
+                'packets_total': r.packets_total or 0,
+                'last_seen':     r.last_seen.isoformat() if r.last_seen else None,
+            }
+            for r in agg
+        ]
+
+        return jsonify({
+            'success': True,
+            'router_name': router.name,
+            'stats': result,
+            'total': len(result),
+            'hours': hours,
+        }), 200
+    except Exception as e:
+        logger.error(f"Error fetching traffic stats for router {router_id}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
