@@ -254,6 +254,21 @@ class MikroTikRouter(db.Model):
     vpn_password_encrypted = db.Column(db.LargeBinary, nullable=True)
     vpn_ip_address = db.Column(db.String(45), nullable=True)
     vpn_provisioned_at = db.Column(db.DateTime, nullable=True)
+    # ── Campos extendidos WispHub-style ──────────────────────────────────────
+    wan_port              = db.Column(db.Integer, default=80, nullable=True)
+    lan_interface         = db.Column(db.String(40), default='ether1', nullable=True)
+    ip_ranges             = db.Column(db.Text, nullable=True)
+    ros_version           = db.Column(db.String(10), default='7', nullable=True)
+    coordinates           = db.Column(db.String(80), nullable=True)
+    comments              = db.Column(db.Text, nullable=True)
+    use_sstp_script       = db.Column(db.Boolean, default=True, nullable=True)
+    historial_trafico     = db.Column(db.Boolean, default=False, nullable=True)
+    control_pppoe         = db.Column(db.Boolean, default=False, nullable=True)
+    control_queue         = db.Column(db.Boolean, default=False, nullable=True)
+    control_ap            = db.Column(db.Boolean, default=False, nullable=True)
+    control_dhcp          = db.Column(db.Boolean, default=False, nullable=True)
+    control_hotspot       = db.Column(db.Boolean, default=False, nullable=True)
+    traffic_flow_enabled  = db.Column(db.Boolean, default=False, nullable=True)
 
     tenant = db.relationship('Tenant', back_populates='routers')
     clients = db.relationship('Client', back_populates='router')
@@ -287,6 +302,20 @@ class MikroTikRouter(db.Model):
             'ip_address': self.ip_address,
             'username': self.username,
             'api_port': self.api_port or 8728,
+            'wan_port': self.wan_port or 80,
+            'lan_interface': self.lan_interface or 'ether1',
+            'ip_ranges': self.ip_ranges,
+            'ros_version': self.ros_version or '7',
+            'coordinates': self.coordinates,
+            'comments': self.comments,
+            'use_sstp_script': bool(self.use_sstp_script),
+            'historial_trafico': bool(self.historial_trafico),
+            'control_pppoe': bool(self.control_pppoe),
+            'control_queue': bool(self.control_queue),
+            'control_ap': bool(self.control_ap),
+            'control_dhcp': bool(self.control_dhcp),
+            'control_hotspot': bool(self.control_hotspot),
+            'traffic_flow_enabled': bool(self.traffic_flow_enabled),
             'status': 'online' if self.is_active else 'offline',
             'tenant_id': self.tenant_id,
             'vpn_ip': self.vpn_ip_address,

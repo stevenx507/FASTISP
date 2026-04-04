@@ -2848,6 +2848,21 @@ def create_router():
             api_port=api_port,
             is_active=_as_bool(data.get('is_active'), default=True),
             tenant_id=current_tenant_id(),
+            # WispHub-extended fields
+            wan_port=_to_int(data.get('wan_port'), 80),
+            lan_interface=str(data.get('lan_interface') or 'ether1').strip() or 'ether1',
+            ip_ranges=str(data.get('ip_ranges') or '').strip() or None,
+            ros_version=str(data.get('ros_version') or '7').strip(),
+            coordinates=str(data.get('coordinates') or '').strip() or None,
+            comments=str(data.get('comments') or '').strip() or None,
+            use_sstp_script=_as_bool(data.get('use_sstp_script'), default=True),
+            historial_trafico=_as_bool(data.get('historial_trafico'), default=False),
+            control_pppoe=_as_bool(data.get('control_pppoe'), default=False),
+            control_queue=_as_bool(data.get('control_queue'), default=False),
+            control_ap=_as_bool(data.get('control_ap'), default=False),
+            control_dhcp=_as_bool(data.get('control_dhcp'), default=False),
+            control_hotspot=_as_bool(data.get('control_hotspot'), default=False),
+            traffic_flow_enabled=_as_bool(data.get('traffic_flow_enabled'), default=False),
         )
         router.password = password
         db.session.add(router)

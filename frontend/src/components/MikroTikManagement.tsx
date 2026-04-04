@@ -416,6 +416,21 @@ interface RouterFormState {
   username: string
   password: string
   api_port: string
+  // WispHub extended fields
+  wan_port: string
+  lan_interface: string
+  ip_ranges: string
+  ros_version: '6' | '7'
+  coordinates: string
+  comments: string
+  use_sstp_script: boolean
+  historial_trafico: boolean
+  control_pppoe: boolean
+  control_queue: boolean
+  control_ap: boolean
+  control_dhcp: boolean
+  control_hotspot: boolean
+  traffic_flow_enabled: boolean
 }
 
 const CONNECTION_POLL_INTERVAL_MS = 60000
@@ -601,7 +616,24 @@ const MikroTikManagement: React.FC = () => {
     username: 'admin',
     password: '',
     api_port: '8728',
+    wan_port: '80',
+    lan_interface: 'ether1',
+    ip_ranges: '',
+    ros_version: '7',
+    coordinates: '',
+    comments: '',
+    use_sstp_script: true,
+    historial_trafico: false,
+    control_pppoe: false,
+    control_queue: false,
+    control_ap: false,
+    control_dhcp: false,
+    control_hotspot: false,
+    traffic_flow_enabled: false,
   })
+  const [showRouterModal, setShowRouterModal] = useState(false)
+  const [routerModalTab, setRouterModalTab] = useState<'general' | 'sstp' | 'traffic'>('general')
+  const [editingRouter, setEditingRouter] = useState<RouterItem | null>(null)
   const [securityBusy, setSecurityBusy] = useState(false)
   const [enterpriseProfiles, setEnterpriseProfiles] = useState<EnterpriseProfilesPayload | null>(null)
   const [hardeningProfile, setHardeningProfile] = useState('baseline')
@@ -1507,6 +1539,20 @@ const MikroTikManagement: React.FC = () => {
           username: routerForm.username.trim(),
           password: routerForm.password,
           api_port: Number(routerForm.api_port || '8728'),
+          wan_port: Number(routerForm.wan_port || '80'),
+          lan_interface: routerForm.lan_interface.trim() || 'ether1',
+          ip_ranges: routerForm.ip_ranges.trim() || null,
+          ros_version: routerForm.ros_version,
+          coordinates: routerForm.coordinates.trim() || null,
+          comments: routerForm.comments.trim() || null,
+          use_sstp_script: routerForm.use_sstp_script,
+          historial_trafico: routerForm.historial_trafico,
+          control_pppoe: routerForm.control_pppoe,
+          control_queue: routerForm.control_queue,
+          control_ap: routerForm.control_ap,
+          control_dhcp: routerForm.control_dhcp,
+          control_hotspot: routerForm.control_hotspot,
+          traffic_flow_enabled: routerForm.traffic_flow_enabled,
           is_active: true,
           test_connection: true,
         }),
@@ -1528,6 +1574,7 @@ const MikroTikManagement: React.FC = () => {
       )
       addToast(payload.reachable === false ? 'error' : 'success', payload.reachable === false ? `Router agregado. ${connectionMessage}` : connectionMessage)
       setRouterForm((prev) => ({ ...prev, name: '', ip_address: '', password: '' }))
+      setShowRouterModal(false)
       await loadRouters()
       setSelectedRouter(createdRouter)
       setActiveTab('config')
@@ -2094,49 +2141,307 @@ const MikroTikManagement: React.FC = () => {
             </div>
           )}
         </div>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
-          <input
-            value={routerForm.name}
-            onChange={(e) => setRouterForm((prev) => ({ ...prev, name: e.target.value }))}
-            placeholder="Nombre"
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
-          />
-          <input
-            value={routerForm.ip_address}
-            onChange={(e) => setRouterForm((prev) => ({ ...prev, ip_address: e.target.value }))}
-            placeholder="IP o DNS (sin puerto)"
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
-          />
-          <input
-            value={routerForm.username}
-            onChange={(e) => setRouterForm((prev) => ({ ...prev, username: e.target.value }))}
-            placeholder="Usuario API"
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
-          />
-          <input
-            type="password"
-            value={routerForm.password}
-            onChange={(e) => setRouterForm((prev) => ({ ...prev, password: e.target.value }))}
-            placeholder="Password API"
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
-          />
-          <div className="flex items-center gap-2">
-            <input
-              value={routerForm.api_port}
-              onChange={(e) => setRouterForm((prev) => ({ ...prev, api_port: e.target.value }))}
-              placeholder="Puerto API"
-              className="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
-            />
-            <button
-              onClick={createRouter}
-              disabled={creatingRouter}
-              className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-            >
-              {creatingRouter ? 'Guardando...' : 'Agregar'}
-            </button>
-          </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setEditingRouter(null)
+              setRouterModalTab('general')
+              setShowRouterModal(true)
+            }}
+            className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 transition"
+          >
+            <span className="text-base">+</span> Agregar Router
+          </button>
+          <p className="text-xs text-gray-400">Haz click para abrir el Editor Router completo</p>
         </div>
       </div>
+
+      {/* ── Editor Router Modal (WispHub-style) ── */}
+      {showRouterModal && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 py-8 px-4">
+          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between rounded-t-2xl bg-emerald-700 px-6 py-4">
+              <h3 className="flex items-center gap-2 text-base font-bold text-white">
+                <ServerIcon className="h-5 w-5" />
+                {editingRouter ? `Editar Router — ${editingRouter.name}` : 'Editor Router'}
+              </h3>
+              <button onClick={() => setShowRouterModal(false)} className="text-emerald-200 hover:text-white text-xl">✕</button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex border-b border-gray-200 bg-gray-50">
+              {[
+                { id: 'general', label: 'Información General' },
+                { id: 'sstp',    label: 'Script de Conexión' },
+                { id: 'traffic', label: 'Script de Traffic Flow' },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setRouterModalTab(t.id as typeof routerModalTab)}
+                  className={`px-4 py-3 text-xs font-semibold border-b-2 transition ${
+                    routerModalTab === t.id
+                      ? 'border-emerald-600 text-emerald-700 bg-white'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-6">
+              {/* ─── Tab: Información General ─── */}
+              {routerModalTab === 'general' && (
+                <div className="space-y-4">
+                  {/* Row 1 */}
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Nombre *</label>
+                      <input
+                        value={routerForm.name}
+                        onChange={(e) => setRouterForm((p) => ({ ...p, name: e.target.value }))}
+                        placeholder="MIKROTIK CASA SAUL"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">IPv4 / IPv6 *</label>
+                      <input
+                        value={routerForm.ip_address}
+                        onChange={(e) => setRouterForm((p) => ({ ...p, ip_address: e.target.value }))}
+                        placeholder="72.25.10.55"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 2 */}
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Usuario del RB *</label>
+                      <input
+                        value={routerForm.username}
+                        onChange={(e) => setRouterForm((p) => ({ ...p, username: e.target.value }))}
+                        placeholder="admin"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Contraseña del RB *</label>
+                      <input
+                        type="password"
+                        value={routerForm.password}
+                        onChange={(e) => setRouterForm((p) => ({ ...p, password: e.target.value }))}
+                        placeholder="••••••••"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 3: ports + interface */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Puerto API</label>
+                      <input
+                        value={routerForm.api_port}
+                        onChange={(e) => setRouterForm((p) => ({ ...p, api_port: e.target.value }))}
+                        placeholder="8728"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Puerto WAN</label>
+                      <input
+                        value={routerForm.wan_port}
+                        onChange={(e) => setRouterForm((p) => ({ ...p, wan_port: e.target.value }))}
+                        placeholder="80"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Interfaz LAN</label>
+                      <input
+                        value={routerForm.lan_interface}
+                        onChange={(e) => setRouterForm((p) => ({ ...p, lan_interface: e.target.value }))}
+                        placeholder="ether1"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 4: IP ranges */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Rangos IP (uno por línea)</label>
+                    <textarea
+                      value={routerForm.ip_ranges}
+                      onChange={(e) => setRouterForm((p) => ({ ...p, ip_ranges: e.target.value }))}
+                      placeholder="192.168.1.0-192.168.1.254&#10;10.0.0.0-10.0.0.254"
+                      rows={3}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900"
+                    />
+                  </div>
+
+                  {/* Row 5: version + coordinates */}
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Versión RouterOS</label>
+                      <select
+                        value={routerForm.ros_version}
+                        onChange={(e) => setRouterForm((p) => ({ ...p, ros_version: e.target.value as '6' | '7' }))}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
+                      >
+                        <option value="7">7 o superior</option>
+                        <option value="6">6 o inferior</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Coordenadas</label>
+                      <input
+                        value={routerForm.coordinates}
+                        onChange={(e) => setRouterForm((p) => ({ ...p, coordinates: e.target.value }))}
+                        placeholder="-0.07384, -73.350002"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 6: comments */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Comentarios</label>
+                    <input
+                      value={routerForm.comments}
+                      onChange={(e) => setRouterForm((p) => ({ ...p, comments: e.target.value }))}
+                      placeholder="Comentarios opcionales"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
+                    />
+                  </div>
+
+                  {/* Feature toggles grid (WispHub-style) */}
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <p className="mb-3 text-xs font-bold text-gray-700 uppercase tracking-wide">Funcionalidades</p>
+                    <div className="grid grid-cols-2 gap-y-3 gap-x-4 sm:grid-cols-3">
+                      {[
+                        { key: 'use_sstp_script',     label: '¿Usar Script Conexión?' },
+                        { key: 'historial_trafico',    label: 'Historial de Tráfico' },
+                        { key: 'control_pppoe',        label: 'Control PPPoE' },
+                        { key: 'control_queue',        label: 'Control de Cola' },
+                        { key: 'control_ap',           label: 'Habilitar AP' },
+                        { key: 'control_dhcp',         label: 'Arrendamientos DHCP' },
+                        { key: 'control_hotspot',      label: 'Control HotSpot' },
+                        { key: 'traffic_flow_enabled', label: 'Traffic Flow (NetFlow)' },
+                      ].map(({ key, label }) => {
+                        const val = routerForm[key as keyof RouterFormState] as boolean
+                        return (
+                          <label key={key} className="flex cursor-pointer items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setRouterForm((p) => ({ ...p, [key]: !val }))}
+                              className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors ${
+                                val ? 'bg-emerald-500' : 'bg-gray-300'
+                              }`}
+                            >
+                              <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                                val ? 'translate-x-4' : 'translate-x-0'
+                              }`} />
+                            </button>
+                            <span className={`text-xs font-medium ${ val ? 'text-emerald-700' : 'text-gray-500'}`}>{label}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ─── Tab: Script de Conexión ─── */}
+              {routerModalTab === 'sstp' && (
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-800">
+                    <strong>Nota:</strong> Después de guardar el router, ve al tab <strong>Configuracion → Script de Conexión</strong> del router seleccionado para generar y copiar el script SSTP.
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setRouterForm((p) => ({ ...p, use_sstp_script: !p.use_sstp_script }))}
+                        className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors ${
+                          routerForm.use_sstp_script ? 'bg-emerald-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                          routerForm.use_sstp_script ? 'translate-x-4' : 'translate-x-0'
+                        }`} />
+                      </button>
+                      <span className="text-sm font-medium text-gray-700">¿Usar script de conexión SSTP?</span>
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Al activar esto, FASTISP provisionará automáticamente un túnel SoftEther SSTP para este router y generará el script RouterOS correspondiente.
+                  </p>
+                </div>
+              )}
+
+              {/* ─── Tab: Script de Traffic Flow ─── */}
+              {routerModalTab === 'traffic' && (
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs text-amber-800">
+                    <strong>Nota:</strong> Después de guardar el router, ve al tab <strong>Traffic Flow</strong> del router seleccionado para generar y copiar los scripts NetFlow.
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setRouterForm((p) => ({ ...p, traffic_flow_enabled: !p.traffic_flow_enabled }))}
+                        className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors ${
+                          routerForm.traffic_flow_enabled ? 'bg-emerald-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                          routerForm.traffic_flow_enabled ? 'translate-x-4' : 'translate-x-0'
+                        }`} />
+                      </button>
+                      <span className="text-sm font-medium text-gray-700">Historial de Tráfico (NetFlow v5)</span>
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    RouterOS {routerForm.ros_version === '6' ? '6 o inferior' : '7 o superior'} — el script adecuado será generado automáticamente en el tab Traffic Flow.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between rounded-b-2xl border-t border-gray-200 bg-gray-50 px-6 py-4">
+              <button
+                onClick={() => setShowRouterModal(false)}
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+              >
+                Cancelar
+              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (routerModalTab === 'general') setRouterModalTab('sstp')
+                    else if (routerModalTab === 'sstp') setRouterModalTab('traffic')
+                  }}
+                  disabled={routerModalTab === 'traffic'}
+                  className="rounded-lg border border-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-40"
+                >
+                  Guardar y continuar editando
+                </button>
+                <button
+                  onClick={() => void createRouter()}
+                  disabled={creatingRouter}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
+                >
+                  {creatingRouter ? 'Guardando...' : '✔ Guardar y comprobar conexión'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow">
         <h3 className="mb-3 text-lg font-semibold text-gray-900">Lista Routers</h3>
