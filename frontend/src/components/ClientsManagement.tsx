@@ -2,11 +2,14 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import {
+  ArrowPathIcon,
+  CheckCircleIcon,
   CreditCardIcon,
   GlobeAltIcon,
   KeyIcon,
   MagnifyingGlassIcon,
   PlusIcon,
+  SignalIcon,
   WifiIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
@@ -14,6 +17,24 @@ import toast from 'react-hot-toast'
 import { apiClient } from '../lib/apiClient'
 
 type ClientStatus = 'active' | 'inactive' | 'suspended' | 'past_due' | 'trial' | string
+
+interface OltDevice {
+  id: string
+  name: string
+  vendor: string
+  host?: string
+}
+
+interface PendingOnu {
+  serial: string
+  frame?: number | string
+  slot?: number | string
+  pon?: number | string
+  onu?: number | string
+  vendor?: string
+  model?: string
+  status?: string
+}
 
 interface Client {
   id: number
@@ -76,11 +97,99 @@ const ClientsManagement: React.FC = () => {
   const [portalModalClient, setPortalModalClient] = useState<Client | null>(null)
   const [portalSaving, setPortalSaving] = useState(false)
   const [portalForm, setPortalForm] = useState({ email: '', password: '' })
+
+  const [oltDevices, setOltDevices] = useState<OltDevice[]>([])
+  const [gponClient, setGponClient] = useState<Client | null>(null)
+  const [gponStep, setGponStep] = useState<1 | 2 | 3>(1)
+  const [gponDeviceId, setGponDeviceId] = useState('')
+  const [gponFrame, setGponFrame] = useState('0')
+  const [gponSlot, setGponSlot] = useState('1')
+  const [gponPon, setGponPon] = useState('1')
+  const [gponVlan, setGponVlan] = useState('100')
+  const [gponWanType, setGponWanType] = useState('pppoe')
+  const [gponSerial, setGponSerial] = useState('')
+  const [gponOnu, setGponOnu] = useState('1')
+  const [pendingOnus, setPendingOnus] = useState<PendingOnu[]>([])
+  const [searchingOnus, setSearchingOnus] = useState(false)
+  const [authorizingOnu, setAuthorizingOnu] = useState(false)
+  const [gponResult, setGponResult] = useState<{ success: boolean; message: string } | null>(null)
+
   const [lastPortalCredentials, setLastPortalCredentials] = useState<{
     clientName: string
     email: string
     password: string
   } | null>(null)
+
+  const loadOltDevices = async () => {
+    try {
+      const resp = (await apiClient.get('/olt/devices')) as { devices: OltDevice[] }
+      setOltDevices(resp.devices || [])
+    } catch {
+      setOltDevices([])
+    }
+  }
+
+  const searchPendingOnus = async () => {
+    if (!gponDeviceId) { toast.error('Selecciona un dispositivo OLT'); return }
+    setSearchingOnus(true)
+    setPendingOnus([])
+    setGponSerial('')
+    try {
+      const params = new URLSearchParams({ frame: gponFrame, slot: gponSlot, pon: gponPon, run_mode: 'live' })
+      const resp = (await apiClient.get(`/olt/devices/${gponDeviceId}/autofind-onu?${params}`)) as { onus?: PendingOnu[]; onu_list?: PendingOnu[]; success?: boolean }
+      const list = resp.onus || resp.onu_list || []
+      setPendingOnus(list)
+      if (!list.length) toast('No se encontraron ONUs pendientes en ese PON')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error buscando ONUs')
+    } finally {
+      setSearchingOnus(false)
+    }
+  }
+
+  const authorizeOnu = async () => {
+    if (!gponDeviceId || !gponSerial) { toast.error('Selecciona ONU y OLT'); return }
+    setAuthorizingOnu(true)
+    setGponResult(null)
+    try {
+      const payload = {
+        serial: gponSerial,
+        frame: Number(gponFrame),
+        slot: Number(gponSlot),
+        pon: Number(gponPon),
+        onu: Number(gponOnu),
+        vlan: Number(gponVlan),
+        wan_type: gponWanType,
+        run_mode: 'live',
+        live_confirm: true,
+      }
+      const resp = (await apiClient.post(`/olt/devices/${gponDeviceId}/authorize-onu`, payload)) as { success?: boolean; message?: string; error?: string }
+      if (resp.success) {
+        setGponResult({ success: true, message: resp.message || 'ONU autorizada correctamente' })
+        setGponStep(3)
+        toast.success('ONU GPON autorizada')
+      } else {
+        setGponResult({ success: false, message: resp.error || resp.message || 'No se pudo autorizar la ONU' })
+        toast.error(resp.error || 'Error autorizando ONU')
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error autorizando ONU'
+      setGponResult({ success: false, message: msg })
+      toast.error(msg)
+    } finally {
+      setAuthorizingOnu(false)
+    }
+  }
+
+  const openGponModal = (client: Client) => {
+    setGponClient(client)
+    setGponStep(1)
+    setGponDeviceId(oltDevices[0]?.id || '')
+    setGponFrame('0'); setGponSlot('1'); setGponPon('1'); setGponOnu('1')
+    setGponVlan('100'); setGponWanType('pppoe'); setGponSerial('')
+    setPendingOnus([]); setGponResult(null)
+    if (!oltDevices.length) void loadOltDevices()
+  }
 
   const renderModal = (content: React.ReactNode) => {
     if (typeof document === 'undefined') return null
@@ -90,7 +199,8 @@ const ClientsManagement: React.FC = () => {
   const load = async () => {
     setLoading(true)
     try {
-      const [clientsResp, plansResp, routersResp] = await Promise.allSettled([
+      void loadOltDevices()
+    const [clientsResp, plansResp, routersResp] = await Promise.allSettled([
         apiClient.get('/admin/clients'),
         apiClient.get('/plans'),
         apiClient.get('/mikrotik/routers'),
@@ -445,6 +555,13 @@ const ClientsManagement: React.FC = () => {
                       Activar
                     </button>
                     <button
+                      onClick={() => openGponModal(client)}
+                      className="inline-flex items-center gap-1 rounded-lg bg-violet-100 px-3 py-1 text-xs text-violet-800 hover:bg-violet-200"
+                    >
+                      <SignalIcon className="h-3.5 w-3.5" />
+                      ONU GPON
+                    </button>
+                    <button
                       onClick={() => openPortalModal(client)}
                       className="inline-flex items-center gap-1 rounded-lg bg-blue-100 px-3 py-1 text-xs text-blue-800 hover:bg-blue-200"
                     >
@@ -546,8 +663,8 @@ const ClientsManagement: React.FC = () => {
 
               <div className="space-y-3">
                 <label className="block text-sm font-semibold text-gray-800">Tipo de conexion</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {['pppoe', 'dhcp', 'static'].map((type) => (
+                <div className="grid grid-cols-4 gap-2">
+                  {['pppoe', 'dhcp', 'static', 'fiber'].map((type) => (
                     <button
                       key={type}
                       onClick={() => setForm({ ...form, connection_type: type })}
@@ -558,8 +675,8 @@ const ClientsManagement: React.FC = () => {
                       }`}
                       type="button"
                     >
-                      {type === 'pppoe' ? <WifiIcon className="h-4 w-4" /> : <GlobeAltIcon className="h-4 w-4" />}
-                      {type.toUpperCase()}
+                      {type === 'pppoe' ? <WifiIcon className="h-4 w-4" /> : type === 'fiber' ? <SignalIcon className="h-4 w-4" /> : <GlobeAltIcon className="h-4 w-4" />}
+                      {type === 'fiber' ? 'GPON' : type.toUpperCase()}
                     </button>
                   ))}
                 </div>
@@ -652,6 +769,175 @@ const ClientsManagement: React.FC = () => {
             </div>
           </div>
         </div>,
+        )}
+
+      {gponClient &&
+        renderModal(
+          <div
+            className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-3 backdrop-blur-sm sm:p-6"
+            onClick={() => setGponClient(null)}
+          >
+            <div
+              className="my-4 w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b bg-violet-50 px-6 py-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">Provisión GPON</p>
+                  <h3 className="text-lg font-bold text-gray-900">Autorizar ONU — {gponClient.name}</h3>
+                </div>
+                <button onClick={() => setGponClient(null)} className="rounded-full p-2 hover:bg-violet-100">
+                  <XMarkIcon className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="flex border-b">
+                {[1,2,3].map((s) => (
+                  <div key={s} className={`flex-1 py-2 text-center text-xs font-semibold ${gponStep === s ? 'border-b-2 border-violet-500 text-violet-700' : 'text-gray-400'}`}>
+                    {s === 1 ? '1. OLT + PON' : s === 2 ? '2. Seleccionar ONU' : '3. Resultado'}
+                  </div>
+                ))}
+              </div>
+
+              <div className="max-h-[65vh] overflow-y-auto p-6">
+                {gponStep === 1 && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="mb-1 block text-sm font-semibold text-gray-700">Dispositivo OLT</label>
+                      <select value={gponDeviceId} onChange={e => setGponDeviceId(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                        <option value="">Seleccionar OLT...</option>
+                        {oltDevices.map(d => <option key={d.id} value={d.id}>{d.name} ({d.vendor}) {d.host ? `— ${d.host}` : ''}</option>)}
+                      </select>
+                      {!oltDevices.length && <p className="mt-1 text-xs text-amber-600">No hay OLTs configuradas. Ve al módulo OLT para agregar una.</p>}
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-gray-600">Frame</label>
+                        <input type="number" min="0" value={gponFrame} onChange={e => setGponFrame(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-gray-600">Slot</label>
+                        <input type="number" min="0" value={gponSlot} onChange={e => setGponSlot(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-gray-600">Puerto PON</label>
+                        <input type="number" min="1" value={gponPon} onChange={e => setGponPon(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                      </div>
+                    </div>
+                    <p className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+                      Ingresa el Frame/Slot/Puerto PON donde está conectada la ONU del cliente. El sistema buscará ONUs pendientes de autorización en ese puerto.
+                    </p>
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => setGponClient(null)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Cancelar</button>
+                      <button
+                        onClick={async () => { await searchPendingOnus(); setGponStep(2) }}
+                        disabled={searchingOnus || !gponDeviceId}
+                        className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
+                      >
+                        {searchingOnus ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <SignalIcon className="h-4 w-4" />}
+                        {searchingOnus ? 'Buscando...' : 'Buscar ONUs pendientes'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {gponStep === 2 && (
+                  <div className="space-y-4">
+                    <div>
+                      <p className="mb-2 text-sm font-semibold text-gray-700">ONUs encontradas en PON {gponFrame}/{gponSlot}/{gponPon}:</p>
+                      {pendingOnus.length > 0 ? (
+                        <div className="space-y-2">
+                          {pendingOnus.map((onu, i) => (
+                            <button
+                              key={i}
+                              onClick={() => { setGponSerial(onu.serial); setGponOnu(String(onu.onu || i + 1)) }}
+                              className={`w-full rounded-lg border px-4 py-3 text-left text-sm transition ${
+                                gponSerial === onu.serial ? 'border-violet-500 bg-violet-50' : 'border-gray-200 hover:border-violet-300 hover:bg-violet-50'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-mono font-semibold text-gray-900">{onu.serial}</span>
+                                {gponSerial === onu.serial && <CheckCircleIcon className="h-5 w-5 text-violet-600" />}
+                              </div>
+                              <div className="mt-1 text-xs text-gray-500">
+                                {onu.vendor && <span className="mr-3">{onu.vendor}</span>}
+                                {onu.model && <span className="mr-3">{onu.model}</span>}
+                                <span>ONU #{onu.onu || i + 1} | PON {onu.frame ?? gponFrame}/{onu.slot ?? gponSlot}/{onu.pon ?? gponPon}</span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-dashed border-gray-300 p-4 text-center">
+                          <p className="text-sm text-gray-500">No se encontraron ONUs pendientes.</p>
+                          <p className="mt-1 text-xs text-gray-400">Ingresa el serial manualmente si ya conoces la ONU.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-700">Serial ONU (manual)</label>
+                      <input value={gponSerial} onChange={e => setGponSerial(e.target.value)} placeholder="ZTEG12345678" className="w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-gray-700">VLAN</label>
+                        <input type="number" value={gponVlan} onChange={e => setGponVlan(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-gray-700">Tipo WAN</label>
+                        <select value={gponWanType} onChange={e => setGponWanType(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                          <option value="pppoe">PPPoE</option>
+                          <option value="dhcp">DHCP</option>
+                          <option value="static">IP Estática</option>
+                          <option value="bridge">Bridge</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between gap-2">
+                      <button onClick={() => setGponStep(1)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">← Atrás</button>
+                      <button
+                        onClick={() => void authorizeOnu()}
+                        disabled={authorizingOnu || !gponSerial}
+                        className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
+                      >
+                        {authorizingOnu ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <CheckCircleIcon className="h-4 w-4" />}
+                        {authorizingOnu ? 'Autorizando...' : 'Autorizar ONU'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {gponStep === 3 && gponResult && (
+                  <div className="space-y-4 text-center">
+                    <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${gponResult.success ? 'bg-emerald-100' : 'bg-red-100'}`}>
+                      {gponResult.success
+                        ? <CheckCircleIcon className="h-10 w-10 text-emerald-600" />
+                        : <XMarkIcon className="h-10 w-10 text-red-600" />}
+                    </div>
+                    <h4 className={`text-lg font-bold ${gponResult.success ? 'text-emerald-700' : 'text-red-700'}`}>
+                      {gponResult.success ? '¡ONU autorizada!' : 'Error en autorización'}
+                    </h4>
+                    <p className="text-sm text-gray-600">{gponResult.message}</p>
+                    {gponResult.success && (
+                      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-left text-xs text-emerald-800">
+                        <p><strong>Cliente:</strong> {gponClient.name}</p>
+                        <p><strong>ONU Serial:</strong> {gponSerial}</p>
+                        <p><strong>VLAN:</strong> {gponVlan} | <strong>WAN:</strong> {gponWanType.toUpperCase()}</p>
+                        <p><strong>PON:</strong> {gponFrame}/{gponSlot}/{gponPon}</p>
+                      </div>
+                    )}
+                    <div className="flex justify-center gap-2">
+                      {!gponResult.success && <button onClick={() => setGponStep(2)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">← Reintentar</button>}
+                      <button onClick={() => setGponClient(null)} className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700">Cerrar</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>,
         )}
 
       {portalModalClient &&
