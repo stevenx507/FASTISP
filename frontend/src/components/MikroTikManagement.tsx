@@ -613,7 +613,7 @@ const MikroTikManagement: React.FC = () => {
   const [sstpScript, setSstpScript] = useState('')
   const [sstpProvisioning, setSstpProvisioning] = useState(false)
   const [sstpScriptCopied, setSstpScriptCopied] = useState(false)
-  const [sstpLoadingForRouter, setSstpLoadingForRouter] = useState<number | null>(null)
+  const [sstpLoadingForRouter, setSstpLoadingForRouter] = useState<string | null>(null)
   const connectionStatusRef = useRef<Record<string, string>>({})
   const token = useAuthStore((state) => state.token)
   const user = useAuthStore((state) => state.user)
@@ -779,14 +779,14 @@ const MikroTikManagement: React.FC = () => {
     }
   }, [addToast, apiFetch, applyOnboardingProfileDefaults, onboardingProfile, safeJson])
 
-  const loadSstpTunnelForRouter = useCallback(async (routerId: number) => {
+  const loadSstpTunnelForRouter = useCallback(async (routerId: string) => {
     setSstpLoadingForRouter(routerId)
     try {
       const response = await apiFetch('/api/sstp/tunnels')
       const payload = await safeJson(response)
       const list = Array.isArray(payload) ? (payload as SstpTunnelData[]) : []
       if (response.ok && list.length > 0) {
-        const active = list.find((t) => t.router_id === routerId && t.status === 'active')
+        const active = list.find((t) => String(t.router_id) === String(routerId) && t.status === 'active')
         if (active) {
           const detailRes = await apiFetch(`/api/sstp/tunnels/${active.id}`)
           const detail = (await safeJson(detailRes)) as SstpTunnelData | null
