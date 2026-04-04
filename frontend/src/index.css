@@ -148,6 +148,15 @@
   .input-field {
     @apply block w-full rounded-lg border border-white/20 bg-slate-900/75 px-3 py-2 text-slate-100 placeholder-slate-400 transition-colors focus:ring-2 focus:ring-cyan-500/40;
   }
+
+  /* WispHub modal form utilities */
+  .label-ws {
+    @apply mb-1 block text-sm font-semibold text-gray-700;
+  }
+
+  .input-ws {
+    @apply w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 transition focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 disabled:bg-gray-100;
+  }
 }
 
 .enterprise-shell {

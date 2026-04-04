@@ -179,7 +179,56 @@ class Client(db.Model):
     pppoe_password = db.Column(db.String(80))
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
-    
+
+    # ── Datos de Conexión (WispHub) ──────────────────────────────────────────
+    remote_address_pppoe  = db.Column(db.String(45),  nullable=True)
+    local_address_pppoe   = db.Column(db.String(45),  nullable=True)
+    sectorial_nap         = db.Column(db.String(80),  nullable=True)
+
+    # ── Datos del Cliente (WispHub) ──────────────────────────────────────────
+    apellido              = db.Column(db.String(80),  nullable=True)
+    dni                   = db.Column(db.String(40),  nullable=True)
+    phone                 = db.Column(db.String(30),  nullable=True)
+    address               = db.Column(db.Text,        nullable=True)
+    barrio                = db.Column(db.String(80),  nullable=True)
+    ciudad                = db.Column(db.String(80),  nullable=True)
+    codigo_postal         = db.Column(db.String(20),  nullable=True)
+    forma_contratacion    = db.Column(db.String(30),  nullable=True)
+    external_id           = db.Column(db.String(80),  nullable=True)
+
+    # ── Facturación (WispHub) ────────────────────────────────────────────────
+    tipo_cliente          = db.Column(db.String(20),  default='prepago',  nullable=True)
+    dia_corte             = db.Column(db.Integer,     default=8,          nullable=True)
+    dia_factura           = db.Column(db.Integer,     default=1,          nullable=True)
+    dia_pago              = db.Column(db.Integer,     default=3,          nullable=True)
+    impuestos             = db.Column(db.Float,       default=0.0,        nullable=True)
+    avisos_pantalla       = db.Column(db.Boolean,     default=True,       nullable=True)
+    notificaciones_push   = db.Column(db.Boolean,     default=True,       nullable=True)
+    suspender_facturas    = db.Column(db.Integer,     default=1,          nullable=True)
+    # Tareas periódicas
+    corte_automatico      = db.Column(db.Boolean,     default=True,       nullable=True)
+    facturas_automaticas  = db.Column(db.Boolean,     default=True,       nullable=True)
+    correo_corte          = db.Column(db.Boolean,     default=True,       nullable=True)
+    correo_facturas       = db.Column(db.Boolean,     default=True,       nullable=True)
+
+    # ── Configuración Avanzada (WispHub) ─────────────────────────────────────
+    firewall_enabled      = db.Column(db.Boolean,     default=True,       nullable=True)
+    sistema_id            = db.Column(db.String(80),  nullable=True)
+    modelo_antena         = db.Column(db.String(80),  nullable=True)
+    password_antena       = db.Column(db.String(80),  nullable=True)
+    protocolo_conexion    = db.Column(db.String(40),  nullable=True)
+    ip_router_wifi        = db.Column(db.String(45),  nullable=True)
+    modelo_router_wifi    = db.Column(db.String(80),  nullable=True)
+    usuario_router_wifi   = db.Column(db.String(80),  nullable=True)
+    password_router_wifi  = db.Column(db.String(80),  nullable=True)
+    ssid_router_wifi      = db.Column(db.String(80),  nullable=True)
+    password_ssid_wifi    = db.Column(db.String(80),  nullable=True)
+    mac_router_wifi       = db.Column(db.String(17),  nullable=True)
+    comentarios           = db.Column(db.Text,        nullable=True)
+    # Datos fiscales
+    razon_social          = db.Column(db.String(120), nullable=True)
+    ruc_nit               = db.Column(db.String(40),  nullable=True)
+
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True)
     plan_id = db.Column(db.Integer, db.ForeignKey('plans.id'))
     router_id = db.Column(db.Integer, db.ForeignKey('mikrotik_routers.id'))
@@ -197,11 +246,63 @@ class Client(db.Model):
         return {
             'id': self.id,
             'name': self.full_name,
+            'apellido': self.apellido,
+            'dni': self.dni,
+            'phone': self.phone,
             'ip_address': self.ip_address,
             'mac_address': self.mac_address,
+            'username': self.pppoe_username,
             'connection_type': self.connection_type,
+            'pppoe_username': self.pppoe_username,
+            'pppoe_password': self.pppoe_password,
+            'remote_address_pppoe': self.remote_address_pppoe,
+            'local_address_pppoe': self.local_address_pppoe,
+            'latitude': self.latitude,
+            'longitude': self.longitude,
+            'sectorial_nap': self.sectorial_nap,
+            'address': self.address,
+            'barrio': self.barrio,
+            'ciudad': self.ciudad,
+            'codigo_postal': self.codigo_postal,
+            'forma_contratacion': self.forma_contratacion,
+            'external_id': self.external_id,
+            'tipo_cliente': self.tipo_cliente,
+            'dia_corte': self.dia_corte,
+            'dia_factura': self.dia_factura,
+            'dia_pago': self.dia_pago,
+            'impuestos': self.impuestos,
+            'avisos_pantalla': bool(self.avisos_pantalla),
+            'notificaciones_push': bool(self.notificaciones_push),
+            'suspender_facturas': self.suspender_facturas,
+            'corte_automatico': bool(self.corte_automatico),
+            'facturas_automaticas': bool(self.facturas_automaticas),
+            'correo_corte': bool(self.correo_corte),
+            'correo_facturas': bool(self.correo_facturas),
+            'firewall_enabled': bool(self.firewall_enabled),
+            'sistema_id': self.sistema_id,
+            'modelo_antena': self.modelo_antena,
+            'password_antena': self.password_antena,
+            'protocolo_conexion': self.protocolo_conexion,
+            'ip_router_wifi': self.ip_router_wifi,
+            'modelo_router_wifi': self.modelo_router_wifi,
+            'usuario_router_wifi': self.usuario_router_wifi,
+            'password_router_wifi': self.password_router_wifi,
+            'ssid_router_wifi': self.ssid_router_wifi,
+            'password_ssid_wifi': self.password_ssid_wifi,
+            'mac_router_wifi': self.mac_router_wifi,
+            'comentarios': self.comentarios,
+            'razon_social': self.razon_social,
+            'ruc_nit': self.ruc_nit,
+            'plan_id': self.plan_id,
+            'plan': self.plan.name if self.plan else None,
             'plan_name': self.plan.name if self.plan else None,
+            'router_id': self.router_id,
+            'router_name': self.router.name if self.router else None,
             'tenant_id': self.tenant_id,
+            'status': getattr(self, '_status', 'active'),
+            'portal_access': self.user_id is not None,
+            'email': self.user.email if self.user else None,
+            'lan_interface': self.remote_address_pppoe,
         }
 
 

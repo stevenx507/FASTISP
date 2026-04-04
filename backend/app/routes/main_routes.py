@@ -3789,9 +3789,46 @@ def admin_create_client():
             pppoe_username = f"{base[:12]}{secrets.randbelow(9999):04d}"
         if not pppoe_password:
             pppoe_password = secrets.token_hex(4)
+
+    def _s(key, maxlen=None):
+        v = str(data.get(key) or '').strip() or None
+        if v and maxlen:
+            v = v[:maxlen]
+        return v
+
+    def _b(key, default=True):
+        raw = data.get(key)
+        if raw is None:
+            return default
+        return str(raw).lower() in ('1', 'true', 'yes', 'si', 'on')
+
+    def _i(key, default=None):
+        try:
+            return int(data[key])
+        except (KeyError, TypeError, ValueError):
+            return default
+
+    def _f(key, default=0.0):
+        try:
+            return float(data[key])
+        except (KeyError, TypeError, ValueError):
+            return default
+
+    # Coordinates from "lat,lng" string or separate fields
+    lat = _f('latitude') or None
+    lng = _f('longitude') or None
+    coords_str = _s('coordinates')
+    if coords_str and not lat:
+        try:
+            parts = coords_str.split(',')
+            lat, lng = float(parts[0].strip()), float(parts[1].strip())
+        except Exception:
+            pass
+
     client = Client(
         full_name=name,
         ip_address=ip,
+        mac_address=_s('mac_address', 17),
         connection_type=connection_type,
         plan_id=plan.id,
         router_id=router.id if router else None,
@@ -3799,6 +3836,51 @@ def admin_create_client():
         pppoe_username=pppoe_username,
         pppoe_password=pppoe_password,
         user=user,
+        latitude=lat,
+        longitude=lng,
+        # Datos de Conexión
+        remote_address_pppoe=_s('remote_address_pppoe', 45),
+        local_address_pppoe=_s('local_address_pppoe', 45),
+        sectorial_nap=_s('sectorial_nap', 80),
+        # Datos del Cliente
+        apellido=_s('apellido', 80),
+        dni=_s('dni', 40),
+        phone=_s('phone', 30),
+        address=_s('address'),
+        barrio=_s('barrio', 80),
+        ciudad=_s('ciudad', 80),
+        codigo_postal=_s('codigo_postal', 20),
+        forma_contratacion=_s('forma_contratacion', 30),
+        external_id=_s('external_id', 80),
+        # Facturación
+        tipo_cliente=_s('tipo_cliente', 20) or 'prepago',
+        dia_corte=_i('dia_corte', 8),
+        dia_factura=_i('dia_factura', 1),
+        dia_pago=_i('dia_pago', 3),
+        impuestos=_f('impuestos', 0.0),
+        avisos_pantalla=_b('avisos_pantalla', True),
+        notificaciones_push=_b('notificaciones_push', True),
+        suspender_facturas=_i('suspender_facturas', 1),
+        corte_automatico=_b('corte_automatico', True),
+        facturas_automaticas=_b('facturas_automaticas', True),
+        correo_corte=_b('correo_corte', True),
+        correo_facturas=_b('correo_facturas', True),
+        # Configuración Avanzada
+        firewall_enabled=_b('firewall_enabled', True),
+        sistema_id=_s('sistema_id', 80),
+        modelo_antena=_s('modelo_antena', 80),
+        password_antena=_s('password_antena', 80),
+        protocolo_conexion=_s('protocolo_conexion', 40),
+        ip_router_wifi=_s('ip_router_wifi', 45),
+        modelo_router_wifi=_s('modelo_router_wifi', 80),
+        usuario_router_wifi=_s('usuario_router_wifi', 80),
+        password_router_wifi=_s('password_router_wifi', 80),
+        ssid_router_wifi=_s('ssid_router_wifi', 80),
+        password_ssid_wifi=_s('password_ssid_wifi', 80),
+        mac_router_wifi=_s('mac_router_wifi', 17),
+        comentarios=_s('comentarios'),
+        razon_social=_s('razon_social', 120),
+        ruc_nit=_s('ruc_nit', 40),
     )
     db.session.add(client)
     db.session.commit()
