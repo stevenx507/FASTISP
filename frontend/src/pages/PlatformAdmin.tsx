@@ -842,23 +842,29 @@ const PlatformAdmin: React.FC = () => {
                 />
                 Crear tenant activo
               </label>
+              <div className="flex items-center gap-2 pt-1">
+                <div className="h-px flex-1 bg-white/10" />
+                <span className="text-xs font-semibold uppercase tracking-wide text-cyan-400">Crear usuario admin</span>
+                <div className="h-px flex-1 bg-white/10" />
+              </div>
               <input
+                type="email"
                 value={tenantForm.admin_email}
                 onChange={(event) => setTenantForm((prev) => ({ ...prev, admin_email: event.target.value }))}
-                placeholder="Admin email inicial (opcional)"
+                placeholder="Correo electrónico del admin"
                 className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none"
               />
               <input
                 value={tenantForm.admin_name}
                 onChange={(event) => setTenantForm((prev) => ({ ...prev, admin_name: event.target.value }))}
-                placeholder="Nombre admin inicial"
+                placeholder="Nombre completo del admin"
                 className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none"
               />
               <input
                 type="password"
                 value={tenantForm.admin_password}
                 onChange={(event) => setTenantForm((prev) => ({ ...prev, admin_password: event.target.value }))}
-                placeholder="Password admin inicial (opcional)"
+                placeholder="Contraseña (se auto-genera si está vacío)"
                 className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none"
               />
               <button
@@ -867,7 +873,7 @@ const PlatformAdmin: React.FC = () => {
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-400 disabled:opacity-60"
               >
                 <PlusCircleIcon className="h-4 w-4" />
-                Crear tenant
+                {busy ? 'Creando...' : 'Crear tenant y usuario'}
               </button>
             </form>
           </div>
