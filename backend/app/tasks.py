@@ -442,3 +442,29 @@ def update_client_bandwidth(self, router_id: int, client_ip: str,
             'Error updating bandwidth for %s: %s', client_ip, exc
         )
         raise
+
+
+@celery.task(
+    bind=True,
+    name='app.tasks.heartbeat_check',
+    max_retries=1,
+)
+def heartbeat_check(self) -> Dict[str, Any]:
+    """
+    Pilar 2: Verifica la conectividad VPN de todos los routers cada minuto.
+    Genera alertas automáticas cuando un MikroTik se detecta offline.
+    Programado en Celery Beat cada 60 segundos (ver init.py).
+    """
+    try:
+        from app.services.heartbeat_service import run_heartbeat_check
+        summary = run_heartbeat_check()
+        current_app.logger.info(
+            'Heartbeat check completado: %d online, %d offline, %d total',
+            summary.get('online', 0),
+            summary.get('offline', 0),
+            summary.get('total', 0),
+        )
+        return summary
+    except Exception as exc:
+        current_app.logger.error('Error en heartbeat_check: %s', exc)
+        raise
