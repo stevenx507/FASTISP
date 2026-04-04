@@ -64,6 +64,7 @@ import SystemSettings from '../components/admin/SystemSettings'
 import HotspotCards from '../components/admin/HotspotCards'
 import TechSupport from '../components/admin/TechSupport'
 import Inventory from '../components/admin/Inventory'
+import ConnectivityDashboard from '../components/admin/ConnectivityDashboard'
 import StaffView from '../components/admin/StaffView'
 import AuditTrail from '../components/admin/AuditTrail'
 import BillingPromisesView from '../components/admin/BillingPromisesView'
@@ -117,6 +118,7 @@ const ALL_NAV_GROUPS: NavGroup[] = [
       { id: 'maps',        name: 'Mapa de Red',       icon: MapIcon },
       { id: 'billing',     name: 'Facturación',       icon: CreditCardIcon },
       { id: 'monitoring',  name: 'Monitoreo',         icon: SignalIcon },
+      { id: 'connectivity', name: 'Conectividad ISP',  icon: ServerIcon },
       { id: 'noc',         name: 'NOC',               icon: PresentationChartLineIcon },
       { id: 'alerts',      name: 'Alertas',           icon: BellAlertIcon },
       { id: 'tickets',     name: 'Tickets',           icon: TicketIcon },
@@ -487,6 +489,7 @@ const AdminPanel: React.FC = () => {
       </div>
     ),
     monitoring: <MonitoringView />,
+    connectivity: <ConnectivityDashboard />,
     noc: <NocDashboard />,
     alerts: <AlertsView />,
     tickets: <TicketsAdmin />,
