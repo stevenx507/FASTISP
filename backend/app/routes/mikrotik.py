@@ -4904,3 +4904,127 @@ def run_enterprise_failover_test(router_id):
         logger.error(f"Error running failover test for router {router_id}: {e}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
+# ── SSTP tunnel shortcuts (avoid sstp_bp double-registration 405 bug) ────────
+
+@mikrotik_bp.route('/routers/<int:router_id>/sstp/status', methods=['GET'])
+@jwt_required()
+@admin_required()
+def get_sstp_status(router_id):
+    """Return active SSTP tunnel for this router, with decrypted password and script."""
+    try:
+        from app.models import SstpTunnel
+        from app.services.sstp_service import generate_mikrotik_sstp_script
+        from app.tenancy import current_tenant_id
+        from flask_jwt_extended import get_jwt_identity
+
+        tid = current_tenant_id()
+        uid = get_jwt_identity()
+        from app.models import User
+        user = db.session.get(User, int(uid))
+
+        router = db.session.get(MikroTikRouter, router_id)
+        if not router:
+            return jsonify({'success': False, 'error': 'Router no encontrado'}), 404
+        if user and user.role != 'platform_admin' and router.tenant_id != tid:
+            return jsonify({'success': False, 'error': 'Acceso denegado'}), 403
+
+        tunnel = SstpTunnel.query.filter_by(router_id=router_id, status='active').first()
+        if not tunnel:
+            return jsonify({'success': False, 'tunnel': None}), 200
+
+        result = tunnel.to_dict(include_password=True)
+        try:
+            prov = {
+                'username': tunnel.username,
+                'password': tunnel.password or '',
+                'server_host': tunnel.server_host,
+                'server_port': tunnel.server_port,
+                'server_ip': tunnel.server_ip,
+                'client_ip': tunnel.client_ip,
+                'router_name': router.name,
+                'provisioned_at': tunnel.created_at.isoformat() if tunnel.created_at else '',
+                'hub': 'FASTISP',
+                'fingerprint': '',
+                'sstp_url': f"sstp://{tunnel.server_host}:{tunnel.server_port}",
+            }
+            result['script'] = generate_mikrotik_sstp_script(prov)
+        except Exception:
+            result['script'] = ''
+
+        return jsonify({'success': True, 'tunnel': result}), 200
+    except Exception as e:
+        logger.error(f"Error getting SSTP status for router {router_id}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@mikrotik_bp.route('/routers/<int:router_id>/sstp/provision', methods=['POST'])
+@jwt_required()
+@admin_required()
+def provision_sstp_for_router(router_id):
+    """Provision or return existing SSTP tunnel for this router."""
+    try:
+        from app.models import SstpTunnel
+        from app.services.sstp_service import provision_sstp_tunnel, generate_mikrotik_sstp_script
+        from app.tenancy import current_tenant_id
+        from flask_jwt_extended import get_jwt_identity
+
+        tid = current_tenant_id()
+        uid = get_jwt_identity()
+        from app.models import User
+        user = db.session.get(User, int(uid))
+
+        router = db.session.get(MikroTikRouter, router_id)
+        if not router:
+            return jsonify({'success': False, 'error': 'Router no encontrado'}), 404
+        if user and user.role != 'platform_admin' and router.tenant_id != tid:
+            return jsonify({'success': False, 'error': 'Acceso denegado'}), 403
+
+        existing = SstpTunnel.query.filter_by(router_id=router_id, status='active').first()
+        if existing:
+            result = existing.to_dict(include_password=True)
+            try:
+                prov = {
+                    'username': existing.username,
+                    'password': existing.password or '',
+                    'server_host': existing.server_host,
+                    'server_port': existing.server_port,
+                    'server_ip': existing.server_ip,
+                    'client_ip': existing.client_ip,
+                    'router_name': router.name,
+                    'provisioned_at': existing.created_at.isoformat() if existing.created_at else '',
+                    'hub': 'FASTISP',
+                    'fingerprint': '',
+                    'sstp_url': f"sstp://{existing.server_host}:{existing.server_port}",
+                }
+                result['script'] = generate_mikrotik_sstp_script(prov)
+            except Exception:
+                result['script'] = ''
+            return jsonify(result), 200
+
+        prov = provision_sstp_tunnel(router)
+        tunnel = SstpTunnel(
+            router_id=router.id,
+            tenant_id=router.tenant_id,
+            username=prov['username'],
+            server_ip=prov['server_ip'],
+            client_ip=prov['client_ip'],
+            server_host=prov['server_host'],
+            server_port=prov['server_port'],
+            status='active',
+        )
+        tunnel.password = prov['password']
+        db.session.add(tunnel)
+        db.session.commit()
+
+        script = generate_mikrotik_sstp_script(prov)
+        result = tunnel.to_dict(include_password=True)
+        result['script'] = script
+        result['provisioning'] = prov
+        logger.info(f"SSTP tunnel provisioned via mikrotik_bp for router {router_id}")
+        return jsonify(result), 201
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error provisioning SSTP for router {router_id}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+

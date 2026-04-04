@@ -782,23 +782,15 @@ const MikroTikManagement: React.FC = () => {
   const loadSstpTunnelForRouter = useCallback(async (routerId: string) => {
     setSstpLoadingForRouter(routerId)
     try {
-      const response = await apiFetch('/api/sstp/tunnels')
-      const payload = await safeJson(response)
-      const list = Array.isArray(payload) ? (payload as SstpTunnelData[]) : []
-      if (response.ok && list.length > 0) {
-        const active = list.find((t) => String(t.router_id) === String(routerId) && t.status === 'active')
-        if (active) {
-          const detailRes = await apiFetch(`/api/sstp/tunnels/${active.id}`)
-          const detail = (await safeJson(detailRes)) as SstpTunnelData | null
-          if (detailRes.ok && detail) {
-            setSstpTunnel(detail)
-            setSstpScript(detail.script || '')
-            return
-          }
-        }
+      const response = await apiFetch(`/api/mikrotik/routers/${routerId}/sstp/status`)
+      const payload = (await safeJson(response)) as { success?: boolean; tunnel?: SstpTunnelData | null } | null
+      if (response.ok && payload?.tunnel) {
+        setSstpTunnel(payload.tunnel)
+        setSstpScript(payload.tunnel.script || '')
+      } else {
+        setSstpTunnel(null)
+        setSstpScript('')
       }
-      setSstpTunnel(null)
-      setSstpScript('')
     } catch {
       setSstpTunnel(null)
       setSstpScript('')
@@ -811,20 +803,20 @@ const MikroTikManagement: React.FC = () => {
     if (!selectedRouter) return
     setSstpProvisioning(true)
     try {
-      const response = await apiFetch('/api/sstp/tunnels', {
+      const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/sstp/provision`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ router_id: selectedRouter.id }),
+        body: JSON.stringify({}),
       })
       const payload = (await safeJson(response)) as SstpTunnelData | null
-      if (!response.ok || payload?.error) {
-        addToast('error', payload?.error || `Error ${response.status} al provisionar SSTP`)
+      if (!response.ok || (payload as { error?: string })?.error) {
+        addToast('error', (payload as { error?: string })?.error || `Error ${response.status} al provisionar SSTP`)
         return
       }
       setSstpTunnel(payload)
       setSstpScript(payload?.script || '')
-      addToast('success', 'Túnel SSTP provisionado. Copia el script y aplícalo en el MikroTik.')
-      setConnectionWizardStep(3)
+      addToast('success', 'Túnel SSTP listo. Copia el script y pégalo en el MikroTik (New Terminal).')
+      setConnectionWizardStep(2)
     } catch (error: unknown) {
       addToast('error', normalizeUiError(error, 'Error al provisionar SSTP'))
     } finally {
@@ -2438,151 +2430,90 @@ const MikroTikManagement: React.FC = () => {
                                 {quickConnect.connection_plan.recommended_transport || '-'}
                               </span>
                             </div>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {[1, 2, 3].map((step) => (
-                                <button
-                                  key={step}
-                                  onClick={() => setConnectionWizardStep(step as 1 | 2 | 3)}
-                                  className={`rounded px-3 py-1 text-xs font-semibold ${
-                                    connectionWizardStep === step
-                                      ? 'bg-emerald-700 text-white'
-                                      : 'bg-white text-emerald-800'
-                                  }`}
-                                >
-                                  Paso {step}
-                                </button>
-                              ))}
-                            </div>
+                            {/* ── SSTP single-panel (replaces 3-step wizard) ── */}
+                            <div className="mt-2 rounded-xl border border-emerald-200 bg-white p-4 space-y-3">
 
-                            {connectionWizardStep === 1 && (
-                              <div className="mt-2 rounded border border-emerald-200 bg-white p-3">
-                                <p className="text-xs font-semibold uppercase text-emerald-800">Paso 1: Deteccion</p>
-                                <p className="mt-1 text-xs text-emerald-700">
-                                  Detecta automaticamente si el router es alcanzable para provisionar el tunel SoftEther SSTP.
-                                </p>
-                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                              {/* Loading */}
+                              {sstpLoadingForRouter === String(selectedRouter?.id) && (
+                                <p className="text-xs text-emerald-600 animate-pulse">Verificando túnel SSTP...</p>
+                              )}
+
+                              {/* No tunnel */}
+                              {!sstpLoadingForRouter && !sstpTunnel && (
+                                <div className="text-center py-2">
+                                  <p className="text-sm font-semibold text-slate-700">Sin túnel SSTP activo</p>
+                                  <p className="mt-1 text-xs text-slate-500">Crea el túnel para que el MikroTik se conecte al servidor VPN y el panel pueda gestionarlo remotamente.</p>
                                   <button
-                                    onClick={() => void runWizardDetection()}
-                                    disabled={quickLoading || readinessLoading}
-                                    className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+                                    onClick={() => void provisionSstpForRouter()}
+                                    disabled={sstpProvisioning}
+                                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-emerald-500 disabled:opacity-60 transition"
                                   >
-                                    {quickLoading || readinessLoading ? 'Detectando...' : 'Detectar ruta'}
-                                  </button>
-                                  <button
-                                    onClick={() => setConnectionWizardStep(2)}
-                                    className="rounded bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-300"
-                                  >
-                                    Continuar al paso 2
+                                    {sstpProvisioning ? (
+                                      <><svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Provisionando...</>
+                                    ) : (
+                                      <>⚡ Provisionar SSTP</>
+                                    )}
                                   </button>
                                 </div>
-                              </div>
-                            )}
+                              )}
 
-                            {connectionWizardStep === 2 && (
-                              <div className="mt-2 rounded border border-emerald-200 bg-white p-3 space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <p className="text-xs font-semibold uppercase text-emerald-800">Paso 2: Túnel SoftEther SSTP</p>
-                                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">VPN SSTP</span>
-                                </div>
+                              {/* Tunnel active */}
+                              {!sstpLoadingForRouter && sstpTunnel && (
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                                      <p className="text-sm font-bold text-emerald-800">Túnel SSTP activo</p>
+                                    </div>
+                                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase">{sstpTunnel.status}</span>
+                                  </div>
 
-                                {sstpLoadingForRouter === selectedRouter?.id && (
-                                  <p className="text-xs text-emerald-600 animate-pulse">Verificando túnel existente...</p>
-                                )}
+                                  <div className="grid grid-cols-2 gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                                    <span>Usuario: <strong className="font-mono">{sstpTunnel.username}</strong></span>
+                                    <span>Servidor: <strong className="font-mono">{sstpTunnel.server_host}:{sstpTunnel.server_port}</strong></span>
+                                    {sstpTunnel.password && (
+                                      <span className="col-span-2">Password: <strong className="font-mono text-emerald-900">{sstpTunnel.password}</strong></span>
+                                    )}
+                                  </div>
 
-                                {!sstpLoadingForRouter && !sstpTunnel && (
-                                  <div className="rounded border border-amber-200 bg-amber-50 p-2">
-                                    <p className="text-xs font-semibold text-amber-800">Sin túnel SSTP activo</p>
-                                    <p className="mt-1 text-xs text-amber-700">Este router no tiene un túnel SSTP provisionado. Haz clic en "Provisionar SSTP" para crear credenciales y generar el script de configuración.</p>
+                                  {sstpScript && (
+                                    <div className="rounded-lg border border-slate-200 bg-slate-950 overflow-hidden">
+                                      <div className="flex items-center justify-between px-3 py-2 border-b border-slate-700">
+                                        <p className="text-[11px] font-semibold text-slate-300">Script RouterOS — New Terminal → pegar → Enter</p>
+                                        <button
+                                          onClick={async () => {
+                                            await copyToClipboard(sstpScript)
+                                            setSstpScriptCopied(true)
+                                            setTimeout(() => setSstpScriptCopied(false), 2500)
+                                          }}
+                                          className="rounded-md bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-emerald-500 transition"
+                                        >
+                                          {sstpScriptCopied ? '✅ Copiado' : '📋 Copiar script'}
+                                        </button>
+                                      </div>
+                                      <pre className="max-h-52 overflow-y-auto p-3 text-[10px] leading-relaxed text-emerald-300 whitespace-pre-wrap">{sstpScript}</pre>
+                                    </div>
+                                  )}
+
+                                  <div className="flex flex-wrap gap-2 pt-1">
+                                    <button
+                                      onClick={() => void runWizardValidation()}
+                                      disabled={wizardValidating || readinessLoading}
+                                      className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-60 transition"
+                                    >
+                                      {wizardValidating ? 'Validando...' : '🔍 Validar conexión'}
+                                    </button>
                                     <button
                                       onClick={() => void provisionSstpForRouter()}
                                       disabled={sstpProvisioning}
-                                      className="mt-2 rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+                                      className="rounded-lg border border-emerald-300 px-3 py-1.5 text-xs text-emerald-800 hover:bg-emerald-50 disabled:opacity-60 transition"
                                     >
-                                      {sstpProvisioning ? 'Provisionando...' : '⚡ Provisionar SSTP'}
+                                      Regenerar credenciales
                                     </button>
                                   </div>
-                                )}
-
-                                {!sstpLoadingForRouter && sstpTunnel && (
-                                  <div className="space-y-2">
-                                    <div className="rounded border border-emerald-200 bg-emerald-50 p-2">
-                                      <div className="flex items-center justify-between">
-                                        <p className="text-xs font-semibold text-emerald-800">✅ Túnel SSTP activo</p>
-                                        <span className="rounded-full bg-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">{sstpTunnel.status}</span>
-                                      </div>
-                                      <div className="mt-1 grid grid-cols-2 gap-x-3 text-[11px] text-emerald-700">
-                                        <span>Usuario: <strong className="text-emerald-900">{sstpTunnel.username}</strong></span>
-                                        <span>Servidor: <strong className="text-emerald-900">{sstpTunnel.server_host}:{sstpTunnel.server_port}</strong></span>
-                                        {sstpTunnel.password && <span className="col-span-2">Password: <strong className="text-emerald-900 font-mono">{sstpTunnel.password}</strong></span>}
-                                      </div>
-                                    </div>
-
-                                    {sstpScript && (
-                                      <div className="rounded border border-slate-200 bg-slate-50">
-                                        <div className="flex items-center justify-between border-b border-slate-200 px-3 py-1.5">
-                                          <p className="text-[11px] font-semibold text-slate-700">Script MikroTik (.rsc)</p>
-                                          <button
-                                            onClick={async () => {
-                                              await copyToClipboard(sstpScript)
-                                              setSstpScriptCopied(true)
-                                              setTimeout(() => setSstpScriptCopied(false), 2500)
-                                            }}
-                                            className="rounded bg-emerald-700 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-emerald-800"
-                                          >
-                                            {sstpScriptCopied ? '✅ Copiado' : 'Copiar script'}
-                                          </button>
-                                        </div>
-                                        <pre className="max-h-48 overflow-y-auto p-3 text-[10px] leading-relaxed text-slate-800 whitespace-pre-wrap">{sstpScript}</pre>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-
-                                <div className="flex flex-wrap items-center gap-2 border-t border-emerald-100 pt-2">
-                                  {sstpTunnel && (
-                                    <button
-                                      onClick={() => setConnectionWizardStep(3)}
-                                      className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-800"
-                                    >
-                                      Continuar → Paso 3 Validar
-                                    </button>
-                                  )}
-                                  <p className="text-[11px] text-emerald-700">Pega el script en MikroTik: New Terminal → pegar → Enter</p>
                                 </div>
-                              </div>
-                            )}
-
-                            {connectionWizardStep === 3 && (
-                              <div className="mt-2 rounded border border-emerald-200 bg-white p-3">
-                                <p className="text-xs font-semibold uppercase text-emerald-800">Paso 3: Validar</p>
-                                <p className="mt-1 text-xs text-emerald-700">
-                                  Verifica que el router responda y que la ruta remota quede operativa.
-                                </p>
-                                <div className="mt-2 flex flex-wrap items-center gap-2">
-                                  <span className={`rounded px-2 py-1 text-xs font-semibold ${routerReadiness?.checks?.find((item) => item.id === 'api_connectivity')?.ok ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                                    API {routerReadiness?.checks?.find((item) => item.id === 'api_connectivity')?.ok ? 'OK' : 'pendiente'}
-                                  </span>
-                                  <span className="rounded px-2 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700">
-                                    Canal: SoftEther SSTP
-                                  </span>
-                                </div>
-                                <div className="mt-2 flex flex-wrap items-center gap-2">
-                                  <button
-                                    onClick={() => void runWizardValidation()}
-                                    disabled={wizardValidating || quickLoading || readinessLoading}
-                                    className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
-                                  >
-                                    {wizardValidating ? 'Validando...' : 'Validar conexion'}
-                                  </button>
-                                  <button
-                                    onClick={() => setConnectionWizardStep(1)}
-                                    className="rounded bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-300"
-                                  >
-                                    Reiniciar asistente
-                                  </button>
-                                </div>
-                              </div>
-                            )}
+                              )}
+                            </div>
 
                             {expressSteps.length > 0 && (
                               <div className="mt-2 space-y-1">
