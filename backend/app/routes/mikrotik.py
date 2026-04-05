@@ -2613,6 +2613,11 @@ def onboard_router_from_wireguard_archive():
         router.is_active = True
         db.session.add(router)
         db.session.commit()
+        try:
+            from app.services.mikrotik_connection_pool import mikrotik_connection_pool
+            mikrotik_connection_pool.disconnect_router(router.id)
+        except Exception as _pool_exc:
+            logger.warning(f"Could not evict pool for router {router.id} after credential update: {_pool_exc}")
     else:
         router = MikroTikRouter(
             name=name,
@@ -2899,19 +2904,25 @@ def get_router(router_id):
         router = _router_for_request(router_id)
         if not router:
             return jsonify({'success': False, 'error': 'Router not found'}), 404
-        
-        with MikroTikService(router_id) as service:
-            if not service.api:
-                return jsonify({'success': False, 'error': 'Could not connect to router'}), 500
-            
-            router_info = service.get_router_info()
-            interface_stats = service.get_interface_stats()
-        
+
+        router_info = None
+        interface_stats = None
+        api_reachable = False
+        try:
+            with MikroTikService(router_id) as service:
+                if service.api:
+                    router_info = service.get_router_info()
+                    interface_stats = service.get_interface_stats()
+                    api_reachable = True
+        except Exception as api_exc:
+            logger.warning(f"Could not reach API for router {router_id}: {api_exc}")
+
         return jsonify({
             'success': True,
             'router': router.to_dict(),
             'info': router_info,
-            'interfaces': interface_stats
+            'interfaces': interface_stats,
+            'api_reachable': api_reachable,
         }), 200
     except Exception as e:
         logger.error(f"Error getting router {router_id}: {e}")
@@ -3034,6 +3045,14 @@ def update_router(router_id):
 
     db.session.add(router)
     db.session.commit()
+
+    if any(f in changed for f in ('ip_address', 'username', 'password', 'api_port')):
+        try:
+            from app.services.mikrotik_connection_pool import mikrotik_connection_pool
+            mikrotik_connection_pool.disconnect_router(router.id)
+        except Exception as pool_exc:
+            logger.warning(f"Could not evict pool for router {router.id}: {pool_exc}")
+
     return jsonify({'success': True, 'router': router.to_dict(), 'updated_fields': changed}), 200
 
 
@@ -3058,9 +3077,15 @@ def delete_router(router_id):
             }
         ), 409
 
+    router_id_int = router.id
     db.session.delete(router)
     db.session.commit()
-    return jsonify({'success': True, 'deleted_id': str(router.id)}), 200
+    try:
+        from app.services.mikrotik_connection_pool import mikrotik_connection_pool
+        mikrotik_connection_pool.disconnect_router(router_id_int)
+    except Exception as pool_exc:
+        logger.warning(f"Could not evict pool for deleted router {router_id_int}: {pool_exc}")
+    return jsonify({'success': True, 'deleted_id': str(router_id_int)}), 200
 
 
 @mikrotik_bp.route('/onboarding/profile', methods=['GET'])
@@ -4217,7 +4242,7 @@ def backup_router(router_id):
 def test_connection(router_id):
     """Test connectivity to specified router"""
     try:
-        router = db.session.get(MikroTikRouter, router_id)
+        router = _router_for_request(router_id)
         if not router:
             return jsonify({'success': False, 'error': 'Router not found'}), 404
         diagnostics = _build_router_connection_diagnostics(router)

@@ -73,21 +73,38 @@ class MikroTikService:
                 )
                 logger.error(self.last_connection_error)
                 return False
-            
+
             self.api, self.pool_obj = mikrotik_connection_pool.get_connection(
                 normalized_router_id
             )
             self._clear_connection_error()
             logger.info(f"Connected to MikroTik {self.router.ip_address} using connection from pool.")
-            
+
             # Update last seen
             if self.router:
                 self.router.last_seen = datetime.utcnow()
                 db.session.commit()
-            
+
             return True
+        except RuntimeError as e:
+            err_text = str(e)
+            code = 'api_pool_exhausted' if 'exhausted' in err_text.lower() else 'api_connection_failed'
+            self._set_connection_error(stage='connect', error=e, code=code)
+            logger.error(f"Pool error for router {router_id}: {e}")
+            return False
         except Exception as e:
-            self._set_connection_error(stage='connect', error=e)
+            err_text = str(e).lower()
+            if 'invalid user' in err_text or 'login' in err_text or 'authentication' in err_text:
+                code = 'api_auth_failed'
+            elif 'refused' in err_text:
+                code = 'api_service_disabled'
+            elif 'timed out' in err_text or 'timeout' in err_text:
+                code = 'api_timeout'
+            elif 'ssl' in err_text or 'handshake' in err_text:
+                code = 'api_tls_mismatch'
+            else:
+                code = 'api_connection_failed'
+            self._set_connection_error(stage='connect', error=e, code=code)
             logger.error(f"Error getting connection from pool for router {router_id}: {e}")
             return False
     

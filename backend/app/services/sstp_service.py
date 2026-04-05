@@ -27,7 +27,7 @@ SOFTETHER_MGMT_PORT = os.environ.get("SOFTETHER_MGMT_PORT", "5555")
 
 # Host del servidor SSTP (dominio público del VPS)
 SSTP_SERVER_HOST = os.environ.get("SSTP_SERVER_HOST", "fastisp.cloud")
-SSTP_SERVER_PORT = int(os.environ.get("SSTP_SERVER_PORT", "8443"))
+SSTP_SERVER_PORT = int(os.environ.get("SSTP_SERVER_PORT", "443"))
 
 # Pool de IPs para túneles (gestionado por SoftEther SecureNAT/DHCP)
 SSTP_IP_POOL_START = os.environ.get("SSTP_IP_POOL_START", "10.100.0.10")
@@ -301,9 +301,15 @@ def ensure_sstp_certificate() -> dict:
 
 def generate_mikrotik_sstp_script(prov: dict) -> str:
     """
-    Genera el script .rsc de MikroTik para configurar el túnel SSTP hacia FastISP.
-    Genera script de configuracion: limpieza, usuario local, scheduler de reconexion.
+    Genera el script .rsc de MikroTik para configurar el tunel SSTP hacia FastISP.
     Compatible con RouterOS 6.x y 7.x.
+
+    Correcciones aplicadas:
+    - connect-to usa host:port (compatible ROS 6 y 7; 'port=' no existe en ROS 6)
+    - NO restringe /ip service api address= antes de que el tunel este activo
+    - Todos los comandos de limpieza usan :do {} on-error={} para no abortar si el objeto no existe
+    - Sintaxis de find usa || en lugar de 'or' (correcto en RouterOS)
+    - Ruta hacia VPN usa comment= para poder identificarla al limpiar
     """
     username = prov.get("username", "")
     password = prov.get("password", "")
@@ -315,38 +321,58 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
     profile_name = "fastisp-profile"
     iface_name = "FastISPVPN"
     group_name = "fastisp"
-    # Subred VPN interna — solo IPs de esta red pueden usar la API vía el túnel
     vpn_subnet = os.environ.get("VPN_MGMT_SUBNET", "10.100.0.0/16")
-    # Scheduler
-    scheduler_comment = "Reconectar FastISP"
+    scheduler_name = "FastISP-Reconnect"
+    # ROS 6 y 7 aceptan connect-to=host:port; 'port=' como parametro separado solo existe en ROS 7
+    connect_to = f"{server_host}:{server_port}"
 
-    script = f"""/ip service set api port=8728 disabled=no address={vpn_subnet};
-/interface sstp-client remove [find where comment~"FastISP" or name="{iface_name}"];
-/ppp profile remove [find where name="{profile_name}"];
-/ppp profile add name="{profile_name}" use-encryption=yes use-compression=no use-mpls=no only-one=yes comment="FastISP SSTP Profile";
-/interface sstp-client add comment="FastISP VPN" connect-to={server_host} port={server_port} name="{iface_name}" user="{username}" password="{password}" profile="{profile_name}" verify-server-certificate=no disabled=no;
-/ip route remove [find where dst-address="{vpn_subnet}"];
-/ip route add distance=1 dst-address={vpn_subnet} gateway={iface_name};
-/user group remove [find where name="{group_name}"];
-/user group add name={group_name} policy=local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive;
-/user remove [find where name="{username}"];
-/user add name="{username}" password="{password}" group={group_name};
-/system scheduler remove [find where comment="{scheduler_comment}"];
-/system scheduler add comment="{scheduler_comment}" interval=1d name="{scheduler_comment}" on-event="/interface set {iface_name} disabled=yes\r\n:delay 4s\r\n/interface set {iface_name} disabled=no\r\n:log info \\\"FastISP VPN reconectado\\\"";
-:log info "FastISP VPN configurado para {router_name}. Generado: {provisioned_at}";"""
+    script = f"""# FastISP SSTP VPN — {router_name} — {provisioned_at}
+# --- Limpieza previa (ignorar si no existen) ---
+:do {{/ppp profile remove [find name="{profile_name}"]}} on-error={{}}
+:do {{/interface sstp-client remove [find where comment~"FastISP"]}} on-error={{}}
+:do {{/interface sstp-client remove [find where name="{iface_name}"]}} on-error={{}}
+:do {{/ip route remove [find where comment="fastisp-vpn-route"]}} on-error={{}}
+:do {{/user group remove [find where name="{group_name}"]}} on-error={{}}
+:do {{/user remove [find where name="{username}"]}} on-error={{}}
+:do {{/system scheduler remove [find where name="{scheduler_name}"]}} on-error={{}}
+# --- Perfil PPP ---
+/ppp profile add name="{profile_name}" use-encryption=yes use-compression=no use-mpls=no only-one=yes comment="FastISP SSTP Profile"
+# --- Interfaz SSTP (connect-to=host:port funciona en ROS 6 y 7) ---
+/interface sstp-client add comment="FastISP VPN" connect-to={connect_to} name="{iface_name}" user="{username}" password="{password}" profile="{profile_name}" verify-server-certificate=no disabled=no
+# --- Ruta hacia la red de gestion VPN ---
+/ip route add comment="fastisp-vpn-route" distance=1 dst-address={vpn_subnet} gateway={iface_name}
+# --- Usuario local de API (accesible via tunel VPN) ---
+/user group add name={group_name} policy=local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive
+/user add name="{username}" password="{password}" group={group_name} comment="FastISP API user"
+# --- Habilitar API en el router (sin restringir por direccion) ---
+/ip service set api port=8728 disabled=no
+# --- Scheduler de reconexion diaria ---
+/system scheduler add comment="FastISP-Reconnect" interval=1d name="{scheduler_name}" on-event=":do {{/interface sstp-client disable {iface_name}}} on-error={{}}\r\n:delay 4s\r\n:do {{/interface sstp-client enable {iface_name}}} on-error={{}}\r\n:log info \"FastISP VPN reconectado\""
+:log info "FastISP VPN configurado para {router_name}. Generado: {provisioned_at}"
+"""
     return script
 
 
 def generate_verification_script() -> str:
-    """Genera un script de verificación para el MikroTik."""
-    return """# Script de verificación SSTP FASTISP
-:local iface "sstp-fastisp"
-:local running [/interface sstp-client get $iface running]
-:if ($running = true) do={
-    :put "✅ SSTP FASTISP: CONECTADO"
-    :put ("IP: " . [/ip address get [find interface=$iface] address])
-} else={
-    :put "❌ SSTP FASTISP: DESCONECTADO"
-    :put "Logs: /log print where topics~sstp"
-}
+    """Genera un script de verificacion para el MikroTik."""
+    iface_name = "FastISPVPN"
+    return f"""# Script de verificacion SSTP FASTISP
+:local iface "{iface_name}"
+:local status "desconocido"
+:do {{
+    :local running [/interface sstp-client get [find name=$iface] running]
+    :if ($running = true) do={{
+        :set status "CONECTADO"
+        :put ("FastISP VPN: CONECTADO")
+        :local addr [/ip address get [find interface=$iface] address]
+        :put ("IP asignada: " . $addr)
+    }} else={{
+        :set status "DESCONECTADO"
+        :put "FastISP VPN: DESCONECTADO"
+        :put "Revisa: /log print where topics~sstp"
+    }}
+}} on-error={{
+    :put "FastISP VPN: interfaz no encontrada"
+    :put "Ejecuta el script de provisionamiento primero."
+}}
 """
