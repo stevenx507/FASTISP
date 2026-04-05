@@ -57,6 +57,7 @@ services:
       - "2055:2055/udp"
     volumes:
       - backups:/app/backups
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - ispmax-network
     labels:
@@ -146,18 +147,22 @@ services:
       - ispmax-network
 
   softether-vpn:
-    # Imagen oficial de SoftEther VPN Server v4.43
-    # Soporta SSTP, L2TP, OpenVPN, EtherIP
-    image: siomiz/softethervpn:latest
+    # Imagen custom que incluye vpncmd_api.sh para provisioning SSTP desde el backend
+    build: ./softether
     container_name: fastisp-softether
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
     environment:
-      # Contraseña del servidor (se aplica al iniciar)
+      # Contrasena del servidor para siomiz/softethervpn base image
       - SPW=${SOFTETHER_ADMIN_PASSWORD:-FastISP_VPN_2026!}
-      # Contraseña del hub por defecto
+      # Contrasena del hub para siomiz/softethervpn base image
       - HPW=${SOFTETHER_HUB_PASSWORD:-FastISP_Hub_2026!}
+      # Variables usadas por vpncmd_api.sh y entrypoint.sh
+      - SOFTETHER_ADMIN_PASSWORD=${SOFTETHER_ADMIN_PASSWORD:-FastISP_VPN_2026!}
+      - SOFTETHER_HUB_PASSWORD=${SOFTETHER_HUB_PASSWORD:-FastISP_Hub_2026!}
+      - SOFTETHER_HUB_NAME=${SOFTETHER_HUB_NAME:-FASTISP}
+      - SOFTETHER_MGMT_PORT=${SOFTETHER_MGMT_PORT:-5555}
     ports:
       # Puerto SSTP para MikroTik (8443 para no conflictar con Traefik en 443)
       - "8443:443"
@@ -174,7 +179,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 20s
+      start_period: 30s
 
   traefik:
     # Traefik v3 usa Docker API 1.41+ nativamente (compatible con Docker Engine 27+)

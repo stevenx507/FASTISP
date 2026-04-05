@@ -27,7 +27,7 @@ SOFTETHER_MGMT_PORT = os.environ.get("SOFTETHER_MGMT_PORT", "5555")
 
 # Host del servidor SSTP (dominio público del VPS)
 SSTP_SERVER_HOST = os.environ.get("SSTP_SERVER_HOST", "fastisp.cloud")
-SSTP_SERVER_PORT = int(os.environ.get("SSTP_SERVER_PORT", "443"))
+SSTP_SERVER_PORT = int(os.environ.get("SSTP_SERVER_PORT", "8443"))
 
 # Pool de IPs para túneles (gestionado por SoftEther SecureNAT/DHCP)
 SSTP_IP_POOL_START = os.environ.get("SSTP_IP_POOL_START", "10.100.0.10")
