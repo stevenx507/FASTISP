@@ -1858,6 +1858,10 @@ def _as_bool(value: Any, default: bool = False) -> bool:
         return False
     return default
 
+def _as_clean_text(value: Any) -> Optional[str]:
+    text = str(value or '').strip()
+    return text or None
+
 def _parse_router_latency_ms(value: Any) -> Optional[float]:
     if value is None:
         return None
@@ -2848,13 +2852,12 @@ def create_router():
             api_port=api_port,
             is_active=_as_bool(data.get('is_active'), default=True),
             tenant_id=current_tenant_id(),
-            # WispHub-extended fields
             wan_port=_to_int(data.get('wan_port'), 80),
-            lan_interface=str(data.get('lan_interface') or 'ether1').strip() or 'ether1',
-            ip_ranges=str(data.get('ip_ranges') or '').strip() or None,
-            ros_version=str(data.get('ros_version') or '7').strip(),
-            coordinates=str(data.get('coordinates') or '').strip() or None,
-            comments=str(data.get('comments') or '').strip() or None,
+            lan_interface=_as_clean_text(data.get('lan_interface')) or 'ether1',
+            ip_ranges=_as_clean_text(data.get('ip_ranges')),
+            ros_version=_as_clean_text(data.get('ros_version')) or '7',
+            coordinates=_as_clean_text(data.get('coordinates')),
+            comments=_as_clean_text(data.get('comments')),
             use_sstp_script=_as_bool(data.get('use_sstp_script'), default=True),
             historial_trafico=_as_bool(data.get('historial_trafico'), default=False),
             control_pppoe=_as_bool(data.get('control_pppoe'), default=False),
@@ -2972,6 +2975,62 @@ def update_router(router_id):
     if 'is_active' in data:
         router.is_active = _as_bool(data.get('is_active'), default=True)
         changed.append('is_active')
+
+    if 'wan_port' in data:
+        router.wan_port = _to_int(data.get('wan_port'), 80)
+        changed.append('wan_port')
+
+    if 'lan_interface' in data:
+        router.lan_interface = _as_clean_text(data.get('lan_interface')) or 'ether1'
+        changed.append('lan_interface')
+
+    if 'ip_ranges' in data:
+        router.ip_ranges = _as_clean_text(data.get('ip_ranges'))
+        changed.append('ip_ranges')
+
+    if 'ros_version' in data:
+        router.ros_version = _as_clean_text(data.get('ros_version')) or '7'
+        changed.append('ros_version')
+
+    if 'coordinates' in data:
+        router.coordinates = _as_clean_text(data.get('coordinates'))
+        changed.append('coordinates')
+
+    if 'comments' in data:
+        router.comments = _as_clean_text(data.get('comments'))
+        changed.append('comments')
+
+    if 'use_sstp_script' in data:
+        router.use_sstp_script = _as_bool(data.get('use_sstp_script'), default=True)
+        changed.append('use_sstp_script')
+
+    if 'historial_trafico' in data:
+        router.historial_trafico = _as_bool(data.get('historial_trafico'), default=False)
+        changed.append('historial_trafico')
+
+    if 'control_pppoe' in data:
+        router.control_pppoe = _as_bool(data.get('control_pppoe'), default=False)
+        changed.append('control_pppoe')
+
+    if 'control_queue' in data:
+        router.control_queue = _as_bool(data.get('control_queue'), default=False)
+        changed.append('control_queue')
+
+    if 'control_ap' in data:
+        router.control_ap = _as_bool(data.get('control_ap'), default=False)
+        changed.append('control_ap')
+
+    if 'control_dhcp' in data:
+        router.control_dhcp = _as_bool(data.get('control_dhcp'), default=False)
+        changed.append('control_dhcp')
+
+    if 'control_hotspot' in data:
+        router.control_hotspot = _as_bool(data.get('control_hotspot'), default=False)
+        changed.append('control_hotspot')
+
+    if 'traffic_flow_enabled' in data:
+        router.traffic_flow_enabled = _as_bool(data.get('traffic_flow_enabled'), default=False)
+        changed.append('traffic_flow_enabled')
 
     db.session.add(router)
     db.session.commit()

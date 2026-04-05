@@ -145,6 +145,12 @@ const PlatformAdmin: React.FC = () => {
   const [adminTarget, setAdminTarget] = useState<PlatformTenantItem | null>(null)
   const [adminForm, setAdminForm] = useState({ email: '', name: 'Admin ISP', password: '' })
 
+  const closeAllModals = useCallback(() => {
+    setEditingTenant(null)
+    setBillingTarget(null)
+    setAdminTarget(null)
+  }, [])
+
   const parseOptionalNumber = (raw: string, field: string): number | undefined => {
     const token = raw.trim()
     if (!token) return undefined
@@ -225,6 +231,17 @@ const PlatformAdmin: React.FC = () => {
   useEffect(() => {
     void loadPlatformData()
   }, [loadPlatformData])
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeAllModals()
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [closeAllModals])
 
   const planCodes = useMemo(() => Object.keys(planTemplates), [planTemplates])
 
@@ -896,8 +913,8 @@ const PlatformAdmin: React.FC = () => {
       </main>
 
       {editingTenant && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-900 p-5">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4" onClick={closeAllModals}>
+          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-900 p-5" onClick={(event) => event.stopPropagation()}>
             <h3 className="text-lg font-bold text-white">Editar tenant</h3>
             <form onSubmit={submitEditTenant} className="mt-4 space-y-3">
               <input
@@ -913,7 +930,7 @@ const PlatformAdmin: React.FC = () => {
                 className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
               />
               <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setEditingTenant(null)} className="rounded-lg border border-white/20 px-3 py-2 text-sm text-slate-200 hover:bg-white/10">
+                <button type="button" onClick={closeAllModals} className="rounded-lg border border-white/20 px-3 py-2 text-sm text-slate-200 hover:bg-white/10">
                   Cancelar
                 </button>
                 <button type="submit" disabled={busy} className="rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-400 disabled:opacity-60">
@@ -926,8 +943,8 @@ const PlatformAdmin: React.FC = () => {
       )}
 
       {billingTarget && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4">
-          <div className="w-full max-w-xl rounded-2xl border border-white/15 bg-slate-900 p-5">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4" onClick={closeAllModals}>
+          <div className="w-full max-w-xl rounded-2xl border border-white/15 bg-slate-900 p-5" onClick={(event) => event.stopPropagation()}>
             <h3 className="text-lg font-bold text-white">Suscripcion de {billingTarget.name}</h3>
             <form onSubmit={submitBillingUpdate} className="mt-4 space-y-3">
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
@@ -998,7 +1015,7 @@ const PlatformAdmin: React.FC = () => {
                 className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
               />
               <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setBillingTarget(null)} className="rounded-lg border border-white/20 px-3 py-2 text-sm text-slate-200 hover:bg-white/10">
+                <button type="button" onClick={closeAllModals} className="rounded-lg border border-white/20 px-3 py-2 text-sm text-slate-200 hover:bg-white/10">
                   Cancelar
                 </button>
                 <button type="submit" disabled={busy} className="rounded-lg bg-violet-500 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-60">
@@ -1011,8 +1028,8 @@ const PlatformAdmin: React.FC = () => {
       )}
 
       {adminTarget && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-900 p-5">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4" onClick={closeAllModals}>
+          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-900 p-5" onClick={(event) => event.stopPropagation()}>
             <h3 className="text-lg font-bold text-white">Crear admin para {adminTarget.name}</h3>
             <form onSubmit={submitCreateTenantAdmin} className="mt-4 space-y-3">
               <input
@@ -1035,7 +1052,7 @@ const PlatformAdmin: React.FC = () => {
                 className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
               />
               <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setAdminTarget(null)} className="rounded-lg border border-white/20 px-3 py-2 text-sm text-slate-200 hover:bg-white/10">
+                <button type="button" onClick={closeAllModals} className="rounded-lg border border-white/20 px-3 py-2 text-sm text-slate-200 hover:bg-white/10">
                   Cancelar
                 </button>
                 <button type="submit" disabled={busy} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-400 disabled:opacity-60">
