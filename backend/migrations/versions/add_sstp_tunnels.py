@@ -47,6 +47,7 @@ def upgrade():
         ('password_plain', sa.Column('password_plain', sa.LargeBinary(), nullable=True)),
         ('server_host', sa.Column('server_host', sa.String(255), nullable=False, server_default='fastisp.cloud')),
         ('server_port', sa.Column('server_port', sa.Integer(), nullable=False, server_default='443')),
+        ('last_seen', sa.Column('last_seen', sa.DateTime(), nullable=True)),
         ('revoked_at', sa.Column('revoked_at', sa.DateTime(), nullable=True)),
         ('notes', sa.Column('notes', sa.Text(), nullable=True)),
     ]
