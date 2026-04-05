@@ -14,6 +14,10 @@ depends_on = None
 
 
 def upgrade():
+    from sqlalchemy import inspect
+    conn = op.get_bind()
+    if 'sstp_tunnels' in inspect(conn).get_table_names():
+        return
     op.create_table(
         'sstp_tunnels',
         sa.Column('id', sa.Integer(), primary_key=True),
