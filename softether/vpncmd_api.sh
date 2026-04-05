@@ -17,6 +17,20 @@ ADMIN_PASS="${SOFTETHER_ADMIN_PASSWORD:-FastISP_VPN_2026!}"
 HUB="${SOFTETHER_HUB_NAME:-FASTISP}"
 HUB_PASS="${SOFTETHER_HUB_PASSWORD:-FastISP_Hub_2026!}"
 
+run_vpncmd() {
+  local output
+  output=$($VPNCMD "$HOST" /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD "$@" 2>&1)
+  local status=$?
+  echo "$output"
+  if [ $status -ne 0 ]; then
+    return $status
+  fi
+  if echo "$output" | grep -Eqi "error occurred|error:|failed"; then
+    return 1
+  fi
+  return 0
+}
+
 CMD="$1"
 USERNAME="$2"
 PASSWORD="$3"
@@ -28,12 +42,14 @@ case "$CMD" in
       echo '{"error": "username y password requeridos"}' >&2
       exit 1
     fi
-    # Crear usuario
-    $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD UserCreate \
-      "$USERNAME" /GROUP:none /REALNAME:"MikroTik SSTP" /NOTE:"Provisioned by FASTISP" 2>&1
-    # Establecer password
-    $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD UserPasswordSet \
-      "$USERNAME" /PASSWORD:"$PASSWORD" 2>&1
+    CREATE_OUTPUT=$(run_vpncmd UserCreate "$USERNAME" /GROUP:none /REALNAME:"MikroTik SSTP" /NOTE:"Provisioned by FASTISP") || {
+      echo "$CREATE_OUTPUT" >&2
+      exit 1
+    }
+    PASSWORD_OUTPUT=$(run_vpncmd UserPasswordSet "$USERNAME" /PASSWORD:"$PASSWORD") || {
+      echo "$PASSWORD_OUTPUT" >&2
+      exit 1
+    }
     echo '{"status": "ok", "action": "created", "username": "'"$USERNAME"'"}'
     ;;
 
@@ -49,8 +65,10 @@ case "$CMD" in
           /NAME:"$session" 2>&1 || true
       done
     # Eliminar usuario
-    $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD UserDelete \
-      "$USERNAME" 2>&1
+    DELETE_OUTPUT=$(run_vpncmd UserDelete "$USERNAME") || {
+      echo "$DELETE_OUTPUT" >&2
+      exit 1
+    }
     echo '{"status": "ok", "action": "deleted", "username": "'"$USERNAME"'"}'
     ;;
 
@@ -59,8 +77,10 @@ case "$CMD" in
       echo '{"error": "username y password requeridos"}' >&2
       exit 1
     fi
-    $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD UserPasswordSet \
-      "$USERNAME" /PASSWORD:"$PASSWORD" 2>&1
+    PASSWORD_OUTPUT=$(run_vpncmd UserPasswordSet "$USERNAME" /PASSWORD:"$PASSWORD") || {
+      echo "$PASSWORD_OUTPUT" >&2
+      exit 1
+    }
     echo '{"status": "ok", "action": "password_updated", "username": "'"$USERNAME"'"}'
     ;;
 

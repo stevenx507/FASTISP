@@ -48,7 +48,7 @@ def _generate_username(router_name: str = "router") -> str:
 
 def _generate_password(length: int = 20) -> str:
     """Genera una contraseña segura."""
-    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    alphabet = string.ascii_letters + string.digits
     while True:
         pwd = "".join(secrets.choice(alphabet) for _ in range(length))
         # Asegurar que tiene al menos un carácter de cada tipo
@@ -92,6 +92,12 @@ def _run_softether_cmd(cmd: str, username: str = "", password: str = "") -> dict
         if result.returncode != 0:
             logger.error(f"SoftEther cmd '{cmd}' failed: {error}")
             return {"success": False, "error": error, "output": output}
+
+        lowered_output = output.lower()
+        if cmd in {"create_user", "update_password", "delete_user"}:
+            if any(marker in lowered_output for marker in ["error occurred", "error:", "failed", "not found"]):
+                logger.error(f"SoftEther cmd '{cmd}' returned logical failure: {output}")
+                return {"success": False, "error": output or error or "SoftEther command failed", "output": output}
 
         logger.info(f"SoftEther cmd '{cmd}' OK: {output[:100]}")
         return {"success": True, "output": output, "error": ""}
