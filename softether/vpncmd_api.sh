@@ -11,7 +11,19 @@
 #   vpncmd_api.sh kick_user <username>
 #   vpncmd_api.sh server_status
 
-VPNCMD="/opt/vpnserver/vpncmd"
+VPNCMD=""
+for candidate in /usr/vpnserver/vpncmd /opt/vpnserver/vpncmd /usr/local/vpnserver/vpncmd; do
+  if [ -x "$candidate" ]; then
+    VPNCMD="$candidate"
+    break
+  fi
+done
+
+if [ -z "$VPNCMD" ]; then
+  echo '{"error": "vpncmd binary not found in container"}' >&2
+  exit 1
+fi
+
 HOST="localhost:${SOFTETHER_MGMT_PORT:-5555}"
 ADMIN_PASS="${SOFTETHER_ADMIN_PASSWORD:-FastISP_VPN_2026!}"
 HUB="${SOFTETHER_HUB_NAME:-FASTISP}"
