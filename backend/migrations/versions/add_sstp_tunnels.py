@@ -16,26 +16,44 @@ depends_on = None
 def upgrade():
     from sqlalchemy import inspect
     conn = op.get_bind()
-    if 'sstp_tunnels' in inspect(conn).get_table_names():
+    inspector = inspect(conn)
+    table_names = inspector.get_table_names()
+
+    if 'sstp_tunnels' not in table_names:
+        op.create_table(
+            'sstp_tunnels',
+            sa.Column('id', sa.Integer(), primary_key=True),
+            sa.Column('router_id', sa.Integer(), sa.ForeignKey('mikrotik_routers.id', ondelete='CASCADE'), nullable=False, index=True),
+            sa.Column('tenant_id', sa.Integer(), sa.ForeignKey('tenants.id', ondelete='CASCADE'), nullable=True, index=True),
+            sa.Column('username', sa.String(120), nullable=False, unique=True),
+            sa.Column('password_hash', sa.String(255), nullable=False),
+            sa.Column('password_plain', sa.LargeBinary(), nullable=False),
+            sa.Column('server_ip', sa.String(45), nullable=False),
+            sa.Column('client_ip', sa.String(45), nullable=False),
+            sa.Column('server_host', sa.String(255), nullable=False, server_default='fastisp.cloud'),
+            sa.Column('server_port', sa.Integer(), nullable=False, server_default='443'),
+            sa.Column('status', sa.String(20), nullable=False, server_default='active'),
+            sa.Column('last_seen', sa.DateTime(), nullable=True),
+            sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
+            sa.Column('revoked_at', sa.DateTime(), nullable=True),
+            sa.Column('notes', sa.Text(), nullable=True),
+        )
         return
-    op.create_table(
-        'sstp_tunnels',
-        sa.Column('id', sa.Integer(), primary_key=True),
-        sa.Column('router_id', sa.Integer(), sa.ForeignKey('mikrotik_routers.id', ondelete='CASCADE'), nullable=False, index=True),
-        sa.Column('tenant_id', sa.Integer(), sa.ForeignKey('tenants.id', ondelete='CASCADE'), nullable=True, index=True),
-        sa.Column('username', sa.String(120), nullable=False, unique=True),
-        sa.Column('password_hash', sa.String(255), nullable=False),  # hashed for display, plaintext in chap-secrets
-        sa.Column('password_plain', sa.LargeBinary(), nullable=False),  # encrypted with Fernet
-        sa.Column('server_ip', sa.String(45), nullable=False),
-        sa.Column('client_ip', sa.String(45), nullable=False),
-        sa.Column('server_host', sa.String(255), nullable=False, default='fastisp.cloud'),
-        sa.Column('server_port', sa.Integer(), nullable=False, default=443),
-        sa.Column('status', sa.String(20), nullable=False, default='active'),  # active, revoked, pending
-        sa.Column('last_seen', sa.DateTime(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column('revoked_at', sa.DateTime(), nullable=True),
-        sa.Column('notes', sa.Text(), nullable=True),
-    )
+
+    existing_columns = {column['name'] for column in inspector.get_columns('sstp_tunnels')}
+
+    missing_columns = [
+        ('password_hash', sa.Column('password_hash', sa.String(255), nullable=True)),
+        ('password_plain', sa.Column('password_plain', sa.LargeBinary(), nullable=True)),
+        ('server_host', sa.Column('server_host', sa.String(255), nullable=False, server_default='fastisp.cloud')),
+        ('server_port', sa.Column('server_port', sa.Integer(), nullable=False, server_default='443')),
+        ('revoked_at', sa.Column('revoked_at', sa.DateTime(), nullable=True)),
+        ('notes', sa.Column('notes', sa.Text(), nullable=True)),
+    ]
+
+    for column_name, column in missing_columns:
+        if column_name not in existing_columns:
+            op.add_column('sstp_tunnels', column)
 
 
 def downgrade():

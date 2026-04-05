@@ -111,8 +111,8 @@ const ScriptModal: React.FC<{
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl" onClick={(event) => event.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-700">
           <div className="flex items-center gap-3">
@@ -225,8 +225,8 @@ const ProvisionModal: React.FC<{
   const [notes, setNotes] = useState('')
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-gray-700">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
@@ -317,6 +317,18 @@ const SstpProvisioning: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'revoked'>('all')
 
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowProvisionModal(false)
+        setShowScriptModal(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [])
+
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg)
     setTimeout(() => setSuccessMsg(null), 4000)
@@ -349,6 +361,7 @@ const SstpProvisioning: React.FC = () => {
       const newTunnel = await apiClient.post('/sstp/tunnels', { router_id: routerId, notes }) as SstpTunnel
       setTunnels(prev => [newTunnel, ...prev])
       setShowProvisionModal(false)
+      setShowScriptModal(false)
       setSelectedTunnel(newTunnel)
       setShowScriptModal(true)
       showSuccess('Túnel SSTP provisionado exitosamente')
@@ -364,6 +377,7 @@ const SstpProvisioning: React.FC = () => {
   const handleViewScript = async (tunnel: SstpTunnel) => {
     try {
       const data = await apiClient.get(`/sstp/tunnels/${tunnel.id}`) as SstpTunnel
+      setShowProvisionModal(false)
       setSelectedTunnel(data)
       setShowScriptModal(true)
     } catch (e: unknown) {
@@ -398,6 +412,7 @@ const SstpProvisioning: React.FC = () => {
     if (!confirm(`¿Regenerar credenciales para ${tunnel.router_name}? El script anterior dejará de funcionar.`)) return
     try {
       const data = await apiClient.post(`/sstp/tunnels/${tunnel.id}/regenerate`) as SstpTunnel
+      setShowProvisionModal(false)
       setSelectedTunnel(data)
       setShowScriptModal(true)
       showSuccess('Credenciales regeneradas. Aplica el nuevo script en el MikroTik.')
