@@ -26,6 +26,7 @@ from app.tenancy import current_tenant_id
 from app.services.sstp_service import (
     provision_sstp_tunnel,
     revoke_sstp_tunnel,
+    ensure_sstp_user,
     generate_mikrotik_sstp_script,
     generate_verification_script,
     ensure_sstp_certificate,
@@ -87,6 +88,25 @@ def create_tunnel():
 
     existing = SstpTunnel.query.filter_by(router_id=router.id, status='active').first()
     if existing:
+        try:
+            ensure_sstp_user(existing.username, existing.password)
+            prov = {
+                'username': existing.username,
+                'password': existing.password,
+                'server_host': existing.server_host,
+                'server_port': existing.server_port,
+                'server_ip': existing.server_ip,
+                'client_ip': existing.client_ip,
+                'fingerprint': get_certificate_fingerprint(),
+                'router_name': router.name,
+                'provisioned_at': existing.created_at.isoformat() if existing.created_at else '',
+            }
+            result = existing.to_dict(include_password=True)
+            result['script'] = generate_mikrotik_sstp_script(prov)
+            result['message'] = 'Tunel SSTP existente autoreparado y sincronizado con SoftEther'
+            return jsonify(result), 200
+        except Exception as exc:
+            logger.warning(f"No se pudo autoreparar el tunel SSTP existente {existing.id}: {exc}")
         return jsonify({
             'error': 'Este router ya tiene un tunel SSTP activo',
             'tunnel': existing.to_dict()
@@ -203,13 +223,11 @@ def regenerate_tunnel(tunnel_id):
         revoke_sstp_tunnel(tunnel.username)
 
         new_password = _generate_password(20)
+        ensure_sstp_user(tunnel.username, new_password)
         tunnel.password = new_password
         tunnel.status = 'active'
         tunnel.revoked_at = None
         db.session.commit()
-
-        from app.services.sstp_service import _update_chap_secrets
-        _update_chap_secrets(tunnel.username, new_password)
 
         prov = {
             'username': tunnel.username,

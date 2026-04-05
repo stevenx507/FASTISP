@@ -126,6 +126,40 @@ def _softether_available() -> bool:
         return False
 
 
+def _softether_user_exists(username: str) -> bool:
+    """Verifica si el usuario SSTP existe en SoftEther."""
+    if not username or not _softether_available():
+        return False
+
+    result = _run_softether_cmd("user_exists", username)
+    if not result["success"]:
+        return False
+
+    output = (result.get("output") or "").lower()
+    return '"exists": true' in output
+
+
+def ensure_sstp_user(username: str, password: str) -> dict:
+    """Asegura que un usuario SSTP exista en SoftEther con la contraseña esperada."""
+    if not username:
+        raise RuntimeError("Username SSTP requerido")
+    if not password:
+        raise RuntimeError("Password SSTP requerido")
+    if not _softether_available():
+        raise RuntimeError("SoftEther no disponible")
+
+    if _softether_user_exists(username):
+        result = _run_softether_cmd("update_password", username, password)
+        if not result["success"]:
+            raise RuntimeError(f"No se pudo actualizar password SSTP: {result['error']}")
+        return {"username": username, "password": password, "action": "password_updated"}
+
+    result = _run_softether_cmd("create_user", username, password)
+    if not result["success"]:
+        raise RuntimeError(f"No se pudo crear usuario SSTP: {result['error']}")
+    return {"username": username, "password": password, "action": "created"}
+
+
 # ── API pública ────────────────────────────────────────────────────────────────
 
 def provision_sstp_tunnel(router) -> dict:
