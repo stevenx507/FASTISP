@@ -220,10 +220,22 @@ def regenerate_tunnel(tunnel_id):
         return jsonify({'error': 'Acceso denegado'}), 403
 
     try:
-        revoke_sstp_tunnel(tunnel.username)
-
         new_password = _generate_password(20)
-        ensure_sstp_user(tunnel.username, new_password)
+
+        # Try to sync with SoftEther, but do NOT block regeneration if unavailable.
+        softether_synced = False
+        softether_warning = None
+        try:
+            revoke_sstp_tunnel(tunnel.username)
+            ensure_sstp_user(tunnel.username, new_password)
+            softether_synced = True
+        except Exception as se_exc:
+            softether_warning = (
+                f"Credenciales actualizadas en BD, pero SoftEther no pudo sincronizarse: {se_exc}. "
+                "El tunel SSTP se activara cuando SoftEther este disponible o al reprovisionarlo."
+            )
+            logger.warning(f"SoftEther sync failed during regenerate for tunnel {tunnel_id}: {se_exc}")
+
         tunnel.password = new_password
         tunnel.status = 'active'
         tunnel.revoked_at = None
@@ -244,7 +256,11 @@ def regenerate_tunnel(tunnel_id):
 
         result = tunnel.to_dict(include_password=True)
         result['script'] = script
-        result['message'] = 'Credenciales regeneradas exitosamente'
+        result['softether_synced'] = softether_synced
+        result['message'] = (
+            softether_warning if softether_warning
+            else 'Credenciales regeneradas exitosamente'
+        )
 
         return jsonify(result)
 
