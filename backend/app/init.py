@@ -220,10 +220,12 @@ def create_app(config_name_or_class='development'):
     @app.errorhandler(404)
     def not_found(error):
         return jsonify({'error': 'Not found'}), 404
-    
+
     @app.errorhandler(500)
     def internal_error(error):
-        app.logger.error(f'Server Error: {error}')
+        import traceback as _tb
+        app.logger.error(f'Server Error: {error}\n{_tb.format_exc()}')
+        db.session.rollback()
         return jsonify({'error': 'Internal server error'}), 500
     
     @app.errorhandler(429)
