@@ -44,8 +44,10 @@ RUN pip install --no-cache-dir --find-links=/wheels /wheels/*
 # Copy application code
 COPY . .
 
-# Create non-root user
-RUN useradd -m -u 1000 ispmax && chown -R ispmax:ispmax /app
+# Create non-root user (add to docker group for socket access)
+RUN groupadd -g 999 docker 2>/dev/null || true && \
+    useradd -m -u 1000 -G docker ispmax && \
+    chown -R ispmax:ispmax /app
 USER ispmax
 
 # Expose port
