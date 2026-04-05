@@ -207,55 +207,138 @@ except Exception as e:
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# 5. MikroTik API (si se pasan ROUTER_IP / ROUTER_USER / ROUTER_PASS)
+# 5. Sesiones activas en SoftEther (VPN IPs asignadas)
+# ════════════════════════════════════════════════════════════════════════════
+sep("5. Sesiones SSTP activas en SoftEther")
+
+if softether_running:
+    try:
+        r = subprocess.run(
+            ["docker", "exec", SOFTETHER_CONTAINER, "/vpncmd_api.sh", "list_sessions"],
+            capture_output=True, text=True, timeout=15
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            lines = [l for l in r.stdout.strip().splitlines() if l.strip()]
+            session_lines = [l for l in lines if "SES" in l or "sstp" in l.lower() or "VPN" in l]
+            check("Sesiones SSTP activas encontradas", bool(session_lines),
+                  f"{len(session_lines)} sesion(es)" if session_lines else "Ninguna — MikroTik no ha conectado aun")
+            if session_lines:
+                info("Sesiones activas:")
+                for s in session_lines[:5]:
+                    info(f"  {s.strip()}")
+        else:
+            check("Consulta de sesiones SoftEther", False,
+                  r.stderr.strip()[:80] or "sin respuesta")
+    except Exception as e:
+        check("Consulta de sesiones", False, str(e)[:80])
+
+    # Listar usuarios en SoftEther
+    try:
+        r = subprocess.run(
+            ["docker", "exec", SOFTETHER_CONTAINER, "/vpncmd_api.sh", "list_users"],
+            capture_output=True, text=True, timeout=15
+        )
+        if r.returncode == 0:
+            try:
+                data = json.loads(r.stdout)
+                users = data.get("users", [])
+                check("Usuarios SSTP en SoftEther", True,
+                      f"{len(users)} usuario(s): {', '.join(users[:5]) if users else 'ninguno'}")
+            except json.JSONDecodeError:
+                info(f"list_users raw: {r.stdout.strip()[:120]}")
+    except Exception as e:
+        check("Lista de usuarios SoftEther", False, str(e)[:80])
+else:
+    warn("SoftEther no disponible — no se pueden listar sesiones")
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# 6. MikroTik API (si se pasan ROUTER_IP / ROUTER_USER / ROUTER_PASS)
 # ════════════════════════════════════════════════════════════════════════════
 ROUTER_IP   = os.environ.get("ROUTER_IP", "")
 ROUTER_USER = os.environ.get("ROUTER_USER", "admin")
 ROUTER_PASS = os.environ.get("ROUTER_PASS", "")
 ROUTER_PORT = int(os.environ.get("ROUTER_PORT", "8728"))
 
-sep(f"5. MikroTik API ({ROUTER_IP or 'saltado — pasa ROUTER_IP=<ip>'})")
+
+def _is_private_ip(ip: str) -> bool:
+    try:
+        import ipaddress
+        return ipaddress.ip_address(ip).is_private
+    except Exception:
+        return False
+
+
+sep(f"6. MikroTik API ({ROUTER_IP or 'saltado — pasa ROUTER_IP=<ip>'}")
 
 if not ROUTER_IP:
-    warn("Pasa ROUTER_IP, ROUTER_USER y ROUTER_PASS para probar la conexión real")
-    warn("Ejemplo:")
-    warn(f"  docker exec -e ROUTER_IP=x.x.x.x -e ROUTER_USER=admin -e ROUTER_PASS=secret \\")
-    warn(f"    fastisp-backend python /app/scripts/test_sstp_mikrotik.py")
+    warn("Pasa ROUTER_IP, ROUTER_USER y ROUTER_PASS para probar la conexion real")
+    print()
+    print("  Si el router tiene IP PRIVADA (192.168.x / 172.x / 10.x):")
+    print("    El backend NO puede alcanzarlo directamente.")
+    print("    Debes pasar el VPN IP que SoftEther asignó (10.100.0.X)")
+    print()
+    print("  Ejemplo con VPN IP:")
+    print(f"    docker exec \\")
+    print(f"      -e ROUTER_IP=10.100.0.50 \\")
+    print(f"      -e ROUTER_USER=sstp-turouter-xxxx \\")
+    print(f"      -e ROUTER_PASS=TuPasswordSSTP \\")
+    print(f"      fastisp-backend python /app/scripts/test_sstp_mikrotik.py")
 else:
-    # TCP reachability
-    try:
-        s = socket.create_connection((ROUTER_IP, ROUTER_PORT), timeout=5)
-        s.close()
-        check(f"TCP {ROUTER_IP}:{ROUTER_PORT} alcanzable", True)
-    except OSError as e:
-        check(f"TCP {ROUTER_IP}:{ROUTER_PORT} alcanzable", False, str(e))
-        warn("Puede ser que /ip service set api address= esté restringido")
-        warn("Desde WinBox ejecuta: /ip service set api address=\"\"")
+    is_private = _is_private_ip(ROUTER_IP)
+    vpn_subnet  = os.environ.get("VPN_MGMT_SUBNET", "10.100.0.0/16")
 
-    # API login
-    try:
-        import routeros_api
-        pool = routeros_api.RouterOsApiPool(
-            host=ROUTER_IP,
-            username=ROUTER_USER,
-            password=ROUTER_PASS,
-            port=ROUTER_PORT,
-            plaintext_login=True,
-            use_ssl=False,
-            timeout=8,
-        )
-        api = pool.get_api()
-        identity = api.get_resource("/system/identity").get()
-        name = identity[0].get("name", "?") if identity else "?"
-        check("MikroTik API login exitoso", True, f"identity={name}")
+    if is_private and not ROUTER_IP.startswith("10.100."):
+        # IP privada que no es de la subred VPN
+        print()
+        print(f"  {YELLOW}{BOLD}⚠  ROUTER_IP {ROUTER_IP} es IP privada{RESET}")
+        print(f"  El backend en el VPS NO puede alcanzarla directamente.")
+        print(f"  Flujo correcto para router con IP privada:")
+        print(f"    1. Aplica el script SSTP en WinBox (conexion local)")
+        print(f"    2. Espera que el tunel SSTP conecte (~10s)")
+        print(f"    3. Revisa el VPN IP en WinBox:")
+        print(f"         /ip address print where interface=FastISPVPN")
+        print(f"    4. Actualiza la IP del router en el sistema al VPN IP (10.100.0.X)")
+        print(f"    5. Vuelve a correr este script con ROUTER_IP=10.100.0.X")
+        print()
+        warn("Saltando test de API (IP privada no alcanzable desde VPS)")
+        FAIL += 1
+    else:
+        # IP pública o VPN IP — probar conexión
+        try:
+            s = socket.create_connection((ROUTER_IP, ROUTER_PORT), timeout=5)
+            s.close()
+            check(f"TCP {ROUTER_IP}:{ROUTER_PORT} alcanzable", True)
+        except OSError as e:
+            check(f"TCP {ROUTER_IP}:{ROUTER_PORT} alcanzable", False, str(e))
+            if ROUTER_IP.startswith("10.100."):
+                warn("Tunel SSTP no conectado aun — verifica que el MikroTik ejecuto el script")
+            else:
+                warn("Verifica firewall y que /ip service api no tenga address= restringido")
 
-        version_info = api.get_resource("/system/resource").get()
-        ver = version_info[0].get("version", "?") if version_info else "?"
-        check("RouterOS version leída", True, f"version={ver}")
+        try:
+            import routeros_api
+            pool = routeros_api.RouterOsApiPool(
+                host=ROUTER_IP,
+                username=ROUTER_USER,
+                password=ROUTER_PASS,
+                port=ROUTER_PORT,
+                plaintext_login=True,
+                use_ssl=False,
+                timeout=8,
+            )
+            api = pool.get_api()
+            identity = api.get_resource("/system/identity").get()
+            name = identity[0].get("name", "?") if identity else "?"
+            check("MikroTik API login exitoso", True, f"identity={name}")
 
-        pool.disconnect()
-    except Exception as e:
-        check("MikroTik API login", False, str(e)[:120])
+            version_info = api.get_resource("/system/resource").get()
+            ver = version_info[0].get("version", "?") if version_info else "?"
+            check("RouterOS version leida", True, f"version={ver}")
+
+            pool.disconnect()
+        except Exception as e:
+            check("MikroTik API login", False, str(e)[:120])
 
 
 # ════════════════════════════════════════════════════════════════════════════
