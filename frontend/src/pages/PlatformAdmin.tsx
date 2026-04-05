@@ -243,6 +243,45 @@ const PlatformAdmin: React.FC = () => {
     return () => window.removeEventListener('keydown', handleEscape)
   }, [closeAllModals])
 
+  useEffect(() => {
+    const body = document.body
+    const html = document.documentElement
+
+    body.style.overflow = ''
+    body.style.pointerEvents = 'auto'
+    html.style.overflow = ''
+
+    const staleSelectors = [
+      '[data-headlessui-portal]',
+      '[id^="headlessui-portal-root"]',
+      '[data-radix-portal]',
+    ]
+
+    staleSelectors.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((node) => {
+        if (node instanceof HTMLElement) {
+          node.style.pointerEvents = 'none'
+        }
+      })
+    })
+
+    document.querySelectorAll('body > div').forEach((node) => {
+      if (!(node instanceof HTMLDivElement)) return
+      if (node.querySelector('[role="dialog"], [aria-modal="true"]')) return
+
+      const styles = window.getComputedStyle(node)
+      const isFullscreen = styles.position === 'fixed'
+        && styles.inset === '0px'
+      const hasDarkBackdrop = styles.backgroundColor === 'rgba(0, 0, 0, 0.6)'
+        || styles.backgroundColor === 'rgba(2, 6, 23, 0.7)'
+        || styles.backgroundColor === 'rgba(15, 23, 42, 0.7)'
+
+      if (isFullscreen || hasDarkBackdrop) {
+        node.style.pointerEvents = 'none'
+      }
+    })
+  }, [])
+
   const planCodes = useMemo(() => Object.keys(planTemplates), [planTemplates])
 
   const filteredTenants = useMemo(() => {
