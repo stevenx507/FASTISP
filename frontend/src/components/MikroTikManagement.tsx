@@ -569,7 +569,7 @@ const MikroTikManagement: React.FC = () => {
   const [routers, setRouters] = useState<RouterItem[]>([])
   const [selectedRouter, setSelectedRouter] = useState<RouterItem | null>(null)
   const [routerStats, setRouterStats] = useState<RouterStats | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'queues' | 'connections' | 'config' | 'security'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'queues' | 'connections' | 'config' | 'security' | 'traffic_flow'>('overview')
 
   const [isLoading, setIsLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)

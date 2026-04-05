@@ -8,7 +8,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = 'add_sstp_tunnels'
-down_revision = None
+down_revision = 'c12b0a6f4e9d'
 branch_labels = None
 depends_on = None
 
