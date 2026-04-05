@@ -20,10 +20,18 @@ RUN pip wheel --no-cache-dir --wheel-dir=/wheels -r requirements.txt
 # Stage 2: Production
 FROM python:3.11-slim-bookworm as production
 
-# Install only runtime system dependencies
+# Install only runtime system dependencies (incl. docker-cli for SoftEther exec)
 RUN apt-get update && apt-get install -y \
     postgresql-client \
     curl \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt-get update \
+    && apt-get install -y docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
