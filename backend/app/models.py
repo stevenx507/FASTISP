@@ -180,12 +180,12 @@ class Client(db.Model):
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
 
-    # ── Datos de Conexión (WispHub) ──────────────────────────────────────────
+    # ── Datos de Conexión ───────────────────────────────────────────────────
     remote_address_pppoe  = db.Column(db.String(45),  nullable=True)
     local_address_pppoe   = db.Column(db.String(45),  nullable=True)
     sectorial_nap         = db.Column(db.String(80),  nullable=True)
 
-    # ── Datos del Cliente (WispHub) ──────────────────────────────────────────
+    # ── Datos del Cliente ───────────────────────────────────────────────────
     apellido              = db.Column(db.String(80),  nullable=True)
     dni                   = db.Column(db.String(40),  nullable=True)
     phone                 = db.Column(db.String(30),  nullable=True)
@@ -196,7 +196,7 @@ class Client(db.Model):
     forma_contratacion    = db.Column(db.String(30),  nullable=True)
     external_id           = db.Column(db.String(80),  nullable=True)
 
-    # ── Facturación (WispHub) ────────────────────────────────────────────────
+    # ── Facturación ─────────────────────────────────────────────────────────
     tipo_cliente          = db.Column(db.String(20),  default='prepago',  nullable=True)
     dia_corte             = db.Column(db.Integer,     default=8,          nullable=True)
     dia_factura           = db.Column(db.Integer,     default=1,          nullable=True)
@@ -211,7 +211,7 @@ class Client(db.Model):
     correo_corte          = db.Column(db.Boolean,     default=True,       nullable=True)
     correo_facturas       = db.Column(db.Boolean,     default=True,       nullable=True)
 
-    # ── Configuración Avanzada (WispHub) ─────────────────────────────────────
+    # ── Configuración Avanzada ──────────────────────────────────────────────
     firewall_enabled      = db.Column(db.Boolean,     default=True,       nullable=True)
     sistema_id            = db.Column(db.String(80),  nullable=True)
     modelo_antena         = db.Column(db.String(80),  nullable=True)
@@ -355,7 +355,7 @@ class MikroTikRouter(db.Model):
     vpn_password_encrypted = db.Column(db.LargeBinary, nullable=True)
     vpn_ip_address = db.Column(db.String(45), nullable=True)
     vpn_provisioned_at = db.Column(db.DateTime, nullable=True)
-    # ── Campos extendidos WispHub-style ──────────────────────────────────────
+    # ── Campos extendidos ────────────────────────────────────────────────────
     wan_port              = db.Column(db.Integer, default=80, nullable=True)
     lan_interface         = db.Column(db.String(40), default='ether1', nullable=True)
     ip_ranges             = db.Column(db.Text, nullable=True)

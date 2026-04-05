@@ -262,7 +262,7 @@ def ensure_sstp_certificate() -> dict:
 def generate_mikrotik_sstp_script(prov: dict) -> str:
     """
     Genera el script .rsc de MikroTik para configurar el túnel SSTP hacia FastISP.
-    Inspirado en el enfoque de WispHub: limpieza, usuario local, scheduler de reconexión.
+    Genera script de configuracion: limpieza, usuario local, scheduler de reconexion.
     Compatible con RouterOS 6.x y 7.x.
     """
     username = prov.get("username", "")

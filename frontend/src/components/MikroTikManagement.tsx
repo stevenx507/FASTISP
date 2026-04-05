@@ -416,7 +416,7 @@ interface RouterFormState {
   username: string
   password: string
   api_port: string
-  // WispHub extended fields
+  // Campos extendidos
   wan_port: string
   lan_interface: string
   ip_ranges: string
@@ -2156,7 +2156,7 @@ const MikroTikManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Editor Router Modal (WispHub-style) ── */}
+      {/* ── Editor Router Modal ── */}
       {showRouterModal && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 py-8 px-4">
           <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
@@ -2317,7 +2317,7 @@ const MikroTikManagement: React.FC = () => {
                     />
                   </div>
 
-                  {/* Feature toggles grid (WispHub-style) */}
+                  {/* Feature toggles grid */}
                   <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                     <p className="mb-3 text-xs font-bold text-gray-700 uppercase tracking-wide">Funcionalidades</p>
                     <div className="grid grid-cols-2 gap-y-3 gap-x-4 sm:grid-cols-3">
@@ -2446,7 +2446,7 @@ const MikroTikManagement: React.FC = () => {
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow">
         <h3 className="mb-3 text-lg font-semibold text-gray-900">Lista Routers</h3>
 
-        {/* WispHub-style table */}
+        {/* Tabla de routers */}
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
@@ -2524,7 +2524,7 @@ const MikroTikManagement: React.FC = () => {
             <AIDiagnosis isLoading={isAiLoading} analysis={aiAnalysis} error={aiError} />
           </div>
 
-          {/* ── Herramientas toolbar (WispHub-style) ── */}
+          {/* ── Herramientas toolbar ── */}
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
             <div className="flex items-center gap-2">
               <ServerIcon className="h-4 w-4 text-gray-500" />
@@ -3289,7 +3289,7 @@ const MikroTikManagement: React.FC = () => {
                       <div>
                         <h4 className="text-lg font-bold text-gray-900">📊 Script de Traffic Flow</h4>
                         <p className="mt-0.5 text-xs text-gray-500">
-                          Equivalente al Traffic Flow de WispHub. Habilita NetFlow v5 en el MikroTik para enviar métricas de consumo por cliente a FASTISP.
+                          Habilita NetFlow v5 en el MikroTik para enviar métricas de consumo por cliente a FASTISP.
                         </p>
                         {tfCollector && (
                           <p className="mt-1 text-xs text-emerald-700 font-mono">
@@ -3463,7 +3463,7 @@ const MikroTikManagement: React.FC = () => {
 
                     {/* Instructions */}
                     <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 space-y-1">
-                      <p className="font-semibold">📌 Instrucciones (igual que WispHub):</p>
+                      <p className="font-semibold">📌 Instrucciones:</p>
                       <p>1. Genera los scripts con el botón de arriba.</p>
                       <p>2. Copia el script correspondiente a tu versión de RouterOS.</p>
                       <p>3. En Winbox → New Terminal → pega el script → Enter.</p>

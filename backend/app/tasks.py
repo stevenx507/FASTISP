@@ -259,7 +259,6 @@ def execute_router_operation(self, router_id: int, operation: str, payload: Opti
 def enforce_billing_status() -> Dict[str, Any]:
     """
     Auto-suspende clientes vencidos y reactiva los que volvieron a 'active'.
-    Inspirado en cortes automaticos de Wispro/Wisphub.
     """
     today = datetime.utcnow().date()
     updated: List[Dict[str, Any]] = []

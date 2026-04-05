@@ -1,14 +1,14 @@
 """
 traffic_flow_service.py — Servicio de Traffic Flow para FASTISP
 ================================================================
-Equivalente al "Script de Traffic Flow" de WispHub.
+Servicio de recoleccion NetFlow v5 para monitoreo de consumo por cliente.
 
 Arquitectura:
   MikroTik → ip traffic-flow (NetFlow v5 UDP) → FASTISP Collector (VPS)
   Collector → parsea paquetes → guarda en TrafficFlowStats (DB)
   API → consulta stats → frontend muestra consumo por cliente
 
-Scripts generados (compatibles con WispHub):
+Scripts generados (compatibles con RouterOS 6.x y 7.x):
   - RouterOS 6.x: un solo target sin src-address
   - RouterOS 7.x Opción 1: targets por IP de puerta de enlace LAN
   - RouterOS 7.x Opción 2: targets por IP de puerta de enlace WAN
@@ -40,7 +40,6 @@ _RECORD_SIZE   = struct.calcsize(_V5_RECORD_FMT)
 def generate_traffic_flow_script_ros6(router_name: str = "router") -> str:
     """
     Script para RouterOS 6 o inferior (sin src-address en target).
-    Equivalente exacto al WispHub para ROS6.
     """
     return (
         f"# Traffic Flow FASTISP — {router_name} — RouterOS 6.x\n"
@@ -62,7 +61,6 @@ def generate_traffic_flow_script_ros7_lan(
 ) -> str:
     """
     Script para RouterOS 7+ — Opción 1: targets por IP de puerta de enlace LAN.
-    Equivalente al 'Ejemplo de la opción 1' de WispHub.
     """
     gateways = lan_gateways or ["<IP_Puerta_Enlace_LAN1>", "<IP_Puerta_Enlace_LAN2>"]
     header = (
@@ -88,7 +86,6 @@ def generate_traffic_flow_script_ros7_wan(
 ) -> str:
     """
     Script para RouterOS 7+ — Opción 2: targets por IP de puerta de enlace WAN.
-    Equivalente al 'Ejemplo de la opción 2' de WispHub.
     """
     gateways = wan_gateways or ["<IP_Puerta_Enlace_WAN1>", "<IP_Puerta_Enlace_WAN2>"]
     header = (

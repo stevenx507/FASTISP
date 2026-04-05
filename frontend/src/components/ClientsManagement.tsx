@@ -147,7 +147,7 @@ const ClientsManagement: React.FC = () => {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(emptyClientForm)
   const [clientTab, setClientTab] = useState<1|2|3|4>(1)
-  // WispHub-style additions
+  // Selección masiva y acciones
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [bulkAction, setBulkAction] = useState('')
   const [runningBulk, setRunningBulk] = useState(false)
