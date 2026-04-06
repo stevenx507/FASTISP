@@ -83,7 +83,8 @@ def _run_softether_cmd(cmd: str, username: str = "", password: str = "") -> dict
             args,
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=60,
+            stdin=subprocess.DEVNULL
         )
 
         output = result.stdout.strip()
@@ -119,7 +120,8 @@ def _softether_available() -> bool:
     try:
         result = subprocess.run(
             ["docker", "inspect", "--format", "{{.State.Running}}", SOFTETHER_CONTAINER],
-            capture_output=True, text=True, timeout=5
+            capture_output=True, text=True, timeout=10,
+            stdin=subprocess.DEVNULL
         )
         return result.stdout.strip() == "true"
     except Exception:
@@ -261,7 +263,8 @@ def get_certificate_fingerprint() -> str:
              "/opt/vpnserver/vpncmd", f"localhost:{SOFTETHER_MGMT_PORT}",
              "/SERVER", f"/PASSWORD:{SOFTETHER_ADMIN_PASSWORD}",
              "/CMD", "ServerCertGet", "/SAVECERT:/tmp/server.crt"],
-            capture_output=True, text=True, timeout=10
+            capture_output=True, text=True, timeout=30,
+            stdin=subprocess.DEVNULL
         )
 
         # Obtener fingerprint del certificado
@@ -269,7 +272,8 @@ def get_certificate_fingerprint() -> str:
             ["docker", "exec", SOFTETHER_CONTAINER,
              "openssl", "x509", "-in", "/tmp/server.crt",
              "-fingerprint", "-sha256", "-noout"],
-            capture_output=True, text=True, timeout=10
+            capture_output=True, text=True, timeout=15,
+            stdin=subprocess.DEVNULL
         )
 
         if fp_result.returncode == 0:
@@ -352,7 +356,7 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
 # --- Habilitar API en el router (sin restringir por direccion) ---
 /ip service set api port=8728 disabled=no
 # --- Scheduler de reconexion diaria ---
-/system scheduler add comment="FastISP-Reconnect" interval=1d name="{scheduler_name}" on-event=":do {{/interface sstp-client disable {iface_name}}} on-error={{}}\r\n:delay 4s\r\n:do {{/interface sstp-client enable {iface_name}}} on-error={{}}\r\n:log info \\"FastISP VPN reconectado\\""
+/system scheduler add comment="FastISP-Reconnect" interval=1d name="{scheduler_name}" on-event=":do {{/interface sstp-client disable {iface_name}}} on-error={{}}; :delay 4s; :do {{/interface sstp-client enable {iface_name}}} on-error={{}}; :log info \\"FastISP VPN reconectado\\""
 :log info "FastISP VPN configurado para {router_name}. Generado: {provisioned_at}"
 """
     return script
