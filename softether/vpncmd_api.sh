@@ -31,7 +31,7 @@ HUB_PASS="${SOFTETHER_HUB_PASSWORD:-FastISP_Hub_2026!}"
 
 run_vpncmd() {
   local output
-  output=$($VPNCMD "$HOST" /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD "$@" exit 2>&1)
+  output=$(echo "$@" | $VPNCMD "$HOST" /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1)
   local status=$?
   echo "$output"
   if [ $status -ne 0 ]; then
@@ -71,10 +71,9 @@ case "$CMD" in
       exit 1
     fi
     # Desconectar sesiones activas del usuario
-    $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD SessionList exit 2>&1 | \
+    echo "SessionList" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1 | \
       grep -i "$USERNAME" | awk '{print $1}' | while read session; do
-        $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD SessionDelete \
-          /NAME:"$session" exit 2>&1 || true
+        echo "SessionDelete /NAME:$session" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1 || true
       done
     # Eliminar usuario
     DELETE_OUTPUT=$(run_vpncmd UserDelete "$USERNAME") || {
@@ -101,8 +100,7 @@ case "$CMD" in
       echo '{"error": "username requerido"}' >&2
       exit 1
     fi
-    RESULT=$($VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD UserGet \
-      "$USERNAME" exit 2>&1)
+    RESULT=$(echo "UserGet $USERNAME" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1)
     if echo "$RESULT" | grep -q "User Name"; then
       echo '{"exists": true, "username": "'"$USERNAME"'"}'
     else
@@ -111,13 +109,13 @@ case "$CMD" in
     ;;
 
   list_users)
-    OUTPUT=$($VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD UserList exit 2>&1)
+    OUTPUT=$(echo "UserList" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1)
     USERS=$(echo "$OUTPUT" | grep "^User Name" | awk -F': ' '{print $2}' | tr '\n' ',' | sed 's/,$//')
     echo '{"users": ['"$(echo $USERS | sed 's/,/","/g' | sed 's/^/"/' | sed 's/$/"/')"']}'
     ;;
 
   list_sessions)
-    OUTPUT=$($VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD SessionList exit 2>&1)
+    OUTPUT=$(echo "SessionList" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1)
     echo "$OUTPUT"
     ;;
 
@@ -126,17 +124,16 @@ case "$CMD" in
       echo '{"error": "username requerido"}' >&2
       exit 1
     fi
-    $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD SessionList exit 2>&1 | \
+    echo "SessionList" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1 | \
       grep -i "$USERNAME" | awk '{print $1}' | while read session; do
-        $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD SessionDelete \
-          /NAME:"$session" exit 2>&1
+        echo "SessionDelete /NAME:$session" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1
       done
     echo '{"status": "ok", "action": "kicked", "username": "'"$USERNAME"'"}'
     ;;
 
   server_status)
-    OUTPUT=$($VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /CMD ServerStatus exit 2>&1)
-    SESSIONS=$($VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" /CMD SessionList exit 2>&1 | grep -c "^SES" || echo 0)
+    OUTPUT=$(echo "ServerStatus" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" 2>&1)
+    SESSIONS=$(echo "SessionList" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1 | grep -c "^SES" || echo 0)
     echo '{"status": "running", "active_sessions": '"$SESSIONS"'}'
     ;;
 
