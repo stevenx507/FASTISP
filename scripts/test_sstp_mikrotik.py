@@ -231,18 +231,19 @@ if softether_running:
             capture_output=True, text=True, timeout=60,
             stdin=subprocess.DEVNULL
         )
-        if r.returncode == 0 and r.stdout.strip():
-            lines = [l for l in r.stdout.strip().splitlines() if l.strip()]
+        if r.returncode == 0:
+            lines = [l for l in (r.stdout or "").strip().splitlines() if l.strip()]
             session_lines = [l for l in lines if "SES" in l or "sstp" in l.lower() or "VPN" in l]
-            check("Sesiones SSTP activas encontradas", bool(session_lines),
-                  f"{len(session_lines)} sesion(es)" if session_lines else "Ninguna — MikroTik no ha conectado aun")
             if session_lines:
-                info("Sesiones activas:")
+                check("Sesiones SSTP activas", True, f"{len(session_lines)} sesion(es)")
                 for s in session_lines[:5]:
                     info(f"  {s.strip()}")
+            else:
+                check("Consulta de sesiones SoftEther", True,
+                      "0 sesiones — ningún MikroTik conectado aún")
         else:
             check("Consulta de sesiones SoftEther", False,
-                  r.stderr.strip()[:80] or "sin respuesta")
+                  r.stderr.strip()[:80] or "vpncmd_api.sh retornó error")
     except Exception as e:
         check("Consulta de sesiones", False, str(e)[:80])
 
