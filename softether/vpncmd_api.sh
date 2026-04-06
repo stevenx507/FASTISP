@@ -109,7 +109,8 @@ case "$CMD" in
     ;;
 
   server_status)
-    SESSIONS=$(run_vpncmd_hub "SessionList" | grep -c "^SES" || echo 0)
+    SESSIONS=$(run_vpncmd_hub "SessionList" | { grep -c "^SES" || true; })
+    [ -z "$SESSIONS" ] && SESSIONS=0
     echo '{"status":"running","active_sessions":'"$SESSIONS"'}'
     ;;
 
