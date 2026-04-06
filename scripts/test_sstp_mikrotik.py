@@ -18,6 +18,7 @@ import sys
 import subprocess
 import socket
 import json
+import time
 from datetime import datetime
 
 # ── Colores de terminal ──────────────────────────────────────────────────────
@@ -119,25 +120,31 @@ if softether_running:
     except Exception as e:
         check("vpncmd_api.sh ejecutable en container", False, str(e)[:80])
 
-    # Verificar que vpncmd binario existe
-    try:
-        r = subprocess.run(
-            ["docker", "exec", SOFTETHER_CONTAINER, "sh", "-c",
-             "ls /usr/vpnserver/vpncmd /opt/vpnserver/vpncmd 2>/dev/null | head -1"],
-            capture_output=True, text=True, timeout=15,
-            stdin=subprocess.DEVNULL
-        )
-        vpncmd_path = r.stdout.strip()
-        check("vpncmd binario encontrado en container", bool(vpncmd_path),
-              vpncmd_path or "No encontrado en /usr/vpnserver ni /opt/vpnserver")
-    except Exception as e:
-        check("vpncmd binario encontrado", False, str(e)[:80])
+    # Verificar que vpncmd binario existe (test -f avoids sh -c pipe hangs)
+    vpncmd_found = False
+    for vpncmd_candidate in ["/usr/vpnserver/vpncmd", "/opt/vpnserver/vpncmd"]:
+        try:
+            r = subprocess.run(
+                ["docker", "exec", SOFTETHER_CONTAINER, "test", "-x", vpncmd_candidate],
+                capture_output=True, text=True, timeout=15,
+                stdin=subprocess.DEVNULL
+            )
+            if r.returncode == 0:
+                vpncmd_found = True
+                check("vpncmd binario encontrado en container", True, vpncmd_candidate)
+                break
+        except Exception:
+            pass
+    if not vpncmd_found:
+        check("vpncmd binario encontrado en container", False,
+              "No encontrado en /usr/vpnserver ni /opt/vpnserver")
 
-    # Test server_status via vpncmd_api.sh
+    # Test server_status via vpncmd_api.sh (give vpncmd time to warm up)
+    time.sleep(2)
     try:
         r = subprocess.run(
             ["docker", "exec", SOFTETHER_CONTAINER, "/vpncmd_api.sh", "server_status"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, timeout=60,
             stdin=subprocess.DEVNULL
         )
         status_ok = r.returncode == 0 and '"status"' in r.stdout
@@ -217,10 +224,11 @@ except Exception as e:
 sep("5. Sesiones SSTP activas en SoftEther")
 
 if softether_running:
+    time.sleep(2)
     try:
         r = subprocess.run(
             ["docker", "exec", SOFTETHER_CONTAINER, "/vpncmd_api.sh", "list_sessions"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, timeout=60,
             stdin=subprocess.DEVNULL
         )
         if r.returncode == 0 and r.stdout.strip():
@@ -239,10 +247,11 @@ if softether_running:
         check("Consulta de sesiones", False, str(e)[:80])
 
     # Listar usuarios en SoftEther
+    time.sleep(2)
     try:
         r = subprocess.run(
             ["docker", "exec", SOFTETHER_CONTAINER, "/vpncmd_api.sh", "list_users"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, timeout=60,
             stdin=subprocess.DEVNULL
         )
         if r.returncode == 0:
