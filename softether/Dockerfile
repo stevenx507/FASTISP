@@ -8,7 +8,9 @@ COPY vpncmd_api.sh /vpncmd_api.sh
 COPY configure.sh /configure.sh
 COPY entrypoint.sh /entrypoint.sh
 
-RUN chmod +x /vpncmd_api.sh /configure.sh /entrypoint.sh
+# Strip Windows CRLF line endings and set executable
+RUN sed -i 's/\r$//' /vpncmd_api.sh /configure.sh /entrypoint.sh && \
+    chmod +x /vpncmd_api.sh /configure.sh /entrypoint.sh
 
 # Puertos:
 # 443  - SSTP/HTTPS

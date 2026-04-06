@@ -1,15 +1,9 @@
 #!/bin/bash
 # vpncmd_api.sh - API shell para gestionar usuarios SSTP en SoftEther
-# Usado por el backend de FASTISP para provisionar/revocar túneles
+# Usado por el backend de FASTISP para provisionar/revocar tuneles
 #
-# Uso:
-#   vpncmd_api.sh create_user <username> <password>
-#   vpncmd_api.sh delete_user <username>
-#   vpncmd_api.sh list_users
-#   vpncmd_api.sh user_exists <username>
-#   vpncmd_api.sh list_sessions
-#   vpncmd_api.sh kick_user <username>
-#   vpncmd_api.sh server_status
+# FIX: vpncmd no sale con EOF de stdin. Se usa printf "cmd\nexit\n" para
+#      forzar terminacion, y timeout como red de seguridad.
 
 VPNCMD=""
 for candidate in /usr/vpnserver/vpncmd /opt/vpnserver/vpncmd /usr/local/vpnserver/vpncmd; do
@@ -20,7 +14,7 @@ for candidate in /usr/vpnserver/vpncmd /opt/vpnserver/vpncmd /usr/local/vpnserve
 done
 
 if [ -z "$VPNCMD" ]; then
-  echo '{"error": "vpncmd binary not found in container"}' >&2
+  echo '{"error":"vpncmd not found"}' >&2
   exit 1
 fi
 
@@ -28,16 +22,29 @@ HOST="localhost:${SOFTETHER_MGMT_PORT:-5555}"
 ADMIN_PASS="${SOFTETHER_ADMIN_PASSWORD:-FastISP_VPN_2026!}"
 HUB="${SOFTETHER_HUB_NAME:-FASTISP}"
 HUB_PASS="${SOFTETHER_HUB_PASSWORD:-FastISP_Hub_2026!}"
+TIMEOUT_SEC=15
 
-run_vpncmd() {
+# run_vpncmd_hub CMD [ARGS...]
+# Envia comando al hub, fuerza exit, mata si excede timeout
+run_vpncmd_hub() {
+  local cmd="$*"
   local output
-  output=$(echo "$@" | $VPNCMD "$HOST" /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1)
-  local status=$?
+  output=$(printf '%s\nexit\n' "$cmd" | timeout "$TIMEOUT_SEC" "$VPNCMD" "$HOST" /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1) || true
   echo "$output"
-  if [ $status -ne 0 ]; then
-    return $status
+  if echo "$output" | grep -qi "error occurred"; then
+    return 1
   fi
-  if echo "$output" | grep -Eqi "error occurred|error:|failed"; then
+  return 0
+}
+
+# run_vpncmd_server CMD [ARGS...]
+# Igual pero sin hub (para comandos de nivel servidor)
+run_vpncmd_server() {
+  local cmd="$*"
+  local output
+  output=$(printf '%s\nexit\n' "$cmd" | timeout "$TIMEOUT_SEC" "$VPNCMD" "$HOST" /SERVER /PASSWORD:"$ADMIN_PASS" 2>&1) || true
+  echo "$output"
+  if echo "$output" | grep -qi "error occurred"; then
     return 1
   fi
   return 0
@@ -50,95 +57,64 @@ PASSWORD="$3"
 case "$CMD" in
 
   create_user)
-    if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
-      echo '{"error": "username y password requeridos"}' >&2
-      exit 1
-    fi
-    CREATE_OUTPUT=$(run_vpncmd UserCreate "$USERNAME" /GROUP:none /REALNAME:"MikroTik SSTP" /NOTE:"Provisioned by FASTISP") || {
-      echo "$CREATE_OUTPUT" >&2
-      exit 1
-    }
-    PASSWORD_OUTPUT=$(run_vpncmd UserPasswordSet "$USERNAME" /PASSWORD:"$PASSWORD") || {
-      echo "$PASSWORD_OUTPUT" >&2
-      exit 1
-    }
-    echo '{"status": "ok", "action": "created", "username": "'"$USERNAME"'"}'
+    [ -z "$USERNAME" ] || [ -z "$PASSWORD" ] && { echo '{"error":"username y password requeridos"}' >&2; exit 1; }
+    run_vpncmd_hub "UserCreate $USERNAME /GROUP:none /REALNAME:MikroTik_SSTP /NOTE:FASTISP" > /dev/null 2>&1
+    run_vpncmd_hub "UserPasswordSet $USERNAME /PASSWORD:$PASSWORD" > /dev/null 2>&1
+    echo '{"status":"ok","action":"created","username":"'"$USERNAME"'"}'
     ;;
 
   delete_user)
-    if [ -z "$USERNAME" ]; then
-      echo '{"error": "username requerido"}' >&2
-      exit 1
-    fi
-    # Desconectar sesiones activas del usuario
-    echo "SessionList" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1 | \
-      grep -i "$USERNAME" | awk '{print $1}' | while read session; do
-        echo "SessionDelete /NAME:$session" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1 || true
-      done
-    # Eliminar usuario
-    DELETE_OUTPUT=$(run_vpncmd UserDelete "$USERNAME") || {
-      echo "$DELETE_OUTPUT" >&2
-      exit 1
-    }
-    echo '{"status": "ok", "action": "deleted", "username": "'"$USERNAME"'"}'
+    [ -z "$USERNAME" ] && { echo '{"error":"username requerido"}' >&2; exit 1; }
+    SESSIONS_OUT=$(run_vpncmd_hub "SessionList")
+    echo "$SESSIONS_OUT" | grep -i "$USERNAME" | awk '{print $1}' | while read -r session; do
+      [ -n "$session" ] && run_vpncmd_hub "SessionDisconnect $session" > /dev/null 2>&1 || true
+    done
+    run_vpncmd_hub "UserDelete $USERNAME" > /dev/null 2>&1
+    echo '{"status":"ok","action":"deleted","username":"'"$USERNAME"'"}'
     ;;
 
   update_password)
-    if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
-      echo '{"error": "username y password requeridos"}' >&2
-      exit 1
-    fi
-    PASSWORD_OUTPUT=$(run_vpncmd UserPasswordSet "$USERNAME" /PASSWORD:"$PASSWORD") || {
-      echo "$PASSWORD_OUTPUT" >&2
-      exit 1
-    }
-    echo '{"status": "ok", "action": "password_updated", "username": "'"$USERNAME"'"}'
+    [ -z "$USERNAME" ] || [ -z "$PASSWORD" ] && { echo '{"error":"username y password requeridos"}' >&2; exit 1; }
+    run_vpncmd_hub "UserPasswordSet $USERNAME /PASSWORD:$PASSWORD" > /dev/null 2>&1
+    echo '{"status":"ok","action":"password_updated","username":"'"$USERNAME"'"}'
     ;;
 
   user_exists)
-    if [ -z "$USERNAME" ]; then
-      echo '{"error": "username requerido"}' >&2
-      exit 1
-    fi
-    RESULT=$(echo "UserGet $USERNAME" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1)
+    [ -z "$USERNAME" ] && { echo '{"error":"username requerido"}' >&2; exit 1; }
+    RESULT=$(run_vpncmd_hub "UserGet $USERNAME" 2>&1)
     if echo "$RESULT" | grep -q "User Name"; then
-      echo '{"exists": true, "username": "'"$USERNAME"'"}'
+      echo '{"exists":true,"username":"'"$USERNAME"'"}'
     else
-      echo '{"exists": false, "username": "'"$USERNAME"'"}'
+      echo '{"exists":false,"username":"'"$USERNAME"'"}'
     fi
     ;;
 
   list_users)
-    OUTPUT=$(echo "UserList" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1)
-    USERS=$(echo "$OUTPUT" | grep "^User Name" | awk -F': ' '{print $2}' | tr '\n' ',' | sed 's/,$//')
-    echo '{"users": ['"$(echo $USERS | sed 's/,/","/g' | sed 's/^/"/' | sed 's/$/"/')"']}'
+    OUTPUT=$(run_vpncmd_hub "UserList")
+    USERS=$(echo "$OUTPUT" | grep "User Name" | awk -F'|' '{gsub(/^ +| +$/,"",$2); print $2}' | while read -r u; do [ -n "$u" ] && printf '"%s",' "$u"; done | sed 's/,$//')
+    echo '{"users":['"$USERS"']}'
     ;;
 
   list_sessions)
-    OUTPUT=$(echo "SessionList" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1)
-    echo "$OUTPUT"
+    run_vpncmd_hub "SessionList"
     ;;
 
   kick_user)
-    if [ -z "$USERNAME" ]; then
-      echo '{"error": "username requerido"}' >&2
-      exit 1
-    fi
-    echo "SessionList" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1 | \
-      grep -i "$USERNAME" | awk '{print $1}' | while read session; do
-        echo "SessionDelete /NAME:$session" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1
-      done
-    echo '{"status": "ok", "action": "kicked", "username": "'"$USERNAME"'"}'
+    [ -z "$USERNAME" ] && { echo '{"error":"username requerido"}' >&2; exit 1; }
+    SESSIONS_OUT=$(run_vpncmd_hub "SessionList")
+    echo "$SESSIONS_OUT" | grep -i "$USERNAME" | awk '{print $1}' | while read -r session; do
+      [ -n "$session" ] && run_vpncmd_hub "SessionDisconnect $session" > /dev/null 2>&1 || true
+    done
+    echo '{"status":"ok","action":"kicked","username":"'"$USERNAME"'"}'
     ;;
 
   server_status)
-    OUTPUT=$(echo "ServerStatus" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" 2>&1)
-    SESSIONS=$(echo "SessionList" | $VPNCMD $HOST /SERVER /PASSWORD:"$ADMIN_PASS" /HUB:"$HUB" /PASSWORD:"$HUB_PASS" 2>&1 | grep -c "^SES" || echo 0)
-    echo '{"status": "running", "active_sessions": '"$SESSIONS"'}'
+    SESSIONS=$(run_vpncmd_hub "SessionList" | grep -c "^SES" || echo 0)
+    echo '{"status":"running","active_sessions":'"$SESSIONS"'}'
     ;;
 
   *)
-    echo '{"error": "Comando desconocido: '"$CMD"'", "available": ["create_user", "delete_user", "update_password", "user_exists", "list_users", "list_sessions", "kick_user", "server_status"]}' >&2
+    echo '{"error":"Comando desconocido: '"$CMD"'"}' >&2
     exit 1
     ;;
 esac

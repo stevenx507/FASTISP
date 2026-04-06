@@ -48,7 +48,7 @@ sleep 8
 
 MAX_WAIT=20
 COUNT=0
-while ! $VPNCMD_BIN localhost:$SOFTETHER_MGMT_PORT /SERVER /CMD About > /dev/null 2>&1; do
+while ! timeout 10 $VPNCMD_BIN localhost:$SOFTETHER_MGMT_PORT /SERVER /CMD About > /dev/null 2>&1; do
     sleep 3
     COUNT=$((COUNT + 1))
     echo "  Intento $COUNT/$MAX_WAIT..."
