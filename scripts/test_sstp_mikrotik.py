@@ -193,8 +193,8 @@ try:
 
     # Verificaciones del script generado
     checks_script = [
-        (f"connect-to={SSTP_HOST}:{SSTP_PORT}" in script,
-         f"connect-to usa host:port ({SSTP_HOST}:{SSTP_PORT})"),
+        (f"connect-to={SSTP_HOST}" in script and f"port={SSTP_PORT}" in script,
+         f"connect-to={SSTP_HOST} port={SSTP_PORT} (ROS 7 separados)"),
         ("address=" not in script.split("/ip service set api")[1].split("\n")[0]
          if "/ip service set api" in script else True,
          "API sin restriccion address= (no bloquea acceso antes del tunel)"),

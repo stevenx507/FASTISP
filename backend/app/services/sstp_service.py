@@ -323,8 +323,6 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
     group_name = "fastisp"
     vpn_subnet = os.environ.get("VPN_MGMT_SUBNET", "10.100.0.0/16")
     scheduler_name = "FastISP-Reconnect"
-    # ROS 6 y 7 aceptan connect-to=host:port; 'port=' como parametro separado solo existe en ROS 7
-    connect_to = f"{server_host}:{server_port}"
 
     script = f"""# FastISP SSTP VPN — {router_name} — {provisioned_at}
 # --- Limpieza previa (ignorar si no existen) ---
@@ -337,17 +335,24 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
 :do {{/system scheduler remove [find where name="{scheduler_name}"]}} on-error={{}}
 # --- Perfil PPP ---
 /ppp profile add name="{profile_name}" use-encryption=yes use-compression=no use-mpls=no only-one=yes comment="FastISP SSTP Profile"
-# --- Interfaz SSTP (connect-to=host:port funciona en ROS 6 y 7) ---
-/interface sstp-client add comment="FastISP VPN" connect-to={connect_to} name="{iface_name}" user="{username}" password="{password}" profile="{profile_name}" verify-server-certificate=no disabled=no
+# --- Interfaz SSTP ---
+# ROS 7: connect-to + port separados; ROS 6 fallback: connect-to=host:port
+:do {{
+/interface sstp-client add connect-to={server_host} port={server_port} name="{iface_name}" user="{username}" password="{password}" profile="{profile_name}" verify-server-certificate=no disabled=no comment="FastISP VPN"
+}} on-error={{
+:do {{/interface sstp-client add connect-to={server_host}:{server_port} name="{iface_name}" user="{username}" password="{password}" profile="{profile_name}" verify-server-certificate=no disabled=no comment="FastISP VPN"}} on-error={{}}
+}}
+# --- Esperar que la interfaz se registre ---
+:delay 2s
 # --- Ruta hacia la red de gestion VPN ---
-/ip route add comment="fastisp-vpn-route" distance=1 dst-address={vpn_subnet} gateway={iface_name}
+:do {{/ip route add comment="fastisp-vpn-route" dst-address={vpn_subnet} gateway={iface_name} distance=1}} on-error={{}}
 # --- Usuario local de API (accesible via tunel VPN) ---
-/user group add name={group_name} policy=local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive
+:do {{/user group add name={group_name} policy=local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive}} on-error={{}}
 /user add name="{username}" password="{password}" group={group_name} comment="FastISP API user"
 # --- Habilitar API en el router (sin restringir por direccion) ---
 /ip service set api port=8728 disabled=no
 # --- Scheduler de reconexion diaria ---
-/system scheduler add comment="FastISP-Reconnect" interval=1d name="{scheduler_name}" on-event=":do {{/interface sstp-client disable {iface_name}}} on-error={{}}\r\n:delay 4s\r\n:do {{/interface sstp-client enable {iface_name}}} on-error={{}}\r\n:log info \"FastISP VPN reconectado\""
+/system scheduler add comment="FastISP-Reconnect" interval=1d name="{scheduler_name}" on-event=":do {{/interface sstp-client disable {iface_name}}} on-error={{}}\r\n:delay 4s\r\n:do {{/interface sstp-client enable {iface_name}}} on-error={{}}\r\n:log info \\"FastISP VPN reconectado\\""
 :log info "FastISP VPN configurado para {router_name}. Generado: {provisioned_at}"
 """
     return script
