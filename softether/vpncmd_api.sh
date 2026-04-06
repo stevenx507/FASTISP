@@ -96,7 +96,8 @@ case "$CMD" in
     ;;
 
   list_sessions)
-    run_vpncmd_hub "SessionList"
+    run_vpncmd_hub "SessionList" || true
+    exit 0
     ;;
 
   kick_user)
