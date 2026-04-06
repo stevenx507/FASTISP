@@ -45,7 +45,7 @@ RUN pip install --no-cache-dir --find-links=/wheels /wheels/*
 COPY . .
 
 # Create non-root user (add to docker group for socket access)
-RUN groupadd -g 999 docker 2>/dev/null || true && \
+RUN groupadd -g 988 docker 2>/dev/null || true && \
     useradd -m -u 1000 -G docker ispmax && \
     chown -R ispmax:ispmax /app
 USER ispmax
