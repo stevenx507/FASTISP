@@ -339,20 +339,19 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
 :do {{/system scheduler remove [find where name="{scheduler_name}"]}} on-error={{}}
 # --- Perfil PPP ---
 /ppp profile add name="{profile_name}" use-encryption=yes use-compression=no use-mpls=no only-one=yes comment="FastISP SSTP Profile"
-# --- Interfaz SSTP ---
-# ROS 7: connect-to + port separados; ROS 6 fallback: connect-to=host:port
+# --- Interfaz SSTP (parametros basados en config WispHub probada) ---
 :do {{
-/interface sstp-client add connect-to={server_host} port={server_port} name="{iface_name}" user="{username}" password="{password}" profile="{profile_name}" verify-server-certificate=no disabled=no comment="FastISP VPN"
+/interface sstp-client add connect-to={server_host} port={server_port} name="{iface_name}" user="{username}" password="{password}" profile="{profile_name}" verify-server-certificate=no tls-version=any pfs=no authentication=mschap2,mschap1,chap,pap keepalive-timeout=60 max-mtu=1500 add-default-route=no disabled=no comment="FastISP VPN"
 }} on-error={{
 :do {{/interface sstp-client add connect-to={server_host}:{server_port} name="{iface_name}" user="{username}" password="{password}" profile="{profile_name}" verify-server-certificate=no disabled=no comment="FastISP VPN"}} on-error={{}}
 }}
 # --- Esperar que la interfaz se registre ---
-:delay 2s
+:delay 3s
 # --- Ruta hacia la red de gestion VPN ---
 :do {{/ip route add comment="fastisp-vpn-route" dst-address={vpn_subnet} gateway={iface_name} distance=1}} on-error={{}}
 # --- Usuario local de API (accesible via tunel VPN) ---
 :do {{/user group add name={group_name} policy=local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive}} on-error={{}}
-/user add name="{username}" password="{password}" group={group_name} comment="FastISP API user"
+:do {{/user add name="{username}" password="{password}" group={group_name} comment="FastISP API user"}} on-error={{}}
 # --- Habilitar API en el router (sin restringir por direccion) ---
 /ip service set api port=8728 disabled=no
 # --- Scheduler de reconexion diaria ---
