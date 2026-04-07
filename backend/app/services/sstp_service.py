@@ -339,7 +339,7 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
 /system scheduler remove [find where name="{scheduler_name}"]
 # --- Perfil PPP ---
 /ppp profile add name="{profile_name}"
-# --- Interfaz SSTP (config basada en WispHub probada) ---
+# --- Interfaz SSTP ---
 /interface sstp-client add comment="FastISP VPN" connect-to={server_host} port={server_port} name="{iface_name}" user="{username}" password="{password}" profile="{profile_name}" verify-server-certificate=no tls-version=any pfs=no authentication=mschap2,mschap1,chap,pap keepalive-timeout=60 max-mtu=1500 add-default-route=no disabled=no
 # --- Ruta hacia red de gestion VPN ---
 /ip route add comment="fastisp-vpn-route" distance=1 dst-address={vpn_subnet} gateway={iface_name}

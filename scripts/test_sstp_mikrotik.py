@@ -199,7 +199,7 @@ try:
          if "/ip service set api" in script else True,
          "API sin restriccion address= (no bloquea acceso antes del tunel)"),
         ("authentication=mschap2" in script and "keepalive-timeout=60" in script,
-         "authentication + keepalive (config WispHub probada)"),
+         "authentication + keepalive (config SSTP probada)"),
         ("verify-server-certificate=no" in script,
          "verify-server-certificate=no"),
     ]
