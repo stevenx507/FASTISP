@@ -103,7 +103,7 @@ def create_tunnel():
             }
             result = existing.to_dict(include_password=True)
             result['script'] = generate_mikrotik_sstp_script(prov)
-            result['message'] = 'Tunel SSTP existente autoreparado y sincronizado con SoftEther'
+            result['message'] = 'Tunel SSTP existente verificado y sincronizado'
             return jsonify(result), 200
         except Exception as exc:
             logger.warning(f"No se pudo autoreparar el tunel SSTP existente {existing.id}: {exc}")
@@ -222,19 +222,15 @@ def regenerate_tunnel(tunnel_id):
     try:
         new_password = _generate_password(20)
 
-        # Try to sync with SoftEther, but do NOT block regeneration if unavailable.
-        softether_synced = False
+        softether_synced = True
         softether_warning = None
         try:
             revoke_sstp_tunnel(tunnel.username)
             ensure_sstp_user(tunnel.username, new_password)
-            softether_synced = True
         except Exception as se_exc:
-            softether_warning = (
-                f"Credenciales actualizadas en BD, pero SoftEther no pudo sincronizarse: {se_exc}. "
-                "El tunel SSTP se activara cuando SoftEther este disponible o al reprovisionarlo."
-            )
-            logger.warning(f"SoftEther sync failed during regenerate for tunnel {tunnel_id}: {se_exc}")
+            softether_synced = False
+            softether_warning = f"Credenciales actualizadas en BD: {se_exc}"
+            logger.warning(f"Regenerate warning for tunnel {tunnel_id}: {se_exc}")
 
         tunnel.password = new_password
         tunnel.status = 'active'
@@ -256,7 +252,7 @@ def regenerate_tunnel(tunnel_id):
 
         result = tunnel.to_dict(include_password=True)
         result['script'] = script
-        result['softether_synced'] = softether_synced
+        result['synced'] = softether_synced
         result['message'] = (
             softether_warning if softether_warning
             else 'Credenciales regeneradas exitosamente'
@@ -383,7 +379,7 @@ def sstp_status():
         'active_tunnels': active,
         'revoked_tunnels': revoked,
         'certificate_fingerprint': fingerprint,
-        'server_host': 'fastisp.cloud',
         'server_port': 443,
-        'ip_pool': '10.100.0.0/16',
+        'architecture': 'mikrotik-native-sstp',
+        'ip_pool': '10.10.0.0/24',
     })

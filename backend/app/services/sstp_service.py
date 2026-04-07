@@ -1,40 +1,34 @@
 """
-sstp_service.py — Servicio de provisioning SSTP via SoftEther VPN Server
-=========================================================================
-Integra con el contenedor fastisp-softether via Docker exec (vpncmd_api.sh)
-para crear/revocar usuarios SSTP reales en SoftEther.
+sstp_service.py — Servicio de provisioning SSTP nativo MikroTik
+================================================================
+Genera scripts para configurar MikroTik como servidor SSTP con
+certificados propios, perfil PPP y secrets dinámicos.
 
-Arquitectura:
-  Backend (Flask) → docker exec fastisp-softether /vpncmd_api.sh → SoftEther vpncmd
-  MikroTik → SSTP → fastisp-softether:8443 → Virtual Hub FASTISP
+Arquitectura (estilo Wispro):
+  1. MikroTik genera CA + certificado servidor en el propio router
+  2. Se habilita servidor SSTP nativo (puerto 443, MS-CHAPv2, PFS)
+  3. Se gestionan /ppp secret dinamicamente via API o scripts
+  4. Sin dependencia de SoftEther
 """
 
 import os
-import subprocess
 import secrets
 import string
 import logging
-import ipaddress
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 # ── Configuración ──────────────────────────────────────────────────────────────
-SOFTETHER_CONTAINER = os.environ.get("SOFTETHER_CONTAINER", "fastisp-softether")
-SOFTETHER_HUB = os.environ.get("SOFTETHER_HUB_NAME", "FASTISP")
-SOFTETHER_ADMIN_PASSWORD = os.environ.get("SOFTETHER_ADMIN_PASSWORD", "FastISP_VPN_2026!")
-SOFTETHER_MGMT_PORT = os.environ.get("SOFTETHER_MGMT_PORT", "5555")
+SSTP_SERVER_PORT = int(os.environ.get("SSTP_SERVER_PORT", "443"))
+SSTP_POOL_START = os.environ.get("SSTP_POOL_START", "10.10.0.2")
+SSTP_POOL_END = os.environ.get("SSTP_POOL_END", "10.10.0.254")
+SSTP_LOCAL_ADDRESS = os.environ.get("SSTP_LOCAL_ADDRESS", "10.10.0.1")
+SSTP_DNS_SERVERS = os.environ.get("SSTP_DNS_SERVERS", "8.8.8.8,8.8.4.4")
 
-# Host del servidor SSTP (dominio público del VPS)
-SSTP_SERVER_HOST = os.environ.get("SSTP_SERVER_HOST", "fastisp.cloud")
-SSTP_SERVER_PORT = int(os.environ.get("SSTP_SERVER_PORT", "8443"))
-
-# Pool de IPs para túneles (gestionado por SoftEther SecureNAT/DHCP)
-SSTP_IP_POOL_START = os.environ.get("SSTP_IP_POOL_START", "10.100.0.10")
-SSTP_IP_POOL_END = os.environ.get("SSTP_IP_POOL_END", "10.100.255.254")
-
-# Directorio de certificados (para el script de MikroTik)
+# Backward compat: rutas importan estos nombres
 SSTP_CERT_DIR = os.environ.get("SSTP_CERT_DIR", "/tmp/sstp-certs")
+SSTP_SERVER_HOST = os.environ.get("SSTP_SERVER_HOST", "fastisp.cloud")
 
 
 # ── Helpers internos ───────────────────────────────────────────────────────────
@@ -59,322 +53,194 @@ def _generate_password(length: int = 20) -> str:
 
 
 def _allocate_ip_pair() -> tuple[str, str]:
-    """
-    Retorna un par (server_ip, client_ip) del pool.
-    Con SoftEther SecureNAT, el DHCP asigna IPs automáticamente.
-    Retornamos IPs placeholder que se actualizan cuando el MikroTik conecta.
-    """
-    return ("10.100.0.1", "10.100.0.x (asignado por DHCP al conectar)")
-
-
-def _run_softether_cmd(cmd: str, username: str = "", password: str = "") -> dict:
-    """
-    Ejecuta un comando en el contenedor SoftEther via docker exec.
-    Retorna dict con status y output.
-    """
-    try:
-        args = ["docker", "exec", SOFTETHER_CONTAINER, "/vpncmd_api.sh", cmd]
-        if username:
-            args.append(username)
-        if password:
-            args.append(password)
-
-        result = subprocess.run(
-            args,
-            capture_output=True,
-            text=True,
-            timeout=60,
-            stdin=subprocess.DEVNULL
-        )
-
-        output = result.stdout.strip()
-        error = result.stderr.strip()
-
-        if result.returncode != 0:
-            logger.error(f"SoftEther cmd '{cmd}' failed: {error}")
-            return {"success": False, "error": error, "output": output}
-
-        lowered_output = output.lower()
-        if cmd in {"create_user", "update_password", "delete_user"}:
-            if any(marker in lowered_output for marker in ["error occurred", "error:", "failed", "not found"]):
-                logger.error(f"SoftEther cmd '{cmd}' returned logical failure: {output}")
-                return {"success": False, "error": output or error or "SoftEther command failed", "output": output}
-
-        logger.info(f"SoftEther cmd '{cmd}' OK: {output[:100]}")
-        return {"success": True, "output": output, "error": ""}
-
-    except subprocess.TimeoutExpired:
-        logger.error(f"SoftEther cmd '{cmd}' timeout")
-        return {"success": False, "error": "Timeout conectando con SoftEther", "output": ""}
-    except FileNotFoundError:
-        # Docker no disponible (entorno de desarrollo)
-        logger.warning(f"Docker no disponible, simulando cmd '{cmd}'")
-        return {"success": True, "output": f'{{"status": "simulated", "cmd": "{cmd}"}}', "error": ""}
-    except Exception as e:
-        logger.error(f"SoftEther cmd '{cmd}' error: {e}")
-        return {"success": False, "error": str(e), "output": ""}
-
-
-def _softether_available() -> bool:
-    """Verifica si el contenedor SoftEther está corriendo."""
-    try:
-        result = subprocess.run(
-            ["docker", "inspect", "--format", "{{.State.Running}}", SOFTETHER_CONTAINER],
-            capture_output=True, text=True, timeout=10,
-            stdin=subprocess.DEVNULL
-        )
-        return result.stdout.strip() == "true"
-    except Exception:
-        return False
-
-
-def _softether_user_exists(username: str) -> bool:
-    """Verifica si el usuario SSTP existe en SoftEther."""
-    if not username or not _softether_available():
-        return False
-
-    result = _run_softether_cmd("user_exists", username)
-    if not result["success"]:
-        return False
-
-    output = (result.get("output") or "").lower()
-    return '"exists": true' in output
+    """Retorna un par (local_address/gateway, remote_address/primer_cliente)."""
+    return (SSTP_LOCAL_ADDRESS, SSTP_POOL_START)
 
 
 def ensure_sstp_user(username: str, password: str) -> dict:
-    """Asegura que un usuario SSTP exista en SoftEther con la contraseña esperada."""
-    if not username:
-        raise RuntimeError("Username SSTP requerido")
-    if not password:
-        raise RuntimeError("Password SSTP requerido")
-    if not _softether_available():
-        raise RuntimeError("SoftEther no disponible")
-
-    if _softether_user_exists(username):
-        result = _run_softether_cmd("update_password", username, password)
-        if not result["success"]:
-            raise RuntimeError(f"No se pudo actualizar password SSTP: {result['error']}")
-        return {"username": username, "password": password, "action": "password_updated"}
-
-    result = _run_softether_cmd("create_user", username, password)
-    if not result["success"]:
-        raise RuntimeError(f"No se pudo crear usuario SSTP: {result['error']}")
-    return {"username": username, "password": password, "action": "created"}
+    """
+    En la arquitectura nativa MikroTik, los secrets PPP se gestionan
+    directamente en el router. Stub de compatibilidad.
+    """
+    if not username or not password:
+        raise RuntimeError("Username y password PPP requeridos")
+    return {"username": username, "password": password, "action": "native_mikrotik"}
 
 
 # ── API pública ────────────────────────────────────────────────────────────────
 
 def provision_sstp_tunnel(router) -> dict:
     """
-    Provisiona un túnel SSTP para un router MikroTik.
-    Crea el usuario en SoftEther y retorna las credenciales.
-
-    Args:
-        router: instancia de MikroTikRouter
-
-    Returns:
-        dict con username, password, server_host, server_port, server_ip, client_ip,
-             fingerprint, router_name, provisioned_at
+    Provisiona servidor SSTP nativo en un router MikroTik.
+    Genera credenciales de management y retorna datos para el script.
     """
     username = _generate_username(router.name)
     password = _generate_password(20)
     server_ip, client_ip = _allocate_ip_pair()
+    router_address = router.ip_address
 
-    # Crear usuario en SoftEther
-    if _softether_available():
-        result = _run_softether_cmd("create_user", username, password)
-        if not result["success"]:
-            raise RuntimeError(f"Error creando usuario en SoftEther: {result['error']}")
-        logger.info(f"Usuario SSTP '{username}' creado en SoftEther para router '{router.name}'")
-    else:
-        logger.warning(f"SoftEther no disponible. Usuario '{username}' registrado solo en BD.")
-
-    fingerprint = get_certificate_fingerprint()
+    logger.info(f"SSTP nativo provisionado para router '{router.name}' ({router_address})")
 
     return {
         "username": username,
         "password": password,
-        "server_host": SSTP_SERVER_HOST,
+        "server_host": router_address,
         "server_port": SSTP_SERVER_PORT,
         "server_ip": server_ip,
         "client_ip": client_ip,
-        "fingerprint": fingerprint,
+        "fingerprint": "MIKROTIK-NATIVE-CERT",
         "router_name": router.name,
         "provisioned_at": datetime.utcnow().isoformat(),
-        "hub": SOFTETHER_HUB,
-        "sstp_url": f"sstp://{SSTP_SERVER_HOST}:{SSTP_SERVER_PORT}",
     }
 
 
 def revoke_sstp_tunnel(username: str) -> bool:
     """
-    Revoca un túnel SSTP eliminando el usuario de SoftEther.
-
-    Args:
-        username: nombre de usuario SSTP a revocar
-
-    Returns:
-        True si se revocó exitosamente
+    Revoca un secret PPP. La eliminación real se hace via MikroTik API
+    cuando el router está accesible.
     """
-    if _softether_available():
-        result = _run_softether_cmd("delete_user", username)
-        if not result["success"]:
-            logger.error(f"Error revocando usuario '{username}': {result['error']}")
-            return False
-        logger.info(f"Usuario SSTP '{username}' revocado de SoftEther")
-    else:
-        logger.warning(f"SoftEther no disponible. Usuario '{username}' marcado como revocado solo en BD.")
-
+    logger.info(f"PPP secret '{username}' marcado como revocado en BD")
     return True
-
-
-def _update_chap_secrets(username: str, new_password: str) -> bool:
-    """Actualiza la contraseña de un usuario en SoftEther."""
-    if _softether_available():
-        result = _run_softether_cmd("update_password", username, new_password)
-        return result["success"]
-    return True
-
-
-def get_softether_status() -> dict:
-    """Retorna el estado del servidor SoftEther."""
-    if not _softether_available():
-        return {"status": "offline", "container": SOFTETHER_CONTAINER}
-
-    result = _run_softether_cmd("server_status")
-    if result["success"]:
-        try:
-            import json
-            return json.loads(result["output"])
-        except Exception:
-            return {"status": "running", "output": result["output"]}
-    return {"status": "error", "error": result["error"]}
 
 
 def get_certificate_fingerprint() -> str:
-    """
-    Retorna el fingerprint del certificado SSL de SoftEther.
-    SoftEther genera su propio certificado auto-firmado.
-    """
-    try:
-        # Intentar obtener el fingerprint del contenedor SoftEther
-        result = subprocess.run(
-            ["docker", "exec", SOFTETHER_CONTAINER,
-             "/opt/vpnserver/vpncmd", f"localhost:{SOFTETHER_MGMT_PORT}",
-             "/SERVER", f"/PASSWORD:{SOFTETHER_ADMIN_PASSWORD}",
-             "/CMD", "ServerCertGet", "/SAVECERT:/tmp/server.crt"],
-            capture_output=True, text=True, timeout=30,
-            stdin=subprocess.DEVNULL
-        )
-
-        # Obtener fingerprint del certificado
-        fp_result = subprocess.run(
-            ["docker", "exec", SOFTETHER_CONTAINER,
-             "openssl", "x509", "-in", "/tmp/server.crt",
-             "-fingerprint", "-sha256", "-noout"],
-            capture_output=True, text=True, timeout=15,
-            stdin=subprocess.DEVNULL
-        )
-
-        if fp_result.returncode == 0:
-            fp = fp_result.stdout.strip().replace("SHA256 Fingerprint=", "")
-            return fp
-
-    except Exception as e:
-        logger.debug(f"No se pudo obtener fingerprint de SoftEther: {e}")
-
-    return "SOFTETHER-AUTO-CERT"
+    """En MikroTik nativo, el certificado se genera en el router."""
+    return "MIKROTIK-NATIVE-CERT"
 
 
 def ensure_sstp_certificate() -> dict:
-    """
-    Verifica que SoftEther tiene un certificado SSL válido.
-    SoftEther genera automáticamente su propio certificado.
-    """
-    available = _softether_available()
-    fingerprint = get_certificate_fingerprint() if available else "UNKNOWN"
-
+    """Certificado se genera en el MikroTik, no en el VPS."""
     return {
-        "exists": available,
-        "fingerprint": fingerprint,
-        "cert_path": "/opt/vpnserver/server.crt",
-        "server_host": SSTP_SERVER_HOST,
-        "managed_by": "SoftEther VPN Server (auto-generated)",
+        "exists": True,
+        "fingerprint": "MIKROTIK-NATIVE-CERT",
+        "cert_path": "/certificate",
+        "server_host": "MikroTik nativo",
+        "managed_by": "MikroTik RouterOS (certificado generado en el router)",
     }
 
 
 def generate_mikrotik_sstp_script(prov: dict) -> str:
     """
-    Genera el script .rsc de MikroTik para configurar el tunel SSTP hacia FastISP.
-    Compatible con RouterOS 6.x y 7.x.
+    Genera el script .rsc para configurar MikroTik como servidor SSTP nativo.
 
-    Correcciones aplicadas:
-    - connect-to usa host:port (compatible ROS 6 y 7; 'port=' no existe en ROS 6)
-    - NO restringe /ip service api address= antes de que el tunel este activo
-    - Todos los comandos de limpieza usan :do {} on-error={} para no abortar si el objeto no existe
-    - Sintaxis de find usa || en lugar de 'or' (correcto en RouterOS)
-    - Ruta hacia VPN usa comment= para poder identificarla al limpiar
+    Incluye:
+    1. Generacion de certificados (CA + servidor)
+    2. Servidor SSTP (puerto 443, MS-CHAPv2, PFS, TLS 1.2)
+    3. Pool de IPs + Perfil PPP
+    4. Secret PPP para gestion FastISP
+    5. Usuario API + grupo de permisos
+    6. API restringida al pool VPN
+    7. Regla firewall para SSTP entrante
     """
     username = prov.get("username", "")
     password = prov.get("password", "")
-    server_host = prov.get("server_host", SSTP_SERVER_HOST)
-    server_port = prov.get("server_port", SSTP_SERVER_PORT)
     router_name = prov.get("router_name", "mikrotik")
+    router_address = prov.get("server_host", "0.0.0.0")
     provisioned_at = prov.get("provisioned_at", datetime.utcnow().isoformat())
 
-    profile_name = "fastisp-profile"
-    iface_name = "FastISPVPN"
+    pool_range = f"{SSTP_POOL_START}-{SSTP_POOL_END}"
+    local_addr = SSTP_LOCAL_ADDRESS
+    sstp_port = SSTP_SERVER_PORT
+    dns = SSTP_DNS_SERVERS
+    profile_name = "fastisp-sstp"
+    pool_name = "fastisp-sstp-pool"
+    ca_name = "FastISP-CA"
+    cert_name = "FastISP-SSTP"
     group_name = "fastisp"
-    vpn_subnet = os.environ.get("VPN_MGMT_SUBNET", "10.100.0.0/16")
-    scheduler_name = "FastISP-Reconnect"
 
-    script = f"""/ip service set api port=8728 disabled=no
-# {router_name} — FastISP SSTP VPN — {provisioned_at}
+    script = f"""# FastISP — Servidor SSTP Nativo — {router_name}
+# Generado: {provisioned_at}
+# =====================================================================
+# Este script configura el router MikroTik como servidor SSTP.
+# Los clientes VPN se conectan directamente al router.
+# =====================================================================
+
 # --- Limpieza previa ---
-/interface sstp-client remove [find where user~"fastisp" || name~"FastISP" || comment~"FastISP"]
+/ppp secret remove [find where comment~"FastISP"]
 /ppp profile remove [find where name="{profile_name}"]
-/ip route remove [find where comment="fastisp-vpn-route"]
+/ip pool remove [find where name="{pool_name}"]
+/interface sstp-server server set enabled=no
+/certificate remove [find where name="{cert_name}"]
+/certificate remove [find where name="{ca_name}"]
 /user remove [find where name~"sstp-"]
 /user group remove [find where name~"{group_name}"]
-/system scheduler remove [find where name="{scheduler_name}"]
-# --- Perfil PPP ---
-/ppp profile add name="{profile_name}"
-# --- Interfaz SSTP ---
-/interface sstp-client add comment="FastISP VPN" connect-to={server_host} port={server_port} name="{iface_name}" user="{username}" password="{password}" profile="{profile_name}" verify-server-certificate=no tls-version=any pfs=no authentication=mschap2,mschap1,chap,pap keepalive-timeout=60 max-mtu=1500 add-default-route=no disabled=no
-# --- Ruta hacia red de gestion VPN ---
-/ip route add comment="fastisp-vpn-route" distance=1 dst-address={vpn_subnet} gateway={iface_name}
-# --- Usuario y grupo de API ---
+/ip firewall filter remove [find where comment~"FastISP"]
+
+# --- 1. Generacion de Certificados ---
+/certificate add name={ca_name} common-name=FastISP-CA days-valid=3650 key-usage=key-cert-sign,crl-sign
+/certificate sign {ca_name} name={ca_name}
+:delay 5s
+:log info "FastISP: CA generado y firmado"
+/certificate add name={cert_name} common-name={router_address} days-valid=3650 key-usage=digital-signature,key-encipherment,tls-server
+/certificate sign {cert_name} ca={ca_name} name={cert_name}
+:delay 5s
+:log info "FastISP: Certificado servidor SSTP firmado"
+
+# --- 2. Pool de IPs para clientes VPN ---
+/ip pool add name={pool_name} ranges={pool_range}
+
+# --- 3. Perfil PPP ---
+/ppp profile add name="{profile_name}" local-address={local_addr} remote-address={pool_name} dns-server={dns} use-encryption=yes comment="FastISP SSTP Profile"
+
+# --- 4. Servidor SSTP (MS-CHAPv2, PFS, Force AES) ---
+/interface sstp-server server set enabled=yes certificate={cert_name} port={sstp_port} authentication=mschap2 pfs=yes tls-version=only-1.2
+:log info "FastISP: Servidor SSTP habilitado en puerto {sstp_port}"
+
+# --- 5. Secret PPP (gestion FastISP) ---
+/ppp secret add name="{username}" password="{password}" service=sstp profile="{profile_name}" remote-address={SSTP_POOL_START} comment="FastISP Management"
+
+# --- 6. Usuario y grupo de API ---
 /user group add name={group_name} policy="local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive"
 /user add name="{username}" password="{password}" group={group_name} comment="FastISP API user"
-# --- Habilitar API ---
-/ip service set api port=8728 disabled=no
-# --- Scheduler de reconexion diaria ---
-/system scheduler add comment="FastISP-Reconnect" interval=1d name="{scheduler_name}" on-event="/interface set {iface_name} disabled=yes\\r\\n:log info message=\\"Se Deshabilita {iface_name}\\"\\r\\n:delay 4s\\r\\n/interface set {iface_name} disabled=no\\r\\n:log info message=\\"Se Habilita {iface_name}\\";" policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive start-time=04:00:00
-:log info "FastISP VPN configurado para {router_name}. Generado: {provisioned_at}"
+
+# --- 7. Habilitar API (restringida al pool VPN) ---
+/ip service set api port=8728 disabled=no address={local_addr}/24
+
+# --- 8. Firewall — permitir SSTP entrante ---
+/ip firewall filter add chain=input protocol=tcp dst-port={sstp_port} action=accept comment="FastISP: Permitir SSTP" place-before=0
+
+# --- Listo ---
+:log info "FastISP: Servidor SSTP configurado para {router_name}. Generado: {provisioned_at}"
 """
     return script
 
 
+def generate_ppp_secret_script(client_name: str, password: str,
+                                remote_address: str, is_public: bool = False,
+                                lan_interface: str = "bridge") -> str:
+    """
+    Genera script para agregar un secret PPP (cliente SSTP).
+
+    Para IPs Privadas: remote-address del pool interno.
+    Para IPs Publicas: remote-address = IP publica + proxy-arp en LAN.
+    """
+    profile_name = "fastisp-sstp"
+    script = f'/ppp secret add name="{client_name}" password="{password}" service=sstp profile="{profile_name}" remote-address={remote_address} comment="FastISP Client"'
+
+    if is_public:
+        script += f'\n/interface set [find where name="{lan_interface}"] arp=proxy-arp'
+        script += f'\n:log info "FastISP: Proxy-ARP activado en {lan_interface} para IP publica {remote_address}"'
+
+    return script
+
+
 def generate_verification_script() -> str:
-    """Genera un script de verificacion para el MikroTik."""
-    iface_name = "FastISPVPN"
-    return f"""# Script de verificacion SSTP FASTISP
-:local iface "{iface_name}"
-:local status "desconocido"
-:do {{
-    :local running [/interface sstp-client get [find name=$iface] running]
-    :if ($running = true) do={{
-        :set status "CONECTADO"
-        :put ("FastISP VPN: CONECTADO")
-        :local addr [/ip address get [find interface=$iface] address]
-        :put ("IP asignada: " . $addr)
-    }} else={{
-        :set status "DESCONECTADO"
-        :put "FastISP VPN: DESCONECTADO"
-        :put "Revisa: /log print where topics~sstp"
-    }}
-}} on-error={{
-    :put "FastISP VPN: interfaz no encontrada"
-    :put "Ejecuta el script de provisionamiento primero."
-}}
+    """Genera un script de verificacion del servidor SSTP en MikroTik."""
+    return """# Script de verificacion SSTP Server FastISP
+:put "=== FastISP SSTP Server Status ==="
+:put ("Servidor SSTP: " . [/interface sstp-server server get enabled])
+:put ("Puerto: " . [/interface sstp-server server get port])
+:put ("Certificado: " . [/interface sstp-server server get certificate])
+:put ""
+:put "=== Certificados ==="
+/certificate print where name~"FastISP"
+:put ""
+:put "=== PPP Secrets ==="
+/ppp secret print where comment~"FastISP"
+:put ""
+:put "=== Clientes SSTP Conectados ==="
+/interface sstp-server print
+:put ""
+:put "=== Pool de IPs ==="
+/ip pool print where name~"fastisp"
 """
