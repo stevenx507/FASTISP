@@ -58,8 +58,14 @@ case "$CMD" in
 
   create_user)
     [ -z "$USERNAME" ] || [ -z "$PASSWORD" ] && { echo '{"error":"username y password requeridos"}' >&2; exit 1; }
-    run_vpncmd_hub "UserCreate $USERNAME /GROUP:none /REALNAME:MikroTik_SSTP /NOTE:FASTISP" > /dev/null 2>&1
-    run_vpncmd_hub "UserPasswordSet $USERNAME /PASSWORD:$PASSWORD" > /dev/null 2>&1
+    CREATE_OUT=$(run_vpncmd_hub "UserCreate $USERNAME /GROUP:none /REALNAME:MikroTik_SSTP /NOTE:FASTISP" 2>&1)
+    CREATE_RC=$?
+    PASS_OUT=$(run_vpncmd_hub "UserPasswordSet $USERNAME /PASSWORD:$PASSWORD" 2>&1)
+    PASS_RC=$?
+    if [ $PASS_RC -ne 0 ]; then
+      echo '{"error":"UserPasswordSet failed","detail":"'"$(echo "$PASS_OUT" | grep -i error | head -3 | tr '\n' ' ')"'"}' >&2
+      exit 1
+    fi
     echo '{"status":"ok","action":"created","username":"'"$USERNAME"'"}'
     ;;
 
@@ -75,7 +81,12 @@ case "$CMD" in
 
   update_password)
     [ -z "$USERNAME" ] || [ -z "$PASSWORD" ] && { echo '{"error":"username y password requeridos"}' >&2; exit 1; }
-    run_vpncmd_hub "UserPasswordSet $USERNAME /PASSWORD:$PASSWORD" > /dev/null 2>&1
+    PASS_OUT=$(run_vpncmd_hub "UserPasswordSet $USERNAME /PASSWORD:$PASSWORD" 2>&1)
+    PASS_RC=$?
+    if [ $PASS_RC -ne 0 ]; then
+      echo '{"error":"UserPasswordSet failed","detail":"'"$(echo "$PASS_OUT" | grep -i error | head -3 | tr '\n' ' ')"'"}' >&2
+      exit 1
+    fi
     echo '{"status":"ok","action":"password_updated","username":"'"$USERNAME"'"}'
     ;;
 
