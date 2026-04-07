@@ -198,8 +198,8 @@ try:
         ("address=" not in script.split("/ip service set api")[1].split("\n")[0]
          if "/ip service set api" in script else True,
          "API sin restriccion address= (no bloquea acceso antes del tunel)"),
-        (":do {" in script,
-         "Limpieza con :do {} on-error={} (no aborta si falta objeto)"),
+        ("authentication=mschap2" in script and "keepalive-timeout=60" in script,
+         "authentication + keepalive (config WispHub probada)"),
         ("verify-server-certificate=no" in script,
          "verify-server-certificate=no"),
     ]

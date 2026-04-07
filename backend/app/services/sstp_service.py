@@ -328,34 +328,28 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
     vpn_subnet = os.environ.get("VPN_MGMT_SUBNET", "10.100.0.0/16")
     scheduler_name = "FastISP-Reconnect"
 
-    script = f"""# FastISP SSTP VPN — {router_name} — {provisioned_at}
-# --- Limpieza previa (ignorar si no existen) ---
-:do {{/ppp profile remove [find name="{profile_name}"]}} on-error={{}}
-:do {{/interface sstp-client remove [find where comment~"FastISP"]}} on-error={{}}
-:do {{/interface sstp-client remove [find where name="{iface_name}"]}} on-error={{}}
-:do {{/ip route remove [find where comment="fastisp-vpn-route"]}} on-error={{}}
-:do {{/user group remove [find where name="{group_name}"]}} on-error={{}}
-:do {{/user remove [find where name="{username}"]}} on-error={{}}
-:do {{/system scheduler remove [find where name="{scheduler_name}"]}} on-error={{}}
+    script = f"""/ip service set api port=8728 disabled=no
+# {router_name} — FastISP SSTP VPN — {provisioned_at}
+# --- Limpieza previa ---
+/interface sstp-client remove [find where user~"fastisp" || name~"FastISP" || comment~"FastISP"]
+/ppp profile remove [find where name="{profile_name}"]
+/ip route remove [find where comment="fastisp-vpn-route"]
+/user remove [find where name~"sstp-"]
+/user group remove [find where name~"{group_name}"]
+/system scheduler remove [find where name="{scheduler_name}"]
 # --- Perfil PPP ---
-/ppp profile add name="{profile_name}" use-encryption=yes use-compression=no use-mpls=no only-one=yes comment="FastISP SSTP Profile"
-# --- Interfaz SSTP (parametros basados en config WispHub probada) ---
-:do {{
-/interface sstp-client add connect-to={server_host} port={server_port} name="{iface_name}" user="{username}" password="{password}" profile="{profile_name}" verify-server-certificate=no tls-version=any pfs=no authentication=mschap2,mschap1,chap,pap keepalive-timeout=60 max-mtu=1500 add-default-route=no disabled=no comment="FastISP VPN"
-}} on-error={{
-:do {{/interface sstp-client add connect-to={server_host}:{server_port} name="{iface_name}" user="{username}" password="{password}" profile="{profile_name}" verify-server-certificate=no disabled=no comment="FastISP VPN"}} on-error={{}}
-}}
-# --- Esperar que la interfaz se registre ---
-:delay 3s
-# --- Ruta hacia la red de gestion VPN ---
-:do {{/ip route add comment="fastisp-vpn-route" dst-address={vpn_subnet} gateway={iface_name} distance=1}} on-error={{}}
-# --- Usuario local de API (accesible via tunel VPN) ---
-:do {{/user group add name={group_name} policy=local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive}} on-error={{}}
-:do {{/user add name="{username}" password="{password}" group={group_name} comment="FastISP API user"}} on-error={{}}
-# --- Habilitar API en el router (sin restringir por direccion) ---
+/ppp profile add name="{profile_name}"
+# --- Interfaz SSTP (config basada en WispHub probada) ---
+/interface sstp-client add comment="FastISP VPN" connect-to={server_host} port={server_port} name="{iface_name}" user="{username}" password="{password}" profile="{profile_name}" verify-server-certificate=no tls-version=any pfs=no authentication=mschap2,mschap1,chap,pap keepalive-timeout=60 max-mtu=1500 add-default-route=no disabled=no
+# --- Ruta hacia red de gestion VPN ---
+/ip route add comment="fastisp-vpn-route" distance=1 dst-address={vpn_subnet} gateway={iface_name}
+# --- Usuario y grupo de API ---
+/user group add name={group_name} policy="local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive"
+/user add name="{username}" password="{password}" group={group_name} comment="FastISP API user"
+# --- Habilitar API ---
 /ip service set api port=8728 disabled=no
 # --- Scheduler de reconexion diaria ---
-/system scheduler add comment="FastISP-Reconnect" interval=1d name="{scheduler_name}" on-event=":do {{/interface sstp-client disable {iface_name}}} on-error={{}}; :delay 4s; :do {{/interface sstp-client enable {iface_name}}} on-error={{}}; :log info \\"FastISP VPN reconectado\\""
+/system scheduler add comment="FastISP-Reconnect" interval=1d name="{scheduler_name}" on-event="/interface set {iface_name} disabled=yes\\r\\n:log info message=\\"Se Deshabilita {iface_name}\\"\\r\\n:delay 4s\\r\\n/interface set {iface_name} disabled=no\\r\\n:log info message=\\"Se Habilita {iface_name}\\";" policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive start-time=04:00:00
 :log info "FastISP VPN configurado para {router_name}. Generado: {provisioned_at}"
 """
     return script
