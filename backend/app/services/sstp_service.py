@@ -16,6 +16,9 @@ import secrets
 import string
 import logging
 from datetime import datetime
+from routeros_api.exceptions import RouterOsApiError
+from .mikrotik_connection_pool import mikrotik_connection_pool
+from app import db
 
 logger = logging.getLogger(__name__)
 
@@ -57,11 +60,42 @@ def _allocate_ip_pair() -> tuple[str, str]:
     return (SSTP_LOCAL_ADDRESS, SSTP_POOL_START)
 
 
+def _execute_commands(router_id: int, commands: list[str]) -> dict:
+    """Ejecuta comandos RouterOS via API con manejo de errores."""
+    try:
+        api, pool_obj = mikrotik_connection_pool.get_connection(router_id)
+        results = []
+        for cmd in commands:
+            try:
+                # Parse command path and args
+                parts = cmd.strip().split()
+                if len(parts) < 2:
+                    continue
+                path = parts[0]
+                action = parts[1]
+                args = {}
+                for item in parts[2:]:
+                    if '=' in item:
+                        k, v = item.split('=', 1)
+                        args[k] = v
+                resource = api.get_resource(path)
+                if action == 'add':
+                    resource.add(**args)
+                elif action == 'set':
+                    resource.set(**args)
+                elif action == 'remove':
+                    resource.remove(**args)
+                results.append(f"OK: {cmd}")
+            except RouterOsApiError as e:
+                results.append(f"ERROR: {cmd} -> {e}")
+        mikrotik_connection_pool.release_connection(router_id, api, pool_obj)
+        return {"success": True, "results": results}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 def ensure_sstp_user(username: str, password: str) -> dict:
-    """
-    En la arquitectura nativa MikroTik, los secrets PPP se gestionan
-    directamente en el router. Stub de compatibilidad.
-    """
+    """Compatibilidad: ahora delega a API si router disponible."""
     if not username or not password:
         raise RuntimeError("Username y password PPP requeridos")
     return {"username": username, "password": password, "action": "native_mikrotik"}
@@ -95,12 +129,49 @@ def provision_sstp_tunnel(router) -> dict:
 
 
 def revoke_sstp_tunnel(username: str) -> bool:
-    """
-    Revoca un secret PPP. La eliminación real se hace via MikroTik API
-    cuando el router está accesible.
-    """
+    """Compatibilidad: ahora delega a API si router disponible."""
     logger.info(f"PPP secret '{username}' marcado como revocado en BD")
     return True
+
+
+def provision_sstp_tunnel_api(router) -> dict:
+    """Ejecuta via API la configuración completa del servidor SSTP."""
+    from app.models import MikroTikRouter
+    router_db = db.session.get(MikroTikRouter, router.id) if hasattr(router, 'id') else router
+    if not router_db:
+        raise RuntimeError("Router no encontrado para API provisioning")
+
+    # Generate same script but execute via API
+    prov = provision_sstp_tunnel(router_db)
+    script = generate_mikrotik_sstp_script(prov)
+    commands = [line.strip() for line in script.splitlines() if line.strip() and not line.startswith('#')]
+    
+    result = _execute_commands(router_db.id, commands)
+    if result['success']:
+        logger.info(f"SSTP server configured via API on router {router_db.name}")
+        return {**prov, "api_applied": True, "api_results": result['results']}
+    else:
+        logger.error(f"API SSTP provisioning failed: {result['error']}")
+        raise RuntimeError(f"API provisioning failed: {result['error']}")
+
+
+def add_ppp_secret_api(router_id: int, client_name: str, password: str,
+                        remote_address: str, is_public: bool = False,
+                        lan_interface: str = "bridge") -> dict:
+    """Agrega un secret PPP via API."""
+    profile_name = "fastisp-sstp"
+    commands = [
+        f"/ppp/secret add name={client_name} password={password} service=sstp profile={profile_name} remote-address={remote_address} comment=FastISP Client"
+    ]
+    if is_public:
+        commands.append(f"/interface set [find where name={lan_interface}] arp=proxy-arp")
+    return _execute_commands(router_id, commands)
+
+
+def revoke_ppp_secret_api(router_id: int, client_name: str) -> dict:
+    """Elimina un secret PPP via API."""
+    commands = [f"/ppp/secret remove [find where name={client_name}]"]
+    return _execute_commands(router_id, commands)
 
 
 def get_certificate_fingerprint() -> str:

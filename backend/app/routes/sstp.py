@@ -24,13 +24,10 @@ from app.models import MikroTikRouter, SstpTunnel, User
 from app.routes.main_routes import admin_required
 from app.tenancy import current_tenant_id
 from app.services.sstp_service import (
-    provision_sstp_tunnel,
-    revoke_sstp_tunnel,
-    ensure_sstp_user,
-    generate_mikrotik_sstp_script,
-    generate_verification_script,
-    ensure_sstp_certificate,
-    get_certificate_fingerprint,
+    provision_sstp_tunnel, revoke_sstp_tunnel, ensure_sstp_user,
+    generate_mikrotik_sstp_script, get_certificate_fingerprint,
+    ensure_sstp_certificate, generate_verification_script,
+    provision_sstp_tunnel_api, add_ppp_secret_api, revoke_ppp_secret_api,
     _allocate_ip_pair,
     _generate_username,
     _generate_password,
@@ -134,6 +131,24 @@ def create_tunnel():
         result = tunnel.to_dict(include_password=True)
         result['script'] = script
         result['provisioning'] = prov
+
+        # Intentar aplicar via API automáticamente
+        api_applied = False
+        api_results = None
+        try:
+            api_result = provision_sstp_tunnel_api(router)
+            api_applied = api_result.get('api_applied', False)
+            api_results = api_result.get('api_results', [])
+            logger.info(f"SSTP server auto-applied via API on router {router.id}")
+        except Exception as api_err:
+            logger.warning(f"SSTP API auto-provisioning failed for router {router.id}: {api_err}. Manual script required.")
+        
+        result['api_applied'] = api_applied
+        result['api_results'] = api_results
+        result['message'] = (
+            'Servidor SSTP configurado via API' if api_applied
+            else 'Servidor SSTP generado (aplicar script manualmente)'
+        )
 
         logger.info(f"SSTP tunnel provisioned for router {router.id} ({router.name})")
         return jsonify(result), 201
@@ -383,3 +398,60 @@ def sstp_status():
         'architecture': 'mikrotik-native-sstp',
         'ip_pool': '10.10.0.0/24',
     })
+
+
+# --- Add PPP secrets endpoint ---
+@sstp_bp.route('/ppp-secrets', methods=['POST'])
+@jwt_required()
+@admin_required()
+def add_ppp_secret():
+    """
+    Add a PPP secret (SSTP client) via API.
+    Body: {
+        "router_id": 1,
+        "client_name": "juan-perez",
+        "password": "s3cr3t",
+        "remote_address": "10.10.0.10",
+        "is_public": false,
+        "lan_interface": "bridge"  # optional, defaults to bridge
+    }
+    """
+    data = request.get_json() or {}
+    required = ['router_id', 'client_name', 'password', 'remote_address']
+    missing = [k for k in required if not data.get(k)]
+    if missing:
+        return jsonify({'error': f'Faltan campos: {", ".join(missing)}'}), 400
+
+    tid = current_tenant_id()
+    user = _get_current_user()
+
+    router = db.session.get(MikroTikRouter, int(data['router_id']))
+    if not router:
+        return jsonify({'error': 'Router no encontrado'}), 404
+    if user.role != 'platform_admin' and router.tenant_id != tid:
+        return jsonify({'error': 'Acceso denegado'}), 403
+
+    try:
+        result = add_ppp_secret_api(
+            router_id=router.id,
+            client_name=data['client_name'],
+            password=data['password'],
+            remote_address=data['remote_address'],
+            is_public=data.get('is_public', False),
+            lan_interface=data.get('lan_interface', 'bridge')
+        )
+        if result.get('success'):
+            logger.info(f"PPP secret added via API: {data['client_name']} on router {router.id}")
+            return jsonify({
+                'message': 'PPP secret agregado exitosamente',
+                'client_name': data['client_name'],
+                'remote_address': data['remote_address'],
+                'is_public': data.get('is_public', False),
+                'api_results': result.get('results', [])
+            })
+        else:
+            logger.error(f"Failed to add PPP secret via API: {result.get('error')}")
+            return jsonify({'error': result.get('error', 'Error desconocido')}), 500
+    except Exception as e:
+        logger.error(f"Error adding PPP secret: {e}")
+        return jsonify({'error': str(e)}), 500
