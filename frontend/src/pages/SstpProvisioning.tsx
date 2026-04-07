@@ -1,7 +1,7 @@
 /**
- * SSTP VPN Provisioning Panel
- * ============================
- * Panel para gestionar túneles SSTP para routers MikroTik de clientes ISP.
+ * SSTP VPN Provisioning Panel (MikroTik Native)
+ * ==============================================
+ * Panel para gestionar servidores SSTP nativos en routers MikroTik de clientes ISP.
  */
 
 import React, { useState, useEffect, useCallback } from 'react'
@@ -44,6 +44,9 @@ interface SstpTunnel {
   revoked_at: string | null
   script?: string
   verification_script?: string
+  api_applied?: boolean
+  api_results?: string[]
+  message?: string
 }
 
 interface Router {
@@ -58,8 +61,8 @@ interface SstpStatus {
   active_tunnels: number
   revoked_tunnels: number
   certificate_fingerprint: string
-  server_host: string
   server_port: number
+  architecture: string
   ip_pool: string
 }
 
@@ -120,7 +123,7 @@ const ScriptModal: React.FC<{
               <CommandLineIcon className="w-5 h-5 text-cyan-400" />
             </div>
             <div>
-              <h2 className="text-white font-semibold">Script de Aprovisionamiento</h2>
+              <h2 className="text-white font-semibold">Script del Servidor SSTP</h2>
               <p className="text-gray-400 text-sm">{tunnel.router_name} · {tunnel.username}</p>
             </div>
           </div>
@@ -131,26 +134,27 @@ const ScriptModal: React.FC<{
         <div className="mx-5 mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex gap-2">
           <InformationCircleIcon className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
           <p className="text-blue-300 text-sm">
-            Abre <strong>Winbox</strong> o <strong>SSH</strong> en el MikroTik del cliente, ve a <strong>New Terminal</strong> y pega este script completo.
+            <strong>API Auto-provisioning:</strong> Si el router está online, el script se aplicará automáticamente.
+            Si falla, pega este script en <strong>Winbox → New Terminal</strong> del MikroTik.
           </p>
         </div>
 
         {/* Credentials summary */}
         <div className="mx-5 mt-3 grid grid-cols-2 gap-2">
           <div className="bg-gray-800 rounded-lg p-3">
-            <p className="text-gray-400 text-xs mb-1">Servidor SSTP</p>
+            <p className="text-gray-400 text-xs mb-1">Servidor SSTP (router)</p>
             <p className="text-white font-mono text-sm">{tunnel.server_host}:{tunnel.server_port}</p>
           </div>
           <div className="bg-gray-800 rounded-lg p-3">
-            <p className="text-gray-400 text-xs mb-1">Usuario</p>
+            <p className="text-gray-400 text-xs mb-1">Usuario PPP</p>
             <p className="text-white font-mono text-sm">{tunnel.username}</p>
           </div>
           <div className="bg-gray-800 rounded-lg p-3">
-            <p className="text-gray-400 text-xs mb-1">IP VPS (servidor)</p>
+            <p className="text-gray-400 text-xs mb-1">Gateway local</p>
             <p className="text-white font-mono text-sm">{tunnel.server_ip}</p>
           </div>
           <div className="bg-gray-800 rounded-lg p-3">
-            <p className="text-gray-400 text-xs mb-1">IP Cliente (MikroTik)</p>
+            <p className="text-gray-400 text-xs mb-1">Primer cliente</p>
             <p className="text-white font-mono text-sm">{tunnel.client_ip}</p>
           </div>
         </div>
@@ -163,7 +167,7 @@ const ScriptModal: React.FC<{
               !showVerify ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-gray-400 hover:text-white'
             }`}
           >
-            Script de Aprovisionamiento
+            Script del Servidor SSTP
           </button>
           <button
             onClick={() => setShowVerify(true)}
@@ -232,7 +236,7 @@ const ProvisionModal: React.FC<{
             <div className="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
               <PlusIcon className="w-5 h-5 text-emerald-400" />
             </div>
-            <h2 className="text-white font-semibold">Provisionar Túnel SSTP</h2>
+            <h2 className="text-white font-semibold">Configurar Servidor SSTP</h2>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors text-xl">✕</button>
         </div>
@@ -275,7 +279,7 @@ const ProvisionModal: React.FC<{
           <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 flex gap-2">
             <ExclamationTriangleIcon className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
             <p className="text-yellow-300 text-xs">
-              Se generarán credenciales únicas para este router. El script resultante debe pegarse en el terminal del MikroTik del cliente.
+              Se configurará el MikroTik como <strong>servidor SSTP nativo</strong> con certificados propios, pool de IPs y PPP secrets. Si el router está online, se aplicará automáticamente vía API.
             </p>
           </div>
         </div>
@@ -289,7 +293,7 @@ const ProvisionModal: React.FC<{
             {loading
               ? <ArrowPathIcon className="w-4 h-4 animate-spin" />
               : <ShieldCheckIcon className="w-4 h-4" />}
-            {loading ? 'Provisionando...' : 'Generar Túnel SSTP'}
+            {loading ? 'Configurando...' : 'Configurar Servidor SSTP'}
           </button>
           <button
             onClick={onClose}
@@ -364,10 +368,10 @@ const SstpProvisioning: React.FC = () => {
       setShowScriptModal(false)
       setSelectedTunnel(newTunnel)
       setShowScriptModal(true)
-      showSuccess('Túnel SSTP provisionado exitosamente')
+      showSuccess(newTunnel.message || 'Servidor SSTP configurado')
       loadData()
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Error al provisionar'
+      const msg = e instanceof Error ? e.message : 'Error al configurar servidor'
       setError(msg)
     } finally {
       setProvisionLoading(false)
@@ -415,7 +419,7 @@ const SstpProvisioning: React.FC = () => {
       setShowProvisionModal(false)
       setSelectedTunnel(data)
       setShowScriptModal(true)
-      showSuccess('Credenciales regeneradas. Aplica el nuevo script en el MikroTik.')
+      showSuccess(data.message || 'Credenciales regeneradas')
       loadData()
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Error regenerando credenciales'
@@ -451,10 +455,10 @@ const SstpProvisioning: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-white">Túneles SoftEther SSTP</h1>
+                <h1 className="text-2xl font-bold text-white">Servidores SSTP Nativo MikroTik</h1>
                 <span className="px-2 py-0.5 bg-cyan-500/20 border border-cyan-500/30 rounded-full text-cyan-300 text-xs font-medium">VPN</span>
               </div>
-              <p className="text-gray-400 text-sm mt-0.5">Aprovisionamiento automático via SoftEther para MikroTik clientes ISP</p>
+              <p className="text-gray-400 text-sm mt-0.5">Aprovisionamiento automático vía API MikroTik para routers clientes ISP</p>
             </div>
           </div>
           <button
@@ -462,7 +466,7 @@ const SstpProvisioning: React.FC = () => {
             className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 hover:-translate-y-0.5"
           >
             <PlusIcon className="w-4 h-4" />
-            Nuevo Túnel SSTP
+            Nuevo Servidor SSTP
           </button>
         </div>
       </div>
@@ -485,9 +489,9 @@ const SstpProvisioning: React.FC = () => {
       {/* Stats */}
       {status && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-gray-900 border border-emerald-500/20 rounded-xl p-4 hover:border-emerald-500/40 transition-colors">
+          <div className="bg-gray-900 border border-cyan-500/20 rounded-xl p-4 hover:border-cyan-500/40 transition-colors">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-400 text-xs">Túneles Activos</p>
+              <p className="text-gray-400 text-xs">Servidores Activos</p>
               <SignalSolid className="w-4 h-4 text-emerald-400" />
             </div>
             <p className="text-3xl font-bold text-emerald-400">{status.active_tunnels}</p>
@@ -495,7 +499,7 @@ const SstpProvisioning: React.FC = () => {
           </div>
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-colors">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-400 text-xs">Total Túneles</p>
+              <p className="text-gray-400 text-xs">Total Servidores</p>
               <WifiIcon className="w-4 h-4 text-gray-400" />
             </div>
             <p className="text-3xl font-bold text-white">{status.total_tunnels}</p>
@@ -503,10 +507,10 @@ const SstpProvisioning: React.FC = () => {
           </div>
           <div className="bg-gray-900 border border-cyan-500/20 rounded-xl p-4 hover:border-cyan-500/40 transition-colors">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-400 text-xs">Servidor SoftEther</p>
+              <p className="text-gray-400 text-xs">Arquitectura</p>
               <ServerIcon className="w-4 h-4 text-cyan-400" />
             </div>
-            <p className="text-sm font-mono text-cyan-400 font-bold">{status.server_host}</p>
+            <p className="text-sm font-mono text-cyan-400 font-bold">{status.architecture}</p>
             <p className="text-gray-500 text-xs mt-1">Puerto {status.server_port}</p>
           </div>
           <div className="bg-gray-900 border border-purple-500/20 rounded-xl p-4 hover:border-purple-500/40 transition-colors">
@@ -525,7 +529,7 @@ const SstpProvisioning: React.FC = () => {
         <div className="mb-6 p-3 bg-gray-900 border border-gray-700 rounded-xl flex items-center gap-3">
           <KeyIcon className="w-4 h-4 text-yellow-400 flex-shrink-0" />
           <div>
-            <p className="text-gray-400 text-xs">Huella del certificado SSL (SHA256)</p>
+            <p className="text-gray-400 text-xs">Huella del certificado (CA MikroTik)</p>
             <p className="text-yellow-300 font-mono text-xs break-all">{status.certificate_fingerprint}</p>
           </div>
         </div>
@@ -565,14 +569,14 @@ const SstpProvisioning: React.FC = () => {
           <div className="p-4 bg-cyan-500/10 rounded-2xl border border-cyan-500/20 inline-flex mb-4">
             <ShieldCheckIcon className="w-10 h-10 text-cyan-500/60" />
           </div>
-          <p className="text-gray-300 font-medium text-lg">Sin túneles SoftEther SSTP</p>
-          <p className="text-gray-500 text-sm mt-1 max-w-xs mx-auto">Aprovisiona el primer túnel para conectar un router MikroTik de cliente ISP</p>
+          <p className="text-gray-300 font-medium text-lg">Sin servidores SSTP nativos</p>
+          <p className="text-gray-500 text-sm mt-1 max-w-xs mx-auto">Configura el primer router MikroTik como servidor SSTP nativo</p>
           <button
             onClick={() => setShowProvisionModal(true)}
             className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm font-semibold transition-all"
           >
             <PlusIcon className="w-4 h-4" />
-            Nuevo Túnel SSTP
+            Nuevo Servidor SSTP
           </button>
         </div>
       ) : (
@@ -621,15 +625,15 @@ const SstpProvisioning: React.FC = () => {
                     </div>
                     <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1.5">
                       <div>
-                        <p className="text-gray-500 text-xs">Usuario SSTP</p>
+                        <p className="text-gray-500 text-xs">Usuario PPP</p>
                         <p className="text-gray-300 font-mono text-xs truncate">{tunnel.username}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs">IP VPS</p>
+                        <p className="text-gray-500 text-xs">Gateway</p>
                         <p className="text-gray-300 font-mono text-xs">{tunnel.server_ip}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs">IP MikroTik</p>
+                        <p className="text-gray-500 text-xs">Pool inicio</p>
                         <p className="text-gray-300 font-mono text-xs">{tunnel.client_ip}</p>
                       </div>
                       <div>
@@ -678,6 +682,24 @@ const SstpProvisioning: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* API Applied indicator */}
+      {selectedTunnel?.api_applied && (
+        <div className="mb-4 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
+          <div className="flex items-center gap-2 text-emerald-300 font-medium mb-2">
+            <CheckCircleSolid className="w-5 h-5" />
+            Servidor SSTP configurado automáticamente vía API MikroTik
+          </div>
+          {selectedTunnel.api_results && selectedTunnel.api_results.length > 0 && (
+            <details className="text-emerald-400 text-xs">
+              <summary className="cursor-pointer hover:text-emerald-300">Ver comandos aplicados ({selectedTunnel.api_results.length})</summary>
+              <pre className="mt-2 bg-gray-950 rounded p-2 text-xs overflow-auto max-h-32">
+                {selectedTunnel.api_results.join('\n')}
+              </pre>
+            </details>
+          )}
         </div>
       )}
 
