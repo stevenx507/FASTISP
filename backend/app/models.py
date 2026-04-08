@@ -1390,7 +1390,7 @@ class SstpTunnel(db.Model):
     server_ip = db.Column(db.String(45), nullable=False)
     client_ip = db.Column(db.String(45), nullable=False)
     server_host = db.Column(db.String(255), nullable=False, default='fastisp.cloud')
-    server_port = db.Column(db.Integer, nullable=False, default=8443)
+    server_port = db.Column(db.Integer, nullable=False, default=443)
     status = db.Column(db.String(20), nullable=False, default='active')  # active, revoked, pending
     last_seen = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)

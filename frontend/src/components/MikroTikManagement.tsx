@@ -52,6 +52,52 @@ interface RouterConnectionActionResponse {
   diagnostics?: RouterConnectionDiagnosticsPayload | null
 }
 
+interface RouterSnmpProfilePayload {
+  enabled?: boolean
+  label?: string
+  host?: string
+  port?: number
+  version?: string
+  community?: string
+  community_configured?: boolean
+  community_preview?: string
+  timeout_seconds?: number
+  retries?: number
+  poll_interfaces?: boolean
+  interface_names?: string[]
+  scalar_oids?: Record<string, string | { oid?: string; scale?: number }>
+  thresholds?: Record<string, number>
+  trap_enabled?: boolean
+  trap_port?: number
+  configured?: boolean
+}
+
+interface RouterSnmpProfileResponse {
+  success?: boolean
+  error?: string
+  profile?: RouterSnmpProfilePayload | null
+  runtime_available?: boolean
+}
+
+interface RouterSnmpPollInterface {
+  index?: number | null
+  name?: string
+  alias?: string | null
+  rx_bytes?: number
+  tx_bytes?: number
+  oper_status?: number
+}
+
+interface RouterSnmpPollResponse {
+  success?: boolean
+  error?: string
+  persisted?: boolean
+  polled_at?: string
+  runtime_available?: boolean
+  health_metrics?: Record<string, unknown>
+  interfaces?: RouterSnmpPollInterface[]
+}
+
 interface SstpTunnelData {
   id: number
   router_id: number
@@ -433,6 +479,35 @@ interface RouterFormState {
   traffic_flow_enabled: boolean
 }
 
+interface RouterSnmpFormState {
+  enabled: boolean
+  host: string
+  port: string
+  community: string
+  timeout_seconds: string
+  retries: string
+  poll_interfaces: boolean
+  interface_names: string
+  trap_enabled: boolean
+  trap_port: string
+  cpu_oid: string
+  mem_oid: string
+  temperature_oid: string
+  temperature_scale: string
+  voltage_oid: string
+  voltage_scale: string
+  signal_oid: string
+  signal_scale: string
+  optical_oid: string
+  optical_scale: string
+  onu_online_oid: string
+  onu_offline_oid: string
+  threshold_temperature: string
+  threshold_voltage_min: string
+  threshold_signal_min: string
+  threshold_optical_min: string
+}
+
 const CONNECTION_POLL_INTERVAL_MS = 60000
 
 const resolveConnectionFeedback = (
@@ -565,6 +640,124 @@ const normalizeUiError = (error: unknown, fallback: string): string => {
   return message
 }
 
+const readSnmpMetricSpec = (
+  source: RouterSnmpProfilePayload['scalar_oids'],
+  metricName: string
+): { oid: string; scale: string } => {
+  const metric = source?.[metricName]
+  if (!metric) return { oid: '', scale: '' }
+  if (typeof metric === 'string') return { oid: metric, scale: '' }
+  return {
+    oid: String(metric.oid || ''),
+    scale: metric.scale != null ? String(metric.scale) : '',
+  }
+}
+
+const buildSnmpFormFromProfile = (profile?: RouterSnmpProfilePayload | null): RouterSnmpFormState => {
+  const cpu = readSnmpMetricSpec(profile?.scalar_oids, 'cpu_percent')
+  const mem = readSnmpMetricSpec(profile?.scalar_oids, 'mem_percent')
+  const temperature = readSnmpMetricSpec(profile?.scalar_oids, 'temperature_c')
+  const voltage = readSnmpMetricSpec(profile?.scalar_oids, 'voltage_v')
+  const signal = readSnmpMetricSpec(profile?.scalar_oids, 'signal_level_dbm')
+  const optical = readSnmpMetricSpec(profile?.scalar_oids, 'optical_rx_dbm')
+  const onuOnline = readSnmpMetricSpec(profile?.scalar_oids, 'onu_online')
+  const onuOffline = readSnmpMetricSpec(profile?.scalar_oids, 'onu_offline')
+  const thresholds = profile?.thresholds || {}
+
+  return {
+    enabled: Boolean(profile?.enabled),
+    host: String(profile?.host || ''),
+    port: String(profile?.port ?? 161),
+    community: '',
+    timeout_seconds: String(profile?.timeout_seconds ?? 2),
+    retries: String(profile?.retries ?? 1),
+    poll_interfaces: profile?.poll_interfaces !== false,
+    interface_names: Array.isArray(profile?.interface_names) ? profile?.interface_names.join(', ') : '',
+    trap_enabled: Boolean(profile?.trap_enabled),
+    trap_port: String(profile?.trap_port ?? 162),
+    cpu_oid: cpu.oid,
+    mem_oid: mem.oid,
+    temperature_oid: temperature.oid,
+    temperature_scale: temperature.scale,
+    voltage_oid: voltage.oid,
+    voltage_scale: voltage.scale,
+    signal_oid: signal.oid,
+    signal_scale: signal.scale,
+    optical_oid: optical.oid,
+    optical_scale: optical.scale,
+    onu_online_oid: onuOnline.oid,
+    onu_offline_oid: onuOffline.oid,
+    threshold_temperature: thresholds.temperature_c != null ? String(thresholds.temperature_c) : '70',
+    threshold_voltage_min: thresholds.voltage_v_min != null ? String(thresholds.voltage_v_min) : '21.5',
+    threshold_signal_min: thresholds.signal_level_dbm_min != null ? String(thresholds.signal_level_dbm_min) : '-30',
+    threshold_optical_min: thresholds.optical_rx_dbm_min != null ? String(thresholds.optical_rx_dbm_min) : '-30',
+  }
+}
+
+const buildSnmpPayloadFromForm = (form: RouterSnmpFormState): RouterSnmpProfilePayload => {
+  const scalar_oids: NonNullable<RouterSnmpProfilePayload['scalar_oids']> = {}
+
+  const appendMetric = (metricName: string, oid: string, scaleText = '') => {
+    const normalizedOid = oid.trim()
+    if (!normalizedOid) return
+    const normalizedScale = scaleText.trim()
+    if (!normalizedScale || normalizedScale === '1') {
+      scalar_oids[metricName] = normalizedOid
+      return
+    }
+    const parsedScale = Number(normalizedScale)
+    scalar_oids[metricName] = Number.isFinite(parsedScale)
+      ? { oid: normalizedOid, scale: parsedScale }
+      : normalizedOid
+  }
+
+  appendMetric('cpu_percent', form.cpu_oid)
+  appendMetric('mem_percent', form.mem_oid)
+  appendMetric('temperature_c', form.temperature_oid, form.temperature_scale)
+  appendMetric('voltage_v', form.voltage_oid, form.voltage_scale)
+  appendMetric('signal_level_dbm', form.signal_oid, form.signal_scale)
+  appendMetric('optical_rx_dbm', form.optical_oid, form.optical_scale)
+  appendMetric('onu_online', form.onu_online_oid)
+  appendMetric('onu_offline', form.onu_offline_oid)
+
+  const thresholds: Record<string, number> = {}
+  const appendThreshold = (key: string, value: string) => {
+    const parsed = Number(value.trim())
+    if (Number.isFinite(parsed)) thresholds[key] = parsed
+  }
+  appendThreshold('temperature_c', form.threshold_temperature)
+  appendThreshold('voltage_v_min', form.threshold_voltage_min)
+  appendThreshold('signal_level_dbm_min', form.threshold_signal_min)
+  appendThreshold('optical_rx_dbm_min', form.threshold_optical_min)
+
+  const payload: RouterSnmpProfilePayload = {
+    enabled: form.enabled,
+    host: form.host.trim(),
+    port: Number(form.port || '161'),
+    timeout_seconds: Number(form.timeout_seconds || '2'),
+    retries: Number(form.retries || '1'),
+    poll_interfaces: form.poll_interfaces,
+    interface_names: form.interface_names
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean),
+    scalar_oids,
+    thresholds,
+    trap_enabled: form.trap_enabled,
+    trap_port: Number(form.trap_port || '162'),
+  }
+  if (form.community.trim()) payload.community = form.community
+  return payload
+}
+
+const formatSnmpMetric = (value: unknown, suffix = ''): string => {
+  if (value === null || value === undefined || value === '') return '-'
+  if (typeof value === 'number') return `${value}${suffix}`
+  const numeric = Number(value)
+  if (Number.isFinite(numeric)) return `${numeric}${suffix}`
+  return String(value)
+}
+
 const MikroTikManagement: React.FC = () => {
   const [routers, setRouters] = useState<RouterItem[]>([])
   const [selectedRouter, setSelectedRouter] = useState<RouterItem | null>(null)
@@ -652,6 +845,13 @@ const MikroTikManagement: React.FC = () => {
   const [sstpProvisioning, setSstpProvisioning] = useState(false)
   const [sstpScriptCopied, setSstpScriptCopied] = useState(false)
   const [sstpLoadingForRouter, setSstpLoadingForRouter] = useState<string | null>(null)
+  const [routerSnmpProfile, setRouterSnmpProfile] = useState<RouterSnmpProfilePayload | null>(null)
+  const [routerSnmpForm, setRouterSnmpForm] = useState<RouterSnmpFormState>(() => buildSnmpFormFromProfile(null))
+  const [routerSnmpPollResult, setRouterSnmpPollResult] = useState<RouterSnmpPollResponse | null>(null)
+  const [routerSnmpRuntimeAvailable, setRouterSnmpRuntimeAvailable] = useState<boolean | null>(null)
+  const [routerSnmpLoading, setRouterSnmpLoading] = useState(false)
+  const [routerSnmpSaving, setRouterSnmpSaving] = useState(false)
+  const [routerSnmpPolling, setRouterSnmpPolling] = useState(false)
   // Herramientas
   const [herramientasOpen, setHerramientasOpen] = useState(false)
   const [herramientasModal, setHerramientasModal] = useState<'arp' | 'ppp' | null>(null)
@@ -886,6 +1086,89 @@ const MikroTikManagement: React.FC = () => {
     [apiFetch, safeJson]
   )
 
+  const loadRouterSnmpProfile = useCallback(
+    async (routerId: string) => {
+      setRouterSnmpLoading(true)
+      try {
+        const response = await apiFetch(`/api/mikrotik/routers/${routerId}/snmp-profile`)
+        const payload = (await safeJson(response)) as RouterSnmpProfileResponse | null
+        if (response.ok && payload?.success && payload.profile) {
+          setRouterSnmpProfile(payload.profile)
+          setRouterSnmpForm(buildSnmpFormFromProfile(payload.profile))
+          setRouterSnmpRuntimeAvailable(payload.runtime_available ?? null)
+          return
+        }
+        setRouterSnmpProfile(null)
+        setRouterSnmpForm(buildSnmpFormFromProfile(null))
+        setRouterSnmpRuntimeAvailable(payload?.runtime_available ?? null)
+      } catch (error) {
+        console.error('Error loading SNMP profile:', error)
+        setRouterSnmpProfile(null)
+        setRouterSnmpForm(buildSnmpFormFromProfile(null))
+        setRouterSnmpRuntimeAvailable(null)
+      } finally {
+        setRouterSnmpLoading(false)
+      }
+    },
+    [apiFetch, safeJson]
+  )
+
+  const saveRouterSnmpProfile = useCallback(async () => {
+    if (!selectedRouter) return
+    setRouterSnmpSaving(true)
+    try {
+      const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/snmp-profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildSnmpPayloadFromForm(routerSnmpForm)),
+      })
+      const payload = (await safeJson(response)) as RouterSnmpProfileResponse | null
+      if (!response.ok || !payload?.success || !payload.profile) {
+        addToast('error', payload?.error || 'No se pudo guardar el perfil SNMP')
+        return
+      }
+      setRouterSnmpProfile(payload.profile)
+      setRouterSnmpForm(buildSnmpFormFromProfile(payload.profile))
+      setRouterSnmpRuntimeAvailable(payload.runtime_available ?? null)
+      addToast('success', 'Perfil SNMP guardado')
+    } catch (error) {
+      console.error('Error saving SNMP profile:', error)
+      addToast('error', normalizeUiError(error, 'Error guardando perfil SNMP'))
+    } finally {
+      setRouterSnmpSaving(false)
+    }
+  }, [addToast, apiFetch, routerSnmpForm, safeJson, selectedRouter])
+
+  const runRouterSnmpPoll = useCallback(
+    async (persist = false) => {
+      if (!selectedRouter) return
+      setRouterSnmpPolling(true)
+      try {
+        const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/snmp/poll`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            persist,
+            profile: buildSnmpPayloadFromForm(routerSnmpForm),
+          }),
+        })
+        const payload = (await safeJson(response)) as RouterSnmpPollResponse | null
+        if (!response.ok || !payload?.success) {
+          addToast('error', payload?.error || 'No se pudo consultar SNMP')
+          return
+        }
+        setRouterSnmpPollResult(payload)
+        addToast('success', persist ? 'SNMP consultado y persistido' : 'SNMP consultado correctamente')
+      } catch (error) {
+        console.error('Error polling SNMP profile:', error)
+        addToast('error', normalizeUiError(error, 'Error consultando SNMP'))
+      } finally {
+        setRouterSnmpPolling(false)
+      }
+    },
+    [addToast, apiFetch, routerSnmpForm, safeJson, selectedRouter]
+  )
+
   const loadRouters = useCallback(async () => {
     try {
       const response = await apiFetch('/api/mikrotik/routers')
@@ -1066,8 +1349,12 @@ const MikroTikManagement: React.FC = () => {
     setSstpTunnel(null)
     setSstpScript('')
     setSstpScriptCopied(false)
+    setRouterSnmpProfile(null)
+    setRouterSnmpForm(buildSnmpFormFromProfile(null))
+    setRouterSnmpPollResult(null)
     void loadSstpTunnelForRouter(selectedRouter.id)
-  }, [loadEnterpriseChangeLog, loadEnterpriseProfiles, loadQuickConnect, loadRouterReadiness, loadRouterStats, loadSstpTunnelForRouter, quickConnectScope, selectedRouter])
+    void loadRouterSnmpProfile(selectedRouter.id)
+  }, [loadEnterpriseChangeLog, loadEnterpriseProfiles, loadQuickConnect, loadRouterReadiness, loadRouterSnmpProfile, loadRouterStats, loadSstpTunnelForRouter, quickConnectScope, selectedRouter])
 
   useEffect(() => {
     if (!selectedRouter || activeTab !== 'config') return
@@ -2068,7 +2355,7 @@ const MikroTikManagement: React.FC = () => {
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow">
         <h3 className="mb-3 text-lg font-semibold text-gray-900">Alta rapida de MikroTik</h3>
         <p className="mb-3 text-sm text-gray-600">
-          Agrega routers nuevos con sus credenciales de API. Luego usa la pestana Configuracion para provisionar el tunel SoftEther SSTP.
+          Agrega routers nuevos con sus credenciales de API. Luego usa la pestana Configuracion para provisionar el servidor SSTP nativo.
         </p>
         <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -2377,7 +2664,7 @@ const MikroTikManagement: React.FC = () => {
                     </label>
                   </div>
                   <p className="text-xs text-gray-500">
-                    Al activar esto, FASTISP provisionará automáticamente un túnel SoftEther SSTP para este router y generará el script RouterOS correspondiente.
+                    Al activar esto, FASTISP provisionará automáticamente el servidor SSTP nativo para este router y generará el script RouterOS correspondiente.
                   </p>
                 </div>
               )}
@@ -2694,7 +2981,7 @@ const MikroTikManagement: React.FC = () => {
                 )}
                 {activeTab === 'config' && (
                   <div className="space-y-4">
-                    <h4 className="text-lg font-semibold text-gray-900">Conexion remota rapida</h4>
+                    <h4 className="text-lg font-semibold text-gray-900">Conexion remota guiada</h4>
                     <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div>
@@ -2702,7 +2989,7 @@ const MikroTikManagement: React.FC = () => {
                           <p className="text-xs text-emerald-700">
                             Perfil activo: <strong>{quickConnect?.onboarding_profile?.account_label || onboardingProfile?.account_label || user?.email || 'Cuenta actual'}</strong>
                             {' '}| prefijo routers: <strong>{quickConnect?.onboarding_profile?.router_name_prefix || onboardingProfile?.router_name_prefix || '-'}</strong>
-                            {' '}| VPN: <strong>SoftEther SSTP</strong>
+                            {' '}| VPN: <strong>SSTP Nativo MikroTik</strong>
                           </p>
                         </div>
                         <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
@@ -2818,6 +3105,252 @@ const MikroTikManagement: React.FC = () => {
                                   <li key={`${item}-${idx}`}>- {item}</li>
                                 ))}
                               </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">Monitoreo SNMP</p>
+                          <p className="text-xs text-gray-500">
+                            Configura sondeo para CPU, memoria, temperatura, voltaje, senal u optica desde esta misma vista.
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                              routerSnmpProfile?.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'
+                            }`}
+                          >
+                            {routerSnmpProfile?.enabled ? 'SNMP activo' : 'SNMP inactivo'}
+                          </span>
+                          <span
+                            className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                              routerSnmpRuntimeAvailable === false ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                            }`}
+                          >
+                            {routerSnmpRuntimeAvailable === false ? 'Backend sin runtime SNMP' : 'Backend listo'}
+                          </span>
+                        </div>
+                      </div>
+                      {routerSnmpLoading ? (
+                        <p className="text-xs text-gray-500">Cargando perfil SNMP...</p>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 gap-3 xl:grid-cols-4">
+                            <label className="rounded border border-gray-200 bg-white p-3 text-xs text-gray-700">
+                              <span className="mb-1 block font-semibold text-gray-800">Host</span>
+                              <input
+                                value={routerSnmpForm.host}
+                                onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, host: e.target.value }))}
+                                placeholder={selectedRouter.ip_address}
+                                className="w-full rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
+                              />
+                            </label>
+                            <label className="rounded border border-gray-200 bg-white p-3 text-xs text-gray-700">
+                              <span className="mb-1 block font-semibold text-gray-800">Community</span>
+                              <input
+                                value={routerSnmpForm.community}
+                                onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, community: e.target.value }))}
+                                placeholder={routerSnmpProfile?.community_preview || 'public'}
+                                className="w-full rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
+                              />
+                              <span className="mt-1 block text-[11px] text-gray-500">
+                                {routerSnmpProfile?.community_configured ? `Actual: ${routerSnmpProfile.community_preview || 'configurada'}` : 'Escribe una nueva para guardarla.'}
+                              </span>
+                            </label>
+                            <label className="rounded border border-gray-200 bg-white p-3 text-xs text-gray-700">
+                              <span className="mb-1 block font-semibold text-gray-800">Puerto / timeout / retries</span>
+                              <div className="grid grid-cols-3 gap-2">
+                                <input
+                                  value={routerSnmpForm.port}
+                                  onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, port: e.target.value }))}
+                                  className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
+                                />
+                                <input
+                                  value={routerSnmpForm.timeout_seconds}
+                                  onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, timeout_seconds: e.target.value }))}
+                                  className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
+                                />
+                                <input
+                                  value={routerSnmpForm.retries}
+                                  onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, retries: e.target.value }))}
+                                  className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
+                                />
+                              </div>
+                            </label>
+                            <div className="rounded border border-gray-200 bg-white p-3 text-xs text-gray-700">
+                              <span className="mb-2 block font-semibold text-gray-800">Switches</span>
+                              <div className="space-y-2">
+                                <label className="flex items-center justify-between gap-2">
+                                  <span>SNMP habilitado</span>
+                                  <input
+                                    type="checkbox"
+                                    checked={routerSnmpForm.enabled}
+                                    onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, enabled: e.target.checked }))}
+                                  />
+                                </label>
+                                <label className="flex items-center justify-between gap-2">
+                                  <span>Leer interfaces</span>
+                                  <input
+                                    type="checkbox"
+                                    checked={routerSnmpForm.poll_interfaces}
+                                    onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, poll_interfaces: e.target.checked }))}
+                                  />
+                                </label>
+                                <label className="flex items-center justify-between gap-2">
+                                  <span>Esperar traps</span>
+                                  <input
+                                    type="checkbox"
+                                    checked={routerSnmpForm.trap_enabled}
+                                    onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, trap_enabled: e.target.checked }))}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+
+                          <label className="block rounded border border-gray-200 bg-white p-3 text-xs text-gray-700">
+                            <span className="mb-1 block font-semibold text-gray-800">Interfaces a graficar</span>
+                            <input
+                              value={routerSnmpForm.interface_names}
+                              onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, interface_names: e.target.value }))}
+                              placeholder="ether1, sfp1, bridge"
+                              className="w-full rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
+                            />
+                            <span className="mt-1 block text-[11px] text-gray-500">
+                              Dejalo vacio para leer todas las interfaces expuestas por SNMP.
+                            </span>
+                          </label>
+
+                          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                            {[
+                              { key: 'cpu_oid', label: 'CPU %', scaleKey: '' },
+                              { key: 'mem_oid', label: 'Memoria %', scaleKey: '' },
+                              { key: 'temperature_oid', label: 'Temperatura C', scaleKey: 'temperature_scale' },
+                              { key: 'voltage_oid', label: 'Voltaje V', scaleKey: 'voltage_scale' },
+                              { key: 'signal_oid', label: 'Senal dBm', scaleKey: 'signal_scale' },
+                              { key: 'optical_oid', label: 'Optica RX dBm', scaleKey: 'optical_scale' },
+                              { key: 'onu_online_oid', label: 'ONU online', scaleKey: '' },
+                              { key: 'onu_offline_oid', label: 'ONU offline', scaleKey: '' },
+                            ].map((field) => {
+                              const currentValue = routerSnmpForm[field.key as keyof RouterSnmpFormState] as string
+                              const currentScale = field.scaleKey
+                                ? (routerSnmpForm[field.scaleKey as keyof RouterSnmpFormState] as string)
+                                : ''
+                              return (
+                                <div key={field.key} className="rounded border border-gray-200 bg-white p-3 text-xs text-gray-700">
+                                  <span className="mb-1 block font-semibold text-gray-800">{field.label}</span>
+                                  <div className={`grid gap-2 ${field.scaleKey ? 'grid-cols-[minmax(0,1fr)_88px]' : 'grid-cols-1'}`}>
+                                    <input
+                                      value={currentValue}
+                                      onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                                      placeholder="OID"
+                                      className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
+                                    />
+                                    {field.scaleKey && (
+                                      <input
+                                        value={currentScale}
+                                        onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, [field.scaleKey]: e.target.value }))}
+                                        placeholder="scale"
+                                        className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
+                                      />
+                                    )}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                            <label className="rounded border border-gray-200 bg-white p-3 text-xs text-gray-700">
+                              <span className="mb-1 block font-semibold text-gray-800">Temp. critica C</span>
+                              <input
+                                value={routerSnmpForm.threshold_temperature}
+                                onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, threshold_temperature: e.target.value }))}
+                                className="w-full rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
+                              />
+                            </label>
+                            <label className="rounded border border-gray-200 bg-white p-3 text-xs text-gray-700">
+                              <span className="mb-1 block font-semibold text-gray-800">Voltaje minimo</span>
+                              <input
+                                value={routerSnmpForm.threshold_voltage_min}
+                                onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, threshold_voltage_min: e.target.value }))}
+                                className="w-full rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
+                              />
+                            </label>
+                            <label className="rounded border border-gray-200 bg-white p-3 text-xs text-gray-700">
+                              <span className="mb-1 block font-semibold text-gray-800">Senal minima dBm</span>
+                              <input
+                                value={routerSnmpForm.threshold_signal_min}
+                                onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, threshold_signal_min: e.target.value }))}
+                                className="w-full rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
+                              />
+                            </label>
+                            <label className="rounded border border-gray-200 bg-white p-3 text-xs text-gray-700">
+                              <span className="mb-1 block font-semibold text-gray-800">Optica minima dBm</span>
+                              <input
+                                value={routerSnmpForm.threshold_optical_min}
+                                onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, threshold_optical_min: e.target.value }))}
+                                className="w-full rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
+                              />
+                            </label>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={() => void saveRouterSnmpProfile()}
+                              disabled={routerSnmpSaving}
+                              className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
+                            >
+                              {routerSnmpSaving ? 'Guardando...' : 'Guardar perfil SNMP'}
+                            </button>
+                            <button
+                              onClick={() => void runRouterSnmpPoll(false)}
+                              disabled={routerSnmpPolling}
+                              className="rounded bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-60"
+                            >
+                              {routerSnmpPolling ? 'Consultando...' : 'Probar SNMP'}
+                            </button>
+                            <button
+                              onClick={() => void runRouterSnmpPoll(true)}
+                              disabled={routerSnmpPolling}
+                              className="rounded border border-sky-300 px-3 py-1.5 text-xs font-semibold text-sky-800 hover:bg-sky-50 disabled:opacity-60"
+                            >
+                              Probar + persistir
+                            </button>
+                          </div>
+
+                          {routerSnmpPollResult && (
+                            <div className="rounded border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="font-semibold">Ultima lectura SNMP</p>
+                                <span>{routerSnmpPollResult.polled_at || '-'}</span>
+                              </div>
+                              <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-4">
+                                <div className="rounded bg-white px-2 py-2">CPU: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.cpu_percent, '%')}</strong></div>
+                                <div className="rounded bg-white px-2 py-2">Mem: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.mem_percent, '%')}</strong></div>
+                                <div className="rounded bg-white px-2 py-2">Temp: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.temperature_c, ' C')}</strong></div>
+                                <div className="rounded bg-white px-2 py-2">Volt: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.voltage_v, ' V')}</strong></div>
+                                <div className="rounded bg-white px-2 py-2">Senal: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.signal_level_dbm, ' dBm')}</strong></div>
+                                <div className="rounded bg-white px-2 py-2">Optica: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.optical_rx_dbm, ' dBm')}</strong></div>
+                                <div className="rounded bg-white px-2 py-2">ONU on: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.onu_online)}</strong></div>
+                                <div className="rounded bg-white px-2 py-2">ONU off: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.onu_offline)}</strong></div>
+                              </div>
+                              {(routerSnmpPollResult.interfaces || []).length > 0 && (
+                                <div className="mt-2 rounded border border-sky-100 bg-white p-2">
+                                  <p className="font-semibold text-sky-800">Interfaces leidas</p>
+                                  <div className="mt-1 grid grid-cols-1 gap-1 text-[11px] text-sky-900">
+                                    {(routerSnmpPollResult.interfaces || []).slice(0, 4).map((iface) => (
+                                      <div key={`${iface.name}-${iface.index ?? 'idx'}`} className="rounded bg-sky-50 px-2 py-1">
+                                        <strong>{iface.name || 'if'}</strong> | RX {formatSnmpMetric(iface.rx_bytes)} | TX {formatSnmpMetric(iface.tx_bytes)} | estado {formatSnmpMetric(iface.oper_status)}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

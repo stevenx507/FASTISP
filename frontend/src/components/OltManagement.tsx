@@ -138,6 +138,42 @@ interface OltConnectionDiagnostics {
   device?: OltDevice
 }
 
+interface ProvisioningLookupClient {
+  id: number
+  name: string
+  email?: string | null
+  plan?: string | null
+  router_name?: string | null
+  ip_address?: string | null
+  connection_type?: string | null
+  pppoe_username?: string | null
+  network_profile?: {
+    olt_id?: string | null
+    olt_port?: string | null
+    onu_serial?: string | null
+    onu_model?: string | null
+  } | null
+}
+
+interface ProvisioningLookupInstallation {
+  id: string
+  client_id?: number | null
+  client_name?: string | null
+  status?: string | null
+  priority?: string | null
+  technician?: string | null
+  scheduled_for?: string | null
+  address?: string | null
+  notes?: string | null
+  checklist?: Record<string, boolean>
+}
+
+interface ProvisioningLookupResponse {
+  success?: boolean
+  clients?: ProvisioningLookupClient[]
+  installations?: ProvisioningLookupInstallation[]
+}
+
 interface OnuPreflight {
   score: number
   status: 'ready' | 'degraded' | 'blocked'
@@ -447,6 +483,17 @@ const OltManagement: React.FC = () => {
   const [refreshingReadiness, setRefreshingReadiness] = useState(false)
   const [serviceTemplates, setServiceTemplates] = useState<Record<string, OltServiceTemplate[]>>({})
   const [selectedTemplateId, setSelectedTemplateId] = useState('')
+  const [provisionSearch, setProvisionSearch] = useState('')
+  const [provisionLookupLoading, setProvisionLookupLoading] = useState(false)
+  const [provisioningBusy, setProvisioningBusy] = useState(false)
+  const [provisionClients, setProvisionClients] = useState<ProvisioningLookupClient[]>([])
+  const [provisionInstallations, setProvisionInstallations] = useState<ProvisioningLookupInstallation[]>([])
+  const [selectedProvisionClientId, setSelectedProvisionClientId] = useState('')
+  const [selectedInstallationId, setSelectedInstallationId] = useState('')
+  const [provisionOnuModel, setProvisionOnuModel] = useState('')
+  const [provisionNotes, setProvisionNotes] = useState('')
+  const [markInstallationCompleted, setMarkInstallationCompleted] = useState(false)
+  const [provisioningResult, setProvisioningResult] = useState<Record<string, unknown> | null>(null)
 
   const [deviceForm, setDeviceForm] = useState<OltDeviceForm>({
     vendor: 'zte',
@@ -480,6 +527,21 @@ const OltManagement: React.FC = () => {
   const selectedTemplate = useMemo(
     () => templateOptions.find((template) => template.id === selectedTemplateId) || null,
     [templateOptions, selectedTemplateId]
+  )
+  const selectedProvisionClient = useMemo(
+    () => provisionClients.find((item) => String(item.id) === selectedProvisionClientId) || null,
+    [provisionClients, selectedProvisionClientId]
+  )
+  const filteredProvisionInstallations = useMemo(
+    () =>
+      provisionInstallations.filter(
+        (item) => !selectedProvisionClientId || String(item.client_id || '') === selectedProvisionClientId
+      ),
+    [provisionInstallations, selectedProvisionClientId]
+  )
+  const selectedProvisionInstallation = useMemo(
+    () => filteredProvisionInstallations.find((item) => item.id === selectedInstallationId) || null,
+    [filteredProvisionInstallations, selectedInstallationId]
   )
 
   const liveModeBlocked = runMode === 'live' && (!liveConfirm || !preflightAck || !changeTicket.trim())
@@ -552,6 +614,27 @@ const OltManagement: React.FC = () => {
       transcript,
     }
   }, [lastResponse])
+  const provisioningSummary = useMemo(() => {
+    const root = provisioningResult && typeof provisioningResult === 'object' ? provisioningResult : null
+    const provisioning =
+      root && root.provisioning && typeof root.provisioning === 'object'
+        ? (root.provisioning as Record<string, unknown>)
+        : null
+    const bindingPreview =
+      provisioning && provisioning.binding_preview && typeof provisioning.binding_preview === 'object'
+        ? (provisioning.binding_preview as Record<string, unknown>)
+        : null
+    return {
+      success: root ? root.success !== false : null,
+      message: root ? String(root.message || root.error || '-') : '-',
+      persisted: Boolean(provisioning?.persisted),
+      previewOnly: Boolean(provisioning?.preview_only),
+      clientName: bindingPreview ? String(bindingPreview.client_name || '-') : '-',
+      oltPort: bindingPreview ? String(bindingPreview.olt_port || '-') : '-',
+      vlan: bindingPreview ? String(bindingPreview.vlan || '-') : '-',
+      noteLine: bindingPreview ? String(bindingPreview.note_line || '') : '',
+    }
+  }, [provisioningResult])
   const operationalSummaryCards = useMemo(
     () => [
       {
@@ -709,6 +792,50 @@ const OltManagement: React.FC = () => {
     }
   }
 
+  const loadProvisioningLookup = async (options?: { clientId?: string; silent?: boolean }) => {
+    const clientId = String(options?.clientId || '').trim()
+    const silent = options?.silent ?? false
+    const term = provisionSearch.trim()
+    if (!term && !clientId) {
+      if (!silent) toast.error('Ingresa nombre, correo, PPPoE o serial ONU para buscar cliente')
+      return
+    }
+
+    if (!silent) setProvisionLookupLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (term) params.set('q', term)
+      if (clientId) params.set('client_id', clientId)
+      params.set('limit', '8')
+      const response = (await apiClient.get(`/olt/provisioning/lookup?${params.toString()}`)) as ProvisioningLookupResponse
+      const nextClients = (response.clients || []) as ProvisioningLookupClient[]
+      const nextInstallations = (response.installations || []) as ProvisioningLookupInstallation[]
+      setProvisionClients(nextClients)
+      setProvisionInstallations(nextInstallations)
+
+      if (clientId) {
+        setSelectedProvisionClientId(clientId)
+      } else if (nextClients.length === 1) {
+        setSelectedProvisionClientId(String(nextClients[0].id))
+      }
+
+      if (clientId) {
+        const selectedExists = nextInstallations.some((item) => item.id === selectedInstallationId)
+        if (!selectedExists) setSelectedInstallationId('')
+      } else if (!nextClients.length) {
+        setSelectedProvisionClientId('')
+        setSelectedInstallationId('')
+      }
+    } catch (err) {
+      if (!silent) {
+        const msg = err instanceof Error ? err.message : 'No se pudo cargar contexto de provisionamiento'
+        toast.error(msg)
+      }
+    } finally {
+      if (!silent) setProvisionLookupLoading(false)
+    }
+  }
+
   useEffect(() => {
     loadCatalog()
     loadAudit()
@@ -739,6 +866,7 @@ const OltManagement: React.FC = () => {
     if (!selectedDeviceId) {
       setRemoteOptions(null)
       setConnection(null)
+      setProvisioningResult(null)
       return
     }
     void loadRemoteOptions(selectedDeviceId)
@@ -753,6 +881,14 @@ const OltManagement: React.FC = () => {
     }, 60000)
     return () => window.clearInterval(intervalId)
   }, [selectedDeviceId])
+
+  useEffect(() => {
+    if (!selectedProvisionClientId) {
+      setSelectedInstallationId('')
+      return
+    }
+    void loadProvisioningLookup({ clientId: selectedProvisionClientId, silent: true })
+  }, [selectedProvisionClientId])
 
   useEffect(() => {
     if (!deviceForm.vendor) return
@@ -961,6 +1097,37 @@ const OltManagement: React.FC = () => {
         timeout: 2.5,
       })) as Record<string, unknown>
     })
+
+  const runZeroTouchProvision = async () => {
+    const safeClientId = Number(selectedProvisionClientId || 0)
+    if (!safeClientId) {
+      toast.error('Selecciona un cliente antes de provisionar la ONU')
+      return
+    }
+
+    setProvisioningBusy(true)
+    try {
+      await runAction(runMode === 'live' ? 'Zero-touch live' : 'Zero-touch preview', async () => {
+        const response = (await apiClient.post(`/olt/devices/${selectedDeviceId}/onu/zero-touch-provision`, {
+          ...withRunMode(buildBasePayload()),
+          client_id: safeClientId,
+          installation_id: selectedInstallationId || undefined,
+          access_technology: 'fiber',
+          onu_model: provisionOnuModel.trim() || undefined,
+          notes: provisionNotes.trim() || undefined,
+          mark_installation_completed: markInstallationCompleted,
+        })) as Record<string, unknown>
+        setProvisioningResult(response)
+        return response
+      })
+
+      if (selectedProvisionClientId) {
+        await loadProvisioningLookup({ clientId: selectedProvisionClientId, silent: true })
+      }
+    } finally {
+      setProvisioningBusy(false)
+    }
+  }
 
   const copyOption = async (label: string, value?: string) => {
     const text = String(value || '').trim()
@@ -1540,6 +1707,208 @@ const OltManagement: React.FC = () => {
                   <li key={idx}>- {item}</li>
                 ))}
               </ul>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-cyan-400/20 bg-slate-900/70 p-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Provisionamiento Zero-Touch</p>
+            <h3 className="mt-2 text-xl font-semibold text-white">Autoriza la ONU y vincula el cliente en un solo flujo</h3>
+            <p className="mt-2 text-sm text-slate-300">
+              Usa el mismo run mode del panel. En <span className="text-cyan-200">simulate/dry-run</span> genera preview de la
+              vinculacion; en <span className="text-emerald-200">live</span> autoriza la ONU, actualiza el perfil de red del
+              cliente y marca la instalacion.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className={`rounded-full px-3 py-2 text-xs font-semibold ${runMode === 'live' ? 'bg-rose-500/20 text-rose-200' : 'bg-cyan-500/20 text-cyan-200'}`}>
+              {runMode === 'live' ? 'modo live' : `modo ${runMode}`}
+            </span>
+            <button
+              onClick={() => loadProvisioningLookup()}
+              disabled={busy || provisionLookupLoading}
+              className={`${buttonSecondaryClass} disabled:opacity-60`}
+            >
+              {provisionLookupLoading ? 'Buscando...' : 'Buscar cliente'}
+            </button>
+            <button
+              onClick={runZeroTouchProvision}
+              disabled={busy || provisioningBusy || !selectedDeviceId || !selectedProvisionClientId}
+              className={`${buttonPrimaryClass} ${runMode === 'live' ? 'bg-emerald-500 text-slate-900' : 'bg-cyan-500 text-slate-900'} disabled:opacity-60`}
+            >
+              {provisioningBusy ? 'Procesando...' : runMode === 'live' ? 'Provisionar + vincular' : 'Generar preview'}
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <div className="space-y-3 rounded-xl border border-white/10 bg-slate-800/60 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase text-slate-300">Cliente objetivo</p>
+              <span className="rounded-full bg-slate-900 px-2 py-1 text-[10px] text-slate-300">
+                {provisionClients.length} resultado(s)
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <input
+                value={provisionSearch}
+                onChange={(e) => setProvisionSearch(e.target.value)}
+                placeholder="Nombre, correo, PPPoE o serial ONU"
+                className={`flex-1 ${inputClass}`}
+              />
+              <button
+                onClick={() => loadProvisioningLookup()}
+                disabled={busy || provisionLookupLoading}
+                className={`${buttonSecondaryClass} whitespace-nowrap disabled:opacity-60`}
+              >
+                Buscar
+              </button>
+            </div>
+            <select
+              value={selectedProvisionClientId}
+              onChange={(e) => setSelectedProvisionClientId(e.target.value)}
+              className={`w-full ${inputClass}`}
+            >
+              <option value="">Selecciona cliente</option>
+              {provisionClients.map((item) => (
+                <option key={item.id} value={String(item.id)}>
+                  {item.name} {item.plan ? `| ${item.plan}` : ''} {item.email ? `| ${item.email}` : ''}
+                </option>
+              ))}
+            </select>
+
+            {selectedProvisionClient ? (
+              <div className="rounded-lg border border-white/10 bg-slate-900/60 p-3 text-xs text-slate-300">
+                <p className="text-sm font-semibold text-white">{selectedProvisionClient.name}</p>
+                <div className="mt-2 space-y-1">
+                  <p>Plan: <span className="text-slate-100">{selectedProvisionClient.plan || '-'}</span></p>
+                  <p>Correo: <span className="text-slate-100">{selectedProvisionClient.email || '-'}</span></p>
+                  <p>PPPoE: <span className="text-slate-100">{selectedProvisionClient.pppoe_username || '-'}</span></p>
+                  <p>Router: <span className="text-slate-100">{selectedProvisionClient.router_name || '-'}</span></p>
+                  <p>IP: <span className="text-slate-100">{selectedProvisionClient.ip_address || '-'}</span></p>
+                </div>
+                <div className="mt-3 rounded border border-white/10 bg-slate-950/60 px-3 py-2">
+                  <p className="font-semibold text-slate-100">Vinculo actual</p>
+                  <p className="mt-1">OLT: <span className="text-slate-100">{selectedProvisionClient.network_profile?.olt_id || '-'}</span></p>
+                  <p>Puerto: <span className="text-slate-100">{selectedProvisionClient.network_profile?.olt_port || '-'}</span></p>
+                  <p>ONU serial: <span className="text-slate-100">{selectedProvisionClient.network_profile?.onu_serial || '-'}</span></p>
+                  <p>Modelo: <span className="text-slate-100">{selectedProvisionClient.network_profile?.onu_model || '-'}</span></p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400">
+                Busca y selecciona un cliente para asociar la ONU descubierta.
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-3 rounded-xl border border-white/10 bg-slate-800/60 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase text-slate-300">Instalacion y metadatos</p>
+              <span className="rounded-full bg-slate-900 px-2 py-1 text-[10px] text-slate-300">
+                {filteredProvisionInstallations.length} abierta(s)
+              </span>
+            </div>
+            <select
+              value={selectedInstallationId}
+              onChange={(e) => setSelectedInstallationId(e.target.value)}
+              className={`w-full ${inputClass}`}
+            >
+              <option value="">Sin instalacion asociada</option>
+              {filteredProvisionInstallations.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.id} | {item.status || 'pending'} | {item.address || item.client_name || 'Sin direccion'}
+                </option>
+              ))}
+            </select>
+            <input
+              value={provisionOnuModel}
+              onChange={(e) => setProvisionOnuModel(e.target.value)}
+              placeholder="Modelo ONU (ej. ZTE-F660)"
+              className={`w-full ${inputClass}`}
+            />
+            <textarea
+              value={provisionNotes}
+              onChange={(e) => setProvisionNotes(e.target.value)}
+              rows={4}
+              placeholder="Notas para guardar en perfil tecnico / instalacion"
+              className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-slate-100"
+            />
+            <label className="flex items-center gap-2 text-xs text-slate-300">
+              <input
+                type="checkbox"
+                checked={markInstallationCompleted}
+                onChange={(e) => setMarkInstallationCompleted(e.target.checked)}
+              />
+              Marcar instalacion como completada si el aprovisionamiento sale bien
+            </label>
+
+            {selectedProvisionInstallation ? (
+              <div className="rounded-lg border border-white/10 bg-slate-900/60 p-3 text-xs text-slate-300">
+                <p className="text-sm font-semibold text-white">{selectedProvisionInstallation.id}</p>
+                <div className="mt-2 space-y-1">
+                  <p>Estado: <span className="text-slate-100">{selectedProvisionInstallation.status || '-'}</span></p>
+                  <p>Tecnico: <span className="text-slate-100">{selectedProvisionInstallation.technician || '-'}</span></p>
+                  <p>Agenda: <span className="text-slate-100">{formatIsoDate(selectedProvisionInstallation.scheduled_for)}</span></p>
+                  <p>Direccion: <span className="text-slate-100">{selectedProvisionInstallation.address || '-'}</span></p>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {Object.entries(selectedProvisionInstallation.checklist || {}).map(([key, value]) => (
+                    <div key={key} className="rounded border border-white/10 bg-slate-950/60 px-2 py-1">
+                      <p className="text-[10px] uppercase text-slate-400">{key}</p>
+                      <p className={`mt-1 font-semibold ${value ? 'text-emerald-300' : 'text-amber-200'}`}>
+                        {value ? 'ok' : 'pendiente'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400">
+                Puedes dejar la instalacion vacia, pero si eliges una el checklist se actualiza junto al provisionamiento.
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-3 rounded-xl border border-white/10 bg-slate-800/60 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase text-slate-300">Resultado zero-touch</p>
+              <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${
+                provisioningSummary.success === false
+                  ? 'bg-rose-500/20 text-rose-300'
+                  : provisioningSummary.persisted
+                    ? 'bg-emerald-500/20 text-emerald-300'
+                    : 'bg-cyan-500/20 text-cyan-200'
+              }`}>
+                {provisioningSummary.persisted ? 'persistido' : provisioningSummary.previewOnly ? 'preview' : provisioningResult ? 'resultado' : 'sin ejecutar'}
+              </span>
+            </div>
+            {provisioningResult ? (
+              <>
+                <div className="rounded-lg border border-white/10 bg-slate-900/60 p-3 text-xs text-slate-300">
+                  <p>Cliente: <span className="text-slate-100">{provisioningSummary.clientName}</span></p>
+                  <p>Puerto OLT: <span className="text-slate-100">{provisioningSummary.oltPort}</span></p>
+                  <p>VLAN: <span className="text-slate-100">{provisioningSummary.vlan}</span></p>
+                  <p className="mt-2 text-sm text-slate-100">{provisioningSummary.message}</p>
+                </div>
+                {!!provisioningSummary.noteLine && (
+                  <div className="rounded border border-white/10 bg-slate-950/60 px-3 py-2 text-xs text-slate-300">
+                    <p className="font-semibold text-slate-100">Bitacora propuesta</p>
+                    <p className="mt-2">{provisioningSummary.noteLine}</p>
+                  </div>
+                )}
+                <details className="rounded border border-white/10 bg-slate-950/60 p-2 text-xs text-slate-300">
+                  <summary className="cursor-pointer font-semibold text-slate-100">Ver respuesta zero-touch</summary>
+                  <pre className="mt-2 max-h-72 overflow-auto rounded p-2 text-xs">{JSON.stringify(provisioningResult, null, 2)}</pre>
+                </details>
+              </>
+            ) : (
+              <div className="rounded-lg border border-dashed border-white/10 bg-slate-950/40 p-4 text-sm text-slate-300">
+                Busca el cliente, confirma puerto/serial/VLAN arriba y luego ejecuta el preview o el live.
+              </div>
             )}
           </div>
         </div>

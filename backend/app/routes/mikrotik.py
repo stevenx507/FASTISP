@@ -10,6 +10,7 @@ from app.services.mikrotik_service import MikroTikService
 from app.services.mikrotik_advanced_service import MikroTikAdvancedService
 from app.services.ai_diagnostic_service import AIDiagnosticService
 from app.services.monitoring_service import monitoring_service
+from app.services.snmp_service import SNMPRuntimeUnavailable, snmp_service
 from app.tenancy import current_tenant_id, tenant_access_allowed
 import logging
 from datetime import datetime, timedelta
@@ -5124,7 +5125,11 @@ def provision_sstp_for_router(router_id):
     """Provision or return existing SSTP tunnel for this router."""
     try:
         from app.models import SstpTunnel
-        from app.services.sstp_service import provision_sstp_tunnel, generate_mikrotik_sstp_script
+        from app.services.sstp_service import (
+            provision_sstp_tunnel,
+            provision_sstp_tunnel_api,
+            generate_mikrotik_sstp_script,
+        )
         from app.tenancy import current_tenant_id
         from flask_jwt_extended import get_jwt_identity
 
@@ -5180,6 +5185,13 @@ def provision_sstp_for_router(router_id):
         result = tunnel.to_dict(include_password=True)
         result['script'] = script
         result['provisioning'] = prov
+        try:
+            api_result = provision_sstp_tunnel_api(router, provisioning=prov)
+            result['api_applied'] = api_result.get('api_applied', False)
+            result['api_results'] = api_result.get('api_results', [])
+        except Exception as api_err:
+            result['api_applied'] = False
+            result['api_results'] = [str(api_err)]
         logger.info(f"SSTP tunnel provisioned via mikrotik_bp for router {router_id}")
         return jsonify(result), 201
     except Exception as e:
@@ -5361,3 +5373,92 @@ def get_router_traffic_flow_stats(router_id):
     except Exception as e:
         logger.error(f"Error fetching traffic stats for router {router_id}: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+def _resolve_router_for_snmp(router_id: int):
+    router = db.session.get(MikroTikRouter, router_id)
+    if not router or not tenant_access_allowed(router.tenant_id):
+        return None
+    return router
+
+
+@mikrotik_bp.route('/routers/<int:router_id>/snmp-profile', methods=['GET'])
+@jwt_required()
+@admin_required()
+def get_router_snmp_profile(router_id: int):
+    router = _resolve_router_for_snmp(router_id)
+    if not router:
+        return jsonify({'success': False, 'error': 'Router no encontrado'}), 404
+
+    profile = snmp_service.router_profile(router)
+    return jsonify(
+        {
+            'success': True,
+            'router_id': router.id,
+            'router_name': router.name,
+            'profile': snmp_service.sanitize_profile(profile),
+            'runtime_available': snmp_service.is_available(),
+        }
+    ), 200
+
+
+@mikrotik_bp.route('/routers/<int:router_id>/snmp-profile', methods=['PUT', 'PATCH'])
+@jwt_required()
+@admin_required()
+def upsert_router_snmp_profile(router_id: int):
+    router = _resolve_router_for_snmp(router_id)
+    if not router:
+        return jsonify({'success': False, 'error': 'Router no encontrado'}), 404
+
+    payload = request.get_json(silent=True) or {}
+    normalized = snmp_service.store_router_profile(router, payload)
+    db.session.add(router)
+    db.session.commit()
+
+    return jsonify(
+        {
+            'success': True,
+            'router_id': router.id,
+            'router_name': router.name,
+            'profile': snmp_service.sanitize_profile(normalized),
+            'runtime_available': snmp_service.is_available(),
+        }
+    ), 200
+
+
+@mikrotik_bp.route('/routers/<int:router_id>/snmp/poll', methods=['POST'])
+@jwt_required()
+@admin_required()
+def poll_router_snmp(router_id: int):
+    router = _resolve_router_for_snmp(router_id)
+    if not router:
+        return jsonify({'success': False, 'error': 'Router no encontrado'}), 404
+
+    payload = request.get_json(silent=True) or {}
+    overrides = payload.get('profile') if isinstance(payload.get('profile'), dict) else {}
+    persist = _as_bool(payload.get('persist'), default=False)
+
+    profile = snmp_service.router_profile(router)
+    if overrides:
+        profile.update(overrides)
+
+    try:
+        result = snmp_service.poll_router_profile(profile)
+        if persist:
+            snmp_service.persist_router_poll(monitoring_service, router, result)
+        return jsonify(
+            {
+                'success': True,
+                'router_id': router.id,
+                'router_name': router.name,
+                'persisted': persist,
+                **result,
+            }
+        ), 200
+    except SNMPRuntimeUnavailable as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 503
+    except ValueError as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 400
+    except Exception as exc:
+        logger.error('Error polling SNMP for router %s: %s', router_id, exc, exc_info=True)
+        return jsonify({'success': False, 'error': str(exc)}), 502

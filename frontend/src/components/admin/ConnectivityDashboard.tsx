@@ -171,7 +171,7 @@ const ConnectivityDashboard: React.FC = () => {
       }
       if (res.success || res.vpn_username) {
         setVpnResults(prev => ({ ...prev, [routerId]: res }))
-        toast.success(`VPN provisionada: ${res.vpn_username}`)
+        toast.success(`SSTP nativo provisionado: ${res.vpn_username}`)
       } else {
         toast.error('No se pudo provisionar VPN')
       }
@@ -190,7 +190,7 @@ const ConnectivityDashboard: React.FC = () => {
       if (res.script) {
         setShowScriptModal({ routerId, name: routerName, script: res.script })
       } else {
-        toast.error(res.error || 'Router sin VPN provisionada. Ejecuta "Provisionar VPN" primero.')
+        toast.error(res.error || 'Router sin SSTP nativo provisionado. Ejecuta "Provisionar SSTP" primero.')
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error obteniendo script')
@@ -402,9 +402,9 @@ const ConnectivityDashboard: React.FC = () => {
           <div className={`${card} border-l-4 border-l-cyan-500`}>
             <p className="text-xs font-semibold uppercase text-cyan-400">Pilar 1 — Orquestador VPN</p>
             <p className="mt-1 text-sm text-slate-300">
-              El sistema crea automáticamente un usuario SoftEther SSTP y le asigna una IP fija (10.100.x.x) cada vez
-              que se registra un router. Usa "Provisionar" para re-generar credenciales o para routers existentes
-              que aún no tienen VPN asignada.
+              El sistema configura automáticamente un servidor SSTP nativo por router y guarda las credenciales de
+              gestión cada vez que se provisiona. Usa "Provisionar" para re-generar credenciales o para routers
+              existentes que aún no tienen SSTP nativo asignado.
             </p>
           </div>
 
@@ -412,7 +412,7 @@ const ConnectivityDashboard: React.FC = () => {
           <div className={card}>
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <WifiIcon className="h-4 w-4 text-cyan-400" /> Sesiones VPN Activas (SoftEther)
+                <WifiIcon className="h-4 w-4 text-cyan-400" /> Servidores SSTP Nativos Activos
               </h3>
               <button onClick={() => void loadVpnSessions()} disabled={loadingVpnSessions} className={btnSecondary}>
                 <ArrowPathIcon className={`h-3.5 w-3.5 ${loadingVpnSessions ? 'animate-spin' : ''}`} />
@@ -430,7 +430,7 @@ const ConnectivityDashboard: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <p className="mt-3 text-xs text-slate-500">Sin sesiones activas en hub {vpnSessions.hub || 'FASTISP'}</p>
+                <p className="mt-3 text-xs text-slate-500">Sin servidores SSTP activos registrados.</p>
               )
             ) : (
               <p className="mt-3 text-xs text-slate-500">Cargando sesiones...</p>
@@ -461,7 +461,7 @@ const ConnectivityDashboard: React.FC = () => {
                         className={btnPrimary}
                       >
                         {isProvisioning ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <ShieldCheckIcon className="h-4 w-4" />}
-                        {isProvisioning ? 'Provisionando...' : 'Provisionar VPN'}
+                        {isProvisioning ? 'Provisionando...' : 'Provisionar SSTP'}
                       </button>
                       <button
                         onClick={() => void loadOnboardingScript(r.router_id, r.router_name)}
@@ -475,7 +475,7 @@ const ConnectivityDashboard: React.FC = () => {
 
                   {vpnRes && (
                     <div className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-300">
-                      <p>✓ VPN provisionada</p>
+                      <p>✓ SSTP nativo provisionado</p>
                       {vpnRes.sstp_url && <p>URL: <span className="font-mono">{vpnRes.sstp_url}</span></p>}
                     </div>
                   )}
@@ -525,7 +525,7 @@ const ConnectivityDashboard: React.FC = () => {
                       onClick={() => void secureApi(r.router_id)}
                       disabled={isSecuring || !r.vpn_ip}
                       className={btnSuccess}
-                      title={!r.vpn_ip ? 'Requiere VPN provisionada primero' : ''}
+                      title={!r.vpn_ip ? 'Requiere SSTP nativo provisionado primero' : ''}
                     >
                       {isSecuring ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <LockClosedIcon className="h-4 w-4" />}
                       {isSecuring ? 'Aplicando...' : 'Asegurar API'}

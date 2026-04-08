@@ -53,6 +53,9 @@ def test_system_settings_are_persisted_in_database(client, app):
     payload = get_response.get_json()
     assert payload['settings']['auto_suspend_overdue'] is False
     assert payload['settings']['backup_retention_days'] == 21
+    assert 'vps_update' in payload
+    assert 'checks' in payload['vps_update']
+    assert 'deployment' in payload['vps_update']
 
     with app.app_context():
         auto_suspend = (

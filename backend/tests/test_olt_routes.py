@@ -2,7 +2,7 @@ import app.routes.olt as olt_routes
 import app.services.acs_service as acs_service
 
 from app import db
-from app.models import User
+from app.models import AdminInstallation, Client, ClientNetworkProfile, Plan, User
 
 
 def _admin_headers(client, app):
@@ -21,11 +21,32 @@ def _admin_headers(client, app):
     return {"Authorization": f"Bearer {token}"}
 
 
+def _client_fixture(app, *, name="Cliente OLT", plan_name="Plan 100M"):
+    with app.app_context():
+        plan = Plan(name=plan_name, download_speed=100, upload_speed=100, price=29.9)
+        db.session.add(plan)
+        db.session.flush()
+
+        customer = Client(
+            full_name=name,
+            ip_address="10.0.0.50",
+            connection_type="pppoe",
+            pppoe_username="clienteolt",
+            plan_id=plan.id,
+        )
+        db.session.add(customer)
+        db.session.commit()
+        return customer.id
+
+
 class _DummyOLTService:
     calls = []
 
     def __init__(self):
         pass
+
+    def get_device(self, device_id):
+        return {"id": device_id, "name": "Test OLT", "vendor": "zte", "host": "10.20.30.40"}
 
     def generate_script(self, device_id, action, payload=None):
         self.__class__.calls.append(
@@ -96,6 +117,104 @@ def test_authorize_onu_live_requires_confirmation(client, app):
     payload = response.get_json()
     assert payload["success"] is False
     assert "live_confirm" in payload["error"]
+
+
+def test_zero_touch_provision_simulate_returns_preview_without_persisting(client, app, monkeypatch):
+    headers = _admin_headers(client, app)
+    customer_id = _client_fixture(app, name="Cliente Preview")
+    _DummyOLTService.calls = []
+    monkeypatch.setattr(olt_routes, "OLTScriptService", _DummyOLTService)
+
+    response = client.post(
+        "/api/olt/devices/OLT-ZTE-001/onu/zero-touch-provision",
+        json={
+            "client_id": customer_id,
+            "serial": "ZTEG00000088",
+            "frame": 0,
+            "slot": 1,
+            "pon": 2,
+            "onu": 8,
+            "vlan": 220,
+            "run_mode": "simulate",
+            "notes": "Preview de provisionamiento",
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["success"] is True
+    assert payload["provisioning"]["persisted"] is False
+    assert payload["provisioning"]["preview_only"] is True
+    assert payload["provisioning"]["binding_preview"]["profile_updates"]["olt_port"] == "0/1/2"
+    assert payload["provisioning"]["binding_preview"]["profile_updates"]["onu_serial"] == "ZTEG00000088"
+    assert any(call["method"] == "generate_script" and call["action"] == "authorize_onu" for call in _DummyOLTService.calls)
+
+    with app.app_context():
+        assert ClientNetworkProfile.query.filter_by(client_id=customer_id).first() is None
+
+
+def test_zero_touch_provision_live_persists_profile_and_updates_installation(client, app, monkeypatch):
+    headers = _admin_headers(client, app)
+    customer_id = _client_fixture(app, name="Cliente Live", plan_name="Plan 200M")
+    _DummyOLTService.calls = []
+    monkeypatch.setattr(olt_routes, "OLTScriptService", _DummyOLTService)
+
+    with app.app_context():
+        installation = AdminInstallation(
+            id="inst-olt-live",
+            client_id=customer_id,
+            client_name="Cliente Live",
+            address="Av. Principal 123",
+            status="scheduled",
+            technician="tech@test.local",
+            checklist={"onu_registered": False, "cpe_configured": False},
+        )
+        db.session.add(installation)
+        db.session.commit()
+
+    response = client.post(
+        "/api/olt/devices/OLT-ZTE-001/onu/zero-touch-provision",
+        json={
+            "client_id": customer_id,
+            "installation_id": "inst-olt-live",
+            "serial": "ZTEG00000099",
+            "frame": 0,
+            "slot": 1,
+            "pon": 3,
+            "onu": 9,
+            "vlan": 320,
+            "onu_model": "ZTE-F660",
+            "run_mode": "live",
+            "live_confirm": True,
+            "change_ticket": "CHG-OLT-001",
+            "preflight_ack": True,
+            "mark_installation_completed": True,
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["success"] is True
+    assert payload["provisioning"]["persisted"] is True
+    assert payload["provisioning"]["client"]["network_profile"]["onu_serial"] == "ZTEG00000099"
+    assert payload["provisioning"]["installation"]["status"] == "completed"
+    assert payload["provisioning"]["installation"]["checklist"]["onu_registered"] is True
+
+    with app.app_context():
+        profile = ClientNetworkProfile.query.filter_by(client_id=customer_id).first()
+        assert profile is not None
+        assert profile.olt_id == "OLT-ZTE-001"
+        assert profile.olt_port == "0/1/3"
+        assert profile.onu_serial == "ZTEG00000099"
+        assert profile.onu_model == "ZTE-F660"
+
+        installation = AdminInstallation.query.filter_by(id="inst-olt-live").first()
+        assert installation is not None
+        assert installation.status == "completed"
+        assert installation.checklist["onu_registered"] is True
+        assert installation.completed_at is not None
 
 
 def test_suspend_onu_maps_to_deauthorize_action(client, app, monkeypatch):

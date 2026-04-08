@@ -142,6 +142,12 @@ class Config:
     VPS_PUBLIC_HOST = os.environ.get('VPS_PUBLIC_HOST', '')
     VPS_PUBLIC_SSH_USER = os.environ.get('VPS_PUBLIC_SSH_USER', 'noc')
     VPS_PUBLIC_SSH_PORT = int(os.environ.get('VPS_PUBLIC_SSH_PORT', '22') or 22)
+    DEPLOY_PROJECT_ROOT = os.environ.get('DEPLOY_PROJECT_ROOT', '/app')
+    DEPLOY_COMPOSE_FILE = os.environ.get('DEPLOY_COMPOSE_FILE', 'docker-compose.prod.yml')
+    DEPLOY_ENV_FILE = os.environ.get('DEPLOY_ENV_FILE', '.env.prod')
+    DEPLOY_SERVICES = _split_csv(os.environ.get('DEPLOY_SERVICES', 'backend,worker,beat,frontend'))
+    VPS_UPDATE_MIN_DISK_GB = os.environ.get('VPS_UPDATE_MIN_DISK_GB', '2')
+    VPS_UPDATE_MAX_BACKUP_AGE_HOURS = os.environ.get('VPS_UPDATE_MAX_BACKUP_AGE_HOURS', '24')
     ROTATE_PASSWORDS_DRY_RUN = _as_bool(os.environ.get('ROTATE_PASSWORDS_DRY_RUN'), default=False)
     PASSWORD_ROTATION_LENGTH = os.environ.get('PASSWORD_ROTATION_LENGTH', '24')
     

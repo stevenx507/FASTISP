@@ -275,3 +275,151 @@ def list_vpn_users() -> list:
             if username and username != "User Name":
                 users.append(username)
     return users
+
+
+# Override final: compatibilidad legacy montada sobre SSTP nativo RouterOS.
+
+def on_router_created(router) -> dict:
+    """Provisiona SSTP nativo y sincroniza los campos legacy del router."""
+    from app import db
+    from app.models import SstpTunnel, _get_fernet
+    from app.services.sstp_service import provision_sstp_tunnel, provision_sstp_tunnel_api
+
+    tunnel = SstpTunnel.query.filter_by(router_id=router.id, status='active').first()
+    if tunnel:
+        provisioning = {
+            "username": tunnel.username,
+            "password": tunnel.password or "",
+            "server_host": tunnel.server_host,
+            "server_port": tunnel.server_port,
+            "server_ip": tunnel.server_ip,
+            "client_ip": tunnel.client_ip,
+            "fingerprint": "MIKROTIK-NATIVE-CERT",
+            "router_name": router.name,
+            "provisioned_at": tunnel.created_at.isoformat() if tunnel.created_at else datetime.utcnow().isoformat(),
+        }
+    else:
+        provisioning = provision_sstp_tunnel(router)
+        tunnel = SstpTunnel(
+            router_id=router.id,
+            tenant_id=router.tenant_id,
+            username=provisioning["username"],
+            server_ip=provisioning["server_ip"],
+            client_ip=provisioning["client_ip"],
+            server_host=provisioning["server_host"],
+            server_port=provisioning["server_port"],
+            status="active",
+        )
+        tunnel.password = provisioning["password"]
+        db.session.add(tunnel)
+
+    router.vpn_username = provisioning["username"]
+    router.vpn_ip_address = provisioning["server_ip"]
+    router.vpn_password_encrypted = _get_fernet().encrypt(provisioning["password"].encode("utf-8"))
+    router.vpn_provisioned_at = datetime.utcnow()
+    db.session.add(router)
+    db.session.commit()
+
+    api_applied = False
+    api_results: list[str] = []
+    try:
+        api_result = provision_sstp_tunnel_api(router, provisioning=provisioning)
+        api_applied = bool(api_result.get("api_applied"))
+        api_results = list(api_result.get("api_results") or [])
+    except Exception as exc:
+        api_results = [str(exc)]
+        logger.warning("No se pudo auto-aplicar SSTP nativo en router %s: %s", router.id, exc)
+
+    return {
+        "success": True,
+        "vpn_username": provisioning["username"],
+        "vpn_password": provisioning["password"],
+        "vpn_ip": provisioning["server_ip"],
+        "sstp_url": f"sstp://{provisioning['server_host']}:{provisioning['server_port']}",
+        "router_name": router.name,
+        "api_applied": api_applied,
+        "api_results": api_results,
+        "architecture": "mikrotik-native-sstp",
+        "provisioned_at": datetime.utcnow().isoformat(),
+    }
+
+
+def on_router_deleted(router) -> bool:
+    """Marca el tunel SSTP como revocado y limpia los campos legacy."""
+    from app import db
+    from app.models import SstpTunnel
+
+    tunnel = SstpTunnel.query.filter_by(router_id=router.id, status='active').first()
+    if tunnel:
+        tunnel.status = 'revoked'
+        tunnel.revoked_at = datetime.utcnow()
+        db.session.add(tunnel)
+
+    router.vpn_username = None
+    router.vpn_password_encrypted = None
+    router.vpn_ip_address = None
+    router.vpn_provisioned_at = None
+    db.session.add(router)
+    db.session.commit()
+    return True
+
+
+def get_vpn_user_status(vpn_username: str) -> dict:
+    """Devuelve el estado de un tunel SSTP nativo por username legacy."""
+    from app.models import SstpTunnel
+
+    tunnel = SstpTunnel.query.filter_by(username=vpn_username).order_by(SstpTunnel.created_at.desc()).first()
+    if not tunnel:
+        return {"exists": False, "username": vpn_username}
+
+    return {
+        "exists": tunnel.status == "active",
+        "username": vpn_username,
+        "router_id": tunnel.router_id,
+        "router_name": tunnel.router.name if tunnel.router else None,
+        "server_host": tunnel.server_host,
+        "server_port": tunnel.server_port,
+        "vpn_ip": tunnel.server_ip,
+        "last_seen": tunnel.last_seen.isoformat() if tunnel.last_seen else None,
+        "status": tunnel.status,
+        "architecture": "mikrotik-native-sstp",
+    }
+
+
+def get_connected_sessions() -> dict:
+    """Expone los servidores SSTP nativos activos para compatibilidad legacy."""
+    from app.models import SstpTunnel
+
+    tunnels = (
+        SstpTunnel.query.filter_by(status='active')
+        .order_by(SstpTunnel.created_at.desc())
+        .all()
+    )
+    sessions = [
+        {
+            "username": tunnel.username,
+            "ip": tunnel.server_ip,
+            "router_id": tunnel.router_id,
+            "router_name": tunnel.router.name if tunnel.router else None,
+            "connected_at": tunnel.created_at.isoformat() if tunnel.created_at else None,
+            "status": tunnel.status,
+        }
+        for tunnel in tunnels
+    ]
+    return {
+        "success": True,
+        "sessions": sessions,
+        "count": len(sessions),
+        "hub": "routeros-native",
+        "architecture": "mikrotik-native-sstp",
+    }
+
+
+def provision_router_vpn(router_id: int) -> dict:
+    """Compatibilidad legacy: provisiona SSTP nativo para el router."""
+    from app.models import MikroTikRouter
+
+    router = MikroTikRouter.query.get(router_id)
+    if not router:
+        return {"success": False, "error": f"Router {router_id} no encontrado"}
+    return on_router_created(router)

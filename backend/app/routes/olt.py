@@ -3,6 +3,7 @@ OLT enterprise API endpoints (ZTE, Huawei, VSOL).
 """
 from __future__ import annotations
 
+from datetime import datetime
 import ipaddress
 import socket
 import ssl
@@ -13,12 +14,15 @@ from urllib.request import Request, urlopen
 
 from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import get_jwt_identity
+from sqlalchemy.orm import joinedload
 
-from app import cache
-from app.models import AdminSystemSetting, AuditLog, User
+from app import cache, db
+from app.models import AdminInstallation, AdminSystemSetting, AuditLog, Client, ClientNetworkProfile, User
 from app.routes.main_routes import admin_required
 from app.services.acs_service import ACSService
 from app.services.olt_script_service import OLTScriptService, SUPPORTED_VENDORS
+from app.services.monitoring_service import monitoring_service
+from app.services.snmp_service import SNMPRuntimeUnavailable, snmp_service
 from app.tenancy import current_tenant_id
 
 olt_bp = Blueprint("olt", __name__)
@@ -164,6 +168,143 @@ def _build_onu_payload(data) -> dict:
     return payload
 
 
+def _parse_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _tenant_allows_record(record_tenant_id) -> bool:
+    tenant_id = current_tenant_id()
+    return tenant_id is None or record_tenant_id in (None, tenant_id)
+
+
+def _build_olt_port_label(payload: dict) -> str | None:
+    if not isinstance(payload, dict):
+        return None
+    frame = payload.get("frame")
+    slot = payload.get("slot")
+    pon = payload.get("pon")
+    if frame in (None, "") or slot in (None, "") or pon in (None, ""):
+        return None
+    return f"{frame}/{slot}/{pon}"
+
+
+def _append_note_line(existing: str | None, line: str | None) -> str | None:
+    safe_line = str(line or "").strip()
+    if not safe_line:
+        return existing or None
+    if not existing:
+        return safe_line
+    base = str(existing).rstrip()
+    if safe_line in base:
+        return base
+    return f"{base}\n{safe_line}"
+
+
+def _serialize_lookup_client(client: Client) -> dict:
+    profile = client.network_profile
+    return {
+        "id": client.id,
+        "name": client.full_name,
+        "email": client.user.email if client.user else None,
+        "plan": client.plan.name if client.plan else None,
+        "router_name": client.router.name if client.router else None,
+        "ip_address": client.ip_address,
+        "connection_type": client.connection_type,
+        "pppoe_username": client.pppoe_username,
+        "network_profile": profile.to_dict() if profile else None,
+    }
+
+
+def _serialize_lookup_installation(installation: AdminInstallation) -> dict:
+    return {
+        "id": installation.id,
+        "client_id": installation.client_id,
+        "client_name": installation.client_name,
+        "status": installation.status,
+        "priority": installation.priority,
+        "technician": installation.technician,
+        "scheduled_for": installation.scheduled_for.isoformat() if installation.scheduled_for else None,
+        "notes": installation.notes or "",
+        "checklist": installation.checklist or {},
+        "address": installation.address,
+    }
+
+
+def _build_zero_touch_binding_preview(
+    *,
+    device_id: str,
+    device: dict | None,
+    client: Client,
+    installation: AdminInstallation | None,
+    payload: dict,
+    access_technology: str,
+    onu_model: str | None,
+    notes: str | None,
+    actor_label: str,
+    mark_installation_completed: bool,
+) -> dict:
+    profile = client.network_profile
+    port_label = _build_olt_port_label(payload)
+    onu_id = payload.get("onu")
+    vlan = payload.get("vlan")
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+    automation_note = (
+        f"[{timestamp}] Zero-touch OLT {device_id}"
+        f" {port_label or 'sin puerto'}"
+        f" ONU {onu_id if onu_id not in (None, '') else '-'}"
+        f" serial {payload.get('serial')}"
+        f" VLAN {vlan if vlan not in (None, '') else '-'}"
+        f" por {actor_label}."
+    )
+    if notes:
+        automation_note = f"{automation_note} {notes}"
+
+    profile_updates = {
+        "access_technology": access_technology or (profile.access_technology if profile else "fiber") or "fiber",
+        "olt_id": device_id,
+        "olt_port": port_label,
+        "onu_serial": payload.get("serial"),
+        "onu_model": onu_model or (profile.onu_model if profile else None),
+        "fiber_port": str(onu_id) if onu_id not in (None, "") else (profile.fiber_port if profile else None),
+        "technical_notes_append": automation_note,
+    }
+
+    installation_updates = None
+    if installation:
+        checklist = dict(installation.checklist or {})
+        checklist["onu_registered"] = True
+        next_status = installation.status
+        if mark_installation_completed:
+            next_status = "completed"
+        elif installation.status in {"pending", "scheduled"}:
+            next_status = "in_progress"
+        installation_updates = {
+            "id": installation.id,
+            "status": next_status,
+            "checklist": checklist,
+            "notes_append": automation_note,
+        }
+
+    return {
+        "device": {
+            "id": device_id,
+            "name": str((device or {}).get("name") or device_id),
+            "vendor": (device or {}).get("vendor"),
+        },
+        "client_id": client.id,
+        "client_name": client.full_name,
+        "olt_port": port_label,
+        "onu_id": onu_id,
+        "vlan": vlan,
+        "profile_updates": profile_updates,
+        "installation_updates": installation_updates,
+        "note_line": automation_note,
+    }
+
+
 def _tenant_key(prefix: str) -> str:
     tenant_id = current_tenant_id()
     scoped = tenant_id if tenant_id is not None else "global"
@@ -284,6 +425,14 @@ def _normalize_custom_device_payload(data, existing_ids: set[str] | None = None)
         "site": str(payload.get("site") or "N/D").strip() or "N/D",
         "origin": "custom",
     }
+    if "snmp" in payload:
+        if payload.get("snmp") is not None and not isinstance(payload.get("snmp"), dict):
+            return None, "snmp must be an object"
+        device["snmp"] = snmp_service.normalize_profile(
+            payload.get("snmp"),
+            default_host=host,
+            default_label=name,
+        )
     return device, None
 
 
@@ -370,6 +519,8 @@ def _sanitize_olt_device(device: dict | None) -> dict:
     safe_device = dict(device or {})
     safe_device.pop("password", None)
     safe_device.pop("enable_password", None)
+    if "snmp" in safe_device:
+        safe_device["snmp"] = snmp_service.sanitize_profile(safe_device.get("snmp"))
     return safe_device
 
 
@@ -838,7 +989,8 @@ def delete_service_template(vendor, template_id):
 def list_devices():
     vendor = request.args.get("vendor")
     service = _service()
-    return jsonify({"success": True, "devices": service.list_devices(vendor=vendor)}), 200
+    devices = [_sanitize_olt_device(item) for item in service.list_devices(vendor=vendor)]
+    return jsonify({"success": True, "devices": devices}), 200
 
 
 @olt_bp.route("/devices", methods=["POST"])
@@ -868,7 +1020,7 @@ def create_device():
         entity_id=device["id"],
         metadata={"vendor": device["vendor"], "host": device["host"], "origin": "custom"},
     )
-    return jsonify({"success": True, "device": device}), 201
+    return jsonify({"success": True, "device": _sanitize_olt_device(device)}), 201
 
 
 @olt_bp.route("/devices/<device_id>", methods=["PATCH"])
@@ -913,7 +1065,7 @@ def update_device(device_id):
         entity_id=device_id,
         metadata={"fields": sorted(list(updates.keys()))},
     )
-    return jsonify({"success": True, "device": normalized}), 200
+    return jsonify({"success": True, "device": _sanitize_olt_device(normalized)}), 200
 
 
 @olt_bp.route("/devices/<device_id>", methods=["DELETE"])
@@ -934,6 +1086,81 @@ def delete_device(device_id):
     return jsonify({"success": True, "deleted_id": device_id}), 200
 
 
+@olt_bp.route("/provisioning/lookup", methods=["GET"])
+@admin_required()
+def provisioning_lookup():
+    term = str(request.args.get("q") or "").strip().lower()
+    client_id = _parse_int(request.args.get("client_id"))
+    limit = _parse_int(request.args.get("limit")) or 8
+    limit = max(1, min(limit, 20))
+
+    clients: list[Client] = []
+    installations: list[AdminInstallation] = []
+
+    if client_id is not None:
+        client = db.session.get(Client, client_id)
+        if client and _tenant_allows_record(client.tenant_id):
+            clients = [client]
+
+    if term:
+        query = Client.query.options(
+            joinedload(Client.user),
+            joinedload(Client.plan),
+            joinedload(Client.router),
+            joinedload(Client.network_profile),
+        ).order_by(Client.full_name.asc())
+        for row in query.all():
+            if not _tenant_allows_record(row.tenant_id):
+                continue
+            profile_serial = row.network_profile.onu_serial if row.network_profile else ""
+            haystack = (
+                str(row.id),
+                row.full_name,
+                row.ip_address,
+                row.pppoe_username,
+                row.user.email if row.user else "",
+                profile_serial,
+            )
+            if any(term in str(candidate or "").lower() for candidate in haystack):
+                clients.append(row)
+            if len(clients) >= limit:
+                break
+
+    open_status = {"pending", "scheduled", "in_progress"}
+    for row in AdminInstallation.query.order_by(AdminInstallation.updated_at.desc()).all():
+        if not _tenant_allows_record(row.tenant_id):
+            continue
+        if str(row.status or "").lower() not in open_status:
+            continue
+        if client_id is not None and row.client_id != client_id:
+            continue
+        if term and client_id is None:
+            haystack = (row.id, row.client_name, row.address, row.technician, row.notes or "")
+            if not any(term in str(candidate or "").lower() for candidate in haystack):
+                continue
+        installations.append(row)
+        if len(installations) >= limit:
+            break
+
+    unique_clients: list[Client] = []
+    seen_client_ids: set[int] = set()
+    for item in clients:
+        if item.id in seen_client_ids:
+            continue
+        unique_clients.append(item)
+        seen_client_ids.add(item.id)
+
+    return jsonify(
+        {
+            "success": True,
+            "q": term,
+            "client_id": client_id,
+            "clients": [_serialize_lookup_client(item) for item in unique_clients[:limit]],
+            "installations": [_serialize_lookup_installation(item) for item in installations[:limit]],
+        }
+    ), 200
+
+
 @olt_bp.route("/devices/<device_id>/snapshot", methods=["GET"])
 @admin_required()
 def get_snapshot(device_id):
@@ -941,6 +1168,58 @@ def get_snapshot(device_id):
     result = service.get_snapshot(device_id)
     _audit("olt_snapshot", entity_type="olt", entity_id=device_id, metadata={"success": result.get("success")})
     return jsonify(result), (200 if result.get("success") else 404)
+
+
+@olt_bp.route("/devices/<device_id>/snmp/poll", methods=["POST"])
+@admin_required()
+def poll_olt_snmp(device_id):
+    service = _service()
+    device = service.get_device(device_id)
+    if not device:
+        return jsonify({"success": False, "error": "OLT not found"}), 404
+
+    payload = request.get_json(silent=True) or {}
+    overrides = payload.get("profile") if isinstance(payload.get("profile"), dict) else {}
+    persist = _as_bool(payload.get("persist"))
+
+    profile = dict(device.get("snmp") or {})
+    if overrides:
+        profile.update(overrides)
+
+    try:
+        result = snmp_service.poll_device_profile(
+            profile,
+            default_host=str(device.get("host") or ""),
+            default_label=str(device.get("name") or device_id),
+        )
+        if persist:
+            snmp_service.persist_device_poll(
+                monitoring_service,
+                device_tags={
+                    "device_id": str(device.get("id") or ""),
+                    "device_name": str(device.get("name") or ""),
+                    "vendor": str(device.get("vendor") or ""),
+                    "site": str(device.get("site") or ""),
+                    "device_type": "olt",
+                },
+                poll_result=result,
+                measurement="olt_snmp_health",
+            )
+        return jsonify(
+            {
+                "success": True,
+                "device": _sanitize_olt_device(device),
+                "persisted": persist,
+                **result,
+            }
+        ), 200
+    except SNMPRuntimeUnavailable as exc:
+        return jsonify({"success": False, "error": str(exc)}), 503
+    except ValueError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+    except Exception as exc:
+        current_app.logger.error("Error polling SNMP for OLT %s: %s", device_id, exc, exc_info=True)
+        return jsonify({"success": False, "error": str(exc)}), 502
 
 
 @olt_bp.route("/devices/test-connection", methods=["POST"])
@@ -1148,6 +1427,234 @@ def pon_power(device_id):
         entity_type="olt",
         entity_id=device_id,
         metadata={"run_mode": run_mode, "success": response.get("success")},
+    )
+    return jsonify(response), status
+
+
+@olt_bp.route("/devices/<device_id>/onu/zero-touch-provision", methods=["POST"])
+@admin_required()
+def zero_touch_provision(device_id):
+    data = request.get_json() or {}
+    run_mode = _parse_run_mode(data)
+    live_guard = _validate_live_confirm(run_mode, data)
+    if live_guard:
+        return live_guard
+
+    client_id = _parse_int(data.get("client_id"))
+    if client_id is None:
+        return jsonify({"success": False, "error": "client_id requerido"}), 400
+
+    installation_id = str(data.get("installation_id") or "").strip() or None
+    onu_model = str(data.get("onu_model") or "").strip() or None
+    notes = str(data.get("notes") or "").strip() or None
+    access_technology = str(data.get("access_technology") or "fiber").strip().lower() or "fiber"
+    if access_technology not in {"fiber", "wireless", "coax", "copper", "docsis"}:
+        return jsonify({"success": False, "error": "access_technology invalida"}), 400
+    mark_installation_completed = _as_bool(data.get("mark_installation_completed"))
+
+    client = db.session.get(Client, client_id)
+    if not client:
+        return jsonify({"success": False, "error": "Cliente no encontrado"}), 404
+    if not _tenant_allows_record(client.tenant_id):
+        return jsonify({"success": False, "error": "Cliente fuera del tenant"}), 403
+
+    installation = None
+    if installation_id:
+        installation = AdminInstallation.query.filter_by(id=installation_id).first()
+        if not installation:
+            return jsonify({"success": False, "error": "Instalacion no encontrada"}), 404
+        if not _tenant_allows_record(installation.tenant_id):
+            return jsonify({"success": False, "error": "Instalacion fuera del tenant"}), 403
+        if installation.client_id and installation.client_id != client.id:
+            return jsonify({"success": False, "error": "La instalacion no pertenece al cliente seleccionado"}), 409
+
+    try:
+        payload = _build_onu_payload(data)
+    except ValueError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+
+    serial = str(payload.get("serial") or "").strip().upper()
+    if not serial:
+        return jsonify({"success": False, "error": "serial requerido"}), 400
+    payload["serial"] = serial
+
+    service = _service()
+    device = service.get_device(device_id)
+    if not device:
+        return jsonify({"success": False, "error": "OLT not found"}), 404
+
+    conflicting_profile = None
+    for existing in ClientNetworkProfile.query.filter(ClientNetworkProfile.onu_serial.isnot(None)).all():
+        if not _tenant_allows_record(existing.tenant_id):
+            continue
+        if existing.client_id == client.id:
+            continue
+        if str(existing.onu_serial or "").strip().upper() == serial:
+            conflicting_profile = existing
+            break
+    if conflicting_profile:
+        return jsonify(
+            {
+                "success": False,
+                "error": "La ONU ya esta vinculada a otro cliente",
+                "conflict": {
+                    "client_id": conflicting_profile.client_id,
+                    "onu_serial": conflicting_profile.onu_serial,
+                    "olt_id": conflicting_profile.olt_id,
+                    "olt_port": conflicting_profile.olt_port,
+                },
+            }
+        ), 409
+
+    preview = _build_zero_touch_binding_preview(
+        device_id=device_id,
+        device=device,
+        client=client,
+        installation=installation,
+        payload=payload,
+        access_technology=access_technology,
+        onu_model=onu_model,
+        notes=notes,
+        actor_label=_resolve_actor_identity(),
+        mark_installation_completed=mark_installation_completed,
+    )
+
+    response, status = _run_vendor_action(
+        device_id=device_id,
+        action="authorize_onu",
+        payload=payload,
+        run_mode=run_mode,
+    )
+    response["provisioning"] = {
+        "persisted": False,
+        "preview_only": run_mode != "live",
+        "client": _serialize_lookup_client(client),
+        "installation": _serialize_lookup_installation(installation) if installation else None,
+        "binding_preview": preview,
+    }
+
+    if not response.get("success"):
+        _audit(
+            "olt_zero_touch_provision",
+            entity_type="onu",
+            entity_id=serial,
+            metadata={
+                "device_id": device_id,
+                "client_id": client.id,
+                "installation_id": installation_id,
+                "run_mode": run_mode,
+                "success": False,
+                "persisted": False,
+            },
+        )
+        return jsonify(response), status
+
+    if run_mode != "live":
+        response["message"] = "Preview zero-touch generado. Cambia a live para aplicar y persistir."
+        _audit(
+            "olt_zero_touch_provision",
+            entity_type="onu",
+            entity_id=serial,
+            metadata={
+                "device_id": device_id,
+                "client_id": client.id,
+                "installation_id": installation_id,
+                "run_mode": run_mode,
+                "success": True,
+                "persisted": False,
+            },
+        )
+        return jsonify(response), status
+
+    actor_id = get_jwt_identity()
+    actor_user = db.session.get(User, actor_id) if actor_id is not None else None
+    saved_installation = None
+    try:
+        profile = client.network_profile
+        if not profile:
+            profile = ClientNetworkProfile(
+                client_id=client.id,
+                tenant_id=client.tenant_id if client.tenant_id is not None else current_tenant_id(),
+            )
+        profile.access_technology = access_technology
+        profile.olt_id = device_id
+        profile.olt_port = preview.get("olt_port")
+        profile.onu_serial = serial
+        if onu_model:
+            profile.onu_model = onu_model
+        if payload.get("onu") not in (None, ""):
+            profile.fiber_port = str(payload.get("onu"))
+        profile.technical_notes = _append_note_line(profile.technical_notes, preview.get("note_line"))
+        db.session.add(profile)
+
+        if installation:
+            checklist = dict(installation.checklist or {})
+            checklist["onu_registered"] = True
+            installation.checklist = checklist
+            installation.notes = _append_note_line(installation.notes, preview.get("note_line"))
+            if mark_installation_completed:
+                installation.status = "completed"
+                installation.completed_at = installation.completed_at or datetime.utcnow()
+                installation.completed_by = actor_user.id if actor_user else actor_id
+                installation.completed_by_name = actor_user.name if actor_user else _resolve_actor_identity()
+            elif str(installation.status or "").lower() in {"pending", "scheduled"}:
+                installation.status = "in_progress"
+            installation.updated_by = actor_user.id if actor_user else actor_id
+            installation.updated_by_name = actor_user.name if actor_user else _resolve_actor_identity()
+            installation.updated_by_email = actor_user.email if actor_user else None
+            db.session.add(installation)
+            saved_installation = installation
+
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        current_app.logger.error("Error persisting zero-touch OLT provisioning: %s", exc, exc_info=True)
+        response["success"] = False
+        response["partial_success"] = True
+        response["reconciliation_required"] = True
+        response["error"] = (
+            "La ONU fue autorizada en la OLT, pero fallo la persistencia local. Requiere conciliacion manual."
+        )
+        response["provisioning"]["persisted"] = False
+        response["provisioning"]["preview_only"] = False
+        response["provisioning"]["persistence_error"] = str(exc)
+        _audit(
+            "olt_zero_touch_provision",
+            entity_type="onu",
+            entity_id=serial,
+            metadata={
+                "device_id": device_id,
+                "client_id": client.id,
+                "installation_id": installation_id,
+                "run_mode": run_mode,
+                "success": False,
+                "persisted": False,
+                "partial_success": True,
+            },
+        )
+        return jsonify(response), 500
+
+    refreshed_client = db.session.get(Client, client.id) or client
+    response["message"] = "ONU autorizada en OLT y vinculada al cliente."
+    response["provisioning"] = {
+        "persisted": True,
+        "preview_only": False,
+        "client": _serialize_lookup_client(refreshed_client),
+        "installation": _serialize_lookup_installation(saved_installation) if saved_installation else None,
+        "binding_preview": preview,
+    }
+    _audit(
+        "olt_zero_touch_provision",
+        entity_type="onu",
+        entity_id=serial,
+        metadata={
+            "device_id": device_id,
+            "client_id": client.id,
+            "installation_id": installation_id,
+            "run_mode": run_mode,
+            "success": True,
+            "persisted": True,
+        },
     )
     return jsonify(response), status
 

@@ -256,7 +256,7 @@ def vpn_status(router_id):
         router = MikroTikRouter.query.get_or_404(router_id)
         vpn_username = getattr(router, 'vpn_username', None)
         if not vpn_username:
-            return jsonify({"exists": False, "message": "Router sin VPN provisionado"}), 200
+            return jsonify({"exists": False, "message": "Router sin SSTP nativo provisionado"}), 200
         result = get_vpn_user_status(vpn_username)
         result["vpn_ip"] = getattr(router, 'vpn_ip_address', None)
         result["provisioned_at"] = router.vpn_provisioned_at.isoformat() if router.vpn_provisioned_at else None
@@ -270,7 +270,7 @@ def vpn_status(router_id):
 @jwt_required()
 def vpn_sessions():
     """
-    Lista las sesiones VPN activas en SoftEther.
+    Lista los servidores SSTP nativos activos.
     GET /api/vpn/sessions
     """
     try:
@@ -319,14 +319,17 @@ def onboarding_script(router_id):
     GET /api/routers/<router_id>/onboarding-script
     """
     try:
-        from app.models import MikroTikRouter
-        from app.services.mikrotik_commands import generate_onboarding_script
+        from app.models import MikroTikRouter, SstpTunnel
+        from app.services.sstp_service import generate_mikrotik_sstp_script, get_certificate_fingerprint
         router = MikroTikRouter.query.get_or_404(router_id)
 
-        vpn_username = getattr(router, 'vpn_username', None)
-        vpn_password = None
+        tunnel = SstpTunnel.query.filter_by(router_id=router_id, status='active').first()
+        if not tunnel:
+            return jsonify({"error": "Router sin SSTP nativo provisionado. Ejecutar /provision-vpn primero"}), 400
+        vpn_username = tunnel.username
+        vpn_password = tunnel.password or "REGENERAR-SSTP"
 
-        # Obtener contraseña VPN desencriptada
+        # Compatibilidad legacy: si existe password cifrada en el router, usarla.
         if hasattr(router, 'vpn_password_encrypted') and router.vpn_password_encrypted:
             try:
                 from cryptography.fernet import Fernet
@@ -337,24 +340,31 @@ def onboarding_script(router_id):
                 f = Fernet(key)
                 vpn_password = f.decrypt(router.vpn_password_encrypted).decode('utf-8')
             except Exception:
-                vpn_password = "REGENERAR-VPN"
+                vpn_password = "REGENERAR-SSTP"
 
         if not vpn_username:
-            return jsonify({"error": "Router sin VPN provisionado. Ejecutar /provision-vpn primero"}), 400
+            return jsonify({"error": "Router sin SSTP nativo provisionado. Ejecutar /provision-vpn primero"}), 400
 
-        script = generate_onboarding_script(
-            router_id=router_id,
-            vpn_username=vpn_username,
-            vpn_password=vpn_password or "REGENERAR-VPN",
-            server_host="fastisp.cloud",
-            server_port=8443,
-        )
+        script = generate_mikrotik_sstp_script({
+            "username": vpn_username,
+            "password": vpn_password or "REGENERAR-SSTP",
+            "server_host": tunnel.server_host,
+            "server_port": tunnel.server_port,
+            "server_ip": tunnel.server_ip,
+            "client_ip": tunnel.client_ip,
+            "fingerprint": get_certificate_fingerprint(),
+            "router_name": router.name,
+            "provisioned_at": tunnel.created_at.isoformat() if tunnel.created_at else datetime.utcnow().isoformat(),
+        })
 
         return jsonify({
             "router_id": router_id,
             "router_name": router.name,
             "vpn_username": vpn_username,
-            "vpn_ip": getattr(router, 'vpn_ip_address', None),
+            "vpn_ip": tunnel.server_ip,
+            "server_host": tunnel.server_host,
+            "server_port": tunnel.server_port,
+            "architecture": "mikrotik-native-sstp",
             "script": script,
             "generated_at": datetime.utcnow().isoformat(),
         }), 200

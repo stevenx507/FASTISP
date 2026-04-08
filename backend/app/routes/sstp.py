@@ -100,7 +100,7 @@ def create_tunnel():
             }
             result = existing.to_dict(include_password=True)
             result['script'] = generate_mikrotik_sstp_script(prov)
-            result['message'] = 'Tunel SSTP existente verificado y sincronizado'
+            result['message'] = 'Tunel SSTP existente cargado desde la BD'
             return jsonify(result), 200
         except Exception as exc:
             logger.warning(f"No se pudo autoreparar el tunel SSTP existente {existing.id}: {exc}")
@@ -110,7 +110,8 @@ def create_tunnel():
         }), 409
 
     try:
-        prov = provision_sstp_tunnel(router)
+        # provision_sstp_tunnel ahora genera las credenciales y las asigna en la DB
+        prov = provision_sstp_tunnel(router) 
 
         tunnel = SstpTunnel(
             router_id=router.id,
@@ -132,22 +133,22 @@ def create_tunnel():
         result['script'] = script
         result['provisioning'] = prov
 
-        # Intentar aplicar via API automáticamente
+        # Automatización Total: Aplicar secreto en el Master Router y configurar cliente
         api_applied = False
         api_results = None
         try:
-            api_result = provision_sstp_tunnel_api(router)
+            api_result = provision_sstp_tunnel_api(router, provisioning=prov)
             api_applied = api_result.get('api_applied', False)
             api_results = api_result.get('api_results', [])
-            logger.info(f"SSTP server auto-applied via API on router {router.id}")
+            logger.info(f"Native SSTP provisioned via API on router {router.id}")
         except Exception as api_err:
-            logger.warning(f"SSTP API auto-provisioning failed for router {router.id}: {api_err}. Manual script required.")
+            logger.warning(f"Native SSTP API provisioning failed on router {router.id}: {api_err}. Manual script required.")
         
         result['api_applied'] = api_applied
         result['api_results'] = api_results
         result['message'] = (
-            'Servidor SSTP configurado via API' if api_applied
-            else 'Servidor SSTP generado (aplicar script manualmente)'
+            'Servidor SSTP nativo configurado via API' if api_applied
+            else 'Credenciales generadas (requiere aplicación manual de script)'
         )
 
         logger.info(f"SSTP tunnel provisioned for router {router.id} ({router.name})")
@@ -237,15 +238,8 @@ def regenerate_tunnel(tunnel_id):
     try:
         new_password = _generate_password(20)
 
-        softether_synced = True
-        softether_warning = None
-        try:
-            revoke_sstp_tunnel(tunnel.username)
-            ensure_sstp_user(tunnel.username, new_password)
-        except Exception as se_exc:
-            softether_synced = False
-            softether_warning = f"Credenciales actualizadas en BD: {se_exc}"
-            logger.warning(f"Regenerate warning for tunnel {tunnel_id}: {se_exc}")
+        api_applied = False
+        api_warning = None
 
         tunnel.password = new_password
         tunnel.status = 'active'
@@ -263,13 +257,19 @@ def regenerate_tunnel(tunnel_id):
             'router_name': tunnel.router.name if tunnel.router else 'mikrotik',
             'provisioned_at': datetime.utcnow().isoformat(),
         }
+        try:
+            api_result = provision_sstp_tunnel_api(tunnel.router or tunnel, provisioning=prov)
+            api_applied = api_result.get('api_applied', False)
+        except Exception as api_exc:
+            api_warning = f"Credenciales actualizadas en BD: {api_exc}"
+            logger.warning(f"Regenerate warning for tunnel {tunnel_id}: {api_exc}")
         script = generate_mikrotik_sstp_script(prov)
 
         result = tunnel.to_dict(include_password=True)
         result['script'] = script
-        result['synced'] = softether_synced
+        result['api_applied'] = api_applied
         result['message'] = (
-            softether_warning if softether_warning
+            api_warning if api_warning
             else 'Credenciales regeneradas exitosamente'
         )
 
@@ -417,10 +417,12 @@ def add_ppp_secret():
     }
     """
     data = request.get_json() or {}
-    required = ['router_id', 'client_name', 'password', 'remote_address']
+    required = ['router_id', 'client_name', 'password']
     missing = [k for k in required if not data.get(k)]
     if missing:
         return jsonify({'error': f'Faltan campos: {", ".join(missing)}'}), 400
+    if data.get('is_public') and not data.get('remote_address'):
+        return jsonify({'error': 'remote_address es requerido cuando is_public=true'}), 400
 
     tid = current_tenant_id()
     user = _get_current_user()
@@ -436,7 +438,7 @@ def add_ppp_secret():
             router_id=router.id,
             client_name=data['client_name'],
             password=data['password'],
-            remote_address=data['remote_address'],
+            remote_address=data.get('remote_address'),
             is_public=data.get('is_public', False),
             lan_interface=data.get('lan_interface', 'bridge')
         )
@@ -445,7 +447,7 @@ def add_ppp_secret():
             return jsonify({
                 'message': 'PPP secret agregado exitosamente',
                 'client_name': data['client_name'],
-                'remote_address': data['remote_address'],
+                'remote_address': result.get('remote_address'),
                 'is_public': data.get('is_public', False),
                 'api_results': result.get('results', [])
             })

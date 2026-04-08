@@ -139,20 +139,21 @@ class OLTScriptService:
                         vendor = str(item.get("vendor", "")).strip().lower()
                         if vendor not in SUPPORTED_VENDORS:
                             continue
-                        normalized.append(
-                            {
-                                "id": str(item.get("id") or f"OLT-{vendor.upper()}-{index+1:03d}"),
-                                "name": str(item.get("name") or f"{SUPPORTED_VENDORS[vendor]['label']} OLT {index+1}"),
-                                "vendor": vendor,
-                                "model": str(item.get("model") or "N/D"),
-                                "host": str(item.get("host") or ""),
-                                "transport": str(item.get("transport") or SUPPORTED_VENDORS[vendor]["default_transport"]),
-                                "port": int(item.get("port") or SUPPORTED_VENDORS[vendor]["default_port"]),
-                                "username": str(item.get("username") or "admin"),
-                                "site": str(item.get("site") or "N/D"),
-                                "origin": str(item.get("origin") or "catalog"),
-                            }
-                        )
+                        normalized_item = {
+                            "id": str(item.get("id") or f"OLT-{vendor.upper()}-{index+1:03d}"),
+                            "name": str(item.get("name") or f"{SUPPORTED_VENDORS[vendor]['label']} OLT {index+1}"),
+                            "vendor": vendor,
+                            "model": str(item.get("model") or "N/D"),
+                            "host": str(item.get("host") or ""),
+                            "transport": str(item.get("transport") or SUPPORTED_VENDORS[vendor]["default_transport"]),
+                            "port": int(item.get("port") or SUPPORTED_VENDORS[vendor]["default_port"]),
+                            "username": str(item.get("username") or "admin"),
+                            "site": str(item.get("site") or "N/D"),
+                            "origin": str(item.get("origin") or "catalog"),
+                        }
+                        if isinstance(item.get("snmp"), dict):
+                            normalized_item["snmp"] = dict(item.get("snmp") or {})
+                        normalized.append(normalized_item)
                     if normalized:
                         base_devices = normalized
             except Exception:
@@ -178,7 +179,7 @@ class OLTScriptService:
             item_id = str(item.get("id") or f"OLT-{vendor.upper()}-CUSTOM-{index + 1:03d}").strip()
             if not item_id:
                 continue
-            merged[item_id] = {
+            normalized_item = {
                 "id": item_id,
                 "name": str(item.get("name") or f"{SUPPORTED_VENDORS[vendor]['label']} OLT"),
                 "vendor": vendor,
@@ -190,6 +191,9 @@ class OLTScriptService:
                 "site": str(item.get("site") or "N/D"),
                 "origin": "custom",
             }
+            if isinstance(item.get("snmp"), dict):
+                normalized_item["snmp"] = dict(item.get("snmp") or {})
+            merged[item_id] = normalized_item
 
         return list(merged.values())
 

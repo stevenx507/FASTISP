@@ -59,6 +59,40 @@ interface OpsSloResponse {
   }
 }
 
+interface VpsUpdateCheck {
+  id: string
+  ok: boolean
+  detail: string
+  severity?: string
+}
+
+interface VpsUpdateSummary {
+  status?: string
+  score?: number
+  passed?: boolean
+  checks?: VpsUpdateCheck[]
+  blockers?: Array<{ id: string; detail: string }>
+  deployment?: {
+    project_root?: string
+    compose_file?: string
+    env_file?: string
+    services?: string[]
+    docker_available?: boolean
+    docker_runtime_ok?: boolean
+    commands?: string[]
+    scripts?: Array<{ name?: string; path?: string }>
+  }
+  artifacts?: {
+    backup_dir?: string
+    latest?: { name?: string; modified_at?: string }
+    db_backups?: number
+    latest_backup_age_hours?: number | null
+  }
+  health?: {
+    score?: number
+  }
+}
+
 interface OpsSop {
   id: string
   title: string
@@ -90,7 +124,7 @@ interface OpsSupportSlaSummary {
   sla_compliance_estimate?: number
 }
 
-const jobs = ['backup', 'cleanup_leases', 'enforce_billing', 'rotate_passwords', 'recalc_balances', 'backup_restore_drill'] as const
+const jobs = ['backup', 'cleanup_leases', 'enforce_billing', 'rotate_passwords', 'recalc_balances', 'backup_restore_drill', 'vps_update_preflight'] as const
 const jobStatuses = ['all', 'completed', 'completed_with_errors', 'skipped', 'failed'] as const
 
 const SystemSettings: React.FC = () => {
@@ -106,6 +140,7 @@ const SystemSettings: React.FC = () => {
   const [creatingChange, setCreatingChange] = useState(false)
   const [collections, setCollections] = useState<OpsCollectionsSummary | null>(null)
   const [supportSla, setSupportSla] = useState<OpsSupportSlaSummary | null>(null)
+  const [vpsUpdate, setVpsUpdate] = useState<VpsUpdateSummary | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [runningJob, setRunningJob] = useState<string | null>(null)
@@ -143,6 +178,7 @@ const SystemSettings: React.FC = () => {
       setChangeRequests(((changesResp?.items || []) as OpsChangeRequest[]).slice(0, 200))
       setCollections((collectionsResp || null) as OpsCollectionsSummary | null)
       setSupportSla((supportResp || null) as OpsSupportSlaSummary | null)
+      setVpsUpdate((response.vps_update || null) as VpsUpdateSummary | null)
       await loadJobHistory()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'No se pudieron cargar ajustes del sistema'
@@ -184,6 +220,9 @@ const SystemSettings: React.FC = () => {
       const response = await apiClient.post('/admin/system/jobs/run', { job })
       const completedJob = response.job as JobEntry
       setJobHistory((prev) => [completedJob, ...prev.filter((item) => item.id !== completedJob.id)])
+      if (job === 'vps_update_preflight') {
+        setVpsUpdate((completedJob.result || null) as VpsUpdateSummary | null)
+      }
       await loadJobHistory()
       const status = String(completedJob.status || 'completed')
       const human = status === 'completed_with_errors' ? 'completado con errores' : status
@@ -193,6 +232,20 @@ const SystemSettings: React.FC = () => {
       toast.error(msg)
     } finally {
       setRunningJob(null)
+    }
+  }
+
+  const copyVpsCommands = async () => {
+    const commands = Array.isArray(vpsUpdate?.deployment?.commands) ? vpsUpdate?.deployment?.commands || [] : []
+    if (!commands.length) {
+      toast.error('No hay comandos de actualizacion para copiar')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(commands.join('\n'))
+      toast.success('Comandos de actualizacion copiados')
+    } catch {
+      toast.error('No se pudieron copiar los comandos')
     }
   }
 
@@ -286,6 +339,11 @@ const SystemSettings: React.FC = () => {
       const passed = Boolean(result.passed)
       const checks = Array.isArray(result.checks) ? result.checks.length : 0
       return `drill ${passed ? 'ok' : 'con alertas'} | checks: ${checks}`
+    }
+    if (job.job === 'vps_update_preflight') {
+      const score = Number(result.score || 0)
+      const blockers = Array.isArray(result.blockers) ? result.blockers.length : 0
+      return `score ${score}/100 | blockers: ${blockers}`
     }
     if (typeof result.message === 'string' && result.message) {
       return result.message
@@ -411,6 +469,139 @@ const SystemSettings: React.FC = () => {
               <p className="mt-1 font-semibold text-gray-900">
                 {slo?.metrics?.provision_success ?? 0}% / target {slo?.targets?.provision_success ?? 0}%
               </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">Actualizacion VPS</h3>
+            <p className="mt-1 text-sm text-gray-600">
+              Valida si el VPS esta listo para actualizar y copia la secuencia sugerida de despliegue.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => runJob('vps_update_preflight')}
+              disabled={runningJob === 'vps_update_preflight'}
+              className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+            >
+              {runningJob === 'vps_update_preflight' ? 'Verificando VPS...' : 'Ejecutar preflight VPS'}
+            </button>
+            <button
+              onClick={copyVpsCommands}
+              disabled={!vpsUpdate?.deployment?.commands?.length}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+            >
+              Copiar comandos
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
+          <div className="rounded-lg border border-gray-200 p-3 text-xs">
+            <p className="text-gray-500">Score</p>
+            <p className="mt-1 text-lg font-semibold text-gray-900">{vpsUpdate?.score ?? 0}/100</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 p-3 text-xs">
+            <p className="text-gray-500">Estado</p>
+            <p className="mt-1 text-lg font-semibold text-gray-900">{vpsUpdate?.status || 'sin datos'}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 p-3 text-xs">
+            <p className="text-gray-500">Blockers</p>
+            <p className="mt-1 text-lg font-semibold text-gray-900">{vpsUpdate?.blockers?.length ?? 0}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 p-3 text-xs">
+            <p className="text-gray-500">Ultimo backup</p>
+            <p className="mt-1 text-lg font-semibold text-gray-900">
+              {typeof vpsUpdate?.artifacts?.latest_backup_age_hours === 'number'
+                ? `${vpsUpdate?.artifacts?.latest_backup_age_hours}h`
+                : 'sin dato'}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <div className="rounded-lg border border-gray-200 p-3">
+            <p className="text-xs font-semibold uppercase text-gray-700">Checks VPS</p>
+            <div className="mt-3 space-y-2">
+              {(vpsUpdate?.checks || []).slice(0, 8).map((check) => (
+                <div key={check.id} className="rounded-lg border border-gray-200 px-3 py-2 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-semibold text-gray-800">{check.id}</p>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        check.ok
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : check.severity === 'critical'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-amber-100 text-amber-700'
+                      }`}
+                    >
+                      {check.ok ? 'ok' : check.severity || 'warn'}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-gray-600">{check.detail}</p>
+                </div>
+              ))}
+              {!vpsUpdate?.checks?.length && <p className="text-xs text-gray-500">Ejecuta el preflight para ver el detalle.</p>}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs font-semibold uppercase text-gray-700">Ruta de despliegue</p>
+              <div className="mt-3 space-y-2 text-xs text-gray-600">
+                <p>
+                  Project root:
+                  <span className="ml-1 font-mono text-gray-900">{vpsUpdate?.deployment?.project_root || '-'}</span>
+                </p>
+                <p>
+                  Compose:
+                  <span className="ml-1 font-mono text-gray-900">{vpsUpdate?.deployment?.compose_file || '-'}</span>
+                </p>
+                <p>
+                  Env:
+                  <span className="ml-1 font-mono text-gray-900">{vpsUpdate?.deployment?.env_file || '-'}</span>
+                </p>
+                <p>
+                  Servicios:
+                  <span className="ml-1 text-gray-900">{(vpsUpdate?.deployment?.services || []).join(', ') || '-'}</span>
+                </p>
+                <p>
+                  Docker runtime:
+                  <span className="ml-1 text-gray-900">{vpsUpdate?.deployment?.docker_runtime_ok ? 'ok' : 'pendiente / no visible'}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs font-semibold uppercase text-gray-700">Secuencia sugerida</p>
+              <div className="mt-3 space-y-2">
+                {(vpsUpdate?.deployment?.commands || []).map((command) => (
+                  <code key={command} className="block rounded bg-slate-950 px-3 py-2 text-xs text-slate-100">
+                    {command}
+                  </code>
+                ))}
+                {!vpsUpdate?.deployment?.commands?.length && (
+                  <p className="text-xs text-gray-500">Sin comandos disponibles todavia.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs font-semibold uppercase text-gray-700">Scripts locales</p>
+              <div className="mt-3 space-y-2 text-xs text-gray-600">
+                {(vpsUpdate?.deployment?.scripts || []).map((script) => (
+                  <div key={`${script.name}-${script.path}`} className="rounded border border-gray-200 px-3 py-2">
+                    <p className="font-semibold text-gray-900">{script.name || 'script'}</p>
+                    <p className="mt-1 font-mono text-[11px] text-gray-600">{script.path || '-'}</p>
+                  </div>
+                ))}
+                {!vpsUpdate?.deployment?.scripts?.length && <p className="text-xs text-gray-500">Sin scripts sugeridos.</p>}
+              </div>
             </div>
           </div>
         </div>

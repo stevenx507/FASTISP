@@ -261,6 +261,46 @@ def test_system_jobs_history_supports_filters_and_offset(client, app):
     assert paged_payload['count'] <= 1
 
 
+def test_vps_update_preflight_job_reports_commands_and_paths(client, app, tmp_path, monkeypatch):
+    token = _admin_token(app, 'jobs-admin-vps@test.local')
+
+    project_root = tmp_path / 'release-root'
+    backend_migrations = project_root / 'backend' / 'migrations'
+    backend_migrations.mkdir(parents=True)
+    compose_file = project_root / 'docker-compose.prod.yml'
+    compose_file.write_text('services:\n  backend:\n    image: fastisp/backend\n', encoding='utf-8')
+    env_file = project_root / '.env.prod'
+    env_file.write_text('FRONTEND_URL=https://panel.test.local\n', encoding='utf-8')
+    backup_dir = tmp_path / 'backups'
+    backup_dir.mkdir(parents=True)
+    (backup_dir / 'db_20260408.sql').write_text('-- PostgreSQL backup\nCREATE TABLE demo(id int);\n', encoding='utf-8')
+
+    app.config['DEPLOY_PROJECT_ROOT'] = str(project_root)
+    app.config['DEPLOY_COMPOSE_FILE'] = 'docker-compose.prod.yml'
+    app.config['DEPLOY_ENV_FILE'] = '.env.prod'
+    app.config['BACKUP_DIR'] = str(backup_dir)
+    app.config['VPS_UPDATE_MAX_BACKUP_AGE_HOURS'] = '999'
+
+    monkeypatch.setattr('app.routes.main_routes.shutil.which', lambda name: None if name == 'docker' else None)
+
+    response = client.post(
+        '/api/admin/system/jobs/run',
+        json={'job': 'vps_update_preflight'},
+        headers={'Authorization': f'Bearer {token}'},
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload['success'] is True
+    assert payload['job']['status'] in {'completed', 'completed_with_errors'}
+    result = payload['job']['result']
+    assert result['deployment']['project_root'] == str(project_root)
+    assert result['deployment']['compose_file'].endswith('docker-compose.prod.yml')
+    assert any('flask db upgrade' in command for command in result['deployment']['commands'])
+    assert isinstance(result['checks'], list)
+    assert 'score' in result
+
+
 def test_cleanup_leases_job_is_scoped_to_current_tenant(client, app):
     with app.app_context():
         tenant_a = Tenant(slug='tenant-a', name='Tenant A')

@@ -17,6 +17,7 @@ from app.services.mikrotik_service import MikroTikService
 from app.services.monitoring_service import MonitoringService
 from app.services.noc_automation_service import noc_automation_service
 from app.services.olt_script_service import OLTScriptService
+from app.services.snmp_service import SNMPRuntimeUnavailable, snmp_service
 from app.services.backup_service import run_backups
 
 
@@ -108,37 +109,53 @@ def poll_mikrotik_metrics(self):
             mikrotik_service = None
             try:
                 mikrotik_service = MikroTikService(router_id=router.id)
-                if not mikrotik_service.api:
-                    current_app.logger.warning('Could not connect to router %s. Skipping.', router.name)
+                api_available = bool(mikrotik_service.api)
+                if not api_available:
+                    current_app.logger.warning('Could not connect to router %s via API.', router.name)
+
+                if api_available:
+                    resources = mikrotik_service.get_router_info()
+                    if resources:
+                        tags = {'router_name': router.name, 'router_id': str(router.id)}
+                        fields = {
+                            'cpu_load': int(resources.get('cpu_load', 0)),
+                            'free_memory': int(resources.get('free_memory', 0)),
+                            'total_memory': int(resources.get('total_memory', 0)),
+                            'uptime': str(resources.get('uptime', '0s')),
+                        }
+                        monitoring_service.write_metric('system_resources', fields, tags)
+
+                    interfaces = mikrotik_service.get_interface_stats()
+                    if interfaces:
+                        for iface in interfaces:
+                            if iface.get('running') and iface.get('type') in ['ether', 'sfp', 'sfp-plus', 'vlan', 'bridge']:
+                                tags = {
+                                    'router_name': router.name,
+                                    'router_id': str(router.id),
+                                    'interface_name': iface.get('name'),
+                                }
+                                fields = {
+                                    'rx_bytes': int(iface.get('rx_bytes', 0)),
+                                    'tx_bytes': int(iface.get('tx_bytes', 0)),
+                                    'rx_packets': int(iface.get('rx_packets', 0)),
+                                    'tx_packets': int(iface.get('tx_packets', 0)),
+                                }
+                                monitoring_service.write_metric('interface_traffic', fields, tags)
+
+                snmp_profile = snmp_service.router_profile(router)
+                if snmp_profile.get('enabled'):
+                    try:
+                        snmp_result = snmp_service.poll_router_profile(snmp_profile)
+                        snmp_service.persist_router_poll(monitoring_service, router, snmp_result)
+                    except SNMPRuntimeUnavailable as exc:
+                        current_app.logger.info('SNMP runtime unavailable for router %s: %s', router.name, exc)
+                    except ValueError as exc:
+                        current_app.logger.info('Skipping SNMP poll for router %s: %s', router.name, exc)
+                    except Exception as exc:
+                        current_app.logger.warning('SNMP poll failed for router %s: %s', router.name, exc)
+
+                if not api_available:
                     continue
-
-                resources = mikrotik_service.get_router_info()
-                if resources:
-                    tags = {'router_name': router.name, 'router_id': str(router.id)}
-                    fields = {
-                        'cpu_load': int(resources.get('cpu_load', 0)),
-                        'free_memory': int(resources.get('free_memory', 0)),
-                        'total_memory': int(resources.get('total_memory', 0)),
-                        'uptime': str(resources.get('uptime', '0s')),
-                    }
-                    monitoring_service.write_metric('system_resources', fields, tags)
-
-                interfaces = mikrotik_service.get_interface_stats()
-                if interfaces:
-                    for iface in interfaces:
-                        if iface.get('running') and iface.get('type') in ['ether', 'sfp', 'sfp-plus', 'vlan', 'bridge']:
-                            tags = {
-                                'router_name': router.name,
-                                'router_id': str(router.id),
-                                'interface_name': iface.get('name'),
-                            }
-                            fields = {
-                                'rx_bytes': int(iface.get('rx_bytes', 0)),
-                                'tx_bytes': int(iface.get('tx_bytes', 0)),
-                                'rx_packets': int(iface.get('rx_packets', 0)),
-                                'tx_packets': int(iface.get('tx_packets', 0)),
-                            }
-                            monitoring_service.write_metric('interface_traffic', fields, tags)
 
                 health = mikrotik_service.get_system_health()
                 alert_result = noc_automation_service.evaluate(router.id, health)

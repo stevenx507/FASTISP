@@ -8,9 +8,10 @@ import json
 import secrets
 import string
 import time
+import uuid
 
 from flask import Blueprint, jsonify, request, Response, current_app
-from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, verify_jwt_in_request
 
 from app.models import (
     AdminExtraService,
@@ -39,6 +40,7 @@ import pyotp
 import requests
 from app.services.mikrotik_service import MikroTikService
 from app.services.monitoring_service import MonitoringService
+from app.services.snmp_service import snmp_service
 from app.tenancy import current_tenant_id, tenant_access_allowed
 from datetime import date
 from werkzeug.exceptions import BadRequest
@@ -46,6 +48,8 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy import or_
 import subprocess
 import os
+import shutil
+import shlex
 from flask_mail import Message
 from flask import send_from_directory
 from pathlib import Path
@@ -74,6 +78,15 @@ def _parse_iso_datetime(value) -> datetime | None:
     try:
         return datetime.fromisoformat(raw)
     except Exception:
+        return None
+
+
+def _metric_float(value) -> float | None:
+    try:
+        if value is None or str(value).strip() == "":
+            return None
+        return float(value)
+    except (TypeError, ValueError):
         return None
 
 
@@ -488,6 +501,7 @@ SYSTEM_ALLOWED_JOBS = {
     "recalc_balances",
     "enforce_billing",
     "backup_restore_drill",
+    "vps_update_preflight",
 }
 TICKET_ALLOWED_PRIORITIES = {"low", "medium", "high", "urgent"}
 OPS_CHANGE_ALLOWED_STATUS = {
@@ -1259,6 +1273,88 @@ def _build_network_alert_items(tenant_id) -> list[dict]:
                 "target": sub.customer,
                 "message": "Suscripcion vencida",
                 "since": now_iso,
+            }
+        )
+
+    monitoring = None
+    for router in routers_q.filter_by(is_active=True).all():
+        profile = snmp_service.router_profile(router)
+        if not profile.get("enabled"):
+            continue
+        try:
+            if monitoring is None:
+                monitoring = MonitoringService()
+            latest = monitoring.latest_point('snmp_device_health', tags={'router_id': str(router.id)})
+        except Exception:
+            latest = {}
+        if not latest:
+            continue
+
+        thresholds = dict(profile.get("thresholds") or {})
+        temperature_c = _metric_float(latest.get("temperature_c"))
+        if temperature_c is not None and temperature_c >= float(thresholds.get("temperature_c", 70.0)):
+            alerts.append(
+                {
+                    "id": f"AL-SNMP-TEMP-{router.id}",
+                    "severity": "critical",
+                    "scope": "snmp",
+                    "target": router.name,
+                    "message": f"Temperatura alta por SNMP: {temperature_c:.1f} C",
+                    "since": str(latest.get("_time") or now_iso),
+                }
+            )
+
+        voltage_v = _metric_float(latest.get("voltage_v"))
+        min_voltage = _metric_float(thresholds.get("voltage_v_min"))
+        if voltage_v is not None and min_voltage is not None and voltage_v <= min_voltage:
+            alerts.append(
+                {
+                    "id": f"AL-SNMP-VOLT-{router.id}",
+                    "severity": "warning",
+                    "scope": "snmp",
+                    "target": router.name,
+                    "message": f"Voltaje bajo por SNMP: {voltage_v:.2f} V",
+                    "since": str(latest.get("_time") or now_iso),
+                }
+            )
+
+        optical_rx_dbm = _metric_float(latest.get("optical_rx_dbm"))
+        optical_min = _metric_float(thresholds.get("optical_rx_dbm_min"))
+        if optical_rx_dbm is not None and optical_min is not None and optical_rx_dbm <= optical_min:
+            alerts.append(
+                {
+                    "id": f"AL-SNMP-OPTICS-{router.id}",
+                    "severity": "warning",
+                    "scope": "fiber",
+                    "target": router.name,
+                    "message": f"Potencia optica degradada: {optical_rx_dbm:.1f} dBm",
+                    "since": str(latest.get("_time") or now_iso),
+                }
+            )
+
+        signal_level_dbm = _metric_float(latest.get("signal_level_dbm"))
+        signal_min = _metric_float(thresholds.get("signal_level_dbm_min"))
+        if signal_level_dbm is not None and signal_min is not None and signal_level_dbm <= signal_min:
+            alerts.append(
+                {
+                    "id": f"AL-SNMP-SIGNAL-{router.id}",
+                    "severity": "warning",
+                    "scope": "wireless",
+                    "target": router.name,
+                    "message": f"Senal degradada por SNMP: {signal_level_dbm:.1f} dBm",
+                    "since": str(latest.get("_time") or now_iso),
+                }
+            )
+
+    for trap in snmp_service.list_recent_traps(tenant_id, limit=10):
+        alerts.append(
+            {
+                "id": str(trap.get("id") or f"AL-SNMP-TRAP-{uuid.uuid4().hex[:8]}"),
+                "severity": str(trap.get("severity") or "warning"),
+                "scope": str(trap.get("scope") or "snmp"),
+                "target": str(trap.get("target") or trap.get("source") or "SNMP"),
+                "message": str(trap.get("message") or "Trap SNMP recibido"),
+                "since": str(trap.get("received_at") or now_iso),
             }
         )
 
@@ -2803,6 +2899,33 @@ def network_alerts():
     return jsonify({"alerts": alerts, "count": len(alerts)}), 200
 
 
+@main_bp.route('/network/snmp/traps', methods=['POST'])
+def receive_snmp_trap():
+    configured_token = str(current_app.config.get('SNMP_TRAP_WEBHOOK_TOKEN') or '').strip()
+    supplied_token = str(request.headers.get('X-SNMP-Trap-Token') or '').strip()
+    authorized = bool(configured_token and supplied_token and hmac.compare_digest(supplied_token, configured_token))
+
+    if not authorized:
+        try:
+            verify_jwt_in_request()
+            user_id = _current_user_id()
+            user = db.session.get(User, user_id) if user_id is not None else None
+            authorized = bool(user and user.role in {'admin', 'superadmin', 'platform_admin'})
+        except Exception:
+            authorized = False
+
+    if not authorized:
+        return jsonify({"success": False, "error": "No autorizado para registrar traps SNMP"}), 403
+
+    payload = request.get_json(silent=True) or {}
+    tenant_id = payload.get('tenant_id')
+    if tenant_id in (None, ""):
+        tenant_id = current_tenant_id()
+
+    event = snmp_service.record_trap_event(tenant_id, payload)
+    return jsonify({"success": True, "trap": event}), 202
+
+
 @main_bp.route('/network/noc-summary', methods=['GET'])
 @staff_required()
 def network_noc_summary():
@@ -3605,6 +3728,18 @@ def admin_router_usage():
             entry['mem'] = point.get('mem')
         if point.get('mem_percent') is not None:
             entry['mem'] = point.get('mem_percent')
+        if point.get('temperature_c') is not None:
+            entry['temperature_c'] = point.get('temperature_c')
+        if point.get('voltage_v') is not None:
+            entry['voltage_v'] = point.get('voltage_v')
+        if point.get('signal_level_dbm') is not None:
+            entry['signal_level_dbm'] = point.get('signal_level_dbm')
+        if point.get('optical_rx_dbm') is not None:
+            entry['optical_rx_dbm'] = point.get('optical_rx_dbm')
+        if point.get('onu_online') is not None:
+            entry['onu_online'] = point.get('onu_online')
+        if point.get('onu_offline') is not None:
+            entry['onu_offline'] = point.get('onu_offline')
 
     result = list(router_map.values())
     return jsonify({"items": result, "count": len(result)}), 200
@@ -6973,6 +7108,250 @@ def _run_backup_restore_drill(tenant_id) -> tuple[str, dict]:
     return status, summary
 
 
+def _resolve_deploy_path(project_root: Path, configured: str | None, fallback: str) -> Path:
+    raw = str(configured or fallback).strip() or fallback
+    candidate = Path(raw).expanduser()
+    if not candidate.is_absolute():
+        candidate = project_root / candidate
+    return candidate
+
+
+def _run_vps_update_preflight(tenant_id) -> tuple[str, dict]:
+    settings = _effective_system_settings(tenant_id)
+    project_root_raw = str(current_app.config.get('DEPLOY_PROJECT_ROOT') or '/app').strip() or '/app'
+    project_root = Path(project_root_raw).expanduser()
+    compose_path = _resolve_deploy_path(
+        project_root,
+        current_app.config.get('DEPLOY_COMPOSE_FILE'),
+        'docker-compose.prod.yml',
+    )
+    env_path = _resolve_deploy_path(
+        project_root,
+        current_app.config.get('DEPLOY_ENV_FILE'),
+        '.env.prod',
+    )
+    services = current_app.config.get('DEPLOY_SERVICES') or ['backend', 'worker', 'beat', 'frontend']
+    if isinstance(services, str):
+        services = [item.strip() for item in services.split(',') if item.strip()]
+    services = [str(item).strip() for item in services if str(item).strip()]
+    if not services:
+        services = ['backend', 'worker', 'beat', 'frontend']
+
+    try:
+        min_disk_gb = float(current_app.config.get('VPS_UPDATE_MIN_DISK_GB', '2') or 2)
+    except (TypeError, ValueError):
+        min_disk_gb = 2.0
+    min_disk_gb = max(0.5, min(min_disk_gb, 200.0))
+
+    try:
+        max_backup_age_hours = float(current_app.config.get('VPS_UPDATE_MAX_BACKUP_AGE_HOURS', '24') or 24)
+    except (TypeError, ValueError):
+        max_backup_age_hours = 24.0
+    max_backup_age_hours = max(1.0, min(max_backup_age_hours, 24 * 30))
+
+    checks: list[dict] = []
+    blockers: list[dict] = []
+
+    checks.append(
+        {
+            "id": "project_root",
+            "ok": project_root.exists() and project_root.is_dir(),
+            "detail": f"Proyecto esperado en {project_root}",
+            "severity": "critical" if not (project_root.exists() and project_root.is_dir()) else "ok",
+        }
+    )
+    checks.append(
+        {
+            "id": "compose_file",
+            "ok": compose_path.exists() and compose_path.is_file(),
+            "detail": f"Compose esperado en {compose_path}",
+            "severity": "critical" if not (compose_path.exists() and compose_path.is_file()) else "ok",
+        }
+    )
+    checks.append(
+        {
+            "id": "env_file",
+            "ok": env_path.exists() and env_path.is_file(),
+            "detail": f"Env esperado en {env_path}",
+            "severity": "warning" if not (env_path.exists() and env_path.is_file()) else "ok",
+        }
+    )
+
+    migrations_path = project_root / 'backend' / 'migrations'
+    checks.append(
+        {
+            "id": "alembic_migrations",
+            "ok": migrations_path.exists() and migrations_path.is_dir(),
+            "detail": f"Migraciones detectadas en {migrations_path}",
+            "severity": "critical" if not (migrations_path.exists() and migrations_path.is_dir()) else "ok",
+        }
+    )
+
+    disk_probe = project_root if project_root.exists() else Path.cwd()
+    try:
+        usage = shutil.disk_usage(disk_probe)
+        free_gb = round(usage.free / (1024 ** 3), 2)
+        total_gb = round(usage.total / (1024 ** 3), 2)
+        disk_ok = free_gb >= min_disk_gb
+        checks.append(
+            {
+                "id": "disk_free_space",
+                "ok": disk_ok,
+                "detail": f"Libre {free_gb} GB de {total_gb} GB (min {min_disk_gb} GB)",
+                "severity": "critical" if not disk_ok else "ok",
+            }
+        )
+    except Exception as exc:
+        checks.append(
+            {
+                "id": "disk_free_space",
+                "ok": False,
+                "detail": f"No se pudo medir espacio libre: {exc}",
+                "severity": "warning",
+            }
+        )
+
+    artifacts = _backup_artifacts_summary()
+    latest = artifacts.get("latest")
+    if latest and latest.get("modified_ts"):
+        age_hours = round((time.time() - float(latest["modified_ts"])) / 3600, 2)
+        backup_ok = age_hours <= max_backup_age_hours
+        checks.append(
+            {
+                "id": "backup_recency",
+                "ok": backup_ok,
+                "detail": f"Ultimo backup hace {age_hours}h (max {max_backup_age_hours}h)",
+                "severity": "critical" if not backup_ok else "ok",
+            }
+        )
+    else:
+        age_hours = None
+        checks.append(
+            {
+                "id": "backup_recency",
+                "ok": False,
+                "detail": "No se detectaron backups recientes para rollback.",
+                "severity": "critical",
+            }
+        )
+
+    db_files = [f for f in artifacts.get("files", []) if str(f.get("name", "")).startswith("db_")]
+    checks.append(
+        {
+            "id": "db_backup_available",
+            "ok": len(db_files) > 0,
+            "detail": f"Backups DB detectados: {len(db_files)}",
+            "severity": "critical" if len(db_files) == 0 else "ok",
+        }
+    )
+
+    docker_bin = shutil.which('docker')
+    docker_ok = bool(docker_bin)
+    docker_compose_version = ''
+    if docker_ok:
+        try:
+            version_cmd = subprocess.run(
+                [docker_bin, 'compose', 'version'],
+                capture_output=True,
+                text=True,
+                timeout=6,
+                check=False,
+            )
+            docker_compose_version = str(version_cmd.stdout or version_cmd.stderr or '').strip()
+            docker_ok = version_cmd.returncode == 0
+        except Exception as exc:
+            docker_ok = False
+            docker_compose_version = str(exc)
+    checks.append(
+        {
+            "id": "docker_compose_runtime",
+            "ok": docker_ok,
+            "detail": docker_compose_version or 'docker compose no disponible en este runtime',
+            "severity": "warning" if not docker_ok else "ok",
+        }
+    )
+
+    health = _build_network_health_payload(tenant_id)
+    health_score = float(health.get('score') or 0)
+    health_ok = health_score >= 60
+    checks.append(
+        {
+            "id": "network_health",
+            "ok": health_ok,
+            "detail": f"Network health score {health_score}/100",
+            "severity": "ok" if health_score >= 60 else "warning" if health_score >= 40 else "critical",
+        }
+    )
+
+    change_control_required = bool(settings.get('change_control_required_for_live', True))
+    approved_changes = [
+        item for item in _load_ops_change_requests(tenant_id)
+        if str(item.get('status') or '').lower() in {'approved', 'scheduled', 'executing'}
+    ]
+    change_ok = (not change_control_required) or bool(approved_changes)
+    checks.append(
+        {
+            "id": "change_window",
+            "ok": change_ok,
+            "detail": (
+                f"Cambios aprobados/scheduled disponibles: {len(approved_changes)}"
+                if change_control_required
+                else 'Control de cambios live deshabilitado para este tenant.'
+            ),
+            "severity": "warning" if not change_ok else "ok",
+        }
+    )
+
+    for item in checks:
+        if not item.get('ok') and item.get('severity') == 'critical':
+            blockers.append({"id": str(item.get('id')), "detail": str(item.get('detail') or '')})
+
+    quoted_project = shlex.quote(str(project_root))
+    quoted_compose = shlex.quote(str(compose_path))
+    quoted_env = shlex.quote(str(env_path))
+    services_args = ' '.join(shlex.quote(service) for service in services)
+    commands = [
+        f"cd {quoted_project}",
+        f"docker compose -f {quoted_compose} --env-file {quoted_env} pull {services_args}".strip(),
+        f"docker compose -f {quoted_compose} --env-file {quoted_env} up -d --build {services_args}".strip(),
+        f"docker compose -f {quoted_compose} --env-file {quoted_env} exec backend flask db upgrade",
+        "curl -fsS http://localhost:5000/api/health",
+    ]
+
+    score = _ops_score_from_checks(checks)
+    passed = len(blockers) == 0
+    status = 'completed' if passed else 'completed_with_errors'
+    summary = {
+        "tenant_id": tenant_id,
+        "timestamp": _iso_utc_now(),
+        "score": score,
+        "passed": passed,
+        "checks": checks,
+        "blockers": blockers,
+        "deployment": {
+            "project_root": str(project_root),
+            "compose_file": str(compose_path),
+            "env_file": str(env_path),
+            "services": services,
+            "docker_available": bool(docker_bin),
+            "docker_runtime_ok": docker_ok,
+            "commands": commands,
+            "scripts": [
+                {"name": "deploy_fastisp.py", "path": "c:/Users/steve/OneDrive/Documentos/ISPFAST/deploy_fastisp.py"},
+                {"name": "push_to_vps.py", "path": "c:/Users/steve/OneDrive/Documentos/ISPFAST/push_to_vps.py"},
+            ],
+        },
+        "artifacts": {
+            "backup_dir": artifacts.get("backup_dir"),
+            "latest": latest,
+            "db_backups": len(db_files),
+            "latest_backup_age_hours": age_hours,
+        },
+        "health": health,
+    }
+    return status, summary
+
+
 def _execute_system_job(job: str, tenant_id) -> tuple[str, dict]:
     try:
         if job == 'backup':
@@ -6988,6 +7367,8 @@ def _execute_system_job(job: str, tenant_id) -> tuple[str, dict]:
             return _rotate_mikrotik_passwords(tenant_id)
         if job == 'backup_restore_drill':
             return _run_backup_restore_drill(tenant_id)
+        if job == 'vps_update_preflight':
+            return _run_vps_update_preflight(tenant_id)
         return 'failed', {"error": f"job no soportado: {job}"}
     except Exception as exc:
         current_app.logger.error("System job execution failed for %s: %s", job, exc, exc_info=True)
@@ -7067,6 +7448,8 @@ def admin_system_settings_get():
     jobs = _load_system_jobs_db(tenant_id)[:20]
     if not jobs:
         jobs = _load_cached_list(_system_jobs_key(tenant_id))[:20]
+    vps_update_status, vps_update_summary = _run_vps_update_preflight(tenant_id)
+    vps_update_summary["status"] = vps_update_status
     return jsonify(
         {
             "settings": settings,
@@ -7077,6 +7460,7 @@ def admin_system_settings_get():
                 "timestamp": _iso_utc_now(),
             },
             "jobs": jobs,
+            "vps_update": vps_update_summary,
         }
     ), 200
 
