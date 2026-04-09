@@ -338,65 +338,71 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
     local_addr = SSTP_LOCAL_ADDRESS
     sstp_port = SSTP_SERVER_PORT
     dns = SSTP_DNS_SERVERS
-    profile_name = "fastisp-sstp"
-    pool_name = "fastisp-sstp-pool"
-    ca_name = "FastISP-CA"
-    cert_name = "FastISP-SSTP"
-    group_name = "fastisp"
+    profile_name = SSTP_PROFILE_NAME
+    pool_name = SSTP_POOL_NAME
+    ca_name = SSTP_CA_NAME
+    cert_name = SSTP_CERT_NAME
+    group_name = SSTP_API_GROUP_NAME
+    allowed_subnet = SSTP_API_ALLOWED_SUBNET
+    tls_ver = SSTP_TLS_VERSION
+    ciphers = SSTP_CIPHERS
+    pfs = SSTP_PFS
 
-    script = f"""# FastISP — Servidor SSTP Nativo — {router_name}
+    script = f"""# FastISP - Servidor SSTP Nativo - {router_name}
 # Generado: {provisioned_at}
-# =====================================================================
-# Este script configura el router MikroTik como servidor SSTP.
-# Los clientes VPN se conectan directamente al router.
-# =====================================================================
+# ================================================================
+# Arquitectura:
+#   1. CA y certificado generados en el MikroTik
+#   2. SSTP nativo en {sstp_port}/TCP con MS-CHAPv2
+#   3. Perfil PPP + pool interno
+#   4. Secret de gestion FastISP y usuario API
+# ================================================================
 
-# --- Limpieza previa ---
-/ppp secret remove [find where comment~"FastISP"]
+:local fUser "{username}"
+:local fPass "{password}"
+
+# --- Limpieza previa controlada ---
+/ppp secret remove [find where comment="FastISP Management"]
 /ppp profile remove [find where name="{profile_name}"]
 /ip pool remove [find where name="{pool_name}"]
 /interface sstp-server server set enabled=no
 /certificate remove [find where name="{cert_name}"]
 /certificate remove [find where name="{ca_name}"]
-/user remove [find where name~"sstp-"]
-/user group remove [find where name~"{group_name}"]
+/user remove [find where name=$fUser]
+/user group remove [find where name="{group_name}"]
 /ip firewall filter remove [find where comment~"FastISP"]
 
-# --- 1. Generacion de Certificados ---
+# --- 1. Certificados locales del router ---
 /certificate add name={ca_name} common-name=FastISP-CA days-valid=3650 key-usage=key-cert-sign,crl-sign
 /certificate sign {ca_name} name={ca_name}
 :delay 5s
-:log info "FastISP: CA generado y firmado"
 /certificate add name={cert_name} common-name={router_address} days-valid=3650 key-usage=digital-signature,key-encipherment,tls-server
 /certificate sign {cert_name} ca={ca_name} name={cert_name}
 :delay 5s
-:log info "FastISP: Certificado servidor SSTP firmado"
 
-# --- 2. Pool de IPs para clientes VPN ---
+# --- 2. Pool privado para clientes SSTP ---
 /ip pool add name={pool_name} ranges={pool_range}
 
-# --- 3. Perfil PPP ---
+# --- 3. Perfil PPP del servidor SSTP ---
 /ppp profile add name="{profile_name}" local-address={local_addr} remote-address={pool_name} dns-server={dns} use-encryption=yes comment="FastISP SSTP Profile"
 
-# --- 4. Servidor SSTP (MS-CHAPv2, PFS, Force AES) ---
-/interface sstp-server server set enabled=yes certificate={cert_name} port={sstp_port} authentication=mschap2 pfs=yes tls-version=only-1.2
-:log info "FastISP: Servidor SSTP habilitado en puerto {sstp_port}"
+# --- 4. Servidor SSTP nativo ---
+/interface sstp-server server set enabled=yes port={sstp_port} default-profile="{profile_name}" authentication=mschap2 certificate={cert_name} pfs={pfs} tls-version={tls_ver} ciphers={ciphers}
 
-# --- 5. Secret PPP (gestion FastISP) ---
-/ppp secret add name="{username}" password="{password}" service=sstp profile="{profile_name}" remote-address={SSTP_POOL_START} comment="FastISP Management"
+# --- 5. Secret PPP de gestion ---
+/ppp secret add name=$fUser password=$fPass service=sstp profile="{profile_name}" remote-address={SSTP_POOL_START} comment="FastISP Management"
 
-# --- 6. Usuario y grupo de API ---
+# --- 6. Usuario API FastISP ---
 /user group add name={group_name} policy="local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive"
-/user add name="{username}" password="{password}" group={group_name} comment="FastISP API user"
+/user add name=$fUser password=$fPass group={group_name} comment="FastISP-API"
 
-# --- 7. Habilitar API (restringida al pool VPN) ---
-/ip service set api port=8728 disabled=no address={local_addr}/24
+# --- 7. API restringida al segmento SSTP ---
+/ip service set api port=8728 disabled=no address="{allowed_subnet}"
 
-# --- 8. Firewall — permitir SSTP entrante ---
+# --- 8. Firewall de entrada para SSTP ---
 /ip firewall filter add chain=input protocol=tcp dst-port={sstp_port} action=accept comment="FastISP: Permitir SSTP" place-before=0
 
-# --- Listo ---
-:log info "FastISP: Servidor SSTP configurado para {router_name}. Generado: {provisioned_at}"
+:log info "FastISP: Servidor SSTP nativo configurado para {router_name}"
 """
     return script
 
