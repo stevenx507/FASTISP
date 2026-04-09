@@ -39,6 +39,7 @@ SSTP_CA_NAME = os.environ.get("SSTP_CA_NAME", "FastISP-CA")
 SSTP_CERT_NAME = os.environ.get("SSTP_CERT_NAME", "FastISP-SSTP")
 SSTP_API_GROUP_NAME = os.environ.get("SSTP_API_GROUP_NAME", "fastisp")
 SSTP_API_ALLOWED_SUBNET = os.environ.get("SSTP_API_ALLOWED_SUBNET", "10.10.0.0/24")
+FASTISP_VPS_IP = os.environ.get("FASTISP_VPS_IP", "")  # IP publica del VPS para acceso API remoto
 
 # Backward compat: rutas importan estos nombres
 SSTP_CERT_DIR = os.environ.get("SSTP_CERT_DIR", "/tmp/sstp-certs")
@@ -348,6 +349,15 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
     ciphers = SSTP_CIPHERS
     pfs = SSTP_PFS
 
+    # Construir address list para API: pool SSTP + IP del VPS si existe
+    vps_ip = FASTISP_VPS_IP.strip()
+    if vps_ip:
+        api_addresses = f"{allowed_subnet},{vps_ip}/32"
+        api_fw_source = f"{allowed_subnet},{vps_ip}/32"
+    else:
+        api_addresses = allowed_subnet
+        api_fw_source = allowed_subnet
+
     script = f"""# FastISP - Servidor SSTP Nativo - {router_name}
 # Generado: {provisioned_at}
 # ================================================================
@@ -356,6 +366,7 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
 #   2. SSTP nativo en {sstp_port}/TCP con MS-CHAPv2
 #   3. Perfil PPP + pool interno
 #   4. Secret de gestion FastISP y usuario API
+#   5. API abierta para: {api_addresses}
 # ================================================================
 
 :local fUser "{username}"
@@ -396,11 +407,12 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
 /user group add name={group_name} policy="local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive"
 /user add name=$fUser password=$fPass group={group_name} comment="FastISP-API"
 
-# --- 7. API restringida al segmento SSTP ---
-/ip service set api port=8728 disabled=no address="{allowed_subnet}"
+# --- 7. API habilitada (VPS + pool SSTP) ---
+/ip service set api port=8728 disabled=no address="{api_addresses}"
 
-# --- 8. Firewall de entrada para SSTP ---
+# --- 8. Firewall de entrada para SSTP y API ---
 /ip firewall filter add chain=input protocol=tcp dst-port={sstp_port} action=accept comment="FastISP: Permitir SSTP" place-before=0
+/ip firewall filter add chain=input protocol=tcp dst-port=8728 src-address={api_fw_source} action=accept comment="FastISP: Permitir API" place-before=0
 
 :log info "FastISP: Servidor SSTP nativo configurado para {router_name}"
 """
@@ -599,14 +611,24 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
     first_client_ip = prov.get("client_ip") or SSTP_POOL_START
     pool_range = f"{SSTP_POOL_START}-{SSTP_POOL_END}"
 
+    # Construir address list para API: pool SSTP + IP del VPS si existe
+    vps_ip = FASTISP_VPS_IP.strip()
+    if vps_ip:
+        api_addresses = f"{SSTP_API_ALLOWED_SUBNET},{vps_ip}/32"
+        api_fw_source = f"{SSTP_API_ALLOWED_SUBNET},{vps_ip}/32"
+    else:
+        api_addresses = SSTP_API_ALLOWED_SUBNET
+        api_fw_source = SSTP_API_ALLOWED_SUBNET
+
     return f"""# FastISP - Servidor SSTP Nativo - {router_name}
 # Generado: {provisioned_at}
 # ================================================================
 # Arquitectura:
 #   1. CA y certificado generados en el MikroTik
-#   2. SSTP nativo en 443/TCP con MS-CHAPv2
+#   2. SSTP nativo en {SSTP_SERVER_PORT}/TCP con MS-CHAPv2
 #   3. Perfil PPP + pool interno
 #   4. Secret de gestion FastISP y usuario API
+#   5. API abierta para: {api_addresses}
 # ================================================================
 
 # --- Limpieza previa controlada ---
@@ -618,7 +640,7 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
 /certificate remove [find where name={_routeros_quote(SSTP_CA_NAME)}]
 /user remove [find where name={_routeros_quote(username)}]
 /user group remove [find where name={_routeros_quote(SSTP_API_GROUP_NAME)}]
-/ip firewall filter remove [find where comment="FastISP: Permitir SSTP"]
+/ip firewall filter remove [find where comment~"FastISP"]
 
 # --- 1. Certificados locales del router ---
 /certificate add name={SSTP_CA_NAME} common-name=FastISP-CA days-valid=3650 key-usage=key-cert-sign,crl-sign
@@ -644,11 +666,12 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
 /user group add name={SSTP_API_GROUP_NAME} policy="local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive"
 /user add name={_routeros_quote(username)} password={_routeros_quote(password)} group={SSTP_API_GROUP_NAME} comment="FastISP API user"
 
-# --- 7. API restringida al segmento SSTP ---
-/ip service set api port=8728 disabled=no address={SSTP_API_ALLOWED_SUBNET}
+# --- 7. API habilitada (VPS + pool SSTP) ---
+/ip service set api port=8728 disabled=no address={api_addresses}
 
-# --- 8. Firewall de entrada para SSTP ---
+# --- 8. Firewall de entrada para SSTP y API ---
 /ip firewall filter add chain=input protocol=tcp dst-port={SSTP_SERVER_PORT} action=accept comment="FastISP: Permitir SSTP" place-before=0
+/ip firewall filter add chain=input protocol=tcp dst-port=8728 src-address={api_fw_source} action=accept comment="FastISP: Permitir API" place-before=0
 
 :log info "FastISP: Servidor SSTP nativo configurado para {router_name}"
 """
