@@ -928,6 +928,94 @@ def tickets_dashboard():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# ALERTAS DE RED
+# ─────────────────────────────────────────────────────────────────────────────
+
+@network_bp.route("/alerts", methods=["GET"])
+@staff_required()
+def network_alerts():
+    """
+    Genera alertas de red en tiempo real a partir de:
+      - Routers sin heartbeat reciente (offline)
+      - Nodos de red en estado fault/maintenance
+      - Facturas vencidas (alerta financiera)
+    Respuesta: { alerts: [{ id, severity, message, scope?, target?, since? }] }
+    """
+    from datetime import timedelta
+    tenant_id = current_tenant_id()
+    now = datetime.utcnow()
+    alerts: List[Dict[str, Any]] = []
+
+    # --- 1. Routers offline (sin heartbeat en últimos 10 min) ---
+    try:
+        routers_q = MikroTikRouter.query
+        if tenant_id is not None:
+            routers_q = routers_q.filter_by(tenant_id=tenant_id)
+        routers = routers_q.filter_by(is_active=True).all()
+        offline_threshold = now - timedelta(minutes=10)
+        for r in routers:
+            if r.last_seen is None or r.last_seen < offline_threshold:
+                since = r.last_seen.isoformat() if r.last_seen else None
+                alerts.append({
+                    "id": f"router-offline-{r.id}",
+                    "severity": "critical",
+                    "scope": "router",
+                    "target": r.name or f"Router #{r.id}",
+                    "message": f"Router '{r.name or r.id}' sin respuesta desde {r.last_seen.strftime('%H:%M') if r.last_seen else 'nunca'}",
+                    "since": since,
+                })
+    except Exception as exc:
+        logger.warning("Error generando alertas de routers: %s", exc)
+
+    # --- 2. Nodos de red en estado fault o maintenance ---
+    try:
+        fault_nodes = NetworkNode.query.filter(
+            NetworkNode.status.in_(("fault", "maintenance"))
+        )
+        if tenant_id is not None:
+            fault_nodes = fault_nodes.filter_by(tenant_id=tenant_id)
+        for node in fault_nodes.all():
+            sev = "critical" if node.status == "fault" else "warning"
+            alerts.append({
+                "id": f"node-{node.status}-{node.id}",
+                "severity": sev,
+                "scope": "infrastructure",
+                "target": node.name or f"Nodo #{node.id}",
+                "message": f"Nodo '{node.name or node.id}' en estado {node.status}",
+                "since": node.updated_at.isoformat() if getattr(node, "updated_at", None) else None,
+            })
+    except Exception as exc:
+        logger.warning("Error generando alertas de nodos: %s", exc)
+
+    # --- 3. Facturas vencidas (resumen) ---
+    try:
+        overdue_q = (
+            Invoice.query
+            .join(Subscription, Invoice.subscription_id == Subscription.id)
+            .filter(Invoice.status == "pending", Invoice.due_date < date.today())
+        )
+        if tenant_id is not None:
+            overdue_q = overdue_q.filter(Subscription.tenant_id == tenant_id)
+        overdue_count = overdue_q.count()
+        if overdue_count > 0:
+            alerts.append({
+                "id": "billing-overdue",
+                "severity": "warning",
+                "scope": "billing",
+                "target": "Facturación",
+                "message": f"{overdue_count} factura(s) vencida(s) sin cobrar",
+            })
+    except Exception as exc:
+        logger.warning("Error generando alertas de facturación: %s", exc)
+
+    # Ordenar: critical primero, luego warning, luego info
+    severity_order = {"critical": 0, "warning": 1, "info": 2}
+    alerts.sort(key=lambda a: severity_order.get(a.get("severity", "info"), 9))
+
+    return jsonify({"alerts": alerts, "count": len(alerts)})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # FINANZAS: Estadísticas avanzadas
 # ─────────────────────────────────────────────────────────────────────────────
 
