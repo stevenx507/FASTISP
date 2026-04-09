@@ -3473,33 +3473,36 @@ const MikroTikManagement: React.FC = () => {
                                 <div className="space-y-3">
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                                      <p className="text-sm font-bold text-emerald-800">Túnel SSTP activo</p>
+                                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse shadow-lg shadow-emerald-400/50" />
+                                      <p className="text-sm font-bold text-emerald-700">Servidor SSTP Nativo Activo</p>
                                     </div>
-                                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase">{sstpTunnel.status}</span>
+                                    <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 uppercase tracking-wide">{sstpTunnel.status}</span>
                                   </div>
 
-                                  <div className="grid grid-cols-2 gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-                                    <span>Usuario: <strong className="font-mono">{sstpTunnel.username}</strong></span>
-                                    <span>Servidor: <strong className="font-mono">{sstpTunnel.server_host}:{sstpTunnel.server_port}</strong></span>
+                                  <div className="grid grid-cols-2 gap-2 rounded-lg bg-gradient-to-r from-emerald-50 to-slate-50 px-3 py-2.5 text-xs text-slate-700 border border-emerald-200">
+                                    <div><span className="text-slate-500">Usuario PPP:</span> <strong className="font-mono text-emerald-800">{sstpTunnel.username}</strong></div>
+                                    <div><span className="text-slate-500">Servidor:</span> <strong className="font-mono text-emerald-800">{sstpTunnel.server_host}:{sstpTunnel.server_port}</strong></div>
                                     {sstpTunnel.password && (
-                                      <span className="col-span-2">Password: <strong className="font-mono text-emerald-900">{sstpTunnel.password}</strong></span>
+                                      <div className="col-span-2"><span className="text-slate-500">Password:</span> <strong className="font-mono text-emerald-900">{sstpTunnel.password}</strong></div>
                                     )}
                                   </div>
 
                                   {sstpScript && (
-                                    <div className="rounded-lg border border-slate-200 bg-slate-950 overflow-hidden">
-                                      <div className="flex items-center justify-between px-3 py-2 border-b border-slate-700">
-                                        <p className="text-[11px] font-semibold text-slate-300">Script RouterOS — New Terminal → pegar → Enter</p>
+                                    <div className="rounded-xl border border-slate-200 bg-slate-950 overflow-hidden shadow-sm">
+                                      <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-700 bg-slate-900">
+                                        <div className="flex items-center gap-2">
+                                          <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                          <p className="text-[11px] font-semibold text-slate-300">Script RouterOS - Winbox New Terminal - pegar - Enter</p>
+                                        </div>
                                         <button
                                           onClick={async () => {
                                             await copyToClipboard(sstpScript)
                                             setSstpScriptCopied(true)
                                             setTimeout(() => setSstpScriptCopied(false), 2500)
                                           }}
-                                          className="rounded-md bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-emerald-500 transition"
+                                          className="rounded-md bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-emerald-500 transition shadow-sm"
                                         >
-                                          {sstpScriptCopied ? '✅ Copiado' : '📋 Copiar script'}
+                                          {sstpScriptCopied ? 'Copiado!' : 'Copiar script'}
                                         </button>
                                       </div>
                                       <pre className="max-h-52 overflow-y-auto p-3 text-[10px] leading-relaxed text-emerald-300 whitespace-pre-wrap">{sstpScript}</pre>
@@ -3510,14 +3513,14 @@ const MikroTikManagement: React.FC = () => {
                                     <button
                                       onClick={() => void runWizardValidation()}
                                       disabled={wizardValidating || readinessLoading}
-                                      className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-60 transition"
+                                      className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-60 transition shadow-sm"
                                     >
-                                      {wizardValidating ? 'Validando...' : '🔍 Validar conexión'}
+                                      {wizardValidating ? 'Validando...' : 'Validar conexion'}
                                     </button>
                                     <button
                                       onClick={() => void provisionSstpForRouter()}
                                       disabled={sstpProvisioning}
-                                      className="rounded-lg border border-emerald-300 px-3 py-1.5 text-xs text-emerald-800 hover:bg-emerald-50 disabled:opacity-60 transition"
+                                      className="rounded-lg border border-emerald-300 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-60 transition"
                                     >
                                       Regenerar credenciales
                                     </button>

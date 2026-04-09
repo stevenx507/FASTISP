@@ -56,6 +56,15 @@ interface Router {
   status: string
 }
 
+interface ConnectionTest {
+  success: boolean
+  status: string
+  summary: string
+  checks?: { id: string; ok: boolean; detail: string; severity: string }[]
+  recommendations?: string[]
+  runtime?: { tcp_latency_ms?: number; dns_lookup_ms?: number }
+}
+
 interface SstpStatus {
   total_tunnels: number
   active_tunnels: number
@@ -320,6 +329,8 @@ const SstpProvisioning: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'revoked'>('all')
+  const [testingConnection, setTestingConnection] = useState<number | null>(null)
+  const [connectionResult, setConnectionResult] = useState<Record<number, ConnectionTest>>({})
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -439,6 +450,25 @@ const SstpProvisioning: React.FC = () => {
     }
   }
 
+  const handleTestConnection = async (tunnel: SstpTunnel) => {
+    setTestingConnection(tunnel.id)
+    try {
+      const data = await apiClient.get(`/mikrotik/routers/${tunnel.router_id}/test-connection`) as ConnectionTest
+      setConnectionResult(prev => ({ ...prev, [tunnel.id]: data }))
+      if (data.success) {
+        showSuccess(`Conexión verificada: ${tunnel.router_name} alcanzable (${data.runtime?.tcp_latency_ms ?? '?'}ms)`)
+      } else {
+        setError(`${tunnel.router_name}: ${data.summary || 'No alcanzable'}`)
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error testeando conexión'
+      setConnectionResult(prev => ({ ...prev, [tunnel.id]: { success: false, status: 'error', summary: msg } }))
+      setError(msg)
+    } finally {
+      setTestingConnection(null)
+    }
+  }
+
   const filteredTunnels = tunnels.filter(t =>
     filterStatus === 'all' ? true : t.status === filterStatus
   )
@@ -489,34 +519,34 @@ const SstpProvisioning: React.FC = () => {
       {/* Stats */}
       {status && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-gray-900 border border-cyan-500/20 rounded-xl p-4 hover:border-cyan-500/40 transition-colors">
+          <div className="bg-gradient-to-br from-gray-900 to-emerald-950/30 border border-emerald-500/20 rounded-xl p-4 hover:border-emerald-500/40 transition-all hover:shadow-lg hover:shadow-emerald-500/5">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-400 text-xs">Servidores Activos</p>
-              <SignalSolid className="w-4 h-4 text-emerald-400" />
+              <p className="text-gray-400 text-xs font-medium">Servidores Activos</p>
+              <div className="p-1.5 bg-emerald-500/10 rounded-lg"><SignalSolid className="w-4 h-4 text-emerald-400" /></div>
             </div>
             <p className="text-3xl font-bold text-emerald-400">{status.active_tunnels}</p>
             <p className="text-gray-500 text-xs mt-1">de {status.total_tunnels} totales</p>
           </div>
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-colors">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-all hover:shadow-lg hover:shadow-gray-500/5">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-400 text-xs">Total Servidores</p>
-              <WifiIcon className="w-4 h-4 text-gray-400" />
+              <p className="text-gray-400 text-xs font-medium">Total Servidores</p>
+              <div className="p-1.5 bg-gray-500/10 rounded-lg"><WifiIcon className="w-4 h-4 text-gray-400" /></div>
             </div>
             <p className="text-3xl font-bold text-white">{status.total_tunnels}</p>
             <p className="text-gray-500 text-xs mt-1">{status.revoked_tunnels} revocados</p>
           </div>
-          <div className="bg-gray-900 border border-cyan-500/20 rounded-xl p-4 hover:border-cyan-500/40 transition-colors">
+          <div className="bg-gradient-to-br from-gray-900 to-cyan-950/30 border border-cyan-500/20 rounded-xl p-4 hover:border-cyan-500/40 transition-all hover:shadow-lg hover:shadow-cyan-500/5">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-400 text-xs">Arquitectura</p>
-              <ServerIcon className="w-4 h-4 text-cyan-400" />
+              <p className="text-gray-400 text-xs font-medium">Arquitectura</p>
+              <div className="p-1.5 bg-cyan-500/10 rounded-lg"><ServerIcon className="w-4 h-4 text-cyan-400" /></div>
             </div>
             <p className="text-sm font-mono text-cyan-400 font-bold">{status.architecture}</p>
             <p className="text-gray-500 text-xs mt-1">Puerto {status.server_port}</p>
           </div>
-          <div className="bg-gray-900 border border-purple-500/20 rounded-xl p-4 hover:border-purple-500/40 transition-colors">
+          <div className="bg-gradient-to-br from-gray-900 to-purple-950/30 border border-purple-500/20 rounded-xl p-4 hover:border-purple-500/40 transition-all hover:shadow-lg hover:shadow-purple-500/5">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-400 text-xs">Pool de IPs</p>
-              <SignalIcon className="w-4 h-4 text-purple-400" />
+              <p className="text-gray-400 text-xs font-medium">Pool de IPs</p>
+              <div className="p-1.5 bg-purple-500/10 rounded-lg"><SignalIcon className="w-4 h-4 text-purple-400" /></div>
             </div>
             <p className="text-sm font-mono text-purple-400 font-bold">{status.ip_pool}</p>
             <p className="text-gray-500 text-xs mt-1">SSTP VPN Pool</p>
@@ -650,6 +680,14 @@ const SstpProvisioning: React.FC = () => {
                 {tunnel.status === 'active' && (
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
+                      onClick={() => handleTestConnection(tunnel)}
+                      title="Verificar conexi\u00f3n al router"
+                      disabled={testingConnection === tunnel.id}
+                      className="p-2 text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      <SignalIcon className={`w-4 h-4 ${testingConnection === tunnel.id ? 'animate-pulse' : ''}`} />
+                    </button>
+                    <button
                       onClick={() => handleViewScript(tunnel)}
                       title="Ver script de aprovisionamiento"
                       className="p-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
@@ -672,7 +710,7 @@ const SstpProvisioning: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleRevoke(tunnel)}
-                      title="Revocar túnel"
+                      title="Revocar t\u00fanel"
                       className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                     >
                       <TrashIcon className="w-4 h-4" />
@@ -680,17 +718,73 @@ const SstpProvisioning: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              {/* Connection test result inline */}
+              {connectionResult[tunnel.id] && (
+                <div className={`mt-3 p-3 rounded-lg border text-xs ${
+                  connectionResult[tunnel.id].success
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+                    : 'bg-red-500/10 border-red-500/20 text-red-300'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {connectionResult[tunnel.id].success
+                        ? <CheckCircleIcon className="w-4 h-4 text-emerald-400" />
+                        : <XCircleIcon className="w-4 h-4 text-red-400" />}
+                      <span className="font-medium">{connectionResult[tunnel.id].summary}</span>
+                    </div>
+                    {connectionResult[tunnel.id].runtime?.tcp_latency_ms != null && (
+                      <span className="px-2 py-0.5 bg-emerald-500/20 rounded-full text-emerald-300 font-mono text-[10px]">
+                        {connectionResult[tunnel.id].runtime!.tcp_latency_ms}ms
+                      </span>
+                    )}
+                  </div>
+                  {connectionResult[tunnel.id].checks && (
+                    <div className="mt-2 space-y-1">
+                      {connectionResult[tunnel.id].checks!.map(check => (
+                        <div key={check.id} className="flex items-center gap-2">
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${check.ok ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                          <span className="text-gray-300">{check.detail}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {connectionResult[tunnel.id].recommendations && connectionResult[tunnel.id].recommendations!.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-gray-700">
+                      {connectionResult[tunnel.id].recommendations!.map((rec, i) => (
+                        <p key={i} className="text-yellow-300/80 text-[11px]">- {rec}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* API applied indicator per tunnel */}
+              {tunnel.api_applied && (
+                <div className="mt-3 p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <div className="flex items-center gap-2 text-emerald-300 text-xs font-medium">
+                    <CheckCircleIcon className="w-3.5 h-3.5" />
+                    Aplicado autom\u00e1ticamente v\u00eda API MikroTik
+                  </div>
+                  {tunnel.api_results && tunnel.api_results.length > 0 && (
+                    <details className="mt-1 text-emerald-400/80 text-[11px]">
+                      <summary className="cursor-pointer hover:text-emerald-300">Ver detalles ({tunnel.api_results.length})</summary>
+                      <pre className="mt-1 text-[10px] whitespace-pre-wrap">{tunnel.api_results.join('\n')}</pre>
+                    </details>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      {/* API Applied indicator */}
-      {selectedTunnel?.api_applied && (
-        <div className="mb-4 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
+      {/* API Applied indicator (global, when script modal was opened) */}
+      {selectedTunnel?.api_applied && !showScriptModal && (
+        <div className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
           <div className="flex items-center gap-2 text-emerald-300 font-medium mb-2">
             <CheckCircleSolid className="w-5 h-5" />
-            Servidor SSTP configurado automáticamente vía API MikroTik
+            {selectedTunnel.router_name}: Configurado autom\u00e1ticamente v\u00eda API
           </div>
           {selectedTunnel.api_results && selectedTunnel.api_results.length > 0 && (
             <details className="text-emerald-400 text-xs">
