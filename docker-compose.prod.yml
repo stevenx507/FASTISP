@@ -83,7 +83,7 @@ services:
       context: ./frontend
       target: production
       args:
-        - VITE_API_URL=${API_URL:-/api}
+        - VITE_API_URL=${VITE_API_URL:-/api}
         - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
         - VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
         - VITE_GRAFANA_URL=${VITE_GRAFANA_URL}
@@ -91,7 +91,7 @@ services:
     env_file:
       - .env.prod
     environment:
-      - VITE_API_URL=${API_URL:-/api}
+      - VITE_API_URL=${VITE_API_URL:-/api}
       - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
       - VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
     networks:
