@@ -7118,7 +7118,7 @@ def _resolve_deploy_path(project_root: Path, configured: str | None, fallback: s
 
 def _run_vps_update_preflight(tenant_id) -> tuple[str, dict]:
     settings = _effective_system_settings(tenant_id)
-    project_root_raw = str(current_app.config.get('DEPLOY_PROJECT_ROOT') or '/app').strip() or '/app'
+    project_root_raw = str(current_app.config.get('DEPLOY_PROJECT_ROOT') or '/root/fastisp').strip() or '/root/fastisp'
     project_root = Path(project_root_raw).expanduser()
     compose_path = _resolve_deploy_path(
         project_root,
@@ -7130,12 +7130,12 @@ def _run_vps_update_preflight(tenant_id) -> tuple[str, dict]:
         current_app.config.get('DEPLOY_ENV_FILE'),
         '.env.prod',
     )
-    services = current_app.config.get('DEPLOY_SERVICES') or ['backend', 'worker', 'beat', 'frontend']
+    services = current_app.config.get('DEPLOY_SERVICES') or ['backend', 'celery-worker', 'celery-beat', 'frontend']
     if isinstance(services, str):
         services = [item.strip() for item in services.split(',') if item.strip()]
     services = [str(item).strip() for item in services if str(item).strip()]
     if not services:
-        services = ['backend', 'worker', 'beat', 'frontend']
+        services = ['backend', 'celery-worker', 'celery-beat', 'frontend']
 
     try:
         min_disk_gb = float(current_app.config.get('VPS_UPDATE_MIN_DISK_GB', '2') or 2)
@@ -7315,8 +7315,10 @@ def _run_vps_update_preflight(tenant_id) -> tuple[str, dict]:
         f"docker compose -f {quoted_compose} --env-file {quoted_env} pull {services_args}".strip(),
         f"docker compose -f {quoted_compose} --env-file {quoted_env} up -d --build {services_args}".strip(),
         f"docker compose -f {quoted_compose} --env-file {quoted_env} exec backend flask db upgrade",
-        "curl -fsS http://localhost:5000/api/health",
+        f"docker compose -f {quoted_compose} --env-file {quoted_env} exec -T backend curl -fsS http://localhost:5000/api/health",
     ]
+
+    repo_root = Path(__file__).resolve().parents[3]
 
     score = _ops_score_from_checks(checks)
     passed = len(blockers) == 0
@@ -7337,8 +7339,8 @@ def _run_vps_update_preflight(tenant_id) -> tuple[str, dict]:
             "docker_runtime_ok": docker_ok,
             "commands": commands,
             "scripts": [
-                {"name": "deploy_fastisp.py", "path": "c:/Users/steve/OneDrive/Documentos/ISPFAST/deploy_fastisp.py"},
-                {"name": "push_to_vps.py", "path": "c:/Users/steve/OneDrive/Documentos/ISPFAST/push_to_vps.py"},
+                {"name": "deploy_fastisp.py", "path": str((repo_root.parent / 'deploy_fastisp.py').resolve())},
+                {"name": "push_to_vps.py", "path": str((repo_root.parent / 'push_to_vps.py').resolve())},
             ],
         },
         "artifacts": {

@@ -11,6 +11,11 @@ on:
         options:
           - production
           - staging
+      git_ref:
+        description: "Rama/tag a desplegar (vacio = rama actual del workflow)"
+        required: false
+        default: ""
+        type: string
       migrate_db:
         description: "Ejecutar migraciones DB"
         required: true
@@ -46,14 +51,18 @@ jobs:
             export APP_DIR="${{ secrets.VPS_APP_DIR }}"
             if [ -z "$APP_DIR" ]; then APP_DIR="$HOME/fastisp"; fi
             cd "$APP_DIR"
-            git fetch origin main
-            git checkout main
-            git pull origin main
+            REF="${{ inputs.git_ref }}"
+            if [ -z "$REF" ]; then REF="${{ github.ref_name }}"; fi
+            echo "Deploy ref: $REF"
+
+            git fetch origin "$REF"
+            git checkout "$REF"
+            git pull --ff-only origin "$REF"
 
             if [ "${{ inputs.rebuild_services }}" = "true" ]; then
-              docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build backend frontend
+              docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build backend frontend celery-worker celery-beat
             else
-              docker compose --env-file .env.prod -f docker-compose.prod.yml up -d backend frontend
+              docker compose --env-file .env.prod -f docker-compose.prod.yml up -d backend frontend celery-worker celery-beat
             fi
 
             if [ "${{ inputs.migrate_db }}" = "true" ]; then
