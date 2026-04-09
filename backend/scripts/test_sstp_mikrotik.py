@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
 """
-test_sstp_mikrotik.py — Diagnóstico completo SSTP + MikroTik API
-=================================================================
-Simula el flujo completo sin crear datos reales en BD.
+test_sstp_mikrotik.py — Diagnostico completo SSTP Nativo MikroTik
+==================================================================
+Verifica el flujo completo de conexion: backend → MikroTik API.
+Arquitectura: MikroTik ES el servidor SSTP (estilo Wispro).
 
 Uso (dentro del container o con PYTHONPATH=/app):
   docker exec fastisp-backend python /app/scripts/test_sstp_mikrotik.py
 
-  # O con credenciales de un router específico:
-  ROUTER_IP=192.168.1.1 ROUTER_USER=admin ROUTER_PASS=secret \
+  # Con credenciales de un router especifico:
+  ROUTER_IP=203.0.113.5 ROUTER_USER=admin ROUTER_PASS=secret \
     docker exec -e ROUTER_IP -e ROUTER_USER -e ROUTER_PASS \
     fastisp-backend python /app/scripts/test_sstp_mikrotik.py
 """
 
 import os
 import sys
-import subprocess
 import socket
-import json
+import time
+import ipaddress
 from datetime import datetime
 
 # ── Colores de terminal ──────────────────────────────────────────────────────
@@ -28,12 +29,12 @@ BLUE   = "\033[94m"
 RESET  = "\033[0m"
 BOLD   = "\033[1m"
 
-def ok(msg):   print(f"  {GREEN}✔{RESET}  {msg}")
-def fail(msg): print(f"  {RED}✘{RESET}  {msg}")
-def warn(msg): print(f"  {YELLOW}⚠{RESET}  {msg}")
-def info(msg): print(f"  {BLUE}ℹ{RESET}  {msg}")
+def ok(msg):   print(f"  {GREEN}OK{RESET}  {msg}")
+def fail(msg): print(f"  {RED}FAIL{RESET}  {msg}")
+def warn(msg): print(f"  {YELLOW}WARN{RESET}  {msg}")
+def info(msg): print(f"  {BLUE}INFO{RESET}  {msg}")
 def sep(title=""):
-    line = "─" * 60
+    line = "-" * 60
     if title:
         print(f"\n{BOLD}{line}{RESET}")
         print(f"{BOLD}  {title}{RESET}")
@@ -47,275 +48,191 @@ FAIL = 0
 def check(label, result, detail=""):
     global PASS, FAIL
     if result:
-        ok(label + (f" — {detail}" if detail else ""))
+        ok(label + (f" -- {detail}" if detail else ""))
         PASS += 1
     else:
-        fail(label + (f" — {detail}" if detail else ""))
+        fail(label + (f" -- {detail}" if detail else ""))
         FAIL += 1
     return result
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# 1. Docker socket
+# 1. Configuracion SSTP Nativo
 # ════════════════════════════════════════════════════════════════════════════
-sep("1. Docker Socket (necesario para docker exec a SoftEther)")
+sep("1. Configuracion SSTP Nativo MikroTik")
 
-docker_socket = "/var/run/docker.sock"
-socket_exists = os.path.exists(docker_socket)
-check("Socket presente en container", socket_exists, docker_socket)
-
-if socket_exists:
-    try:
-        result = subprocess.run(
-            ["docker", "info", "--format", "{{.ServerVersion}}"],
-            capture_output=True, text=True, timeout=5
-        )
-        docker_ok = result.returncode == 0
-        check("Docker daemon accesible", docker_ok,
-              result.stdout.strip() if docker_ok else result.stderr.strip()[:80])
-    except FileNotFoundError:
-        check("Docker CLI disponible", False, "docker binary no encontrado en container")
-    except Exception as e:
-        check("Docker daemon accesible", False, str(e)[:80])
-else:
-    warn("Sin Docker socket — docker exec a SoftEther fallará")
-    warn("Agrega al backend en docker-compose.prod.yml:")
-    warn("  volumes:")
-    warn("    - /var/run/docker.sock:/var/run/docker.sock:ro")
-
-
-# ════════════════════════════════════════════════════════════════════════════
-# 2. SoftEther container
-# ════════════════════════════════════════════════════════════════════════════
-sep("2. SoftEther Container (fastisp-softether)")
-
-SOFTETHER_CONTAINER = os.environ.get("SOFTETHER_CONTAINER", "fastisp-softether")
-
-softether_running = False
 try:
-    r = subprocess.run(
-        ["docker", "inspect", "--format", "{{.State.Running}}", SOFTETHER_CONTAINER],
-        capture_output=True, text=True, timeout=5
+    sys.path.insert(0, os.environ.get("APP_DIR", "/app"))
+    from app.services.sstp_service import (
+        SSTP_SERVER_PORT, SSTP_SERVER_HOST, SSTP_POOL_START, SSTP_POOL_END,
+        SSTP_LOCAL_ADDRESS, SSTP_PROFILE_NAME, SSTP_POOL_NAME,
+        SSTP_CA_NAME, SSTP_CERT_NAME, SSTP_API_GROUP_NAME,
+        SSTP_TLS_VERSION, SSTP_CIPHERS, SSTP_PFS,
     )
-    softether_running = r.stdout.strip() == "true"
-    check(f"Container '{SOFTETHER_CONTAINER}' corriendo", softether_running,
-          r.stdout.strip() if softether_running else r.stderr.strip()[:80] or "no encontrado")
-except Exception as e:
-    check(f"Container '{SOFTETHER_CONTAINER}' corriendo", False, str(e)[:80])
+    check("sstp_service importado", True)
+    info(f"SSTP_SERVER_HOST = {SSTP_SERVER_HOST}")
+    info(f"SSTP_SERVER_PORT = {SSTP_SERVER_PORT}")
+    info(f"SSTP_POOL        = {SSTP_POOL_START} - {SSTP_POOL_END}")
+    info(f"SSTP_LOCAL_ADDR  = {SSTP_LOCAL_ADDRESS}")
+    info(f"SSTP_PROFILE     = {SSTP_PROFILE_NAME}")
+    info(f"SSTP_TLS         = {SSTP_TLS_VERSION}, ciphers={SSTP_CIPHERS}, pfs={SSTP_PFS}")
+    info(f"SSTP_CA/CERT     = {SSTP_CA_NAME} / {SSTP_CERT_NAME}")
+    info(f"API_GROUP        = {SSTP_API_GROUP_NAME}")
 
-if softether_running:
-    # Verificar que vpncmd_api.sh existe en el container
+    # Validar pool IPs
     try:
-        r = subprocess.run(
-            ["docker", "exec", SOFTETHER_CONTAINER, "test", "-x", "/vpncmd_api.sh"],
-            capture_output=True, text=True, timeout=5
-        )
-        script_ok = r.returncode == 0
-        check("vpncmd_api.sh ejecutable en container", script_ok,
-              "OK" if script_ok else "Falta — reconstruye con: docker compose build softether-vpn")
+        start = ipaddress.ip_address(SSTP_POOL_START)
+        end = ipaddress.ip_address(SSTP_POOL_END)
+        local = ipaddress.ip_address(SSTP_LOCAL_ADDRESS)
+        check("Pool IP valido", int(start) < int(end), f"{start} < {end}")
+        check("Local address fuera del pool", int(local) < int(start) or int(local) > int(end),
+              f"{local} no colisiona con pool")
     except Exception as e:
-        check("vpncmd_api.sh ejecutable en container", False, str(e)[:80])
+        check("Pool IP valido", False, str(e)[:80])
 
-    # Verificar que vpncmd binario existe
-    try:
-        r = subprocess.run(
-            ["docker", "exec", SOFTETHER_CONTAINER, "sh", "-c",
-             "ls /usr/vpnserver/vpncmd /opt/vpnserver/vpncmd 2>/dev/null | head -1"],
-            capture_output=True, text=True, timeout=5
-        )
-        vpncmd_path = r.stdout.strip()
-        check("vpncmd binario encontrado en container", bool(vpncmd_path),
-              vpncmd_path or "No encontrado en /usr/vpnserver ni /opt/vpnserver")
-    except Exception as e:
-        check("vpncmd binario encontrado", False, str(e)[:80])
-
-    # Test server_status via vpncmd_api.sh
-    try:
-        r = subprocess.run(
-            ["docker", "exec", SOFTETHER_CONTAINER, "/vpncmd_api.sh", "server_status"],
-            capture_output=True, text=True, timeout=15
-        )
-        status_ok = r.returncode == 0 and '"status"' in r.stdout
-        check("vpncmd_api.sh server_status responde", status_ok,
-              r.stdout.strip()[:100] if status_ok else (r.stderr.strip() or r.stdout.strip())[:100])
-    except Exception as e:
-        check("vpncmd_api.sh server_status", False, str(e)[:80])
+except ImportError as e:
+    check("sstp_service importado", False, str(e))
+    SSTP_SERVER_HOST = os.environ.get("SSTP_SERVER_HOST", "fastisp.cloud")
+    SSTP_SERVER_PORT = int(os.environ.get("SSTP_SERVER_PORT", "443"))
+    warn("Usando valores por defecto de env vars")
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# 3. Puerto SSTP 8443 accesible desde internet
+# 2. Generacion del script RouterOS
 # ════════════════════════════════════════════════════════════════════════════
-sep("3. Puerto SSTP 8443 (lo ve el MikroTik desde afuera)")
-
-SSTP_HOST = os.environ.get("SSTP_SERVER_HOST", "fastisp.cloud")
-SSTP_PORT = int(os.environ.get("SSTP_SERVER_PORT", "8443"))
+sep("2. Generacion de script RouterOS SSTP Nativo")
 
 try:
-    s = socket.create_connection((SSTP_HOST, SSTP_PORT), timeout=5)
-    s.close()
-    check(f"Puerto {SSTP_HOST}:{SSTP_PORT} alcanzable", True)
-except OSError as e:
-    check(f"Puerto {SSTP_HOST}:{SSTP_PORT} alcanzable", False, str(e))
-
-
-# ════════════════════════════════════════════════════════════════════════════
-# 4. Generación del script MikroTik
-# ════════════════════════════════════════════════════════════════════════════
-sep("4. Generación de script MikroTik SSTP")
-
-try:
-    sys.path.insert(0, "/app")
-    from app.services.sstp_service import generate_mikrotik_sstp_script, generate_verification_script
+    from app.services.sstp_service import generate_mikrotik_sstp_script
 
     fake_prov = {
         "username": "sstp-test-diag",
-        "password": "TestDiag1234",
-        "server_host": SSTP_HOST,
-        "server_port": SSTP_PORT,
-        "server_ip": "10.100.0.1",
-        "client_ip": "10.100.0.x",
-        "router_name": "test-router",
+        "password": "TestDiag1234!",
+        "server_host": "203.0.113.1",
+        "server_port": SSTP_SERVER_PORT,
+        "server_ip": SSTP_LOCAL_ADDRESS,
+        "client_ip": SSTP_POOL_START,
+        "router_name": "test-router-diag",
         "provisioned_at": datetime.utcnow().isoformat(),
     }
     script = generate_mikrotik_sstp_script(fake_prov)
 
-    # Verificaciones del script generado
     checks_script = [
-        (f"connect-to={SSTP_HOST}:{SSTP_PORT}" in script,
-         f"connect-to usa host:port ({SSTP_HOST}:{SSTP_PORT})"),
-        ("address=" not in script.split("/ip service set api")[1].split("\n")[0]
-         if "/ip service set api" in script else True,
-         "API sin restriccion address= (no bloquea acceso antes del tunel)"),
-        (":do {" in script,
-         "Limpieza con :do {} on-error={} (no aborta si falta objeto)"),
-        ("verify-server-certificate=no" in script,
-         "verify-server-certificate=no"),
+        ("sstp-server server set enabled=yes" in script.lower() or "/interface sstp-server server" in script,
+         "Habilita servidor SSTP nativo en MikroTik"),
+        (SSTP_PROFILE_NAME in script,
+         f"Usa perfil PPP '{SSTP_PROFILE_NAME}'"),
+        (":local fUser" in script,
+         "Usa :local vars para evitar errores de paste buffer"),
+        ("/ppp secret add" in script,
+         "Crea PPP secret de gestion"),
+        ("/ip service set api" in script,
+         "Habilita servicio API en MikroTik"),
+        ("/certificate" in script,
+         "Genera certificados CA + servidor"),
+        (SSTP_CA_NAME in script,
+         f"Nombre CA: {SSTP_CA_NAME}"),
     ]
     for result, label in checks_script:
         check(f"Script: {label}", result)
 
-    # Verificar verification script
-    vscript = generate_verification_script()
-    check("Verification script: usa FastISPVPN", "FastISPVPN" in vscript)
-
-    info(f"Script generado ({len(script)} bytes)")
+    info(f"Script generado ({len(script)} bytes, {len(script.splitlines())} lineas)")
 
 except ImportError as e:
-    check("Importar sstp_service", False, str(e))
+    check("Importar generate_mikrotik_sstp_script", False, str(e))
 except Exception as e:
-    check("Generación de script", False, str(e))
+    check("Generacion de script", False, str(e))
+
+# Verification script
+try:
+    from app.services.sstp_service import generate_verification_script
+    vscript = generate_verification_script()
+    check("Verification script generado", bool(vscript), f"{len(vscript)} bytes")
+except Exception as e:
+    check("Verification script", False, str(e)[:80])
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# 5. Sesiones activas en SoftEther (VPN IPs asignadas)
+# 3. DNS resolution del host SSTP
 # ════════════════════════════════════════════════════════════════════════════
-sep("5. Sesiones SSTP activas en SoftEther")
+sep(f"3. Resolucion DNS de {SSTP_SERVER_HOST}")
 
-if softether_running:
-    try:
-        r = subprocess.run(
-            ["docker", "exec", SOFTETHER_CONTAINER, "/vpncmd_api.sh", "list_sessions"],
-            capture_output=True, text=True, timeout=15
-        )
-        if r.returncode == 0 and r.stdout.strip():
-            lines = [l for l in r.stdout.strip().splitlines() if l.strip()]
-            session_lines = [l for l in lines if "SES" in l or "sstp" in l.lower() or "VPN" in l]
-            check("Sesiones SSTP activas encontradas", bool(session_lines),
-                  f"{len(session_lines)} sesion(es)" if session_lines else "Ninguna — MikroTik no ha conectado aun")
-            if session_lines:
-                info("Sesiones activas:")
-                for s in session_lines[:5]:
-                    info(f"  {s.strip()}")
-        else:
-            check("Consulta de sesiones SoftEther", False,
-                  r.stderr.strip()[:80] or "sin respuesta")
-    except Exception as e:
-        check("Consulta de sesiones", False, str(e)[:80])
-
-    # Listar usuarios en SoftEther
-    try:
-        r = subprocess.run(
-            ["docker", "exec", SOFTETHER_CONTAINER, "/vpncmd_api.sh", "list_users"],
-            capture_output=True, text=True, timeout=15
-        )
-        if r.returncode == 0:
-            try:
-                data = json.loads(r.stdout)
-                users = data.get("users", [])
-                check("Usuarios SSTP en SoftEther", True,
-                      f"{len(users)} usuario(s): {', '.join(users[:5]) if users else 'ninguno'}")
-            except json.JSONDecodeError:
-                info(f"list_users raw: {r.stdout.strip()[:120]}")
-    except Exception as e:
-        check("Lista de usuarios SoftEther", False, str(e)[:80])
-else:
-    warn("SoftEther no disponible — no se pueden listar sesiones")
+try:
+    t0 = time.perf_counter()
+    resolved = socket.getaddrinfo(SSTP_SERVER_HOST, SSTP_SERVER_PORT,
+                                   type=socket.SOCK_STREAM, proto=socket.IPPROTO_TCP)
+    dns_ms = round((time.perf_counter() - t0) * 1000, 1)
+    addrs = list(set(str(sa[0]) for _, _, _, _, sa in resolved if sa))
+    check(f"DNS resuelto: {SSTP_SERVER_HOST}", bool(addrs),
+          f"{', '.join(addrs[:3])} ({dns_ms}ms)")
+except socket.gaierror as e:
+    check(f"DNS resuelto: {SSTP_SERVER_HOST}", False, str(e))
+    warn("El MikroTik no podra resolver el host SSTP. Verifica DNS o usa IP directa.")
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# 6. MikroTik API (si se pasan ROUTER_IP / ROUTER_USER / ROUTER_PASS)
+# 4. MikroTik API — conexion real (requiere ROUTER_IP)
 # ════════════════════════════════════════════════════════════════════════════
 ROUTER_IP   = os.environ.get("ROUTER_IP", "")
 ROUTER_USER = os.environ.get("ROUTER_USER", "admin")
 ROUTER_PASS = os.environ.get("ROUTER_PASS", "")
 ROUTER_PORT = int(os.environ.get("ROUTER_PORT", "8728"))
 
-
-def _is_private_ip(ip: str) -> bool:
-    try:
-        import ipaddress
-        return ipaddress.ip_address(ip).is_private
-    except Exception:
-        return False
-
-
-sep(f"6. MikroTik API ({ROUTER_IP or 'saltado — pasa ROUTER_IP=<ip>'}")
+sep(f"4. MikroTik API ({ROUTER_IP or 'omitido -- pasa ROUTER_IP=<ip>'})")
 
 if not ROUTER_IP:
-    warn("Pasa ROUTER_IP, ROUTER_USER y ROUTER_PASS para probar la conexion real")
+    warn("Pasa ROUTER_IP, ROUTER_USER y ROUTER_PASS para probar conexion real")
     print()
-    print("  Si el router tiene IP PRIVADA (192.168.x / 172.x / 10.x):")
-    print("    El backend NO puede alcanzarlo directamente.")
-    print("    Debes pasar el VPN IP que SoftEther asignó (10.100.0.X)")
+    info("Ejemplo:")
+    info("  docker exec \\")
+    info("    -e ROUTER_IP=203.0.113.5 \\")
+    info("    -e ROUTER_USER=admin \\")
+    info("    -e ROUTER_PASS=TuPassword \\")
+    info("    fastisp-backend python /app/scripts/test_sstp_mikrotik.py")
     print()
-    print("  Ejemplo con VPN IP:")
-    print(f"    docker exec \\")
-    print(f"      -e ROUTER_IP=10.100.0.50 \\")
-    print(f"      -e ROUTER_USER=sstp-turouter-xxxx \\")
-    print(f"      -e ROUTER_PASS=TuPasswordSSTP \\")
-    print(f"      fastisp-backend python /app/scripts/test_sstp_mikrotik.py")
+    info("Si el router tiene IP privada, primero debes:")
+    info("  1. Provisionar SSTP desde el panel")
+    info("  2. Pegar el script en Winbox New Terminal")
+    info("  3. Esperar que el PPP secret se active")
+    info("  4. Usar la IP publica/DDNS del router para la API")
 else:
-    is_private = _is_private_ip(ROUTER_IP)
-    vpn_subnet  = os.environ.get("VPN_MGMT_SUBNET", "10.100.0.0/16")
+    try:
+        ip_obj = ipaddress.ip_address(ROUTER_IP)
+        is_private = ip_obj.is_private
+        is_loopback = ip_obj.is_loopback
+    except ValueError:
+        is_private = False
+        is_loopback = False
 
-    if is_private and not ROUTER_IP.startswith("10.100."):
-        # IP privada que no es de la subred VPN
+    if is_loopback:
+        warn(f"ROUTER_IP={ROUTER_IP} es loopback -- no se puede alcanzar un router real")
+    elif is_private:
+        warn(f"ROUTER_IP={ROUTER_IP} es IP privada")
+        info("El backend en VPS solo puede alcanzar IPs privadas si:")
+        info("  - Estan en la misma red (VPN, WireGuard, BTH)")
+        info("  - O hay port forwarding/NAT desde IP publica")
         print()
-        print(f"  {YELLOW}{BOLD}⚠  ROUTER_IP {ROUTER_IP} es IP privada{RESET}")
-        print(f"  El backend en el VPS NO puede alcanzarla directamente.")
-        print(f"  Flujo correcto para router con IP privada:")
-        print(f"    1. Aplica el script SSTP en WinBox (conexion local)")
-        print(f"    2. Espera que el tunel SSTP conecte (~10s)")
-        print(f"    3. Revisa el VPN IP en WinBox:")
-        print(f"         /ip address print where interface=FastISPVPN")
-        print(f"    4. Actualiza la IP del router en el sistema al VPN IP (10.100.0.X)")
-        print(f"    5. Vuelve a correr este script con ROUTER_IP=10.100.0.X")
-        print()
-        warn("Saltando test de API (IP privada no alcanzable desde VPS)")
-        FAIL += 1
-    else:
-        # IP pública o VPN IP — probar conexión
-        try:
-            s = socket.create_connection((ROUTER_IP, ROUTER_PORT), timeout=5)
-            s.close()
-            check(f"TCP {ROUTER_IP}:{ROUTER_PORT} alcanzable", True)
-        except OSError as e:
-            check(f"TCP {ROUTER_IP}:{ROUTER_PORT} alcanzable", False, str(e))
-            if ROUTER_IP.startswith("10.100."):
-                warn("Tunel SSTP no conectado aun — verifica que el MikroTik ejecuto el script")
-            else:
-                warn("Verifica firewall y que /ip service api no tenga address= restringido")
 
+    # 4a. TCP port reachable
+    info(f"Probando TCP {ROUTER_IP}:{ROUTER_PORT}...")
+    tcp_ok = False
+    try:
+        t0 = time.perf_counter()
+        s = socket.create_connection((ROUTER_IP, ROUTER_PORT), timeout=5)
+        tcp_ms = round((time.perf_counter() - t0) * 1000, 1)
+        s.close()
+        tcp_ok = True
+        check(f"TCP {ROUTER_IP}:{ROUTER_PORT} alcanzable", True, f"{tcp_ms}ms")
+    except OSError as e:
+        check(f"TCP {ROUTER_IP}:{ROUTER_PORT} alcanzable", False, str(e))
+        warn("Verifica que:")
+        warn(f"  1. El servicio API este habilitado: /ip service set api port={ROUTER_PORT} disabled=no")
+        warn(f"  2. El firewall no bloquee el puerto {ROUTER_PORT} desde la IP del backend")
+        warn(f"  3. Si usas API-SSL (8729), pasa ROUTER_PORT=8729")
+
+    # 4b. API login
+    if tcp_ok:
+        info(f"Intentando API login como '{ROUTER_USER}'...")
         try:
             import routeros_api
             pool = routeros_api.RouterOsApiPool(
@@ -328,17 +245,106 @@ else:
                 timeout=8,
             )
             api = pool.get_api()
+
+            # Identity
             identity = api.get_resource("/system/identity").get()
             name = identity[0].get("name", "?") if identity else "?"
-            check("MikroTik API login exitoso", True, f"identity={name}")
+            check("API login exitoso", True, f"identity={name}")
 
-            version_info = api.get_resource("/system/resource").get()
-            ver = version_info[0].get("version", "?") if version_info else "?"
-            check("RouterOS version leida", True, f"version={ver}")
+            # RouterOS version
+            res_info = api.get_resource("/system/resource").get()
+            ver = res_info[0].get("version", "?") if res_info else "?"
+            arch = res_info[0].get("architecture-name", "?") if res_info else "?"
+            board = res_info[0].get("board-name", "?") if res_info else "?"
+            check("RouterOS info", True, f"v{ver} {arch} ({board})")
+
+            # Check if API service is enabled
+            api_svc = api.get_resource("/ip/service").get()
+            api_entry = next((s for s in api_svc if s.get("name") == "api"), None)
+            if api_entry:
+                api_disabled = api_entry.get("disabled", "false") == "true"
+                api_port = api_entry.get("port", "8728")
+                api_address = api_entry.get("address", "")
+                check("Servicio API habilitado", not api_disabled,
+                      f"port={api_port}" + (f", address={api_address}" if api_address else ", sin restriccion address"))
+                if api_address:
+                    warn(f"API tiene restriccion address={api_address}")
+                    warn("Asegurate que la IP del backend/VPS este incluida")
+
+            # Check SSTP server status
+            try:
+                sstp_svc = api.get_resource("/interface/sstp-server/server").get()
+                if sstp_svc:
+                    sstp = sstp_svc[0]
+                    sstp_enabled = sstp.get("enabled", "false") == "true"
+                    sstp_port = sstp.get("port", "443")
+                    sstp_cert = sstp.get("certificate", "none")
+                    check("Servidor SSTP nativo", sstp_enabled,
+                          f"port={sstp_port}, cert={sstp_cert}")
+                    if not sstp_enabled:
+                        info("Servidor SSTP no habilitado -- ejecuta el script de provisioning primero")
+                else:
+                    info("No se pudo leer configuracion SSTP server")
+            except Exception:
+                info("SSTP server info no disponible (puede requerir RouterOS 6.x+)")
+
+            # Check PPP secrets (FastISP)
+            try:
+                ppp_secrets = api.get_resource("/ppp/secret").get()
+                fastisp_secrets = [s for s in ppp_secrets
+                                   if "fastisp" in (s.get("comment", "") or "").lower()
+                                   or (s.get("name", "") or "").startswith("sstp-")]
+                check("PPP secrets FastISP", True,
+                      f"{len(fastisp_secrets)} secret(s) de gestion" if fastisp_secrets
+                      else "0 secrets -- provisiona primero")
+                for sec in fastisp_secrets[:3]:
+                    info(f"  secret: {sec.get('name', '?')} service={sec.get('service', '?')} "
+                         f"profile={sec.get('profile', '?')}")
+            except Exception:
+                info("No se pudieron leer PPP secrets (permisos?)")
+
+            # Check PPP active sessions
+            try:
+                ppp_active = api.get_resource("/ppp/active").get()
+                sstp_active = [s for s in ppp_active if s.get("service") == "sstp"]
+                check("Sesiones PPP/SSTP activas", True,
+                      f"{len(sstp_active)} sesion(es) SSTP de {len(ppp_active)} total")
+            except Exception:
+                info("No se pudieron leer sesiones PPP activas")
 
             pool.disconnect()
+
+        except ImportError:
+            check("routeros_api disponible", False,
+                  "pip install routeros_api -- necesario para conexion API")
         except Exception as e:
-            check("MikroTik API login", False, str(e)[:120])
+            error_str = str(e)[:120]
+            check("API login", False, error_str)
+            if "invalid user" in error_str.lower() or "cannot log" in error_str.lower():
+                warn("Credenciales incorrectas. Verifica ROUTER_USER y ROUTER_PASS")
+                warn(f"Usuario: {ROUTER_USER}")
+            elif "timed out" in error_str.lower():
+                warn("Timeout en handshake API -- el puerto responde pero no completa la sesion")
+                warn("Posibles causas: API-SSL en puerto no-SSL, firewall intermedio, RouterOS colgado")
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# 5. SSTP port (443) accesible en el router
+# ════════════════════════════════════════════════════════════════════════════
+if ROUTER_IP:
+    SSTP_CHECK_PORT = int(os.environ.get("SSTP_SERVER_PORT", "443"))
+    sep(f"5. Puerto SSTP {SSTP_CHECK_PORT} en router {ROUTER_IP}")
+
+    try:
+        t0 = time.perf_counter()
+        s = socket.create_connection((ROUTER_IP, SSTP_CHECK_PORT), timeout=5)
+        ms = round((time.perf_counter() - t0) * 1000, 1)
+        s.close()
+        check(f"SSTP {ROUTER_IP}:{SSTP_CHECK_PORT} accesible", True, f"{ms}ms")
+    except OSError as e:
+        check(f"SSTP {ROUTER_IP}:{SSTP_CHECK_PORT} accesible", False, str(e))
+        info("Si el servidor SSTP aun no esta provisionado, esto es esperado.")
+        info("Ejecuta primero el script de provisioning en Winbox.")
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -349,8 +355,8 @@ total = PASS + FAIL
 print(f"\n  {GREEN}{PASS}/{total} checks pasaron{RESET}   {RED}{FAIL} fallaron{RESET}\n")
 
 if FAIL == 0:
-    print(f"  {GREEN}{BOLD}✔ Todo OK — el flujo SSTP+MikroTik debería funcionar{RESET}\n")
+    print(f"  {GREEN}{BOLD}Todo OK -- el flujo SSTP nativo MikroTik esta listo{RESET}\n")
 else:
-    print(f"  {RED}{BOLD}✘ Hay {FAIL} problema(s) que resolver antes de que funcione{RESET}\n")
+    print(f"  {RED}{BOLD}Hay {FAIL} problema(s) que resolver{RESET}\n")
 
 sys.exit(0 if FAIL == 0 else 1)
