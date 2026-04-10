@@ -316,153 +316,6 @@ def ensure_sstp_certificate() -> dict:
     }
 
 
-def generate_mikrotik_sstp_script(prov: dict) -> str:
-    """
-    Genera el script .rsc para configurar MikroTik como servidor SSTP nativo.
-
-    Incluye:
-    1. Generacion de certificados (CA + servidor)
-    2. Servidor SSTP (puerto 443, MS-CHAPv2, PFS, TLS 1.2)
-    3. Pool de IPs + Perfil PPP
-    4. Secret PPP para gestion FastISP
-    5. Usuario API + grupo de permisos
-    6. API restringida al pool VPN
-    7. Regla firewall para SSTP entrante
-    """
-    username = prov.get("username", "")
-    password = prov.get("password", "")
-    router_name = prov.get("router_name", "mikrotik")
-    router_address = prov.get("server_host", "0.0.0.0")
-    provisioned_at = prov.get("provisioned_at", datetime.utcnow().isoformat())
-
-    pool_range = f"{SSTP_POOL_START}-{SSTP_POOL_END}"
-    local_addr = SSTP_LOCAL_ADDRESS
-    sstp_port = SSTP_SERVER_PORT
-    dns = SSTP_DNS_SERVERS
-    profile_name = SSTP_PROFILE_NAME
-    pool_name = SSTP_POOL_NAME
-    ca_name = SSTP_CA_NAME
-    cert_name = SSTP_CERT_NAME
-    group_name = SSTP_API_GROUP_NAME
-    allowed_subnet = SSTP_API_ALLOWED_SUBNET
-    tls_ver = SSTP_TLS_VERSION
-    ciphers = SSTP_CIPHERS
-    pfs = SSTP_PFS
-
-    # Construir address list para API: pool SSTP + IP del VPS si existe
-    vps_ip = FASTISP_VPS_IP.strip()
-    if vps_ip:
-        api_addresses = f"{allowed_subnet},{vps_ip}/32"
-        api_fw_source = f"{allowed_subnet},{vps_ip}/32"
-    else:
-        api_addresses = allowed_subnet
-        api_fw_source = allowed_subnet
-
-    script = f"""# FastISP - Servidor SSTP Nativo - {router_name}
-# Generado: {provisioned_at}
-# ================================================================
-# Arquitectura:
-#   1. CA y certificado generados en el MikroTik
-#   2. SSTP nativo en {sstp_port}/TCP con MS-CHAPv2
-#   3. Perfil PPP + pool interno
-#   4. Secret de gestion FastISP y usuario API
-#   5. API abierta para: {api_addresses}
-# ================================================================
-
-:local fUser "{username}"
-:local fPass "{password}"
-
-# --- Limpieza previa controlada ---
-/ppp secret remove [find where comment="FastISP Management"]
-/ppp profile remove [find where name="{profile_name}"]
-/ip pool remove [find where name="{pool_name}"]
-/interface sstp-server server set enabled=no
-/certificate remove [find where name="{cert_name}"]
-/certificate remove [find where name="{ca_name}"]
-/user remove [find where name=$fUser]
-/user group remove [find where name="{group_name}"]
-/ip firewall filter remove [find where comment~"FastISP"]
-
-# --- 1. Certificados locales del router ---
-/certificate add name={ca_name} common-name=FastISP-CA days-valid=3650 key-usage=key-cert-sign,crl-sign
-/certificate sign {ca_name} name={ca_name}
-:delay 5s
-/certificate add name={cert_name} common-name={router_address} days-valid=3650 key-usage=digital-signature,key-encipherment,tls-server
-/certificate sign {cert_name} ca={ca_name} name={cert_name}
-:delay 5s
-
-# --- 2. Pool privado para clientes SSTP ---
-/ip pool add name={pool_name} ranges={pool_range}
-
-# --- 3. Perfil PPP del servidor SSTP ---
-/ppp profile add name="{profile_name}" local-address={local_addr} remote-address={pool_name} dns-server={dns} use-encryption=yes comment="FastISP SSTP Profile"
-
-# --- 4. Servidor SSTP nativo ---
-/interface sstp-server server set enabled=yes port={sstp_port} default-profile="{profile_name}" authentication=mschap2 certificate={cert_name} pfs={pfs} tls-version={tls_ver} ciphers={ciphers}
-
-# --- 5. Secret PPP de gestion ---
-/ppp secret add name=$fUser password=$fPass service=sstp profile="{profile_name}" remote-address={SSTP_POOL_START} comment="FastISP Management"
-
-# --- 6. Usuario API FastISP ---
-/user group add name={group_name} policy="local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive"
-/user add name=$fUser password=$fPass group={group_name} comment="FastISP-API"
-
-# --- 7. API habilitada (VPS + pool SSTP) ---
-/ip service set api port=8728 disabled=no address="{api_addresses}"
-
-# --- 8. Firewall de entrada para SSTP y API ---
-/ip firewall filter add chain=input protocol=tcp dst-port={sstp_port} action=accept comment="FastISP: Permitir SSTP" place-before=0
-/ip firewall filter add chain=input protocol=tcp dst-port=8728 src-address={api_fw_source} action=accept comment="FastISP: Permitir API" place-before=0
-
-:log info "FastISP: Servidor SSTP nativo configurado para {router_name}"
-"""
-    return script
-
-
-def generate_ppp_secret_script(client_name: str, password: str,
-                                remote_address: str, is_public: bool = False,
-                                lan_interface: str = "bridge") -> str:
-    """
-    Genera script para agregar un secret PPP (cliente SSTP).
-
-    Para IPs Privadas: remote-address del pool interno.
-    Para IPs Publicas: remote-address = IP publica + proxy-arp en LAN.
-    """
-    profile_name = "fastisp-sstp"
-    script = f'/ppp secret add name="{client_name}" password="{password}" service=sstp profile="{profile_name}" remote-address={remote_address} comment="FastISP Client"'
-
-    if is_public:
-        script += f'\n/interface set [find where name="{lan_interface}"] arp=proxy-arp'
-        script += f'\n:log info "FastISP: Proxy-ARP activado en {lan_interface} para IP publica {remote_address}"'
-
-    return script
-
-
-def generate_verification_script() -> str:
-    """Genera un script de verificacion del servidor SSTP en MikroTik."""
-    return """# Script de verificacion SSTP Server FastISP
-:put "=== FastISP SSTP Server Status ==="
-:put ("Servidor SSTP: " . [/interface sstp-server server get enabled])
-:put ("Puerto: " . [/interface sstp-server server get port])
-:put ("Certificado: " . [/interface sstp-server server get certificate])
-:put ""
-:put "=== Certificados ==="
-/certificate print where name~"FastISP"
-:put ""
-:put "=== PPP Secrets ==="
-/ppp secret print where comment~"FastISP"
-:put ""
-:put "=== Clientes SSTP Conectados ==="
-/interface sstp-server print
-:put ""
-:put "=== Pool de IPs ==="
-/ip pool print where name~"fastisp"
-"""
-
-
-# Override final del flujo nativo SSTP. Estas definiciones quedan al final
-# del modulo para prevalecer sobre las versiones heredadas.
-
 def provision_sstp_tunnel_api(router, provisioning: dict | None = None) -> dict:
     """Aplica la configuracion completa del servidor SSTP en RouterOS via API."""
     from app.models import MikroTikRouter
@@ -615,10 +468,14 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
     vps_ip = FASTISP_VPS_IP.strip()
     if vps_ip:
         api_addresses = f"{SSTP_API_ALLOWED_SUBNET},{vps_ip}/32"
-        api_fw_source = f"{SSTP_API_ALLOWED_SUBNET},{vps_ip}/32"
     else:
         api_addresses = SSTP_API_ALLOWED_SUBNET
-        api_fw_source = SSTP_API_ALLOWED_SUBNET
+
+    # Firewall rules: RouterOS src-address NO acepta listas separadas por coma,
+    # hay que generar una regla por cada origen.
+    fw_api_rules = f'/ip firewall filter add chain=input protocol=tcp dst-port=8728 src-address={SSTP_API_ALLOWED_SUBNET} action=accept comment="FastISP: Permitir API" place-before=0'
+    if vps_ip:
+        fw_api_rules += f'\n/ip firewall filter add chain=input protocol=tcp dst-port=8728 src-address={vps_ip}/32 action=accept comment="FastISP: Permitir API VPS" place-before=0'
 
     return f"""# FastISP - Servidor SSTP Nativo - {router_name}
 # Generado: {provisioned_at}
@@ -667,11 +524,11 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
 /user add name={_routeros_quote(username)} password={_routeros_quote(password)} group={SSTP_API_GROUP_NAME} comment="FastISP API user"
 
 # --- 7. API habilitada (VPS + pool SSTP) ---
-/ip service set api port=8728 disabled=no address={api_addresses}
+/ip service set api port=8728 disabled=no address="{api_addresses}"
 
 # --- 8. Firewall de entrada para SSTP y API ---
 /ip firewall filter add chain=input protocol=tcp dst-port={SSTP_SERVER_PORT} action=accept comment="FastISP: Permitir SSTP" place-before=0
-/ip firewall filter add chain=input protocol=tcp dst-port=8728 src-address={api_fw_source} action=accept comment="FastISP: Permitir API" place-before=0
+{fw_api_rules}
 
 :log info "FastISP: Servidor SSTP nativo configurado para {router_name}"
 """

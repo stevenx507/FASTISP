@@ -15,7 +15,7 @@ Routes:
 """
 
 from flask import Blueprint, request, jsonify, Response
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
 import logging
 
@@ -31,6 +31,7 @@ from app.services.sstp_service import (
     _allocate_ip_pair,
     _generate_username,
     _generate_password,
+    SSTP_SERVER_PORT, SSTP_POOL_START, SSTP_POOL_END,
 )
 
 sstp_bp = Blueprint('sstp', __name__)
@@ -45,7 +46,6 @@ def _get_current_user():
 
 # ── GET /api/sstp/tunnels ──────────────────────────────────────────────────────
 @sstp_bp.route('/tunnels', methods=['GET'])
-@jwt_required()
 @admin_required()
 def list_tunnels():
     """List all SSTP tunnels for the current tenant."""
@@ -62,7 +62,6 @@ def list_tunnels():
 
 # ── POST /api/sstp/tunnels ─────────────────────────────────────────────────────
 @sstp_bp.route('/tunnels', methods=['POST'])
-@jwt_required()
 @admin_required()
 def create_tunnel():
     """
@@ -162,7 +161,6 @@ def create_tunnel():
 
 # ── GET /api/sstp/tunnels/<id> ─────────────────────────────────────────────────
 @sstp_bp.route('/tunnels/<int:tunnel_id>', methods=['GET'])
-@jwt_required()
 @admin_required()
 def get_tunnel(tunnel_id):
     """Get tunnel details including the provisioning script."""
@@ -196,7 +194,6 @@ def get_tunnel(tunnel_id):
 
 # ── DELETE /api/sstp/tunnels/<id> ──────────────────────────────────────────────
 @sstp_bp.route('/tunnels/<int:tunnel_id>', methods=['DELETE'])
-@jwt_required()
 @admin_required()
 def revoke_tunnel(tunnel_id):
     """Revoke an SSTP tunnel."""
@@ -222,7 +219,6 @@ def revoke_tunnel(tunnel_id):
 
 # ── POST /api/sstp/tunnels/<id>/regenerate ─────────────────────────────────────
 @sstp_bp.route('/tunnels/<int:tunnel_id>/regenerate', methods=['POST'])
-@jwt_required()
 @admin_required()
 def regenerate_tunnel(tunnel_id):
     """Regenerate credentials for an existing tunnel (new password)."""
@@ -282,7 +278,6 @@ def regenerate_tunnel(tunnel_id):
 
 # ── GET /api/sstp/tunnels/<id>/script ─────────────────────────────────────────
 @sstp_bp.route('/tunnels/<int:tunnel_id>/script', methods=['GET'])
-@jwt_required()
 @admin_required()
 def download_script(tunnel_id):
     """Download the MikroTik provisioning script as a .rsc file."""
@@ -321,7 +316,6 @@ def download_script(tunnel_id):
 
 # ── GET /api/sstp/certificate ──────────────────────────────────────────────────
 @sstp_bp.route('/certificate', methods=['GET'])
-@jwt_required()
 @admin_required()
 def get_certificate():
     """Get SSTP server certificate information."""
@@ -343,7 +337,6 @@ def get_certificate():
 
 # ── POST /api/sstp/certificate/generate ───────────────────────────────────────
 @sstp_bp.route('/certificate/generate', methods=['POST'])
-@jwt_required()
 @admin_required()
 def generate_certificate():
     """Generate or renew the SSTP server certificate."""
@@ -372,7 +365,6 @@ def generate_certificate():
 
 # ── GET /api/sstp/status ───────────────────────────────────────────────────────
 @sstp_bp.route('/status', methods=['GET'])
-@jwt_required()
 @admin_required()
 def sstp_status():
     """Get overall SSTP system status."""
@@ -394,15 +386,14 @@ def sstp_status():
         'active_tunnels': active,
         'revoked_tunnels': revoked,
         'certificate_fingerprint': fingerprint,
-        'server_port': 443,
+        'server_port': SSTP_SERVER_PORT,
         'architecture': 'mikrotik-native-sstp',
-        'ip_pool': '10.10.0.0/24',
+        'ip_pool': f'{SSTP_POOL_START}-{SSTP_POOL_END}',
     })
 
 
 # --- Add PPP secrets endpoint ---
 @sstp_bp.route('/ppp-secrets', methods=['POST'])
-@jwt_required()
 @admin_required()
 def add_ppp_secret():
     """
