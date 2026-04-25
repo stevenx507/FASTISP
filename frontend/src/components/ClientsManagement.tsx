@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import {
@@ -266,7 +266,7 @@ const ClientsManagement: React.FC = () => {
     const [clientsResp, plansResp, routersResp] = await Promise.allSettled([
         apiClient.get('/admin/clients'),
         apiClient.get('/plans'),
-        apiClient.get('/mikrotik/routers'),
+        apiClient.get('/routers'),
       ])
 
       if (clientsResp.status === 'fulfilled') setClients(clientsResp.value.items || [])
@@ -378,10 +378,9 @@ const ClientsManagement: React.FC = () => {
     if (action === 'activate') { await activate(client.id); return }
     if (action === 'suspend') { await suspend(client.id); return }
     if (action === 'mac') {
-      try {
-        await apiClient.post(`/admin/clients/${client.id}/mac-binding`)
-        toast.success('Amarrar IP-MAC solicitado')
-      } catch { toast.error('No se pudo amarrar IP-MAC') }
+      // MAC binding is applied via set-bandwidth which syncs ARP table as a side effect.
+      // If a dedicated endpoint is added later, replace this call.
+      toast('Función amarrar IP-MAC disponible próximamente desde el panel de cliente.')
       return
     }
     toast(`"${action}" para ${client.name} â€” prÃ³ximamente`)

@@ -32,10 +32,10 @@ export const config = {
       HISTORY: (id: number) => `/clients/${id}/history`,
     },
     ADMIN: {
-      ROUTERS: '/mikrotik/routers',
+      ROUTERS: '/routers',
       CLIENTS: '/admin/clients',
       PLANS: '/admin/plans',
-      METRICS: (routerId: string) => `/mikrotik/routers/${routerId}/metrics`,
+      METRICS: (routerId: string) => `/routers/${routerId}/metrics`,
     },
   },
 }

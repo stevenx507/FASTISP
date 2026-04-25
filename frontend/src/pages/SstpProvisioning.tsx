@@ -354,7 +354,7 @@ const SstpProvisioning: React.FC = () => {
       setLoading(true)
       const [tunnelsData, routersData, statusData] = await Promise.all([
         apiClient.get('/sstp/tunnels') as Promise<SstpTunnel[]>,
-        apiClient.get('/mikrotik/routers') as Promise<Router[]>,
+        apiClient.get('/routers') as Promise<Router[]>,
         apiClient.get('/sstp/status') as Promise<SstpStatus>,
       ])
       setTunnels(Array.isArray(tunnelsData) ? tunnelsData : [])
@@ -453,7 +453,7 @@ const SstpProvisioning: React.FC = () => {
   const handleTestConnection = async (tunnel: SstpTunnel) => {
     setTestingConnection(tunnel.id)
     try {
-      const data = await apiClient.get(`/mikrotik/routers/${tunnel.router_id}/test-connection`) as ConnectionTest
+      const data = await apiClient.get(`/routers/${tunnel.router_id}/test-connection`) as ConnectionTest
       setConnectionResult(prev => ({ ...prev, [tunnel.id]: data }))
       if (data.success) {
         showSuccess(`Conexión verificada: ${tunnel.router_name} alcanzable (${data.runtime?.tcp_latency_ms ?? '?'}ms)`)

@@ -24,12 +24,14 @@ const api = {
     if (!response.ok) throw new Error('Failed to fetch stats');
     return response.json();
   },
-  rebootMainRouter: async (token: string) => {
-    const response = await fetch('/api/mikrotik/routers/main/reboot', {
+  rebootMainRouter: async (token: string, clientId?: number) => {
+    // No generic router reboot exists — reuse the CPE reboot endpoint.
+    if (!clientId) throw new Error('No se pudo identificar el equipo. Contacta a soporte.')
+    const response = await fetch(`/api/clients/${clientId}/reboot-cpe`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     });
-    if (!response.ok) throw new Error('Failed to reboot main router');
+    if (!response.ok) throw new Error('Failed to reboot CPE');
   },
   rebootCPE: async (token: string, clientId: number) => {
     const response = await fetch(`/api/clients/${clientId}/reboot-cpe`, {
@@ -69,12 +71,12 @@ const useDashboard = () => {
     if (!token) return;
     const toastId = toast.loading('Enviando señal de reinicio al router...')
     try {
-      await api.rebootMainRouter(token);
+      await api.rebootMainRouter(token, user?.client_id);
       toast.success('El router se reiniciará en breve.', { id: toastId })
     } catch (error) {
-      toast.error('No se pudo reiniciar el router.', { id: toastId })
+      toast.error(error instanceof Error ? error.message : 'No se pudo reiniciar el router.', { id: toastId })
     }
-  }, [token]);
+  }, [token, user?.client_id]);
 
   const handleRebootCPE = useCallback(async () => {
     if (!user?.client_id) {
