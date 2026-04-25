@@ -9,11 +9,11 @@ interface BadgeProps {
 }
 
 const variantStyles = {
-  default: 'bg-gray-100 text-gray-800',
-  primary: 'bg-blue-100 text-blue-800',
-  success: 'bg-green-100 text-green-800',
-  warning: 'bg-yellow-100 text-yellow-800',
-  danger: 'bg-red-100 text-red-800',
+  default: 'bg-white/10 text-slate-200',
+  primary: 'bg-blue-500/20 text-blue-300',
+  success: 'bg-emerald-500/20 text-emerald-300',
+  warning: 'bg-amber-500/20 text-amber-300',
+  danger: 'bg-rose-500/20 text-rose-300',
   info: 'bg-cyan-100 text-cyan-800'
 }
 
@@ -51,7 +51,7 @@ interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'size' | 'children
 
 const buttonVariants = {
   primary: 'bg-blue-600 hover:bg-blue-700 text-white',
-  secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-900',
+  secondary: 'bg-white/15 hover:bg-gray-300 text-white',
   success: 'bg-green-600 hover:bg-green-700 text-white',
   danger: 'bg-red-600 hover:bg-red-700 text-white',
   warning: 'bg-yellow-600 hover:bg-yellow-700 text-white'

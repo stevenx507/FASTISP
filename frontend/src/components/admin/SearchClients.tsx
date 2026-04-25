@@ -417,24 +417,24 @@ const SearchClients: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+    <div className="space-y-4 bg-white/5 backdrop-blur-md rounded-xl border border-white/10 shadow-sm p-6">
+      <div className="rounded-lg border border-white/10 bg-white/5 p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-gray-900">Importacion masiva por CSV</h3>
+          <h3 className="text-sm font-semibold text-white">Importacion masiva por CSV</h3>
           <button
             type="button"
             onClick={downloadCsvTemplate}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700"
+            className="rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-1.5 text-xs font-semibold text-slate-300"
           >
             Descargar template
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <input type="file" accept=".csv,text/csv" onChange={onImportFileSelected} className="text-sm" />
-          {importFileName && <span className="text-xs text-gray-600">Archivo: {importFileName}</span>}
-          {importRows.length > 0 && <span className="text-xs text-gray-600">Filas: {importRows.length}</span>}
+          {importFileName && <span className="text-xs text-slate-400">Archivo: {importFileName}</span>}
+          {importRows.length > 0 && <span className="text-xs text-slate-400">Filas: {importRows.length}</span>}
         </div>
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-slate-400">
           Columnas soportadas: name, plan_id o plan_name, router_id o router_name, connection_type, ip_address, email,
           create_portal_access, password, pppoe_username, pppoe_password.
         </p>
@@ -443,7 +443,7 @@ const SearchClients: React.FC = () => {
             type="button"
             onClick={() => runClientImport(true)}
             disabled={importLoading || importRows.length === 0}
-            className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm font-semibold text-blue-300 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Validar lote (dry run)
           </button>
@@ -459,7 +459,7 @@ const SearchClients: React.FC = () => {
         </div>
 
         {importSummary && (
-          <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-700">
+          <div className="mt-3 rounded-lg border border-white/10 bg-white/5 backdrop-blur-md p-3 text-sm text-slate-300">
             <p>
               Modo: <span className="font-semibold">{importSummary.dryRun ? "Validacion" : "Importacion"}</span> | Solicitadas:
               <span className="font-semibold"> {importSummary.requested}</span> | OK:
@@ -470,16 +470,16 @@ const SearchClients: React.FC = () => {
         )}
 
         {importResults.length > 0 && (
-          <div className="mt-3 max-h-56 overflow-auto rounded-lg border border-gray-200 bg-white">
+          <div className="mt-3 max-h-56 overflow-auto rounded-lg border border-white/10 bg-white/5 backdrop-blur-md">
             <table className="w-full text-xs">
-              <thead className="bg-gray-50 text-gray-600">
+              <thead className="bg-white/5 text-slate-400">
                 <tr>
                   <th className="px-2 py-2 text-left">Fila</th>
                   <th className="px-2 py-2 text-left">Estado</th>
                   <th className="px-2 py-2 text-left">Detalle</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/5">
                 {importResults.map((item) => (
                   <tr key={`import-${item.row}-${item.name || item.client_id || "row"}`}>
                     <td className="px-2 py-2">{item.row}</td>
@@ -488,7 +488,7 @@ const SearchClients: React.FC = () => {
                         {item.success ? "OK" : "Error"}
                       </span>
                     </td>
-                    <td className="px-2 py-2 text-gray-700">
+                    <td className="px-2 py-2 text-slate-300">
                       {item.error ||
                         item.name ||
                         item.preview?.name ||
@@ -502,23 +502,23 @@ const SearchClients: React.FC = () => {
         )}
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+      <div className="rounded-lg border border-white/10 bg-white/5 p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-gray-900">Actualizacion masiva por CSV</h3>
+          <h3 className="text-sm font-semibold text-white">Actualizacion masiva por CSV</h3>
           <button
             type="button"
             onClick={downloadUpdateCsvTemplate}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700"
+            className="rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-1.5 text-xs font-semibold text-slate-300"
           >
             Descargar template update
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <input type="file" accept=".csv,text/csv" onChange={onUpdateFileSelected} className="text-sm" />
-          {updateFileName && <span className="text-xs text-gray-600">Archivo: {updateFileName}</span>}
-          {updateRows.length > 0 && <span className="text-xs text-gray-600">Filas: {updateRows.length}</span>}
+          {updateFileName && <span className="text-xs text-slate-400">Archivo: {updateFileName}</span>}
+          {updateRows.length > 0 && <span className="text-xs text-slate-400">Filas: {updateRows.length}</span>}
         </div>
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-slate-400">
           Columnas soportadas: client_id o client_email, plan_id o plan_name, router_id o router_name, connection_type,
           ip_address, create_portal_access, portal_email, portal_password, reset_portal_password.
         </p>
@@ -543,7 +543,7 @@ const SearchClients: React.FC = () => {
         </div>
 
         {updateSummary && (
-          <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-700">
+          <div className="mt-3 rounded-lg border border-white/10 bg-white/5 backdrop-blur-md p-3 text-sm text-slate-300">
             <p>
               Modo: <span className="font-semibold">{updateSummary.dryRun ? "Validacion" : "Actualizacion"}</span> | Solicitadas:
               <span className="font-semibold"> {updateSummary.requested}</span> | OK:
@@ -554,16 +554,16 @@ const SearchClients: React.FC = () => {
         )}
 
         {updateResults.length > 0 && (
-          <div className="mt-3 max-h-56 overflow-auto rounded-lg border border-gray-200 bg-white">
+          <div className="mt-3 max-h-56 overflow-auto rounded-lg border border-white/10 bg-white/5 backdrop-blur-md">
             <table className="w-full text-xs">
-              <thead className="bg-gray-50 text-gray-600">
+              <thead className="bg-white/5 text-slate-400">
                 <tr>
                   <th className="px-2 py-2 text-left">Fila</th>
                   <th className="px-2 py-2 text-left">Estado</th>
                   <th className="px-2 py-2 text-left">Detalle</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/5">
                 {updateResults.map((item) => (
                   <tr key={`update-${item.row}-${item.name || item.client_id || "row"}`}>
                     <td className="px-2 py-2">{item.row}</td>
@@ -572,7 +572,7 @@ const SearchClients: React.FC = () => {
                         {item.success ? "OK" : "Error"}
                       </span>
                     </td>
-                    <td className="px-2 py-2 text-gray-700">
+                    <td className="px-2 py-2 text-slate-300">
                       {item.error ||
                         item.name ||
                         item.preview?.name ||
@@ -590,16 +590,16 @@ const SearchClients: React.FC = () => {
       <div className="mb-1 flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex min-w-[260px] flex-1 items-center gap-3">
-            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+            <MagnifyingGlassIcon className="h-5 w-5 text-slate-500" />
             <input
-              className="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
+              className="flex-1 rounded-lg border border-white/20 px-3 py-2 focus:ring-2 focus:ring-blue-500"
               placeholder="Buscar por nombre, ID, IP o email"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
           <select
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+            className="rounded-lg border border-white/20 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
@@ -631,7 +631,7 @@ const SearchClients: React.FC = () => {
             type="button"
             onClick={exportCsv}
             disabled={exporting || loading}
-            className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm font-semibold text-blue-300 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Exportar CSV
           </button>
@@ -641,7 +641,7 @@ const SearchClients: React.FC = () => {
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-700">
+          <thead className="bg-white/5 text-slate-300">
             <tr>
               <th className="px-3 py-2 text-left">
                 <input type="checkbox" checked={allFilteredSelected} onChange={toggleAllFiltered} />
@@ -655,17 +655,17 @@ const SearchClients: React.FC = () => {
               <th className="px-3 py-2 text-left">Portal</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-white/5">
             {loading && (
               <tr>
-                <td colSpan={8} className="px-3 py-4 text-center text-gray-500">
+                <td colSpan={8} className="px-3 py-4 text-center text-slate-400">
                   Cargando...
                 </td>
               </tr>
             )}
             {!loading &&
               filtered.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
+                <tr key={item.id} className="hover:bg-white/5">
                   <td className="px-3 py-2">
                     <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleRow(item.id)} />
                   </td>
@@ -680,7 +680,7 @@ const SearchClients: React.FC = () => {
               ))}
             {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-4 text-center text-gray-500">
+                <td colSpan={8} className="px-3 py-4 text-center text-slate-400">
                   Sin resultados
                 </td>
               </tr>

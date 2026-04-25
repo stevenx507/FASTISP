@@ -28,25 +28,25 @@ const PushOptInCard: React.FC<Props> = ({ className = '' }) => {
   }
 
   return (
-    <div className={`bg-white rounded-lg shadow p-5 border border-gray-200 ${className}`}>
+    <div className={`bg-white/5 backdrop-blur-md rounded-xl shadow-lg p-5 border border-white/10 ${className}`}>
       <div className="flex items-start gap-3">
-        <div className="p-3 rounded-full bg-blue-50 text-blue-600">
+        <div className="p-3 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
           <BellAlertIcon className="w-6 h-6" />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-semibold text-gray-900">Avisos en tu dispositivo</p>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm font-semibold text-white">Avisos en tu dispositivo</p>
+          <p className="text-sm text-slate-400 mt-1">
             Activa notificaciones PWA para cortes programados, facturas y pagos recibidos.
           </p>
           <div className="mt-3 flex flex-wrap gap-2 items-center">
             <button
               onClick={handleEnable}
               disabled={isRequesting || permission === 'granted'}
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60"
+              className="px-4 py-2 rounded-lg bg-blue-600/80 text-white text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
             >
               {permission === 'granted' ? 'Notificaciones activas' : 'Activar avisos'}
             </button>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-slate-500">
               Estado: {isSupported ? permission : 'no soportado'}
             </span>
           </div>

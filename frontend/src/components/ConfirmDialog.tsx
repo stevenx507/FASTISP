@@ -41,29 +41,29 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 z-50"
+            className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white/5 backdrop-blur-md rounded-lg shadow-xl max-w-sm w-full mx-4 z-50"
           >
             <div className="p-6">
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   {isDangerous && (
-                    <div className="p-2 bg-red-100 rounded-full">
+                    <div className="p-2 bg-rose-500/20 rounded-full">
                       <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
                     </div>
                   )}
-                  <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+                  <h2 className="text-lg font-semibold text-white">{title}</h2>
                 </div>
                 <button
                   onClick={onCancel}
-                  className="p-1 hover:bg-gray-100 rounded-lg transition"
+                  className="p-1 hover:bg-white/10 rounded-lg transition"
                 >
-                  <XMarkIcon className="w-5 h-5 text-gray-500" />
+                  <XMarkIcon className="w-5 h-5 text-slate-400" />
                 </button>
               </div>
 
               {/* Message */}
-              <p className={`text-sm ${isDangerous ? 'text-red-700' : 'text-gray-600'} mb-6`}>
+              <p className={`text-sm ${isDangerous ? 'text-rose-400' : 'text-slate-400'} mb-6`}>
                 {message}
               </p>
 
@@ -71,7 +71,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={onCancel}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition font-medium"
+                  className="px-4 py-2 text-slate-300 bg-white/10 rounded-lg hover:bg-white/15 transition font-medium"
                 >
                   {cancelLabel}
                 </button>

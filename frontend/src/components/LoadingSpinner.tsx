@@ -25,10 +25,10 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       <motion.div
         animate={{ rotate: 360 }}
         transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-        className={`${sizeClasses[size]} border-4 border-gray-200 border-t-blue-600 rounded-full`}
+        className={`${sizeClasses[size]} border-4 border-white/10 border-t-blue-600 rounded-full`}
       />
       {label && (
-        <p className="text-gray-600 font-medium">{label}</p>
+        <p className="text-slate-400 font-medium">{label}</p>
       )}
     </motion.div>
   )

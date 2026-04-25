@@ -249,22 +249,22 @@ const ProfessionalDashboard: React.FC = () => {
           <p className="mt-2 text-2xl font-bold text-orange-900">{totalThroughput.toFixed(1)} Mbps</p>
           <p className="mt-1 text-xs text-orange-600">RX + TX agregado de la red</p>
         </div>
-        <div className="rounded-lg border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-4">
-          <p className="text-sm font-medium text-green-700">Collection Rate</p>
-          <p className="mt-2 text-2xl font-bold text-green-900">
+        <div className="rounded-lg border border-emerald-500/30 bg-gradient-to-br from-green-50 to-emerald-50 p-4">
+          <p className="text-sm font-medium text-emerald-400">Collection Rate</p>
+          <p className="mt-2 text-2xl font-bold text-emerald-300">
             {(financeSummary?.summary?.collection_rate ?? 0).toFixed(1)}%
           </p>
           <p className="mt-1 text-xs text-green-600">Cartera cobrada del mes actual</p>
         </div>
       </div>
 
-      <div className="rounded-lg bg-white p-6 shadow">
+      <div className="rounded-lg bg-white/5 backdrop-blur-md p-6 shadow">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Actividad Reciente</h3>
+          <h3 className="text-lg font-semibold text-white">Actividad Reciente</h3>
           <button
             onClick={load}
             disabled={loading}
-            className="rounded-lg border border-gray-300 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+            className="rounded-lg border border-white/20 px-3 py-1 text-xs font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60"
           >
             {loading ? 'Actualizando...' : 'Refrescar'}
           </button>
@@ -273,23 +273,23 @@ const ProfessionalDashboard: React.FC = () => {
           {activityFeed.map((item) => (
             <div key={item.id} className="flex items-center justify-between border-b py-2 last:border-b-0">
               <div>
-                <p className="text-sm font-medium text-gray-900">{item.action}</p>
-                <p className="text-xs text-gray-500">{item.time}</p>
+                <p className="text-sm font-medium text-white">{item.action}</p>
+                <p className="text-xs text-slate-400">{item.time}</p>
               </div>
               <span
                 className={`rounded-full px-3 py-1 text-xs font-medium ${
                   item.status === 'success'
-                    ? 'bg-green-100 text-green-800'
+                    ? 'bg-emerald-500/20 text-emerald-300'
                     : item.status === 'warning'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-blue-100 text-blue-800'
+                      ? 'bg-amber-500/20 text-amber-300'
+                      : 'bg-blue-500/20 text-blue-300'
                 }`}
               >
                 {item.status}
               </span>
             </div>
           ))}
-          {!activityFeed.length && <p className="text-sm text-gray-500">Sin actividad reciente.</p>}
+          {!activityFeed.length && <p className="text-sm text-slate-400">Sin actividad reciente.</p>}
         </div>
       </div>
     </motion.div>

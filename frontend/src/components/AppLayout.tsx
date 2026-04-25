@@ -154,7 +154,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           onClick={() => isMobile && setSidebarOpen(false)}
           className={({ isActive }) =>
             `group flex items-center rounded-md px-2 py-2 text-sm font-medium ${
-              isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-300 hover:bg-white/10 hover:text-white'
+              isActive ? 'bg-blue-500/10 text-blue-300' : 'text-slate-400 hover:bg-white/10 hover:text-white'
             }`
           }
         >
@@ -162,7 +162,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             <>
               <tab.icon
                 className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                  isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-white'
+                  isActive ? 'text-blue-600' : 'text-slate-500 group-hover:text-white'
                 }`}
               />
               {tab.name}
@@ -245,7 +245,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               </div>
               <div className="ml-3">
                 <h1 className="text-xl font-extrabold tracking-tight text-white">ISPMAX</h1>
-                <p className="text-sm text-gray-400">Panel del cliente</p>
+                <p className="text-sm text-slate-500">Panel del cliente</p>
               </div>
             </div>
             <div className="mt-5 flex flex-grow flex-col">
@@ -258,7 +258,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 bg-[rgba(255,255,255,0.02)] shadow-sm backdrop-blur-md">
             <button
               type="button"
-              className="border-r border-white/10 px-4 text-gray-300 focus:outline-none md:hidden"
+              className="border-r border-white/10 px-4 text-slate-400 focus:outline-none md:hidden"
               onClick={() => setSidebarOpen(true)}
             >
               <Bars3Icon className="h-6 w-6" />
@@ -272,13 +272,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               <div className="ml-4 flex items-center md:ml-6">
                 <div className="hidden items-center space-x-2 rounded-lg border border-white/10 bg-[rgba(255,255,255,0.02)] px-3 py-2 md:flex">
                   <div className={`${serviceActive ? 'h-2 w-2 animate-pulse bg-green-400' : 'h-2 w-2 bg-gray-600'} rounded-full`} />
-                  <span className={`text-sm font-medium ${serviceActive ? 'text-green-300' : 'text-gray-400'}`}>
+                  <span className={`text-sm font-medium ${serviceActive ? 'text-green-300' : 'text-slate-500'}`}>
                     {serviceActive ? 'Servicio activo' : 'Desconectado'}
                   </span>
                 </div>
 
                 <Menu as="div" className="relative ml-3">
-                  <Menu.Button className="relative rounded-full p-1 text-gray-300 hover:text-white focus:outline-none">
+                  <Menu.Button className="relative rounded-full p-1 text-slate-400 hover:text-white focus:outline-none">
                     <span className="sr-only">Ver notificaciones</span>
                     <BellIcon className="h-6 w-6" />
                     {unreadNotifications > 0 && (
@@ -297,21 +297,21 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     leaveFrom="transform opacity-100 scale-100"
                     leaveTo="transform opacity-0 scale-95"
                   >
-                    <Menu.Items className="absolute right-0 z-10 mt-2 w-80 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                      <div className="border-b border-gray-200 px-4 py-3">
+                    <Menu.Items className="absolute right-0 z-10 mt-2 w-80 origin-top-right rounded-md bg-white/5 backdrop-blur-md py-1 shadow-lg ring-1 ring-white/20 ring-opacity-5 focus:outline-none">
+                      <div className="border-b border-white/10 px-4 py-3">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-semibold text-gray-900">Notificaciones</p>
+                          <p className="text-sm font-semibold text-white">Notificaciones</p>
                           <div className="flex items-center gap-2">
                             <button
                               onClick={loadNotifications}
-                              className="text-xs text-gray-600 hover:underline disabled:text-gray-400"
+                              className="text-xs text-slate-400 hover:underline disabled:text-slate-500"
                               disabled={loadingNotifications}
                             >
                               {loadingNotifications ? 'Actualizando...' : 'Refrescar'}
                             </button>
                             <button
                               onClick={markAllAsRead}
-                              className="text-xs text-blue-600 hover:underline disabled:text-gray-400"
+                              className="text-xs text-blue-600 hover:underline disabled:text-slate-500"
                               disabled={unreadNotifications === 0}
                             >
                               Marcar leidas
@@ -326,19 +326,19 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                             {({ active }) => (
                               <button
                                 onClick={() => handleNotificationClick(notification)}
-                                className={`${active ? 'bg-gray-100' : ''} block w-full px-4 py-3 text-left text-sm text-gray-700`}
+                                className={`${active ? 'bg-white/10' : ''} block w-full px-4 py-3 text-left text-sm text-slate-300`}
                               >
-                                <p className={`font-medium ${!notification.read ? 'text-gray-900' : 'text-gray-600'}`}>
+                                <p className={`font-medium ${!notification.read ? 'text-white' : 'text-slate-400'}`}>
                                   {notification.message}
                                 </p>
-                                <p className="mt-1 text-xs text-gray-500">{formatRelativeTime(notification.time)}</p>
+                                <p className="mt-1 text-xs text-slate-400">{formatRelativeTime(notification.time)}</p>
                               </button>
                             )}
                           </Menu.Item>
                         ))}
 
                         {!notifications.length && (
-                          <div className="px-4 py-6 text-center text-sm text-gray-500">
+                          <div className="px-4 py-6 text-center text-sm text-slate-400">
                             No hay notificaciones recientes.
                           </div>
                         )}
@@ -348,10 +348,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 </Menu>
 
                 <Menu as="div" className="relative ml-3">
-                  <Menu.Button className="flex max-w-xs items-center rounded-full bg-white text-sm focus:outline-none">
+                  <Menu.Button className="flex max-w-xs items-center rounded-full bg-white/5 backdrop-blur-md text-sm focus:outline-none">
                     <span className="sr-only">Abrir menu de usuario</span>
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-neon-cyan to-violet shadow-md">
-                      <span className="font-bold text-gray-900">{user?.name ? user.name.charAt(0).toUpperCase() : ''}</span>
+                      <span className="font-bold text-white">{user?.name ? user.name.charAt(0).toUpperCase() : ''}</span>
                     </div>
                   </Menu.Button>
 
@@ -364,10 +364,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     leaveFrom="transform opacity-100 scale-100"
                     leaveTo="transform opacity-0 scale-95"
                   >
-                    <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                      <div className="border-b border-gray-200 px-4 py-3">
-                        <p className="truncate text-sm font-medium text-gray-900">{user?.name}</p>
-                        <p className="truncate text-sm text-gray-500">{user?.email}</p>
+                    <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white/5 backdrop-blur-md py-1 shadow-lg ring-1 ring-white/20 ring-opacity-5 focus:outline-none">
+                      <div className="border-b border-white/10 px-4 py-3">
+                        <p className="truncate text-sm font-medium text-white">{user?.name}</p>
+                        <p className="truncate text-sm text-slate-400">{user?.email}</p>
                       </div>
 
                       <div className="py-1">
@@ -376,10 +376,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                             <NavLink
                               to="/dashboard/profile"
                               className={({ isActive: navIsActive }) =>
-                                `${active || navIsActive ? 'bg-gray-100' : ''} group flex w-full items-center px-4 py-2 text-sm text-gray-700`
+                                `${active || navIsActive ? 'bg-white/10' : ''} group flex w-full items-center px-4 py-2 text-sm text-slate-300`
                               }
                             >
-                              <UserCircleIcon className="mr-2 h-5 w-5 text-gray-500" /> Mi perfil
+                              <UserCircleIcon className="mr-2 h-5 w-5 text-slate-400" /> Mi perfil
                             </NavLink>
                           )}
                         </Menu.Item>
@@ -387,7 +387,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                           {({ active }) => (
                             <button
                               onClick={handleLogout}
-                              className={`${active ? 'bg-gray-100' : ''} group flex w-full items-center px-4 py-2 text-sm text-red-600`}
+                              className={`${active ? 'bg-white/10' : ''} group flex w-full items-center px-4 py-2 text-sm text-red-600`}
                             >
                               <ArrowLeftOnRectangleIcon className="mr-2 h-5 w-5 text-red-500" />
                               Cerrar sesion

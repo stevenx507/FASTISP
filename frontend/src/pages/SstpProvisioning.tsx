@@ -133,10 +133,10 @@ const ScriptModal: React.FC<{
             </div>
             <div>
               <h2 className="text-white font-semibold">Script del Servidor SSTP</h2>
-              <p className="text-gray-400 text-sm">{tunnel.router_name} · {tunnel.username}</p>
+              <p className="text-slate-500 text-sm">{tunnel.router_name} · {tunnel.username}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors text-xl">✕</button>
+          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors text-xl">✕</button>
         </div>
 
         {/* Info banner */}
@@ -151,19 +151,19 @@ const ScriptModal: React.FC<{
         {/* Credentials summary */}
         <div className="mx-5 mt-3 grid grid-cols-2 gap-2">
           <div className="bg-gray-800 rounded-lg p-3">
-            <p className="text-gray-400 text-xs mb-1">Servidor SSTP (router)</p>
+            <p className="text-slate-500 text-xs mb-1">Servidor SSTP (router)</p>
             <p className="text-white font-mono text-sm">{tunnel.server_host}:{tunnel.server_port}</p>
           </div>
           <div className="bg-gray-800 rounded-lg p-3">
-            <p className="text-gray-400 text-xs mb-1">Usuario PPP</p>
+            <p className="text-slate-500 text-xs mb-1">Usuario PPP</p>
             <p className="text-white font-mono text-sm">{tunnel.username}</p>
           </div>
           <div className="bg-gray-800 rounded-lg p-3">
-            <p className="text-gray-400 text-xs mb-1">Gateway local</p>
+            <p className="text-slate-500 text-xs mb-1">Gateway local</p>
             <p className="text-white font-mono text-sm">{tunnel.server_ip}</p>
           </div>
           <div className="bg-gray-800 rounded-lg p-3">
-            <p className="text-gray-400 text-xs mb-1">Primer cliente</p>
+            <p className="text-slate-500 text-xs mb-1">Primer cliente</p>
             <p className="text-white font-mono text-sm">{tunnel.client_ip}</p>
           </div>
         </div>
@@ -173,7 +173,7 @@ const ScriptModal: React.FC<{
           <button
             onClick={() => setShowVerify(false)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              !showVerify ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-gray-400 hover:text-white'
+              !showVerify ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-500 hover:text-white'
             }`}
           >
             Script del Servidor SSTP
@@ -181,7 +181,7 @@ const ScriptModal: React.FC<{
           <button
             onClick={() => setShowVerify(true)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              showVerify ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-gray-400 hover:text-white'
+              showVerify ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-500 hover:text-white'
             }`}
           >
             Script de Verificación
@@ -247,12 +247,12 @@ const ProvisionModal: React.FC<{
             </div>
             <h2 className="text-white font-semibold">Configurar Servidor SSTP</h2>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors text-xl">✕</button>
+          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors text-xl">✕</button>
         </div>
 
         <div className="p-5 space-y-4">
           <div>
-            <label htmlFor="sstp-router-select" className="block text-gray-300 text-sm font-medium mb-2">
+            <label htmlFor="sstp-router-select" className="block text-slate-400 text-sm font-medium mb-2">
               Router MikroTik
             </label>
             <select
@@ -272,7 +272,7 @@ const ProvisionModal: React.FC<{
           </div>
 
           <div>
-            <label htmlFor="sstp-notes" className="block text-gray-300 text-sm font-medium mb-2">
+            <label htmlFor="sstp-notes" className="block text-slate-400 text-sm font-medium mb-2">
               Notas (opcional)
             </label>
             <textarea
@@ -488,7 +488,7 @@ const SstpProvisioning: React.FC = () => {
                 <h1 className="text-2xl font-bold text-white">Servidores SSTP Nativo MikroTik</h1>
                 <span className="px-2 py-0.5 bg-cyan-500/20 border border-cyan-500/30 rounded-full text-cyan-300 text-xs font-medium">VPN</span>
               </div>
-              <p className="text-gray-400 text-sm mt-0.5">Aprovisionamiento automático vía API MikroTik para routers clientes ISP</p>
+              <p className="text-slate-500 text-sm mt-0.5">Aprovisionamiento automático vía API MikroTik para routers clientes ISP</p>
             </div>
           </div>
           <button
@@ -521,35 +521,35 @@ const SstpProvisioning: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-gradient-to-br from-gray-900 to-emerald-950/30 border border-emerald-500/20 rounded-xl p-4 hover:border-emerald-500/40 transition-all hover:shadow-lg hover:shadow-emerald-500/5">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-400 text-xs font-medium">Servidores Activos</p>
+              <p className="text-slate-500 text-xs font-medium">Servidores Activos</p>
               <div className="p-1.5 bg-emerald-500/10 rounded-lg"><SignalSolid className="w-4 h-4 text-emerald-400" /></div>
             </div>
             <p className="text-3xl font-bold text-emerald-400">{status.active_tunnels}</p>
-            <p className="text-gray-500 text-xs mt-1">de {status.total_tunnels} totales</p>
+            <p className="text-slate-400 text-xs mt-1">de {status.total_tunnels} totales</p>
           </div>
           <div className="bg-gradient-to-br from-gray-900 to-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-all hover:shadow-lg hover:shadow-gray-500/5">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-400 text-xs font-medium">Total Servidores</p>
-              <div className="p-1.5 bg-gray-500/10 rounded-lg"><WifiIcon className="w-4 h-4 text-gray-400" /></div>
+              <p className="text-slate-500 text-xs font-medium">Total Servidores</p>
+              <div className="p-1.5 bg-gray-500/10 rounded-lg"><WifiIcon className="w-4 h-4 text-slate-500" /></div>
             </div>
             <p className="text-3xl font-bold text-white">{status.total_tunnels}</p>
-            <p className="text-gray-500 text-xs mt-1">{status.revoked_tunnels} revocados</p>
+            <p className="text-slate-400 text-xs mt-1">{status.revoked_tunnels} revocados</p>
           </div>
           <div className="bg-gradient-to-br from-gray-900 to-cyan-950/30 border border-cyan-500/20 rounded-xl p-4 hover:border-cyan-500/40 transition-all hover:shadow-lg hover:shadow-cyan-500/5">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-400 text-xs font-medium">Arquitectura</p>
+              <p className="text-slate-500 text-xs font-medium">Arquitectura</p>
               <div className="p-1.5 bg-cyan-500/10 rounded-lg"><ServerIcon className="w-4 h-4 text-cyan-400" /></div>
             </div>
             <p className="text-sm font-mono text-cyan-400 font-bold">{status.architecture}</p>
-            <p className="text-gray-500 text-xs mt-1">Puerto {status.server_port}</p>
+            <p className="text-slate-400 text-xs mt-1">Puerto {status.server_port}</p>
           </div>
           <div className="bg-gradient-to-br from-gray-900 to-purple-950/30 border border-purple-500/20 rounded-xl p-4 hover:border-purple-500/40 transition-all hover:shadow-lg hover:shadow-purple-500/5">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-400 text-xs font-medium">Pool de IPs</p>
+              <p className="text-slate-500 text-xs font-medium">Pool de IPs</p>
               <div className="p-1.5 bg-purple-500/10 rounded-lg"><SignalIcon className="w-4 h-4 text-purple-400" /></div>
             </div>
             <p className="text-sm font-mono text-purple-400 font-bold">{status.ip_pool}</p>
-            <p className="text-gray-500 text-xs mt-1">SSTP VPN Pool</p>
+            <p className="text-slate-400 text-xs mt-1">SSTP VPN Pool</p>
           </div>
         </div>
       )}
@@ -559,7 +559,7 @@ const SstpProvisioning: React.FC = () => {
         <div className="mb-6 p-3 bg-gray-900 border border-gray-700 rounded-xl flex items-center gap-3">
           <KeyIcon className="w-4 h-4 text-yellow-400 flex-shrink-0" />
           <div>
-            <p className="text-gray-400 text-xs">Huella del certificado (CA MikroTik)</p>
+            <p className="text-slate-500 text-xs">Huella del certificado (CA MikroTik)</p>
             <p className="text-yellow-300 font-mono text-xs break-all">{status.certificate_fingerprint}</p>
           </div>
         </div>
@@ -574,7 +574,7 @@ const SstpProvisioning: React.FC = () => {
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               filterStatus === f
                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                : 'text-gray-400 hover:text-white border border-transparent'
+                : 'text-slate-500 hover:text-white border border-transparent'
             }`}
           >
             {f === 'all' ? 'Todos' : f === 'active' ? 'Activos' : 'Revocados'}
@@ -582,7 +582,7 @@ const SstpProvisioning: React.FC = () => {
         ))}
         <button
           onClick={loadData}
-          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-gray-400 hover:text-white text-sm transition-colors"
+          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:text-white text-sm transition-colors"
         >
           <ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           Actualizar
@@ -599,8 +599,8 @@ const SstpProvisioning: React.FC = () => {
           <div className="p-4 bg-cyan-500/10 rounded-2xl border border-cyan-500/20 inline-flex mb-4">
             <ShieldCheckIcon className="w-10 h-10 text-cyan-500/60" />
           </div>
-          <p className="text-gray-300 font-medium text-lg">Sin servidores SSTP nativos</p>
-          <p className="text-gray-500 text-sm mt-1 max-w-xs mx-auto">Configura el primer router MikroTik como servidor SSTP nativo</p>
+          <p className="text-slate-400 font-medium text-lg">Sin servidores SSTP nativos</p>
+          <p className="text-slate-400 text-sm mt-1 max-w-xs mx-auto">Configura el primer router MikroTik como servidor SSTP nativo</p>
           <button
             onClick={() => setShowProvisionModal(true)}
             className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm font-semibold transition-all"
@@ -644,7 +644,7 @@ const SstpProvisioning: React.FC = () => {
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
                           isRecentlySeen(tunnel.last_seen)
                             ? 'text-cyan-400 bg-cyan-400/10 border-cyan-400/30'
-                            : 'text-gray-500 bg-gray-500/10 border-gray-500/20'
+                            : 'text-slate-400 bg-gray-500/10 border-gray-500/20'
                         }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${
                             isRecentlySeen(tunnel.last_seen) ? 'bg-cyan-400 animate-pulse' : 'bg-gray-500'
@@ -655,20 +655,20 @@ const SstpProvisioning: React.FC = () => {
                     </div>
                     <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1.5">
                       <div>
-                        <p className="text-gray-500 text-xs">Usuario PPP</p>
-                        <p className="text-gray-300 font-mono text-xs truncate">{tunnel.username}</p>
+                        <p className="text-slate-400 text-xs">Usuario PPP</p>
+                        <p className="text-slate-400 font-mono text-xs truncate">{tunnel.username}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs">Gateway</p>
-                        <p className="text-gray-300 font-mono text-xs">{tunnel.server_ip}</p>
+                        <p className="text-slate-400 text-xs">Gateway</p>
+                        <p className="text-slate-400 font-mono text-xs">{tunnel.server_ip}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs">Pool inicio</p>
-                        <p className="text-gray-300 font-mono text-xs">{tunnel.client_ip}</p>
+                        <p className="text-slate-400 text-xs">Pool inicio</p>
+                        <p className="text-slate-400 font-mono text-xs">{tunnel.client_ip}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs">Creado</p>
-                        <p className="text-gray-300 text-xs">
+                        <p className="text-slate-400 text-xs">Creado</p>
+                        <p className="text-slate-400 text-xs">
                           {new Date(tunnel.created_at).toLocaleDateString('es-CO')}
                         </p>
                       </div>
@@ -683,35 +683,35 @@ const SstpProvisioning: React.FC = () => {
                       onClick={() => handleTestConnection(tunnel)}
                       title="Verificar conexi\u00f3n al router"
                       disabled={testingConnection === tunnel.id}
-                      className="p-2 text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors disabled:opacity-50"
+                      className="p-2 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors disabled:opacity-50"
                     >
                       <SignalIcon className={`w-4 h-4 ${testingConnection === tunnel.id ? 'animate-pulse' : ''}`} />
                     </button>
                     <button
                       onClick={() => handleViewScript(tunnel)}
                       title="Ver script de aprovisionamiento"
-                      className="p-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
+                      className="p-2 text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
                     >
                       <CommandLineIcon className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDownloadScript(tunnel)}
                       title="Descargar script .rsc"
-                      className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                      className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
                     >
                       <ArrowDownTrayIcon className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleRegenerate(tunnel)}
                       title="Regenerar credenciales"
-                      className="p-2 text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors"
+                      className="p-2 text-slate-500 hover:text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors"
                     >
                       <ArrowPathIcon className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleRevoke(tunnel)}
                       title="Revocar t\u00fanel"
-                      className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                     >
                       <TrashIcon className="w-4 h-4" />
                     </button>
@@ -744,7 +744,7 @@ const SstpProvisioning: React.FC = () => {
                       {connectionResult[tunnel.id].checks!.map(check => (
                         <div key={check.id} className="flex items-center gap-2">
                           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${check.ok ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                          <span className="text-gray-300">{check.detail}</span>
+                          <span className="text-slate-400">{check.detail}</span>
                         </div>
                       ))}
                     </div>

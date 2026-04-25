@@ -117,13 +117,13 @@ const PushNotifications: React.FC = () => {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Notificaciones Push</h2>
-          <p className="text-sm text-gray-600">Campanas masivas por canal, audiencia y segmentacion.</p>
+          <h2 className="text-2xl font-bold text-white">Notificaciones Push</h2>
+          <p className="text-sm text-slate-400">Campanas masivas por canal, audiencia y segmentacion.</p>
         </div>
         <button
           onClick={loadHistory}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60"
         >
           <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Actualizando...' : 'Actualizar'}
@@ -131,15 +131,15 @@ const PushNotifications: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <form onSubmit={sendNotification} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-3 font-semibold text-gray-900">Nueva campana</h3>
+        <form onSubmit={sendNotification} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
+          <h3 className="mb-3 font-semibold text-white">Nueva campana</h3>
           <div className="mb-3 flex flex-wrap gap-2">
             {templates.map((template) => (
               <button
                 key={template.label}
                 type="button"
                 onClick={() => applyTemplate(template)}
-                className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                className="rounded-md border border-blue-500/30 bg-blue-500/10 px-2 py-1 text-xs font-semibold text-blue-300 hover:bg-blue-500/20"
               >
                 {template.label}
               </button>
@@ -151,21 +151,21 @@ const PushNotifications: React.FC = () => {
               value={form.title}
               onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
               placeholder="Titulo"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
             <textarea
               value={form.message}
               onChange={(e) => setForm((prev) => ({ ...prev, message: e.target.value }))}
               placeholder="Mensaje"
               rows={5}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
 
             <div className="grid grid-cols-2 gap-2">
               <select
                 value={form.channel}
                 onChange={(e) => setForm((prev) => ({ ...prev, channel: e.target.value as Channel }))}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               >
                 <option value="push">push</option>
                 <option value="email">email</option>
@@ -175,7 +175,7 @@ const PushNotifications: React.FC = () => {
               <select
                 value={form.audience}
                 onChange={(e) => setForm((prev) => ({ ...prev, audience: e.target.value as Audience }))}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               >
                 <option value="all">all</option>
                 <option value="active">active</option>
@@ -189,13 +189,13 @@ const PushNotifications: React.FC = () => {
                 value={form.plan}
                 onChange={(e) => setForm((prev) => ({ ...prev, plan: e.target.value }))}
                 placeholder="Plan (opcional)"
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               />
               <input
                 value={form.router_id}
                 onChange={(e) => setForm((prev) => ({ ...prev, router_id: e.target.value }))}
                 placeholder="Router ID (opcional)"
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               />
             </div>
 
@@ -210,13 +210,13 @@ const PushNotifications: React.FC = () => {
           </div>
         </form>
 
-        <div className="xl:col-span-2 rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="border-b border-gray-100 px-4 py-3">
-            <h3 className="font-semibold text-gray-900">Historial de envios</h3>
+        <div className="xl:col-span-2 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm">
+          <div className="border-b border-white/5 px-4 py-3">
+            <h3 className="font-semibold text-white">Historial de envios</h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100 text-sm">
-              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+            <table className="min-w-full divide-y divide-white/5 text-sm">
+              <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
                 <tr>
                   <th className="px-4 py-3 text-left">Fecha</th>
                   <th className="px-4 py-3 text-left">Titulo</th>
@@ -226,17 +226,17 @@ const PushNotifications: React.FC = () => {
                   <th className="px-4 py-3 text-right">Estado</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/5">
                 {history.map((entry) => (
                   <tr key={entry.id}>
-                    <td className="px-4 py-3 text-xs text-gray-500">{entry.sent_at?.replace('T', ' ').slice(0, 16) || '-'}</td>
+                    <td className="px-4 py-3 text-xs text-slate-400">{entry.sent_at?.replace('T', ' ').slice(0, 16) || '-'}</td>
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{entry.title}</p>
-                      <p className="line-clamp-1 text-xs text-gray-500">{entry.message}</p>
+                      <p className="font-medium text-white">{entry.title}</p>
+                      <p className="line-clamp-1 text-xs text-slate-400">{entry.message}</p>
                     </td>
-                    <td className="px-4 py-3 text-gray-700">{entry.channel}</td>
-                    <td className="px-4 py-3 text-gray-700">{entry.audience}</td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900">{entry.target_count}</td>
+                    <td className="px-4 py-3 text-slate-300">{entry.channel}</td>
+                    <td className="px-4 py-3 text-slate-300">{entry.audience}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-white">{entry.target_count}</td>
                     <td className="px-4 py-3 text-right">
                       <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
                         {entry.status}
@@ -246,7 +246,7 @@ const PushNotifications: React.FC = () => {
                 ))}
                 {!history.length && (
                   <tr>
-                    <td className="px-4 py-8 text-center text-sm text-gray-500" colSpan={6}>
+                    <td className="px-4 py-8 text-center text-sm text-slate-400" colSpan={6}>
                       Sin notificaciones enviadas.
                     </td>
                   </tr>

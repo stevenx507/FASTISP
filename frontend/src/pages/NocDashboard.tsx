@@ -16,8 +16,8 @@ const StatCard: React.FC<{ label: string; value: string; color?: string }> = ({ 
     whileHover={{ y: -4 }}
     className={`rounded-xl p-4 shadow border border-${color}-100 bg-${color}-50/60`}
   >
-    <p className="text-sm text-gray-600">{label}</p>
-    <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+    <p className="text-sm text-slate-400">{label}</p>
+    <p className="text-2xl font-bold text-white mt-1">{value}</p>
   </motion.div>
 )
 
@@ -43,8 +43,8 @@ const NocDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">NOC Dashboard</h1>
-          <p className="text-gray-600">Uptime, cortes y alertas en un solo panel.</p>
+          <h1 className="text-3xl font-bold text-white">NOC Dashboard</h1>
+          <p className="text-slate-400">Uptime, cortes y alertas en un solo panel.</p>
         </div>
       </div>
 
@@ -60,9 +60,9 @@ const NocDashboard: React.FC = () => {
       )}
 
       {config.GRAFANA_URL && (
-        <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Grafana NOC</h2>
+        <div className="bg-white/5 backdrop-blur-md rounded-xl shadow border border-white/10 overflow-hidden">
+          <div className="p-4 border-b border-white/10">
+            <h2 className="text-lg font-semibold text-white">Grafana NOC</h2>
           </div>
           <iframe
             title="Grafana"
@@ -73,27 +73,27 @@ const NocDashboard: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow border border-gray-200">
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Alertas recientes</h2>
+      <div className="bg-white/5 backdrop-blur-md rounded-xl shadow border border-white/10">
+        <div className="p-4 border-b border-white/10 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">Alertas recientes</h2>
         </div>
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-white/5">
           {(alerts || []).slice(0, 10).map((a, i) => (
             <div key={i} className="p-4 flex items-center justify-between">
               <div>
-                <p className="font-semibold text-gray-900">{a.message || a.title || 'Alerta'}</p>
-                <p className="text-sm text-gray-600">{a.severity?.toUpperCase?.() || 'info'}</p>
+                <p className="font-semibold text-white">{a.message || a.title || 'Alerta'}</p>
+                <p className="text-sm text-slate-400">{a.severity?.toUpperCase?.() || 'info'}</p>
               </div>
               <span className={`px-2 py-1 text-xs rounded-full ${
-                a.severity === 'critical' ? 'bg-red-100 text-red-700' :
-                a.severity === 'warning' ? 'bg-yellow-100 text-yellow-700' :
-                'bg-blue-100 text-blue-700'
+                a.severity === 'critical' ? 'bg-rose-500/20 text-rose-400' :
+                a.severity === 'warning' ? 'bg-amber-500/20 text-amber-400' :
+                'bg-blue-500/20 text-blue-300'
               }`}>
                 {a.severity || 'info'}
               </span>
             </div>
           ))}
-          {!alerts?.length && <div className="p-4 text-sm text-gray-600">Sin alertas activas.</div>}
+          {!alerts?.length && <div className="p-4 text-sm text-slate-400">Sin alertas activas.</div>}
         </div>
       </div>
     </div>

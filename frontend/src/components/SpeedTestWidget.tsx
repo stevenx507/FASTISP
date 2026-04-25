@@ -192,7 +192,7 @@ const SpeedTestWidget: React.FC = () => {
           <div className="flex justify-center space-x-3">
             {['Telemetria', 'Ping', 'Throughput'].map((text, i) => (
               <div key={text} className="flex items-center space-x-1 text-sm text-slate-300">
-                <span className={`h-2 w-2 rounded-full ${progress > i * 30 ? 'bg-green-500' : 'bg-gray-300'}`} />
+                <span className={`h-2 w-2 rounded-full ${progress > i * 30 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-slate-700'}`} />
                 <span>{text}</span>
               </div>
             ))}

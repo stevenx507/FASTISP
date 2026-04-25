@@ -159,13 +159,13 @@ const StaffView: React.FC = () => {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Staff</h2>
-          <p className="text-sm text-gray-600">Gestiona roles operativos, turnos, zonas y MFA.</p>
+          <h2 className="text-2xl font-bold text-white">Staff</h2>
+          <p className="text-sm text-slate-400">Gestiona roles operativos, turnos, zonas y MFA.</p>
         </div>
         <button
           onClick={loadStaff}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60"
         >
           <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Actualizando...' : 'Actualizar'}
@@ -179,26 +179,26 @@ const StaffView: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <form onSubmit={handleCreate} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-3 font-semibold text-gray-900">Nuevo miembro</h3>
+        <form onSubmit={handleCreate} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
+          <h3 className="mb-3 font-semibold text-white">Nuevo miembro</h3>
           <div className="space-y-3">
             <input
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               placeholder="Nombre"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
             <input
               value={form.email}
               onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
               placeholder="Email"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
             <div className="grid grid-cols-2 gap-2">
               <select
                 value={form.role}
                 onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value as StaffRole }))}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               >
                 {roleOptions.map((role) => (
                   <option key={role} value={role}>{role}</option>
@@ -207,7 +207,7 @@ const StaffView: React.FC = () => {
               <select
                 value={form.status}
                 onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as StaffStatus }))}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               >
                 {statusOptions.map((status) => (
                   <option key={status} value={status}>{status}</option>
@@ -219,12 +219,12 @@ const StaffView: React.FC = () => {
                 value={form.zone}
                 onChange={(e) => setForm((prev) => ({ ...prev, zone: e.target.value }))}
                 placeholder="Zona"
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               />
               <select
                 value={form.shift}
                 onChange={(e) => setForm((prev) => ({ ...prev, shift: e.target.value as StaffShift }))}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               >
                 {shiftOptions.map((shift) => (
                   <option key={shift} value={shift}>{shift}</option>
@@ -235,9 +235,9 @@ const StaffView: React.FC = () => {
               value={form.phone}
               onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
               placeholder="Telefono"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
-            <label className="flex items-center gap-2 text-sm text-gray-700">
+            <label className="flex items-center gap-2 text-sm text-slate-300">
               <input
                 type="checkbox"
                 checked={form.mfa_enabled}
@@ -255,19 +255,19 @@ const StaffView: React.FC = () => {
           </div>
         </form>
 
-        <div className="xl:col-span-2 rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-4 py-3">
+        <div className="xl:col-span-2 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 px-4 py-3">
             <div className="flex flex-wrap items-center gap-2">
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar por nombre, email o zona"
-                className="w-64 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="w-64 rounded-lg border border-white/20 px-3 py-2 text-sm"
               />
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               >
                 <option value="all">Todos los roles</option>
                 {roleOptions.map((role) => (
@@ -275,12 +275,12 @@ const StaffView: React.FC = () => {
                 ))}
               </select>
             </div>
-            <p className="text-xs text-gray-500">{filteredStaff.length} miembros</p>
+            <p className="text-xs text-slate-400">{filteredStaff.length} miembros</p>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100 text-sm">
-              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+            <table className="min-w-full divide-y divide-white/5 text-sm">
+              <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
                 <tr>
                   <th className="px-4 py-3 text-left">Miembro</th>
                   <th className="px-4 py-3 text-left">Rol</th>
@@ -291,21 +291,21 @@ const StaffView: React.FC = () => {
                   <th className="px-4 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/5">
                 {filteredStaff.map((member) => {
                   const draft = drafts[member.id] || {}
                   const currentMfa = (draft.mfa_enabled as boolean | undefined) ?? member.mfa_enabled
                   return (
                     <tr key={member.id}>
                       <td className="px-4 py-3">
-                        <p className="font-medium text-gray-900">{member.name}</p>
-                        <p className="text-xs text-gray-500">{member.email}</p>
+                        <p className="font-medium text-white">{member.name}</p>
+                        <p className="text-xs text-slate-400">{member.email}</p>
                       </td>
                       <td className="px-4 py-3">
                         <select
                           value={(draft.role as StaffRole | undefined) || member.role}
                           onChange={(e) => updateDraft(member.id, 'role', e.target.value as StaffRole)}
-                          className="rounded-md border border-gray-300 px-2 py-1 text-xs"
+                          className="rounded-md border border-white/20 px-2 py-1 text-xs"
                         >
                           {roleOptions.map((role) => (
                             <option key={role} value={role}>{role}</option>
@@ -316,14 +316,14 @@ const StaffView: React.FC = () => {
                         <input
                           value={(draft.zone as string | undefined) ?? member.zone}
                           onChange={(e) => updateDraft(member.id, 'zone', e.target.value)}
-                          className="w-24 rounded-md border border-gray-300 px-2 py-1 text-xs"
+                          className="w-24 rounded-md border border-white/20 px-2 py-1 text-xs"
                         />
                       </td>
                       <td className="px-4 py-3">
                         <select
                           value={(draft.shift as StaffShift | undefined) || member.shift}
                           onChange={(e) => updateDraft(member.id, 'shift', e.target.value as StaffShift)}
-                          className="rounded-md border border-gray-300 px-2 py-1 text-xs"
+                          className="rounded-md border border-white/20 px-2 py-1 text-xs"
                         >
                           {shiftOptions.map((shift) => (
                             <option key={shift} value={shift}>{shift}</option>
@@ -334,20 +334,20 @@ const StaffView: React.FC = () => {
                         <select
                           value={(draft.status as StaffStatus | undefined) || member.status}
                           onChange={(e) => updateDraft(member.id, 'status', e.target.value as StaffStatus)}
-                          className="rounded-md border border-gray-300 px-2 py-1 text-xs"
+                          className="rounded-md border border-white/20 px-2 py-1 text-xs"
                         >
                           {statusOptions.map((status) => (
                             <option key={status} value={status}>{status}</option>
                           ))}
                         </select>
                       </td>
-                      <td className="px-4 py-3 font-semibold text-gray-900">{member.open_tickets}</td>
+                      <td className="px-4 py-3 font-semibold text-white">{member.open_tickets}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="inline-flex items-center gap-2">
                           <button
                             onClick={() => updateDraft(member.id, 'mfa_enabled', !currentMfa)}
                             className={`rounded-md px-2 py-1 text-xs font-semibold ${
-                              currentMfa ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700'
+                              currentMfa ? 'bg-emerald-100 text-emerald-700' : 'bg-white/10 text-slate-300'
                             }`}
                           >
                             MFA {currentMfa ? 'on' : 'off'}
@@ -366,7 +366,7 @@ const StaffView: React.FC = () => {
                 })}
                 {!filteredStaff.length && (
                   <tr>
-                    <td className="px-4 py-8 text-center text-sm text-gray-500" colSpan={7}>
+                    <td className="px-4 py-8 text-center text-sm text-slate-400" colSpan={7}>
                       Sin miembros para mostrar.
                     </td>
                   </tr>

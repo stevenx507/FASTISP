@@ -10,7 +10,7 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
   ({ label, error, hint, className = '', ...props }, ref) => (
     <div className="space-y-1">
       {label && (
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-slate-300">
           {label}
           {props.required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -18,12 +18,12 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
       <input
         ref={ref}
         className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-          error ? 'border-red-500' : 'border-gray-300'
+          error ? 'border-red-500' : 'border-white/20'
         } ${className}`}
         {...props}
       />
       {error && <p className="text-sm text-red-600">{error}</p>}
-      {hint && <p className="text-sm text-gray-500">{hint}</p>}
+      {hint && <p className="text-sm text-slate-400">{hint}</p>}
     </div>
   )
 )
@@ -39,7 +39,7 @@ export const FormSelect = React.forwardRef<HTMLSelectElement, FormSelectProps>(
   ({ label, error, options, className = '', ...props }, ref) => (
     <div className="space-y-1">
       {label && (
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-slate-300">
           {label}
           {props.required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -47,7 +47,7 @@ export const FormSelect = React.forwardRef<HTMLSelectElement, FormSelectProps>(
       <select
         ref={ref}
         className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-          error ? 'border-red-500' : 'border-gray-300'
+          error ? 'border-red-500' : 'border-white/20'
         } ${className}`}
         {...props}
       >
@@ -72,7 +72,7 @@ export const FormTextarea = React.forwardRef<HTMLTextAreaElement, FormTextareaPr
   ({ label, error, className = '', ...props }, ref) => (
     <div className="space-y-1">
       {label && (
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-slate-300">
           {label}
           {props.required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -80,7 +80,7 @@ export const FormTextarea = React.forwardRef<HTMLTextAreaElement, FormTextareaPr
       <textarea
         ref={ref}
         className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-          error ? 'border-red-500' : 'border-gray-300'
+          error ? 'border-red-500' : 'border-white/20'
         } ${className}`}
         {...props}
       />

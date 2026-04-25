@@ -23,15 +23,15 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       className="flex flex-col items-center justify-center py-12 text-center"
     >
       {icon && (
-        <div className="mb-4 p-4 bg-gray-100 rounded-full">
+        <div className="mb-4 p-4 bg-white/10 rounded-full">
           {React.cloneElement(icon as React.ReactElement, { 
-            className: 'w-8 h-8 text-gray-400' 
+            className: 'w-8 h-8 text-slate-500' 
           })}
         </div>
       )}
-      <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+      <h3 className="text-lg font-semibold text-white">{title}</h3>
       {description && (
-        <p className="mt-1 text-gray-600 text-sm">{description}</p>
+        <p className="mt-1 text-slate-400 text-sm">{description}</p>
       )}
       {actionLabel && onAction && (
         <button

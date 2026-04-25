@@ -156,8 +156,8 @@ export default function RemoteNatPanel() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">🧭 Acceso Remoto sin IP Pública</h2>
-          <p className="text-sm text-gray-500">Redirección NAT automática desde el router principal hacia nodos internos</p>
+          <h2 className="text-xl font-bold text-white dark:text-white">🧭 Acceso Remoto sin IP Pública</h2>
+          <p className="text-sm text-slate-400">Redirección NAT automática desde el router principal hacia nodos internos</p>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
           <select
@@ -172,15 +172,15 @@ export default function RemoteNatPanel() {
             className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
             + Nueva Regla NAT
           </button>
-          <button onClick={load} className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm">↻</button>
+          <button onClick={load} className="px-3 py-2 bg-white/15 dark:bg-gray-700 text-slate-300 dark:text-gray-200 rounded-lg text-sm">↻</button>
         </div>
       </div>
 
       {/* Info box */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl p-4 text-sm text-blue-800 dark:text-blue-300">
+      <div className="bg-blue-500/10 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl p-4 text-sm text-blue-300 dark:text-blue-300">
         <p className="font-semibold mb-1">💡 ¿Cómo funciona?</p>
         <p>Crea una regla <strong>dstnat</strong> en el router MikroTik que redirige un puerto externo hacia la IP interna del nodo destino.
-        Ejemplo: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">router_ip:2222 → 192.168.1.10:22</code> permite SSH al nodo sin IP pública.</p>
+        Ejemplo: <code className="bg-blue-500/20 dark:bg-blue-800 px-1 rounded">router_ip:2222 → 192.168.1.10:22</code> permite SSH al nodo sin IP pública.</p>
       </div>
 
       {loading ? (
@@ -188,9 +188,9 @@ export default function RemoteNatPanel() {
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
         </div>
       ) : error ? (
-        <div className="bg-red-50 rounded-xl p-4 text-red-600">{error}</div>
+        <div className="bg-rose-500/10 rounded-xl p-4 text-red-600">{error}</div>
       ) : rules.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-slate-500">
           <p className="text-4xl mb-3">🔌</p>
           <p>No hay reglas NAT configuradas.</p>
           <button onClick={() => setShowForm(true)} className="mt-3 text-blue-600 hover:underline text-sm">Crear primera regla →</button>
@@ -199,33 +199,33 @@ export default function RemoteNatPanel() {
         <div className="flex flex-col gap-3">
           {rules.map(rule => (
             <div key={rule.id}
-              className={`bg-white dark:bg-gray-800 rounded-xl border p-4 flex flex-wrap items-center gap-4 ${
-                rule.is_active ? 'border-gray-100 dark:border-gray-700' : 'border-gray-200 dark:border-gray-600 opacity-60'}`}>
+              className={`bg-white/5 backdrop-blur-md dark:bg-gray-800 rounded-xl border p-4 flex flex-wrap items-center gap-4 ${
+                rule.is_active ? 'border-white/5 dark:border-gray-700' : 'border-white/10 dark:border-gray-600 opacity-60'}`}>
               {/* Estado */}
               <div className={`w-3 h-3 rounded-full flex-shrink-0 ${rule.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
 
               {/* Info principal */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold text-gray-900 dark:text-white">{rule.name}</p>
-                  <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full uppercase">{rule.protocol}</span>
+                  <p className="font-semibold text-white dark:text-white">{rule.name}</p>
+                  <span className="text-xs px-2 py-0.5 bg-white/10 dark:bg-gray-700 text-slate-400 dark:text-slate-400 rounded-full uppercase">{rule.protocol}</span>
                   {!rule.mikrotik_rule_id && (
-                    <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full">⚠️ No aplicado en router</span>
+                    <span className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full">⚠️ No aplicado en router</span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 flex-wrap">
+                <div className="flex items-center gap-2 mt-1 text-sm text-slate-400 flex-wrap">
                   <span className="font-mono">{getRouterIp(rule.router_id)}:<strong className="text-blue-600">{rule.src_port}</strong></span>
                   <span>→</span>
                   <span className="font-mono text-green-600">{rule.dst_address}:{rule.dst_port}</span>
-                  <span className="text-xs text-gray-400">({getRouterName(rule.router_id)})</span>
+                  <span className="text-xs text-slate-500">({getRouterName(rule.router_id)})</span>
                 </div>
-                {rule.description && <p className="text-xs text-gray-400 mt-0.5">{rule.description}</p>}
+                {rule.description && <p className="text-xs text-slate-500 mt-0.5">{rule.description}</p>}
               </div>
 
               {/* Test result */}
               {testResult?.ruleId === rule.id && (
                 <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                  testResult.reachable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  testResult.reachable ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
                   {testResult.reachable ? '✅ Alcanzable' : `❌ ${testResult.error || 'No alcanzable'}`}
                 </span>
               )}
@@ -234,17 +234,17 @@ export default function RemoteNatPanel() {
               <div className="flex gap-2 flex-shrink-0">
                 <button onClick={() => handleTest(rule)} disabled={testing === rule.id}
                   title="Probar conectividad"
-                  className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg text-sm disabled:opacity-50">
+                  className="p-2 text-blue-600 hover:bg-blue-500/10 dark:hover:bg-blue-900/30 rounded-lg text-sm disabled:opacity-50">
                   {testing === rule.id ? '⏳' : '🔍'}
                 </button>
                 <button onClick={() => handleToggle(rule)}
                   title={rule.is_active ? 'Deshabilitar' : 'Habilitar'}
-                  className="p-2 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 rounded-lg text-sm">
+                  className="p-2 text-yellow-600 hover:bg-amber-500/10 dark:hover:bg-yellow-900/30 rounded-lg text-sm">
                   {rule.is_active ? '⏸' : '▶️'}
                 </button>
                 <button onClick={() => handleDelete(rule)}
                   title="Eliminar regla"
-                  className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg text-sm">
+                  className="p-2 text-red-600 hover:bg-rose-500/10 dark:hover:bg-red-900/30 rounded-lg text-sm">
                   🗑️
                 </button>
               </div>
@@ -256,13 +256,13 @@ export default function RemoteNatPanel() {
       {/* Modal: Crear regla */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-6">
-            <h3 className="text-lg font-bold mb-1 text-gray-900 dark:text-white">🔌 Nueva Regla NAT Remoto</h3>
-            <p className="text-sm text-gray-500 mb-5">Redirige un puerto del router hacia un nodo interno sin IP pública</p>
+          <div className="bg-white/5 backdrop-blur-md dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-6">
+            <h3 className="text-lg font-bold mb-1 text-white dark:text-white">🔌 Nueva Regla NAT Remoto</h3>
+            <p className="text-sm text-slate-400 mb-5">Redirige un puerto del router hacia un nodo interno sin IP pública</p>
 
             <div className="flex flex-col gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Router *</label>
+                <label className="block text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">Router *</label>
                 <select aria-label="Router" value={form.router_id} onChange={e => setForm(f => ({ ...f, router_id: e.target.value }))}
                   className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600">
                   <option value="">Seleccionar router...</option>
@@ -271,7 +271,7 @@ export default function RemoteNatPanel() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nombre descriptivo *</label>
+                <label className="block text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">Nombre descriptivo *</label>
                 <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="Ej: SSH Nodo Zona Norte"
                   className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600" />
@@ -279,7 +279,7 @@ export default function RemoteNatPanel() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Protocolo</label>
+                  <label className="block text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">Protocolo</label>
                   <select aria-label="Protocolo" value={form.protocol} onChange={e => setForm(f => ({ ...f, protocol: e.target.value }))}
                     className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600">
                     <option value="tcp">TCP</option>
@@ -287,7 +287,7 @@ export default function RemoteNatPanel() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Puerto externo (router) *</label>
+                  <label className="block text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">Puerto externo (router) *</label>
                   <input type="number" value={form.src_port} onChange={e => setForm(f => ({ ...f, src_port: e.target.value }))}
                     placeholder="Ej: 2222"
                     className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600" />
@@ -296,13 +296,13 @@ export default function RemoteNatPanel() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">IP destino (nodo interno) *</label>
+                  <label className="block text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">IP destino (nodo interno) *</label>
                   <input value={form.dst_address} onChange={e => setForm(f => ({ ...f, dst_address: e.target.value }))}
                     placeholder="Ej: 192.168.1.10"
                     className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Puerto destino *</label>
+                  <label className="block text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">Puerto destino *</label>
                   <select aria-label="Puerto destino" value={form.dst_port} onChange={e => setForm(f => ({ ...f, dst_port: e.target.value }))}
                     className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600">
                     <option value="">Seleccionar...</option>
@@ -315,7 +315,7 @@ export default function RemoteNatPanel() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Descripción (opcional)</label>
+                <label className="block text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">Descripción (opcional)</label>
                 <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="Ej: Acceso SSH al switch de la zona norte"
                   className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600" />
@@ -323,8 +323,8 @@ export default function RemoteNatPanel() {
 
               {/* Preview */}
               {form.router_id && form.src_port && form.dst_address && form.dst_port && (
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-xs font-mono text-gray-600 dark:text-gray-300">
-                  <p className="text-gray-400 mb-1">Vista previa de la regla:</p>
+                <div className="bg-white/5 dark:bg-gray-700 rounded-lg p-3 text-xs font-mono text-slate-400 dark:text-slate-400">
+                  <p className="text-slate-500 mb-1">Vista previa de la regla:</p>
                   <p>{getRouterIp(parseInt(form.router_id))}:<strong className="text-blue-600">{form.src_port}</strong>
                     {' → '}<strong className="text-green-600">{form.dst_address}:{form.dst_port}</strong>
                     {' ('}{form.protocol.toUpperCase()}{')'}
@@ -339,7 +339,7 @@ export default function RemoteNatPanel() {
                 {saving ? 'Creando...' : '🔌 Crear Regla NAT'}
               </button>
               <button onClick={() => setShowForm(false)}
-                className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg py-2 text-sm hover:bg-gray-300">
+                className="flex-1 bg-white/15 dark:bg-gray-700 text-slate-300 dark:text-gray-200 rounded-lg py-2 text-sm hover:bg-gray-300">
                 Cancelar
               </button>
             </div>

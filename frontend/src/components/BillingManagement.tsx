@@ -9,10 +9,10 @@ import PaymentProofModal from './PaymentProofModal'
 type InvoiceStatus = 'paid' | 'pending' | 'cancelled' | 'overdue'
 
 const statusConfig: Record<InvoiceStatus, { bg: string; text: string; label: string }> = {
-  paid: { bg: 'bg-green-100 text-green-800', text: 'text-green-800', label: 'Pagada' },
-  pending: { bg: 'bg-yellow-100 text-yellow-800', text: 'text-yellow-800', label: 'Pendiente' },
-  overdue: { bg: 'bg-red-100 text-red-800', text: 'text-red-800', label: 'Vencida' },
-  cancelled: { bg: 'bg-gray-100 text-gray-700', text: 'text-gray-700', label: 'Cancelada' },
+  paid: { bg: 'bg-emerald-500/20 text-emerald-300', text: 'text-emerald-300', label: 'Pagada' },
+  pending: { bg: 'bg-amber-500/20 text-amber-300', text: 'text-amber-300', label: 'Pendiente' },
+  overdue: { bg: 'bg-rose-500/20 text-rose-300', text: 'text-rose-300', label: 'Vencida' },
+  cancelled: { bg: 'bg-white/10 text-slate-300', text: 'text-slate-300', label: 'Cancelada' },
 }
 
 interface Props {

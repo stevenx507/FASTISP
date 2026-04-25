@@ -24,8 +24,8 @@ export const LineChart: React.FC<LineChartProps> = ({
   const scale = height / maxValue
   
   return (
-    <div className="bg-white rounded-lg p-4 border border-gray-200">
-      <h3 className="font-semibold text-gray-900 mb-4">{title}</h3>
+    <div className="bg-white/5 backdrop-blur-md rounded-lg p-4 border border-white/10">
+      <h3 className="font-semibold text-white mb-4">{title}</h3>
       <svg width="100%" height={height + 40} viewBox={`0 0 ${data.length * 40} ${height + 40}`}>
         {showGrid && (
           <>
@@ -94,16 +94,16 @@ export const BarChart: React.FC<BarChartProps> = ({ data, title, showValues = tr
   const maxValue = Math.max(...data.map(d => d.value))
   
   return (
-    <div className="bg-white rounded-lg p-4 border border-gray-200">
-      <h3 className="font-semibold text-gray-900 mb-4">{title}</h3>
+    <div className="bg-white/5 backdrop-blur-md rounded-lg p-4 border border-white/10">
+      <h3 className="font-semibold text-white mb-4">{title}</h3>
       <div className="space-y-3">
         {data.map((d, i) => (
           <motion.div key={i} initial={{ width: 0 }} animate={{ width: '100%' }}>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium text-gray-700">{d.label}</span>
-              {showValues && <span className="text-sm text-gray-600">{d.value}%</span>}
+              <span className="text-sm font-medium text-slate-300">{d.label}</span>
+              {showValues && <span className="text-sm text-slate-400">{d.value}%</span>}
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div className="w-full bg-white/15 rounded-full h-3 overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${(d.value / maxValue) * 100}%` }}

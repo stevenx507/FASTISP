@@ -141,10 +141,10 @@ const loadGoogleMapsApi = (apiKey: string) => {
 
 const MapLegend: React.FC<{ provider: 'google' | 'leaflet' }> = ({ provider }) => (
   <>
-    <div className="absolute left-4 top-4 z-[1000] rounded-full border border-gray-200 bg-white/90 px-3 py-1 text-xs font-semibold text-gray-700 shadow">
+    <div className="absolute left-4 top-4 z-[1000] rounded-full border border-white/10 bg-white/90 px-3 py-1 text-xs font-semibold text-slate-300 shadow">
       {provider === 'google' ? 'Google Maps' : 'OpenStreetMap'}
     </div>
-    <div className="absolute bottom-4 right-4 z-[1000] rounded-lg border border-gray-200 bg-white/80 p-3 shadow-lg backdrop-blur-sm">
+    <div className="absolute bottom-4 right-4 z-[1000] rounded-lg border border-white/10 bg-white/80 p-3 shadow-lg backdrop-blur-sm">
       <h4 className="mb-2 text-sm font-bold">Leyenda</h4>
       <div className="space-y-2">
         <div className="flex items-center space-x-2">
@@ -181,12 +181,12 @@ const HistoryModal: React.FC<{
       initial={{ scale: 0.95, y: 20 }}
       animate={{ scale: 1, y: 0 }}
       exit={{ scale: 0.95, y: 20 }}
-      className="flex h-[70vh] w-full max-w-2xl flex-col rounded-2xl bg-gray-50 shadow-2xl"
+      className="flex h-[70vh] w-full max-w-2xl flex-col rounded-2xl bg-white/5 shadow-2xl"
       onClick={(event) => event.stopPropagation()}
     >
-      <div className="flex items-center justify-between border-b border-gray-200 p-5">
-        <h3 className="text-xl font-bold text-gray-900">Historial de Eventos: {clientName}</h3>
-        <button onClick={onClose} className="rounded-full p-2 text-gray-400 hover:bg-gray-200">
+      <div className="flex items-center justify-between border-b border-white/10 p-5">
+        <h3 className="text-xl font-bold text-white">Historial de Eventos: {clientName}</h3>
+        <button onClick={onClose} className="rounded-full p-2 text-slate-500 hover:bg-white/15">
           <XMarkIcon className="h-6 w-6" />
         </button>
       </div>
@@ -202,19 +202,19 @@ const HistoryModal: React.FC<{
                 <li key={event.id}>
                   <div className="relative pb-8">
                     {eventIndex !== history.length - 1 ? (
-                      <span className="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true" />
+                      <span className="absolute left-4 top-4 -ml-px h-full w-0.5 bg-white/15" aria-hidden="true" />
                     ) : null}
                     <div className="relative flex space-x-3">
                       <div>
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-                          <DocumentTextIcon className="h-5 w-5 text-gray-600" />
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15">
+                          <DocumentTextIcon className="h-5 w-5 text-slate-400" />
                         </span>
                       </div>
                       <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
                         <div>
-                          <p className="text-sm text-gray-700">{event.message}</p>
+                          <p className="text-sm text-slate-300">{event.message}</p>
                         </div>
-                        <div className="whitespace-nowrap text-right text-sm text-gray-500">
+                        <div className="whitespace-nowrap text-right text-sm text-slate-400">
                           <time dateTime={event.timestamp}>{new Date(event.timestamp).toLocaleString()}</time>
                         </div>
                       </div>
@@ -260,12 +260,12 @@ const ClientDetailModal: React.FC<{
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="w-full max-w-lg overflow-hidden rounded-2xl bg-white/5 backdrop-blur-md shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-gray-200 p-5">
-              <h3 className="text-xl font-bold text-gray-900">{client.name}</h3>
-              <button onClick={onClose} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+            <div className="flex items-center justify-between border-b border-white/10 p-5">
+              <h3 className="text-xl font-bold text-white">{client.name}</h3>
+              <button onClick={onClose} className="rounded-full p-2 text-slate-500 hover:bg-white/10 hover:text-slate-400">
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
@@ -275,44 +275,44 @@ const ClientDetailModal: React.FC<{
                 <span
                   className={`rounded-full px-3 py-1 text-sm font-semibold ${
                     client.status === 'active'
-                      ? 'bg-green-100 text-green-800'
+                      ? 'bg-emerald-500/20 text-emerald-300'
                       : client.status === 'warning'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
+                        ? 'bg-amber-500/20 text-amber-300'
+                        : 'bg-rose-500/20 text-rose-300'
                   }`}
                 >
                   {getStatusText(client.status)}
                 </span>
-                <p className="text-sm text-gray-500">Ultima vez visto: {client.last_seen || 'N/A'}</p>
+                <p className="text-sm text-slate-400">Ultima vez visto: {client.last_seen || 'N/A'}</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <h4 className="mb-2 font-semibold text-gray-600">Detalles de Red</h4>
+                <div className="rounded-lg bg-white/5 p-4">
+                  <h4 className="mb-2 font-semibold text-slate-400">Detalles de Red</h4>
                   <ul className="space-y-2">
                     <li className="flex items-center">
-                      <ComputerDesktopIcon className="mr-2 h-4 w-4 text-gray-400" />
+                      <ComputerDesktopIcon className="mr-2 h-4 w-4 text-slate-500" />
                       IP: {client.ip_address || 'No asignada'}
                     </li>
                     <li className="flex items-center">
-                      <SignalIcon className="mr-2 h-4 w-4 text-gray-400" />
+                      <SignalIcon className="mr-2 h-4 w-4 text-slate-500" />
                       Plan: {client.plan_name || 'Basico'}
                     </li>
                     <li className="flex items-center">
-                      <ClockIcon className="mr-2 h-4 w-4 text-gray-400" />
+                      <ClockIcon className="mr-2 h-4 w-4 text-slate-500" />
                       Conexion: {client.connection_type || 'DHCP'}
                     </li>
                   </ul>
                 </div>
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <h4 className="mb-2 font-semibold text-gray-600">Ubicacion</h4>
+                <div className="rounded-lg bg-white/5 p-4">
+                  <h4 className="mb-2 font-semibold text-slate-400">Ubicacion</h4>
                   <ul className="space-y-2">
                     <li className="flex items-center">
-                      <MapPinIcon className="mr-2 h-4 w-4 text-gray-400" />
+                      <MapPinIcon className="mr-2 h-4 w-4 text-slate-500" />
                       Lat: {client.lat.toFixed(5)}
                     </li>
                     <li className="flex items-center">
-                      <MapPinIcon className="mr-2 h-4 w-4 text-gray-400" />
+                      <MapPinIcon className="mr-2 h-4 w-4 text-slate-500" />
                       Lng: {client.lng.toFixed(5)}
                     </li>
                   </ul>
@@ -320,10 +320,10 @@ const ClientDetailModal: React.FC<{
               </div>
             </div>
 
-            <div className="flex items-center justify-end space-x-3 border-t border-gray-200 bg-gray-50 px-6 py-4">
+            <div className="flex items-center justify-end space-x-3 border-t border-white/10 bg-white/5 px-6 py-4">
               <button
                 onClick={() => client && onShowHistory(client)}
-                className="flex items-center space-x-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="flex items-center space-x-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/5"
               >
                 <DocumentTextIcon className="h-4 w-4" />
                 <span>Ver Historial</span>
@@ -519,17 +519,17 @@ const NetworkMap: React.FC = () => {
   const isMapBooting = mapProvider === 'google' && !isGoogleMapsReady
 
   return (
-    <div className="relative h-96 overflow-hidden rounded-lg border border-gray-200">
+    <div className="relative h-96 overflow-hidden rounded-lg border border-white/10">
       {error && (
-        <div className="absolute inset-0 z-[1001] flex items-center justify-center bg-red-100/80">
-          <p className="font-semibold text-red-700">{error}</p>
+        <div className="absolute inset-0 z-[1001] flex items-center justify-center bg-rose-500/20/80">
+          <p className="font-semibold text-rose-400">{error}</p>
         </div>
       )}
       {(isLoading || isMapBooting) && (
-        <div className="absolute inset-0 z-[1001] flex items-center justify-center bg-gray-100/50">
+        <div className="absolute inset-0 z-[1001] flex items-center justify-center bg-white/10/50">
           <div className="text-center">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-600">{isMapBooting ? 'Cargando Google Maps...' : 'Cargando mapa de red...'}</p>
+            <p className="mt-2 text-slate-400">{isMapBooting ? 'Cargando Google Maps...' : 'Cargando mapa de red...'}</p>
           </div>
         </div>
       )}
@@ -575,14 +575,14 @@ const NetworkMap: React.FC = () => {
             <Marker key={client.id} position={[client.lat, client.lng]} icon={createClientIcon(client.status)}>
               <Popup>
                 <div className="p-1">
-                  <div className="font-bold text-gray-800">{client.name}</div>
-                  <p className="text-sm text-gray-600">Estado: {getStatusText(client.status)}</p>
+                  <div className="font-bold text-slate-200">{client.name}</div>
+                  <p className="text-sm text-slate-400">Estado: {getStatusText(client.status)}</p>
                   <button
                     onClick={(event) => {
                       event.stopPropagation()
                       setSelectedClient(client)
                     }}
-                    className="mt-2 w-full rounded bg-blue-100 px-2 py-1 text-center text-xs text-blue-700 hover:bg-blue-200"
+                    className="mt-2 w-full rounded bg-blue-500/20 px-2 py-1 text-center text-xs text-blue-300 hover:bg-blue-200"
                   >
                     Ver detalles
                   </button>

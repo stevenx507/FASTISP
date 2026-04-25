@@ -30,10 +30,10 @@ interface TicketDraft {
 }
 
 const statusColors: Record<Ticket['status'], string> = {
-  open: 'bg-yellow-100 text-yellow-700',
-  in_progress: 'bg-blue-100 text-blue-700',
-  resolved: 'bg-green-100 text-green-700',
-  closed: 'bg-gray-100 text-gray-700',
+  open: 'bg-amber-500/20 text-amber-400',
+  in_progress: 'bg-blue-500/20 text-blue-300',
+  resolved: 'bg-emerald-500/20 text-emerald-400',
+  closed: 'bg-white/10 text-slate-300',
 }
 
 const emptyDraft: TicketDraft = {
@@ -142,8 +142,8 @@ const TicketsAdmin: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Tickets</h1>
-          <p className="text-gray-600">Administra SLA, estados y asignaciones.</p>
+          <h1 className="text-3xl font-bold text-white">Tickets</h1>
+          <p className="text-slate-400">Administra SLA, estados y asignaciones.</p>
         </div>
         <button onClick={load} disabled={loading} className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-60">
           {loading ? 'Actualizando...' : 'Actualizar'}
@@ -151,8 +151,8 @@ const TicketsAdmin: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow lg:col-span-2">
-          <div className="grid grid-cols-6 bg-gray-50 px-4 py-3 text-xs font-semibold text-gray-600">
+        <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow lg:col-span-2">
+          <div className="grid grid-cols-6 bg-white/5 px-4 py-3 text-xs font-semibold text-slate-400">
             <span>ID</span>
             <span>Asunto</span>
             <span>Prioridad</span>
@@ -160,32 +160,32 @@ const TicketsAdmin: React.FC = () => {
             <span>SLA</span>
             <span>Asignado</span>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-white/5">
             {tickets.map((ticket) => (
               <button key={ticket.id} onClick={() => setSelectedId(ticket.id)} className="w-full text-left">
-                <motion.div className={`grid grid-cols-6 px-4 py-3 ${selectedId === ticket.id ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
-                  <span className="text-sm font-mono text-gray-900">{ticket.id}</span>
-                  <span className="truncate text-sm text-gray-900">{ticket.subject}</span>
-                  <span className="text-xs font-semibold text-gray-700">{ticket.priority}</span>
+                <motion.div className={`grid grid-cols-6 px-4 py-3 ${selectedId === ticket.id ? 'bg-blue-500/10' : 'hover:bg-white/5'}`}>
+                  <span className="text-sm font-mono text-white">{ticket.id}</span>
+                  <span className="truncate text-sm text-white">{ticket.subject}</span>
+                  <span className="text-xs font-semibold text-slate-300">{ticket.priority}</span>
                   <span className={`rounded-full px-2 py-1 text-xs ${statusColors[ticket.status]}`}>{ticket.status}</span>
-                  <span className="text-xs text-gray-600">{ticket.sla_due_at ? ticket.sla_due_at.split('T')[0] : '-'}</span>
-                  <span className="text-sm text-gray-700">{ticket.assigned_to || '-'}</span>
+                  <span className="text-xs text-slate-400">{ticket.sla_due_at ? ticket.sla_due_at.split('T')[0] : '-'}</span>
+                  <span className="text-sm text-slate-300">{ticket.assigned_to || '-'}</span>
                 </motion.div>
               </button>
             ))}
-            {!tickets.length && <div className="px-4 py-6 text-center text-gray-500">Sin tickets</div>}
+            {!tickets.length && <div className="px-4 py-6 text-center text-slate-400">Sin tickets</div>}
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow">
+        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow">
           {selected ? (
             <>
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">Ticket #{selected.id}</h3>
-              <p className="mb-2 text-sm text-gray-700">{selected.subject}</p>
-              <p className="mb-3 whitespace-pre-wrap text-sm text-gray-600">{selected.description}</p>
+              <h3 className="mb-2 text-lg font-semibold text-white">Ticket #{selected.id}</h3>
+              <p className="mb-2 text-sm text-slate-300">{selected.subject}</p>
+              <p className="mb-3 whitespace-pre-wrap text-sm text-slate-400">{selected.description}</p>
 
               <div className="mb-4 space-y-2">
-                <label className="text-xs text-gray-600">Estado</label>
+                <label className="text-xs text-slate-400">Estado</label>
                 <select
                   className="w-full rounded-lg border px-3 py-2"
                   value={draft.status}
@@ -196,7 +196,7 @@ const TicketsAdmin: React.FC = () => {
                   <option value="resolved">resolved</option>
                   <option value="closed">closed</option>
                 </select>
-                <label className="text-xs text-gray-600">Prioridad</label>
+                <label className="text-xs text-slate-400">Prioridad</label>
                 <select
                   className="w-full rounded-lg border px-3 py-2"
                   value={draft.priority}
@@ -207,14 +207,14 @@ const TicketsAdmin: React.FC = () => {
                   <option value="high">high</option>
                   <option value="urgent">urgent</option>
                 </select>
-                <label className="text-xs text-gray-600">Asignado a</label>
+                <label className="text-xs text-slate-400">Asignado a</label>
                 <input
                   className="w-full rounded-lg border px-3 py-2"
                   placeholder="tecnico@isp.com"
                   value={draft.assigned_to}
                   onChange={(e) => setDraft((prev) => ({ ...prev, assigned_to: e.target.value }))}
                 />
-                <label className="text-xs text-gray-600">SLA (ISO)</label>
+                <label className="text-xs text-slate-400">SLA (ISO)</label>
                 <input
                   className="w-full rounded-lg border px-3 py-2"
                   placeholder="2026-02-22T12:00:00"
@@ -227,17 +227,17 @@ const TicketsAdmin: React.FC = () => {
               </div>
 
               <div className="border-t pt-3">
-                <h4 className="mb-2 text-sm font-semibold text-gray-900">Comentarios</h4>
+                <h4 className="mb-2 text-sm font-semibold text-white">Comentarios</h4>
                 <div className="mb-2 max-h-40 space-y-2 overflow-auto">
                   {(comments[selected.id] || []).map((comment) => (
-                    <div key={comment.id} className="rounded-lg border px-3 py-2 text-sm text-gray-700">
-                      <div className="mb-1 text-xs text-gray-500">
+                    <div key={comment.id} className="rounded-lg border px-3 py-2 text-sm text-slate-300">
+                      <div className="mb-1 text-xs text-slate-400">
                         {comment.author || 'usuario'} - {comment.created_at?.replace('T', ' ').slice(0, 16)}
                       </div>
                       <div>{comment.comment}</div>
                     </div>
                   ))}
-                  {!comments[selected.id]?.length && <div className="text-xs text-gray-500">Sin comentarios</div>}
+                  {!comments[selected.id]?.length && <div className="text-xs text-slate-400">Sin comentarios</div>}
                 </div>
                 <div className="flex gap-2">
                   <input
@@ -253,7 +253,7 @@ const TicketsAdmin: React.FC = () => {
               </div>
             </>
           ) : (
-            <div className="text-sm text-gray-500">Selecciona un ticket para ver detalles.</div>
+            <div className="text-sm text-slate-400">Selecciona un ticket para ver detalles.</div>
           )}
         </div>
       </div>

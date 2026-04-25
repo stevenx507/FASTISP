@@ -595,12 +595,12 @@ const InteractiveDocs: React.FC<InteractiveDocsProps> = ({ onNavigateToModule })
               </p>
             </div>
           </div>
-          <div className="min-w-[220px] rounded-lg border border-indigo-300 bg-white px-4 py-3">
+          <div className="min-w-[220px] rounded-lg border border-indigo-300 bg-white/5 backdrop-blur-md px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Progreso total</p>
             <p className="mt-1 text-2xl font-bold text-indigo-900">
               {totalProgress.completed}/{totalProgress.total}
             </p>
-            <div className="mt-2 h-2 rounded-full bg-indigo-100">
+            <div className="mt-2 h-2 rounded-full bg-indigo-500/20">
               <div className="h-2 rounded-full bg-indigo-600" style={{ width: `${totalProgress.percent}%` }} />
             </div>
           </div>
@@ -615,11 +615,11 @@ const InteractiveDocs: React.FC<InteractiveDocsProps> = ({ onNavigateToModule })
               key={section.id}
               onClick={() => setActiveSection(section.id)}
               className={`rounded-xl border p-4 text-left transition ${
-                isActive ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white hover:border-gray-300'
+                isActive ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 bg-white/5 backdrop-blur-md hover:border-white/20'
               }`}
             >
-              <p className={`text-sm font-semibold ${isActive ? 'text-indigo-800' : 'text-gray-900'}`}>{section.label}</p>
-              <p className={`mt-1 text-xs ${isActive ? 'text-indigo-700' : 'text-gray-600'}`}>{section.description}</p>
+              <p className={`text-sm font-semibold ${isActive ? 'text-indigo-800' : 'text-white'}`}>{section.label}</p>
+              <p className={`mt-1 text-xs ${isActive ? 'text-indigo-700' : 'text-slate-400'}`}>{section.description}</p>
             </button>
           )
         })}
@@ -643,7 +643,7 @@ const InteractiveDocs: React.FC<InteractiveDocsProps> = ({ onNavigateToModule })
           ) : (
             <button
               onClick={stopGuidedMode}
-              className="rounded-lg border border-emerald-400 bg-white px-3 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-100"
+              className="rounded-lg border border-emerald-400 bg-white/5 backdrop-blur-md px-3 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-100"
             >
               Detener guia
             </button>
@@ -651,10 +651,10 @@ const InteractiveDocs: React.FC<InteractiveDocsProps> = ({ onNavigateToModule })
         </div>
 
         {guidedMode && selectedStep && (
-          <div className="mt-3 rounded-lg border border-emerald-300 bg-white p-3">
+          <div className="mt-3 rounded-lg border border-emerald-300 bg-white/5 backdrop-blur-md p-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Paso actual</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">{selectedStep.title}</p>
-            <p className="mt-1 text-xs text-gray-700">{selectedStep.summary}</p>
+            <p className="mt-1 text-sm font-semibold text-white">{selectedStep.title}</p>
+            <p className="mt-1 text-xs text-slate-300">{selectedStep.summary}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {selectedStep.moduleId && (
                 <button
@@ -673,7 +673,7 @@ const InteractiveDocs: React.FC<InteractiveDocsProps> = ({ onNavigateToModule })
               </button>
               <button
                 onClick={goToNextGuidedStep}
-                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5"
               >
                 Saltar al siguiente paso
               </button>
@@ -682,23 +682,23 @@ const InteractiveDocs: React.FC<InteractiveDocsProps> = ({ onNavigateToModule })
         )}
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4">
+      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[240px]">
-            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Buscar pasos, funciones o checklist..."
-              className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm text-gray-900"
+              className="w-full rounded-lg border border-white/20 py-2 pl-9 pr-3 text-sm text-white"
             />
           </div>
-          <div className="rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-700">
+          <div className="rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300">
             Avance de seccion: <strong>{sectionProgress.completed}</strong>/{sectionProgress.total}
           </div>
           <button
             onClick={resetCurrentSection}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5"
           >
             <ClipboardDocumentCheckIcon className="h-4 w-4" />
             Reiniciar esta seccion
@@ -707,10 +707,10 @@ const InteractiveDocs: React.FC<InteractiveDocsProps> = ({ onNavigateToModule })
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="rounded-xl border border-gray-200 bg-white xl:col-span-1">
-          <div className="border-b border-gray-100 px-4 py-3">
-            <p className="text-sm font-semibold text-gray-900">Pasos guiados</p>
-            <p className="text-xs text-gray-500">Selecciona un paso para abrir el detalle operativo.</p>
+        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md xl:col-span-1">
+          <div className="border-b border-white/5 px-4 py-3">
+            <p className="text-sm font-semibold text-white">Pasos guiados</p>
+            <p className="text-xs text-slate-400">Selecciona un paso para abrir el detalle operativo.</p>
           </div>
           <div className="max-h-[560px] space-y-2 overflow-y-auto p-3">
             {filteredSteps.map((step) => {
@@ -722,43 +722,43 @@ const InteractiveDocs: React.FC<InteractiveDocsProps> = ({ onNavigateToModule })
                   key={step.id}
                   onClick={() => setSelectedStepId(step.id)}
                   className={`w-full rounded-lg border p-3 text-left transition ${
-                    isActive ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    isActive ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 hover:border-white/20 hover:bg-white/5'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className={`text-sm font-semibold ${isActive ? 'text-indigo-900' : 'text-gray-900'}`}>{step.title}</p>
+                    <p className={`text-sm font-semibold ${isActive ? 'text-indigo-900' : 'text-white'}`}>{step.title}</p>
                     {done && <CheckCircleIcon className="h-5 w-5 text-emerald-600" />}
                   </div>
-                  <p className={`mt-1 text-xs ${isActive ? 'text-indigo-800' : 'text-gray-600'}`}>{step.summary}</p>
-                  <p className="mt-2 text-[11px] text-gray-500">
+                  <p className={`mt-1 text-xs ${isActive ? 'text-indigo-800' : 'text-slate-400'}`}>{step.summary}</p>
+                  <p className="mt-2 text-[11px] text-slate-400">
                     Checklist: {checks.completedChecks}/{checks.totalChecks}
                   </p>
                 </button>
               )
             })}
             {!filteredSteps.length && (
-              <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
+              <div className="rounded-lg border border-dashed border-white/20 p-6 text-center text-sm text-slate-400">
                 No hay resultados para esta busqueda.
               </div>
             )}
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-4 xl:col-span-2">
+        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 xl:col-span-2">
           {selectedStep ? (
             <div className="space-y-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">{selectedStep.title}</h3>
-                  <p className="mt-1 text-sm text-gray-700">{selectedStep.summary}</p>
-                  <p className="mt-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+                  <h3 className="text-xl font-bold text-white">{selectedStep.title}</h3>
+                  <p className="mt-1 text-sm text-slate-300">{selectedStep.summary}</p>
+                  <p className="mt-2 rounded-lg border border-blue-100 bg-blue-500/10 px-3 py-2 text-xs text-blue-200">
                     Por que importa: {selectedStep.why}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={copyStepGuide}
-                    className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                    className="rounded-lg border border-white/20 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5"
                   >
                     Copiar checklist
                   </button>
@@ -774,15 +774,15 @@ const InteractiveDocs: React.FC<InteractiveDocsProps> = ({ onNavigateToModule })
                 </div>
               </div>
 
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-700">Checklist interactivo</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-300">Checklist interactivo</p>
                   <button
                     onClick={() => toggleStepDone(selectedStep.id)}
                     className={`rounded-lg px-3 py-1 text-xs font-semibold ${
                       progress[selectedStep.id]?.done
                         ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        : 'bg-white/15 text-slate-300 hover:bg-gray-300'
                     }`}
                   >
                     {progress[selectedStep.id]?.done ? 'Marcar pendiente' : 'Marcar paso completo'}
@@ -792,13 +792,13 @@ const InteractiveDocs: React.FC<InteractiveDocsProps> = ({ onNavigateToModule })
                   {selectedStep.checklist.map((item) => (
                     <label
                       key={item.id}
-                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800"
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-md px-3 py-2 text-sm text-slate-200"
                     >
                       <input
                         type="checkbox"
                         checked={Boolean(progress[selectedStep.id]?.checks?.[item.id])}
                         onChange={() => toggleChecklistItem(selectedStep.id, item.id)}
-                        className="rounded border-gray-300"
+                        className="rounded border-white/20"
                       />
                       <span>{item.label}</span>
                     </label>
@@ -810,52 +810,52 @@ const InteractiveDocs: React.FC<InteractiveDocsProps> = ({ onNavigateToModule })
                 <button
                   onClick={() => prevStep && setSelectedStepId(prevStep.id)}
                   disabled={!prevStep}
-                  className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg border border-white/20 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Paso anterior
                 </button>
                 <button
                   onClick={() => nextStep && setSelectedStepId(nextStep.id)}
                   disabled={!nextStep}
-                  className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg border border-white/20 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Siguiente paso
                 </button>
               </div>
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+            <div className="rounded-lg border border-dashed border-white/20 p-8 text-center text-sm text-slate-400">
               No hay pasos disponibles para esta vista.
             </div>
           )}
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4">
+      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4">
         <div className="mb-3 flex items-center gap-2">
-          <ClipboardDocumentCheckIcon className="h-5 w-5 text-gray-700" />
-          <h3 className="text-lg font-semibold text-gray-900">Para que sirve cada funcion</h3>
+          <ClipboardDocumentCheckIcon className="h-5 w-5 text-slate-300" />
+          <h3 className="text-lg font-semibold text-white">Para que sirve cada funcion</h3>
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           {filteredReferences.map((item) => (
-            <div key={item.id} className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+            <div key={item.id} className="rounded-lg border border-white/10 bg-white/5 p-3">
               <div className="flex items-start justify-between gap-2">
                 <item.icon className="h-6 w-6 text-indigo-700" />
                 <button
                   onClick={() => openModule(item.moduleId)}
-                  className="inline-flex items-center gap-1 rounded bg-white px-2 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-100"
+                  className="inline-flex items-center gap-1 rounded bg-white/5 backdrop-blur-md px-2 py-1 text-[11px] font-semibold text-slate-300 hover:bg-white/10"
                 >
                   Abrir
                   <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <p className="mt-2 text-sm font-semibold text-gray-900">{item.name}</p>
-              <p className="mt-1 text-xs text-gray-700">{item.summary}</p>
-              <p className="mt-2 text-[11px] text-gray-500">Uso recomendado: {item.useCase}</p>
+              <p className="mt-2 text-sm font-semibold text-white">{item.name}</p>
+              <p className="mt-1 text-xs text-slate-300">{item.summary}</p>
+              <p className="mt-2 text-[11px] text-slate-400">Uso recomendado: {item.useCase}</p>
             </div>
           ))}
           {!filteredReferences.length && (
-            <div className="md:col-span-2 xl:col-span-4 rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
+            <div className="md:col-span-2 xl:col-span-4 rounded-lg border border-dashed border-white/20 p-6 text-center text-sm text-slate-400">
               No hay funciones para este filtro.
             </div>
           )}

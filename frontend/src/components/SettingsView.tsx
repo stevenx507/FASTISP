@@ -260,7 +260,7 @@ const SettingsView: React.FC = () => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto max-w-4xl">
-      <div className="mb-6 flex gap-4 border-b border-gray-200">
+      <div className="mb-6 flex gap-4 border-b border-white/10">
         {tabs.map((tab) => {
           const Icon = tab.icon
           const isActive = activeTab === tab.id
@@ -269,7 +269,7 @@ const SettingsView: React.FC = () => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 border-b-2 px-4 py-3 font-medium transition ${
-                isActive ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-600 hover:text-gray-900'
+                isActive ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
               <Icon className="h-5 w-5" />
@@ -283,17 +283,17 @@ const SettingsView: React.FC = () => {
         key={activeTab}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-lg bg-white p-6 shadow"
+        className="rounded-lg bg-white/5 backdrop-blur-md p-6 shadow"
       >
         {activeTab === 'preferences' && (
           <div className="space-y-6">
             <div>
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">Preferencias del sistema</h3>
-              <p className="text-sm text-gray-600">Estos ajustes se guardan en configuracion administrativa real.</p>
+              <h3 className="mb-2 text-lg font-semibold text-white">Preferencias del sistema</h3>
+              <p className="text-sm text-slate-400">Estos ajustes se guardan en configuracion administrativa real.</p>
             </div>
 
             {loadingPreferences ? (
-              <p className="text-sm text-gray-500">Cargando configuracion...</p>
+              <p className="text-sm text-slate-400">Cargando configuracion...</p>
             ) : (
               <div className="space-y-3">
                 {[
@@ -302,7 +302,7 @@ const SettingsView: React.FC = () => {
                   { key: 'portal_maintenance_mode', label: 'Portal en mantenimiento', description: 'Muestra estado de mantenimiento al cliente.' },
                   { key: 'auto_suspend_overdue', label: 'Suspension automatica por mora', description: 'Aplica politicas de corte por deuda vencida.' },
                 ].map((item) => (
-                  <label key={item.key} className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3">
+                  <label key={item.key} className="flex cursor-pointer items-start gap-3 rounded-lg border border-white/10 p-3">
                     <input
                       type="checkbox"
                       checked={Boolean(preferences[item.key as keyof PreferencesSettings])}
@@ -315,8 +315,8 @@ const SettingsView: React.FC = () => {
                       className="mt-0.5"
                     />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{item.label}</p>
-                      <p className="text-xs text-gray-600">{item.description}</p>
+                      <p className="text-sm font-medium text-white">{item.label}</p>
+                      <p className="text-xs text-slate-400">{item.description}</p>
                     </div>
                   </label>
                 ))}
@@ -338,27 +338,27 @@ const SettingsView: React.FC = () => {
         {activeTab === 'security' && (
           <div className="space-y-8">
             <section>
-              <h3 className="mb-4 text-lg font-semibold text-gray-900">Cambiar contrasena</h3>
+              <h3 className="mb-4 text-lg font-semibold text-white">Cambiar contrasena</h3>
               <div className="grid max-w-xl grid-cols-1 gap-3">
                 <input
                   type="password"
                   value={currentPassword}
                   onChange={(event) => setCurrentPassword(event.target.value)}
-                  className="rounded-lg border border-gray-300 px-4 py-2"
+                  className="rounded-lg border border-white/20 px-4 py-2"
                   placeholder="Contrasena actual"
                 />
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(event) => setNewPassword(event.target.value)}
-                  className="rounded-lg border border-gray-300 px-4 py-2"
+                  className="rounded-lg border border-white/20 px-4 py-2"
                   placeholder="Nueva contrasena"
                 />
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
-                  className="rounded-lg border border-gray-300 px-4 py-2"
+                  className="rounded-lg border border-white/20 px-4 py-2"
                   placeholder="Confirmar nueva contrasena"
                 />
                 <button
@@ -371,9 +371,9 @@ const SettingsView: React.FC = () => {
               </div>
             </section>
 
-            <section className="border-t border-gray-200 pt-6">
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">Autenticacion MFA</h3>
-              <p className="mb-4 text-sm text-gray-600">
+            <section className="border-t border-white/10 pt-6">
+              <h3 className="mb-2 text-lg font-semibold text-white">Autenticacion MFA</h3>
+              <p className="mb-4 text-sm text-slate-400">
                 Estado actual: <span className={mfaEnabled ? 'font-semibold text-emerald-700' : 'font-semibold text-amber-700'}>{mfaEnabled ? 'activado' : 'desactivado'}</span>
               </p>
 
@@ -381,17 +381,17 @@ const SettingsView: React.FC = () => {
                 <button
                   onClick={prepareMfa}
                   disabled={loadingMfaSetup}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  className="rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-50"
                 >
                   {loadingMfaSetup ? 'Preparando...' : 'Preparar MFA'}
                 </button>
               )}
 
               {!mfaEnabled && mfaSecret && (
-                <div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                  <p className="text-sm text-blue-900">Registra este secret o URI en tu app autenticadora y confirma con codigo OTP.</p>
-                  <input readOnly value={mfaSecret} className="w-full rounded border border-blue-200 bg-white px-3 py-2 text-xs" />
-                  <input readOnly value={mfaUri} className="w-full rounded border border-blue-200 bg-white px-3 py-2 text-xs" />
+                <div className="space-y-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
+                  <p className="text-sm text-blue-200">Registra este secret o URI en tu app autenticadora y confirma con codigo OTP.</p>
+                  <input readOnly value={mfaSecret} className="w-full rounded border border-blue-500/30 bg-white/5 backdrop-blur-md px-3 py-2 text-xs" />
+                  <input readOnly value={mfaUri} className="w-full rounded border border-blue-500/30 bg-white/5 backdrop-blur-md px-3 py-2 text-xs" />
                   <div className="flex flex-wrap items-center gap-2">
                     <input
                       value={mfaCode}
@@ -437,26 +437,26 @@ const SettingsView: React.FC = () => {
         {activeTab === 'account' && (
           <div className="space-y-6">
             <div>
-              <h3 className="mb-4 text-lg font-semibold text-gray-900">Informacion de cuenta</h3>
+              <h3 className="mb-4 text-lg font-semibold text-white">Informacion de cuenta</h3>
               <div className="grid max-w-xl grid-cols-1 gap-3">
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-slate-300">
                   Nombre
                   <input
                     value={profileName}
                     onChange={(event) => setProfileName(event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2"
+                    className="mt-1 w-full rounded-lg border border-white/20 px-4 py-2"
                   />
                 </label>
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-slate-300">
                   Email
                   <input
                     type="email"
                     value={profileEmail}
                     onChange={(event) => setProfileEmail(event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2"
+                    className="mt-1 w-full rounded-lg border border-white/20 px-4 py-2"
                   />
                 </label>
-                <p className="text-sm text-gray-600">Rol: {roleLabel}</p>
+                <p className="text-sm text-slate-400">Rol: {roleLabel}</p>
                 <button
                   onClick={saveProfile}
                   disabled={!canSaveProfile || savingProfile}
@@ -467,8 +467,8 @@ const SettingsView: React.FC = () => {
               </div>
             </div>
 
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="mb-4 font-semibold text-gray-900">Sesion</h4>
+            <div className="border-t border-white/10 pt-4">
+              <h4 className="mb-4 font-semibold text-white">Sesion</h4>
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 rounded-lg bg-red-600 px-6 py-2 text-white hover:bg-red-700"

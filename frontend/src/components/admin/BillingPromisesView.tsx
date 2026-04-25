@@ -89,13 +89,13 @@ const BillingPromisesView: React.FC = () => {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Promesas de Pago</h2>
-          <p className="text-sm text-gray-600">Control de compromisos para evitar cortes y mejorar cobranza.</p>
+          <h2 className="text-2xl font-bold text-white">Promesas de Pago</h2>
+          <p className="text-sm text-slate-400">Control de compromisos para evitar cortes y mejorar cobranza.</p>
         </div>
         <button
           onClick={load}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60"
         >
           <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Actualizando...' : 'Actualizar'}
@@ -111,40 +111,40 @@ const BillingPromisesView: React.FC = () => {
           <p className="text-xs font-semibold uppercase text-emerald-700">Cumplidas</p>
           <p className="mt-2 text-2xl font-bold text-emerald-900">{summary.kept}</p>
         </div>
-        <div className="rounded-xl border border-red-100 bg-red-50 p-4">
-          <p className="text-xs font-semibold uppercase text-red-700">Incumplidas</p>
-          <p className="mt-2 text-2xl font-bold text-red-900">{summary.broken}</p>
+        <div className="rounded-xl border border-red-100 bg-rose-500/10 p-4">
+          <p className="text-xs font-semibold uppercase text-rose-400">Incumplidas</p>
+          <p className="mt-2 text-2xl font-bold text-rose-300">{summary.broken}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <form onSubmit={createPromise} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-3 font-semibold text-gray-900">Nueva promesa</h3>
+        <form onSubmit={createPromise} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
+          <h3 className="mb-3 font-semibold text-white">Nueva promesa</h3>
           <div className="space-y-3">
             <input
               value={subscriptionId}
               onChange={(e) => setSubscriptionId(e.target.value)}
               placeholder="Subscription ID"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
             <input
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="Monto prometido"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
             <input
               type="date"
               value={promiseDate}
               onChange={(e) => setPromiseDate(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               placeholder="Notas"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
             <button
               type="submit"
@@ -156,13 +156,13 @@ const BillingPromisesView: React.FC = () => {
           </div>
         </form>
 
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm xl:col-span-2">
-          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-            <h3 className="font-semibold text-gray-900">Listado</h3>
+        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm xl:col-span-2">
+          <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
+            <h3 className="font-semibold text-white">Listado</h3>
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as typeof filter)}
-              className="rounded-lg border border-gray-300 px-2 py-1 text-xs"
+              className="rounded-lg border border-white/20 px-2 py-1 text-xs"
             >
               <option value="all">Todos</option>
               <option value="pending">pending</option>
@@ -172,8 +172,8 @@ const BillingPromisesView: React.FC = () => {
             </select>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100 text-sm">
-              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+            <table className="min-w-full divide-y divide-white/5 text-sm">
+              <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
                 <tr>
                   <th className="px-4 py-3 text-left">ID</th>
                   <th className="px-4 py-3 text-left">Subscription</th>
@@ -182,18 +182,18 @@ const BillingPromisesView: React.FC = () => {
                   <th className="px-4 py-3 text-left">Estado</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/5">
                 {items.map((item) => (
                   <tr key={item.id}>
-                    <td className="px-4 py-3 text-xs text-gray-600">#{item.id}</td>
-                    <td className="px-4 py-3 text-gray-800">#{item.subscription_id}</td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900">${item.promised_amount.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-gray-700">{item.promised_date}</td>
+                    <td className="px-4 py-3 text-xs text-slate-400">#{item.id}</td>
+                    <td className="px-4 py-3 text-slate-200">#{item.subscription_id}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-white">${item.promised_amount.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-slate-300">{item.promised_date}</td>
                     <td className="px-4 py-3">
                       <select
                         value={item.status}
                         onChange={(e) => updateStatus(item.id, e.target.value as BillingPromiseItem['status'])}
-                        className="rounded-md border border-gray-300 px-2 py-1 text-xs"
+                        className="rounded-md border border-white/20 px-2 py-1 text-xs"
                       >
                         <option value="pending">pending</option>
                         <option value="kept">kept</option>
@@ -205,7 +205,7 @@ const BillingPromisesView: React.FC = () => {
                 ))}
                 {!items.length && (
                   <tr>
-                    <td className="px-4 py-8 text-center text-sm text-gray-500" colSpan={5}>
+                    <td className="px-4 py-8 text-center text-sm text-slate-400" colSpan={5}>
                       Sin promesas registradas.
                     </td>
                   </tr>

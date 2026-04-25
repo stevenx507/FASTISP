@@ -618,30 +618,27 @@ class OLTScriptService:
         if not device:
             return {"success": False, "error": "OLT not found"}
 
-        seed_key = f"{device_id}:{datetime.utcnow().strftime('%Y-%m-%d-%H')}"
-        seed_int = int(hashlib.sha256(seed_key.encode("utf-8")).hexdigest()[:8], 16)
-        rng = random.Random(seed_int)
-
-        pon_total = rng.randint(8, 16)
-        pon_alert = rng.randint(0, 3)
-        onu_online = rng.randint(320, 620)
-        onu_offline = rng.randint(10, 80)
-        cpu_load = rng.randint(18, 74)
-        mem_use = rng.randint(32, 81)
-        temp = rng.randint(35, 62)
+        # Realizamos un test de conectividad rápido para saber si la OLT está viva
+        conn_test = self.test_connection(device_id, timeout_seconds=2.0)
+        
+        # En el futuro, aquí se puede integrar una llamada a snmp_service.poll_scalar_metrics(device['snmp'])
+        # para extraer carga real. Por ahora, evitamos devolver datos falsos.
+        latency = conn_test.get('latency_ms') if conn_test.get('reachable') else None
 
         return {
             "success": True,
             "snapshot": {
                 "device_id": device_id,
                 "generated_at": datetime.utcnow().isoformat() + "Z",
-                "pon_total": pon_total,
-                "pon_alert": pon_alert,
-                "onu_online": onu_online,
-                "onu_offline": onu_offline,
-                "cpu_load": cpu_load,
-                "memory_usage": mem_use,
-                "temperature_c": temp,
+                "pon_total": None,
+                "pon_alert": None,
+                "onu_online": None,
+                "onu_offline": None,
+                "cpu_load": None,
+                "memory_usage": None,
+                "temperature_c": None,
+                "latency_ms": latency,
+                "reachable": conn_test.get('reachable', False)
             },
         }
 

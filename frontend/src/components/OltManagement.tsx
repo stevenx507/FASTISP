@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { ApiError, apiClient } from '../lib/apiClient'
 
@@ -199,6 +199,8 @@ interface OltSnapshotData {
   cpu_load?: number
   memory_usage?: number
   temperature_c?: number
+  latency_ms?: number
+  reachable?: boolean
 }
 
 const copyText = async (text: string): Promise<boolean> => {
@@ -1975,7 +1977,10 @@ const OltManagement: React.FC = () => {
                     </div>
                   </div>
                   <p className="mt-3 text-xs text-slate-400">
-                    generado {formatIsoDate(snapshotData.generated_at)} | temperatura {snapshotData.temperature_c ?? '-'} C
+                    generado {formatIsoDate(snapshotData.generated_at)}
+                    {snapshotData.latency_ms !== undefined && ` | latencia ${snapshotData.latency_ms} ms`}
+                    {snapshotData.reachable !== undefined && ` | TCP Reachable: ${snapshotData.reachable ? 'Si' : 'No'}`}
+                    {snapshotData.temperature_c !== undefined && ` | temperatura ${snapshotData.temperature_c} C`}
                   </p>
                 </>
               ) : (

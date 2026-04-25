@@ -42,10 +42,10 @@ const defaultForm: BatchForm = {
 
 const statusColor: Record<VoucherStatus, string> = {
   generated: 'bg-slate-100 text-slate-700',
-  sold: 'bg-blue-100 text-blue-700',
+  sold: 'bg-blue-500/20 text-blue-300',
   used: 'bg-emerald-100 text-emerald-700',
   expired: 'bg-amber-100 text-amber-700',
-  cancelled: 'bg-red-100 text-red-700',
+  cancelled: 'bg-rose-500/20 text-rose-400',
 }
 
 const formatDateTime = (value?: string | null) => {
@@ -151,13 +151,13 @@ const HotspotCards: React.FC = () => {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Fichas Hotspot</h2>
-          <p className="text-sm text-gray-600">Generacion masiva de vouchers, ciclo de vida y revenue estimado.</p>
+          <h2 className="text-2xl font-bold text-white">Fichas Hotspot</h2>
+          <p className="text-sm text-slate-400">Generacion masiva de vouchers, ciclo de vida y revenue estimado.</p>
         </div>
         <button
           onClick={load}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60"
         >
           <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Actualizando...' : 'Actualizar'}
@@ -169,36 +169,36 @@ const HotspotCards: React.FC = () => {
           <p className="text-xs font-semibold uppercase text-slate-700">Generated</p>
           <p className="mt-2 text-2xl font-bold text-slate-900">{summary.generated}</p>
         </div>
-        <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-          <p className="text-xs font-semibold uppercase text-blue-700">Sold</p>
-          <p className="mt-2 text-2xl font-bold text-blue-900">{summary.sold}</p>
+        <div className="rounded-xl border border-blue-100 bg-blue-500/10 p-4">
+          <p className="text-xs font-semibold uppercase text-blue-300">Sold</p>
+          <p className="mt-2 text-2xl font-bold text-blue-200">{summary.sold}</p>
         </div>
         <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
           <p className="text-xs font-semibold uppercase text-emerald-700">Used</p>
           <p className="mt-2 text-2xl font-bold text-emerald-900">{summary.used}</p>
         </div>
-        <div className="rounded-xl border border-violet-100 bg-violet-50 p-4">
+        <div className="rounded-xl border border-violet-100 bg-violet-500/10 p-4">
           <p className="text-xs font-semibold uppercase text-violet-700">Revenue</p>
           <p className="mt-2 text-2xl font-bold text-violet-900">${summary.revenue.toFixed(2)}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <form onSubmit={createBatch} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-3 font-semibold text-gray-900">Generar lote</h3>
+        <form onSubmit={createBatch} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
+          <h3 className="mb-3 font-semibold text-white">Generar lote</h3>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <input
                 value={form.quantity}
                 onChange={(e) => setForm((prev) => ({ ...prev, quantity: e.target.value }))}
                 placeholder="Cantidad"
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               />
               <input
                 value={form.profile}
                 onChange={(e) => setForm((prev) => ({ ...prev, profile: e.target.value }))}
                 placeholder="Perfil"
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -206,13 +206,13 @@ const HotspotCards: React.FC = () => {
                 value={form.duration_minutes}
                 onChange={(e) => setForm((prev) => ({ ...prev, duration_minutes: e.target.value }))}
                 placeholder="Minutos"
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               />
               <input
                 value={form.data_limit_mb}
                 onChange={(e) => setForm((prev) => ({ ...prev, data_limit_mb: e.target.value }))}
                 placeholder="MB limite"
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -220,13 +220,13 @@ const HotspotCards: React.FC = () => {
                 value={form.price}
                 onChange={(e) => setForm((prev) => ({ ...prev, price: e.target.value }))}
                 placeholder="Precio"
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               />
               <input
                 value={form.expires_days}
                 onChange={(e) => setForm((prev) => ({ ...prev, expires_days: e.target.value }))}
                 placeholder="Expira dias"
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               />
             </div>
             <button
@@ -239,13 +239,13 @@ const HotspotCards: React.FC = () => {
           </div>
         </form>
 
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm xl:col-span-2">
-          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-            <h3 className="font-semibold text-gray-900">Inventario de vouchers</h3>
+        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm xl:col-span-2">
+          <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
+            <h3 className="font-semibold text-white">Inventario de vouchers</h3>
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="rounded-lg border border-gray-300 px-2 py-1 text-xs"
+              className="rounded-lg border border-white/20 px-2 py-1 text-xs"
             >
               <option value="all">Todos</option>
               <option value="generated">generated</option>
@@ -256,8 +256,8 @@ const HotspotCards: React.FC = () => {
             </select>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100 text-sm">
-              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+            <table className="min-w-full divide-y divide-white/5 text-sm">
+              <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
                 <tr>
                   <th className="px-4 py-3 text-left">Codigo</th>
                   <th className="px-4 py-3 text-left">Perfil</th>
@@ -267,34 +267,34 @@ const HotspotCards: React.FC = () => {
                   <th className="px-4 py-3 text-left">Asignado</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/5">
                 {filteredItems.map((item) => (
                   <tr key={item.id}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs text-gray-700">{item.code}</span>
+                        <span className="font-mono text-xs text-slate-300">{item.code}</span>
                         <button
                           onClick={() => copyCode(item.code)}
-                          className="rounded-md border border-gray-200 p-1 text-gray-500 hover:bg-gray-100"
+                          className="rounded-md border border-white/10 p-1 text-slate-400 hover:bg-white/10"
                         >
                           <DocumentDuplicateIcon className="h-3 w-3" />
                         </button>
                       </div>
-                      <p className="mt-1 text-[11px] text-gray-500">
+                      <p className="mt-1 text-[11px] text-slate-400">
                         creado: {item.created_by_name || 'system'} - {formatDateTime(item.created_at)}
                       </p>
-                      <p className="text-[11px] text-gray-500">
+                      <p className="text-[11px] text-slate-400">
                         actualizado: {item.updated_by_name || 'system'} - {formatDateTime(item.updated_at)}
                       </p>
                     </td>
-                    <td className="px-4 py-3 text-gray-700">{item.profile}</td>
-                    <td className="px-4 py-3 text-right text-gray-700">{item.duration_minutes}m</td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900">${item.price.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-slate-300">{item.profile}</td>
+                    <td className="px-4 py-3 text-right text-slate-300">{item.duration_minutes}m</td>
+                    <td className="px-4 py-3 text-right font-semibold text-white">${item.price.toFixed(2)}</td>
                     <td className="px-4 py-3">
                       <select
                         value={item.status}
                         onChange={(e) => updateVoucher(item.id, { status: e.target.value as VoucherStatus })}
-                        className={`rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold ${statusColor[item.status]}`}
+                        className={`rounded-md border border-white/20 px-2 py-1 text-xs font-semibold ${statusColor[item.status]}`}
                       >
                         <option value="generated">generated</option>
                         <option value="sold">sold</option>
@@ -314,16 +314,16 @@ const HotspotCards: React.FC = () => {
                           )
                         }
                         onBlur={() => updateVoucher(item.id, { assigned_to: item.assigned_to || undefined })}
-                        className="w-36 rounded-md border border-gray-300 px-2 py-1 text-xs"
+                        className="w-36 rounded-md border border-white/20 px-2 py-1 text-xs"
                         placeholder="cliente/email"
                       />
-                      {updatingId === item.id && <span className="ml-2 text-xs text-gray-500">...</span>}
+                      {updatingId === item.id && <span className="ml-2 text-xs text-slate-400">...</span>}
                     </td>
                   </tr>
                 ))}
                 {!filteredItems.length && (
                   <tr>
-                    <td className="px-4 py-8 text-center text-sm text-gray-500" colSpan={6}>
+                    <td className="px-4 py-8 text-center text-sm text-slate-400" colSpan={6}>
                       Sin vouchers para este filtro.
                     </td>
                   </tr>

@@ -106,9 +106,9 @@ const UsageDetails: React.FC = () => {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {summary.map((item) => (
-          <div key={item.label} className="rounded-xl border border-gray-200 bg-white p-5 shadow">
-            <p className="text-sm text-gray-600">{item.label}</p>
-            <p className="mt-2 text-2xl font-bold text-gray-900">{item.value}</p>
+          <div key={item.label} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-5 shadow-xl">
+            <p className="text-sm text-slate-400">{item.label}</p>
+            <p className="mt-2 text-2xl font-bold text-white">{item.value}</p>
           </div>
         ))}
       </div>
@@ -119,7 +119,7 @@ const UsageDetails: React.FC = () => {
             key={range}
             onClick={() => setTimeRange(range)}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-              timeRange === range ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              timeRange === range ? 'bg-blue-600 text-white' : 'bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white'
             }`}
           >
             {range === '7d' ? 'Ultimos 7 dias' : range === '30d' ? 'Ultimos 30 dias' : 'Ultimos 90 dias'}
@@ -128,19 +128,19 @@ const UsageDetails: React.FC = () => {
       </div>
 
       {loading && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+        <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4 text-sm text-blue-300">
           Cargando uso de datos...
         </div>
       )}
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
           {error}
         </div>
       )}
 
       {!loading && !error && usageData.length === 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
+        <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
           Aun no hay informacion de consumo para este rango.
         </div>
       )}
@@ -152,31 +152,31 @@ const UsageDetails: React.FC = () => {
             <BarChart data={barPoints} title="Uso relativo ultimos 7 dias (%)" showValues />
           </div>
 
-          <div className="overflow-hidden rounded-lg bg-white shadow">
-            <div className="border-b border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900">Detalle diario</h3>
+          <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-xl">
+            <div className="border-b border-white/10 p-6">
+              <h3 className="text-lg font-semibold text-white">Detalle diario</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="border-b border-gray-200 bg-gray-50">
+                <thead className="border-b border-white/10 bg-black/20">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Fecha</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Consumo</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Acumulado</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Fecha</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Consumo</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Acumulado</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-white/5">
                   {tableRows.map((row, index) => (
                     <motion.tr
                       key={`${row.label}-${index}`}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: index * 0.03 }}
-                      className="transition hover:bg-gray-50"
+                      className="transition hover:bg-white/5"
                     >
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{row.label}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{row.total.toFixed(2)} GB</td>
-                      <td className="px-6 py-4 text-sm font-semibold text-gray-900">{row.cumulative.toFixed(2)} GB</td>
+                      <td className="px-6 py-4 text-sm font-medium text-white">{row.label}</td>
+                      <td className="px-6 py-4 text-sm text-slate-400">{row.total.toFixed(2)} GB</td>
+                      <td className="px-6 py-4 text-sm font-semibold text-emerald-400">{row.cumulative.toFixed(2)} GB</td>
                     </motion.tr>
                   ))}
                 </tbody>

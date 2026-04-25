@@ -10,11 +10,11 @@ interface StatusBadgeProps {
 }
 
 const statusConfig = {
-  active: { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-500' },
-  inactive: { bg: 'bg-gray-100', text: 'text-gray-800', dot: 'bg-gray-500' },
-  pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', dot: 'bg-yellow-500' },
-  error: { bg: 'bg-red-100', text: 'text-red-800', dot: 'bg-red-500' },
-  success: { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-500' },
+  active: { bg: 'bg-emerald-500/20', text: 'text-emerald-300', dot: 'bg-green-500' },
+  inactive: { bg: 'bg-white/10', text: 'text-slate-200', dot: 'bg-gray-500' },
+  pending: { bg: 'bg-amber-500/20', text: 'text-amber-300', dot: 'bg-yellow-500' },
+  error: { bg: 'bg-rose-500/20', text: 'text-rose-300', dot: 'bg-red-500' },
+  success: { bg: 'bg-emerald-500/20', text: 'text-emerald-300', dot: 'bg-green-500' },
   warning: { bg: 'bg-orange-100', text: 'text-orange-800', dot: 'bg-orange-500' }
 }
 

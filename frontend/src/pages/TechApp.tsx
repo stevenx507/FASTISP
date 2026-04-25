@@ -69,9 +69,9 @@ const TechApp: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white px-4 py-6 max-w-4xl mx-auto">
       <header className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-xs uppercase text-gray-500">App de campo</p>
-          <h1 className="text-2xl font-bold text-gray-900">Tickets asignados</h1>
-          <p className="text-sm text-gray-600">Hola {user?.name || 'técnico'}, atiende y cierra con un toque.</p>
+          <p className="text-xs uppercase text-slate-400">App de campo</p>
+          <h1 className="text-2xl font-bold text-white">Tickets asignados</h1>
+          <p className="text-sm text-slate-400">Hola {user?.name || 'técnico'}, atiende y cierra con un toque.</p>
         </div>
         <button
           onClick={loadTickets}
@@ -84,16 +84,16 @@ const TechApp: React.FC = () => {
 
       <div className="space-y-3">
         {tickets.map((t) => (
-          <div key={t.id} className="bg-white rounded-xl shadow border border-gray-200 p-4 flex flex-col gap-3">
+          <div key={t.id} className="bg-white/5 backdrop-blur-md rounded-xl shadow border border-white/10 p-4 flex flex-col gap-3">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs text-gray-500">#{t.id} • {t.priority}</p>
-                <h2 className="text-lg font-semibold text-gray-900">{t.subject}</h2>
-                <p className="text-sm text-gray-700 mt-1">{t.description}</p>
-                {t.address && <p className="text-xs text-gray-500 mt-1">Dir: {t.address}</p>}
+                <p className="text-xs text-slate-400">#{t.id} • {t.priority}</p>
+                <h2 className="text-lg font-semibold text-white">{t.subject}</h2>
+                <p className="text-sm text-slate-300 mt-1">{t.description}</p>
+                {t.address && <p className="text-xs text-slate-400 mt-1">Dir: {t.address}</p>}
                 {t.sla_due_at && <p className="text-xs text-amber-600 mt-1">SLA: {t.sla_due_at.replace('T',' ').slice(0,16)}</p>}
               </div>
-              <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+              <span className="text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-300 border border-blue-100">
                 {statusLabels[t.status] || t.status}
               </span>
             </div>
@@ -105,7 +105,7 @@ const TechApp: React.FC = () => {
               <button onClick={() => updateStatus(t, 'resolved')} className="flex items-center justify-center gap-1 text-sm px-2 py-2 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100">
                 <CheckCircleIcon className="w-4 h-4" /> Resuelto
               </button>
-              <button onClick={() => updateStatus(t, 'closed')} className="flex items-center justify-center gap-1 text-sm px-2 py-2 rounded-lg bg-gray-50 text-gray-700 border border-gray-200">
+              <button onClick={() => updateStatus(t, 'closed')} className="flex items-center justify-center gap-1 text-sm px-2 py-2 rounded-lg bg-white/5 text-slate-300 border border-white/10">
                 <ClockIcon className="w-4 h-4" /> Cerrar
               </button>
             </div>
@@ -128,7 +128,7 @@ const TechApp: React.FC = () => {
           </div>
         ))}
         {!tickets.length && (
-          <div className="text-center text-gray-500 text-sm py-10 bg-white rounded-xl border border-dashed border-gray-200">
+          <div className="text-center text-slate-400 text-sm py-10 bg-white/5 backdrop-blur-md rounded-xl border border-dashed border-white/10">
             Sin tickets asignados. Pulsa actualizar para sincronizar.
           </div>
         )}

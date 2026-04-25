@@ -38,17 +38,17 @@ const quickReplies = [
 ]
 
 const statusBadge: Record<TicketStatus, string> = {
-  open: 'bg-red-100 text-red-700',
-  in_progress: 'bg-yellow-100 text-yellow-700',
-  resolved: 'bg-green-100 text-green-700',
-  closed: 'bg-gray-100 text-gray-700',
+  open: 'bg-rose-500/20 text-rose-400',
+  in_progress: 'bg-amber-500/20 text-amber-400',
+  resolved: 'bg-emerald-500/20 text-emerald-400',
+  closed: 'bg-white/10 text-slate-300',
 }
 
 const priorityBadge: Record<TicketPriority, string> = {
   low: 'bg-slate-100 text-slate-700',
-  medium: 'bg-blue-100 text-blue-700',
+  medium: 'bg-blue-500/20 text-blue-300',
   high: 'bg-orange-100 text-orange-700',
-  urgent: 'bg-red-100 text-red-700',
+  urgent: 'bg-rose-500/20 text-rose-400',
 }
 
 const buildAssistantReply = (input: string) => {
@@ -195,18 +195,18 @@ const SupportChat: React.FC = () => {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <section className="lg:col-span-2 overflow-hidden rounded-xl border border-gray-200 bg-white shadow">
-        <div className="border-b border-gray-200 p-4">
-          <h3 className="text-lg font-semibold text-gray-900">Asistente de soporte</h3>
-          <p className="text-sm text-gray-600">Describe el problema o usa respuestas rapidas para acelerar atencion.</p>
+      <section className="lg:col-span-2 overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow">
+        <div className="border-b border-white/10 p-4">
+          <h3 className="text-lg font-semibold text-white">Asistente de soporte</h3>
+          <p className="text-sm text-slate-400">Describe el problema o usa respuestas rapidas para acelerar atencion.</p>
         </div>
 
-        <div className="max-h-96 space-y-3 overflow-y-auto bg-gray-50 p-4">
+        <div className="max-h-96 space-y-3 overflow-y-auto bg-white/5 p-4">
           {messages.map((message) => (
             <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
                 className={`max-w-[88%] rounded-lg px-3 py-2 text-sm ${
-                  message.role === 'user' ? 'bg-blue-600 text-white' : 'border border-gray-200 bg-white text-gray-700'
+                  message.role === 'user' ? 'bg-blue-600 text-white' : 'border border-white/10 bg-white/5 backdrop-blur-md text-slate-300'
                 }`}
               >
                 {message.text}
@@ -221,7 +221,7 @@ const SupportChat: React.FC = () => {
               <button
                 key={reply}
                 onClick={() => sendMessage(reply)}
-                className="rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-100"
+                className="rounded-full border border-white/20 bg-white/5 backdrop-blur-md px-3 py-1 text-xs text-slate-300 hover:bg-white/10"
               >
                 {reply}
               </button>
@@ -237,7 +237,7 @@ const SupportChat: React.FC = () => {
                   sendMessage(draft)
                 }
               }}
-              className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="flex-1 rounded-lg border border-white/20 px-3 py-2 text-sm"
               placeholder="Escribe tu consulta..."
             />
             <button
@@ -256,7 +256,7 @@ const SupportChat: React.FC = () => {
           </div>
 
           {diagnostics && (
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+            <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4 text-sm text-blue-200">
               <p className="font-semibold">Resultado de diagnostico</p>
               <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <p>Ping gateway: {Number(diagnostics.ping_gateway_ms || 0).toFixed(1)} ms</p>
@@ -276,31 +276,31 @@ const SupportChat: React.FC = () => {
         </div>
       </section>
 
-      <section className="space-y-4 rounded-xl border border-gray-200 bg-white p-4 shadow">
+      <section className="space-y-4 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Tickets</h3>
-          <p className="text-sm text-gray-600">Abiertos: {unreadOpenTickets}</p>
+          <h3 className="text-lg font-semibold text-white">Tickets</h3>
+          <p className="text-sm text-slate-400">Abiertos: {unreadOpenTickets}</p>
         </div>
 
-        <div className="space-y-2 rounded-lg border border-gray-200 p-3">
-          <p className="text-sm font-semibold text-gray-900">Nuevo ticket</p>
+        <div className="space-y-2 rounded-lg border border-white/10 p-3">
+          <p className="text-sm font-semibold text-white">Nuevo ticket</p>
           <input
             value={ticketSubject}
             onChange={(event) => setTicketSubject(event.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             placeholder="Asunto"
           />
           <textarea
             value={ticketDescription}
             onChange={(event) => setTicketDescription(event.target.value)}
             rows={4}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             placeholder="Describe el problema"
           />
           <select
             value={ticketPriority}
             onChange={(event) => setTicketPriority(event.target.value as TicketPriority)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
           >
             <option value="low">Baja</option>
             <option value="medium">Media</option>
@@ -318,11 +318,11 @@ const SupportChat: React.FC = () => {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-gray-900">Historial</p>
+            <p className="text-sm font-semibold text-white">Historial</p>
             <button
               onClick={loadTickets}
               disabled={loadingTickets}
-              className="text-xs font-medium text-blue-600 hover:underline disabled:text-gray-400"
+              className="text-xs font-medium text-blue-600 hover:underline disabled:text-slate-500"
             >
               {loadingTickets ? 'Actualizando...' : 'Actualizar'}
             </button>
@@ -330,9 +330,9 @@ const SupportChat: React.FC = () => {
 
           <div className="max-h-80 space-y-2 overflow-y-auto">
             {tickets.map((ticket) => (
-              <div key={ticket.id} className="rounded-lg border border-gray-200 p-3">
+              <div key={ticket.id} className="rounded-lg border border-white/10 p-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-semibold text-gray-900">#{ticket.id} {ticket.subject}</p>
+                  <p className="text-sm font-semibold text-white">#{ticket.id} {ticket.subject}</p>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[ticket.status]}`}>
                     {ticket.status}
                   </span>
@@ -340,12 +340,12 @@ const SupportChat: React.FC = () => {
                     {ticket.priority}
                   </span>
                 </div>
-                <p className="mt-1 line-clamp-2 text-xs text-gray-600">{ticket.description}</p>
-                <p className="mt-1 text-[11px] text-gray-500">{formatDate(ticket.created_at)}</p>
+                <p className="mt-1 line-clamp-2 text-xs text-slate-400">{ticket.description}</p>
+                <p className="mt-1 text-[11px] text-slate-400">{formatDate(ticket.created_at)}</p>
               </div>
             ))}
             {!tickets.length && !loadingTickets && (
-              <p className="rounded-lg border border-dashed border-gray-300 p-3 text-sm text-gray-500">
+              <p className="rounded-lg border border-dashed border-white/20 p-3 text-sm text-slate-400">
                 No hay tickets registrados.
               </p>
             )}

@@ -144,30 +144,30 @@ const ClientProfile: React.FC = () => {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-white">Mi perfil</h1>
-          <p className="mt-2 text-sm text-gray-300">
+          <p className="mt-2 text-sm text-slate-400">
             Administra tus datos de cuenta y preferencias de notificacion.
           </p>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <section className="rounded-xl border border-white/10 bg-white p-6 shadow">
-            <h2 className="text-lg font-semibold text-gray-900">Datos de cuenta</h2>
-            <p className="mt-1 text-sm text-gray-600">Mantiene esta informacion actualizada para soporte y facturacion.</p>
+          <section className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-white">Datos de cuenta</h2>
+            <p className="mt-1 text-sm text-slate-400">Mantiene esta informacion actualizada para soporte y facturacion.</p>
             <div className="mt-4 space-y-4">
               <div>
-                <label htmlFor="profile-name" className="mb-1 block text-sm font-medium text-gray-700">
+                <label htmlFor="profile-name" className="mb-1 block text-sm font-medium text-slate-300">
                   Nombre completo
                 </label>
                 <input
                   id="profile-name"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   placeholder="Nombre"
                 />
               </div>
               <div>
-                <label htmlFor="profile-email" className="mb-1 block text-sm font-medium text-gray-700">
+                <label htmlFor="profile-email" className="mb-1 block text-sm font-medium text-slate-300">
                   Correo
                 </label>
                 <input
@@ -175,7 +175,7 @@ const ClientProfile: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   placeholder="correo@empresa.com"
                 />
               </div>
@@ -191,9 +191,9 @@ const ClientProfile: React.FC = () => {
             </div>
           </section>
 
-          <section className="rounded-xl border border-white/10 bg-white p-6 shadow">
-            <h2 className="text-lg font-semibold text-gray-900">Notificaciones</h2>
-            <p className="mt-1 text-sm text-gray-600">Selecciona por donde quieres recibir avisos del servicio.</p>
+          <section className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-white">Notificaciones</h2>
+            <p className="mt-1 text-sm text-slate-400">Selecciona por donde quieres recibir avisos del servicio.</p>
             <div className="mt-4 space-y-3">
               {[
                 {
@@ -212,7 +212,7 @@ const ClientProfile: React.FC = () => {
                   description: 'Alertas inmediatas en navegador.',
                 },
               ].map((item) => (
-                <label key={item.key} className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3">
+                <label key={item.key} className="flex cursor-pointer items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3 hover:bg-white/10 transition-colors">
                   <input
                     type="checkbox"
                     checked={Boolean(preferences[item.key as keyof NotificationPreferences])}
@@ -222,11 +222,11 @@ const ClientProfile: React.FC = () => {
                         [item.key]: event.target.checked,
                       }))
                     }
-                    className="mt-0.5 h-4 w-4 rounded border-gray-300"
+                    className="mt-0.5 h-4 w-4 rounded border-white/20 bg-black/20 text-emerald-500 focus:ring-emerald-500"
                   />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{item.label}</p>
-                    <p className="text-xs text-gray-600">{item.description}</p>
+                    <p className="text-sm font-medium text-white">{item.label}</p>
+                    <p className="text-xs text-slate-400">{item.description}</p>
                   </div>
                 </label>
               ))}
@@ -243,32 +243,32 @@ const ClientProfile: React.FC = () => {
           </section>
         </div>
 
-        <section className="rounded-xl border border-white/10 bg-white p-6 shadow">
-          <h2 className="text-lg font-semibold text-gray-900">Resumen del servicio</h2>
-          <p className="mt-1 text-sm text-gray-600">Datos operativos vinculados a tu cuenta.</p>
+        <section className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-6 shadow-xl">
+          <h2 className="text-lg font-semibold text-white">Resumen del servicio</h2>
+          <p className="mt-1 text-sm text-slate-400">Datos operativos vinculados a tu cuenta.</p>
           <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg border border-gray-200 p-3">
-              <p className="text-xs uppercase tracking-wide text-gray-500">Plan</p>
-              <p className="mt-1 text-sm font-semibold text-gray-900">{overview?.plan || 'Sin plan'}</p>
+            <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Plan</p>
+              <p className="mt-1 text-sm font-semibold text-white">{overview?.plan || 'Sin plan'}</p>
             </div>
-            <div className="rounded-lg border border-gray-200 p-3">
-              <p className="text-xs uppercase tracking-wide text-gray-500">Router</p>
-              <p className="mt-1 text-sm font-semibold text-gray-900">{overview?.router || 'No asignado'}</p>
+            <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Router</p>
+              <p className="mt-1 text-sm font-semibold text-white">{overview?.router || 'No asignado'}</p>
             </div>
-            <div className="rounded-lg border border-gray-200 p-3">
-              <p className="text-xs uppercase tracking-wide text-gray-500">Conexion</p>
-              <p className="mt-1 text-sm font-semibold uppercase text-gray-900">{overview?.connection_type || 'N/A'}</p>
+            <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Conexion</p>
+              <p className="mt-1 text-sm font-semibold uppercase text-white">{overview?.connection_type || 'N/A'}</p>
             </div>
-            <div className="rounded-lg border border-gray-200 p-3">
-              <p className="text-xs uppercase tracking-wide text-gray-500">IP</p>
-              <p className="mt-1 text-sm font-semibold text-gray-900">{overview?.ip_address || 'N/A'}</p>
+            <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">IP</p>
+              <p className="mt-1 text-sm font-semibold text-white">{overview?.ip_address || 'N/A'}</p>
             </div>
           </div>
 
-          <div className="mt-6 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-4">
+          <div className="mt-6 flex items-center justify-between rounded-lg border border-rose-500/30 bg-rose-500/10 p-4">
             <div>
-              <p className="text-sm font-semibold text-red-900">Cerrar sesion</p>
-              <p className="text-xs text-red-700">Finaliza tu sesion en este dispositivo.</p>
+              <p className="text-sm font-semibold text-rose-400">Cerrar sesion</p>
+              <p className="text-xs text-rose-300">Finaliza tu sesion en este dispositivo.</p>
             </div>
             <button
               onClick={handleLogout}

@@ -52,15 +52,15 @@ const parseSpeed = (raw?: string) => {
 const statusPillClass = (status: string) => {
   const normalized = status.toLowerCase()
   if (normalized === 'active' || normalized === 'paid' || normalized === 'ok') {
-    return 'bg-green-100 text-green-800'
+    return 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
   }
   if (normalized === 'pending' || normalized === 'in_progress') {
-    return 'bg-yellow-100 text-yellow-800'
+    return 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
   }
   if (normalized === 'overdue' || normalized === 'past_due' || normalized === 'suspended') {
-    return 'bg-red-100 text-red-800'
+    return 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
   }
-  return 'bg-slate-100 text-slate-700'
+  return 'bg-slate-500/20 text-slate-300 border border-slate-500/30'
 }
 
 const ClientDashboard: React.FC = () => {
@@ -128,7 +128,7 @@ const ClientDashboard: React.FC = () => {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white">Hola, {user?.name || 'Cliente'}</h1>
-            <p className="mt-2 text-sm text-gray-300">Panel de control de tu servicio de internet.</p>
+            <p className="mt-2 text-sm text-slate-400">Panel de control de tu servicio de internet.</p>
           </div>
           <button
             onClick={loadDashboard}
@@ -171,35 +171,35 @@ const ClientDashboard: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 rounded-xl bg-white/5 backdrop-blur-md p-6 shadow-xl border border-white/10 flex flex-col items-center justify-center">
             <SpeedTestWidget />
           </div>
-          <div className="lg:col-span-2 rounded-lg bg-white p-6 shadow">
-            <h2 className="text-xl font-bold text-gray-900">Estado del servicio</h2>
+          <div className="lg:col-span-2 rounded-xl bg-white/5 backdrop-blur-md p-6 shadow-xl border border-white/10">
+            <h2 className="text-xl font-bold text-white">Estado del servicio</h2>
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {serviceItems.map((item) => (
-                <div key={item.label} className="rounded-lg border border-gray-200 p-3">
-                  <p className="text-xs uppercase tracking-wide text-gray-500">{item.label}</p>
-                  <p className="mt-1 text-sm font-semibold text-gray-900">{item.value}</p>
+                <div key={item.label} className="rounded-lg border border-white/10 bg-white/5 p-3 hover:bg-white/10 transition-colors">
+                  <p className="text-xs uppercase tracking-wide text-slate-400">{item.label}</p>
+                  <p className="mt-1 text-sm font-semibold text-white">{item.value}</p>
                 </div>
               ))}
             </div>
 
             {nextInvoice ? (
-              <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <div className="mt-4 rounded-lg border border-white/10 bg-gradient-to-r from-blue-900/40 to-cyan-900/40 p-3 shadow-inner">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-gray-900">Proxima factura #{nextInvoice.id}</p>
+                  <p className="text-sm font-medium text-white">Proxima factura #{nextInvoice.id}</p>
                   <span className={`rounded-full px-2 py-1 text-xs font-semibold ${statusPillClass(nextInvoice.status || 'pending')}`}>
                     {nextInvoice.status || 'pending'}
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-gray-700">
+                <p className="mt-1 text-sm text-slate-300">
                   Monto: {(nextInvoice.total_amount ?? nextInvoice.amount ?? 0).toFixed(2)} {nextInvoice.currency || 'USD'}
                 </p>
-                <p className="text-xs text-gray-600">Vence: {nextInvoice.due_date || stats?.nextBillDue || 'N/A'}</p>
+                <p className="text-xs text-slate-400 mt-1">Vence: {nextInvoice.due_date || stats?.nextBillDue || 'N/A'}</p>
               </div>
             ) : (
-              <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900">
+              <div className="mt-4 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-300">
                 No tienes facturas pendientes.
               </div>
             )}
@@ -209,34 +209,34 @@ const ClientDashboard: React.FC = () => {
         <UsageDetails />
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 p-6">
-            <h3 className="text-lg font-bold text-blue-900">Soporte tecnico</h3>
-            <p className="mt-2 text-sm text-blue-800">Abre tickets, ejecuta diagnostico y conversa con soporte.</p>
+          <div className="rounded-xl border border-white/10 bg-gradient-to-br from-blue-900/30 to-slate-900/50 p-6 backdrop-blur-md">
+            <h3 className="text-lg font-bold text-white">Soporte tecnico</h3>
+            <p className="mt-2 text-sm text-slate-300">Abre tickets, ejecuta diagnostico y conversa con soporte.</p>
             <button
               onClick={() => navigate('/dashboard/support')}
-              className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
             >
               Ir a soporte
             </button>
           </div>
 
-          <div className="rounded-lg border border-violet-200 bg-gradient-to-br from-violet-50 to-violet-100 p-6">
-            <h3 className="text-lg font-bold text-violet-900">Analitica de consumo</h3>
-            <p className="mt-2 text-sm text-violet-800">Consulta graficos por rango de fechas y comportamiento diario.</p>
+          <div className="rounded-xl border border-white/10 bg-gradient-to-br from-violet-900/30 to-slate-900/50 p-6 backdrop-blur-md">
+            <h3 className="text-lg font-bold text-white">Analitica de consumo</h3>
+            <p className="mt-2 text-sm text-slate-300">Consulta graficos por rango de fechas y comportamiento diario.</p>
             <button
               onClick={() => navigate('/dashboard/usage')}
-              className="mt-4 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+              className="mt-4 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 transition-colors"
             >
               Ver uso detallado
             </button>
           </div>
 
-          <div className="rounded-lg border border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100 p-6">
-            <h3 className="text-lg font-bold text-emerald-900">Pagos y facturas</h3>
-            <p className="mt-2 text-sm text-emerald-800">Revisa estado de tus comprobantes y realiza pagos online.</p>
+          <div className="rounded-xl border border-white/10 bg-gradient-to-br from-emerald-900/30 to-slate-900/50 p-6 backdrop-blur-md">
+            <h3 className="text-lg font-bold text-white">Pagos y facturas</h3>
+            <p className="mt-2 text-sm text-slate-300">Revisa estado de tus comprobantes y realiza pagos online.</p>
             <button
               onClick={() => navigate('/dashboard/billing')}
-              className="mt-4 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+              className="mt-4 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors"
             >
               Abrir facturacion
             </button>

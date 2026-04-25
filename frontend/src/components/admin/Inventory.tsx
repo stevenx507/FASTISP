@@ -61,37 +61,37 @@ const EMPTY_SUPPLIER: Omit<Supplier, 'id'> = { name: '', contact_email: '', cont
 
 const mvTypeBadge: Record<string, string> = {
   in: 'bg-emerald-100 text-emerald-700',
-  out: 'bg-red-100 text-red-700',
-  adjustment: 'bg-blue-100 text-blue-700',
+  out: 'bg-rose-500/20 text-rose-400',
+  adjustment: 'bg-blue-500/20 text-blue-300',
 }
 const mvTypeLabel: Record<string, string> = { in: '▲ Entrada', out: '▼ Salida', adjustment: '⇄ Ajuste' }
 
 function stockBadge(qty: number, min: number) {
-  if (qty <= 0) return 'bg-red-100 text-red-700'
+  if (qty <= 0) return 'bg-rose-500/20 text-rose-400'
   if (qty <= min) return 'bg-amber-100 text-amber-700'
   return 'bg-emerald-100 text-emerald-700'
 }
 
 const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: string }> = ({ label, ...props }) => (
   <div>
-    <label className="mb-1 block text-xs font-medium text-gray-700">{label}</label>
-    <input {...props} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none" />
+    <label className="mb-1 block text-xs font-medium text-slate-300">{label}</label>
+    <input {...props} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none" />
   </div>
 )
 
 const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string }> = ({ label, ...props }) => (
   <div>
-    <label className="mb-1 block text-xs font-medium text-gray-700">{label}</label>
-    <textarea {...props} rows={2} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none" />
+    <label className="mb-1 block text-xs font-medium text-slate-300">{label}</label>
+    <textarea {...props} rows={2} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none" />
   </div>
 )
 
 const Modal: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({ title, onClose, children }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-    <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+    <div className="w-full max-w-lg rounded-2xl bg-white/5 backdrop-blur-md shadow-2xl">
       <div className="flex items-center justify-between border-b px-5 py-4">
-        <h3 className="text-base font-semibold text-gray-900">{title}</h3>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+        <h3 className="text-base font-semibold text-white">{title}</h3>
+        <button onClick={onClose} className="text-slate-500 hover:text-slate-400 text-xl leading-none">×</button>
       </div>
       <div className="max-h-[75vh] overflow-y-auto p-5">{children}</div>
     </div>
@@ -251,10 +251,10 @@ const Inventory: React.FC = () => {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Almacén e Inventario</h2>
-          <p className="text-sm text-gray-500">Gestión de stock, productos, proveedores y movimientos Kardex.</p>
+          <h2 className="text-2xl font-bold text-white">Almacén e Inventario</h2>
+          <p className="text-sm text-slate-400">Gestión de stock, productos, proveedores y movimientos Kardex.</p>
         </div>
-        <button onClick={loadAll} disabled={loading} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60">
+        <button onClick={loadAll} disabled={loading} className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60">
           <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Cargando...' : 'Actualizar'}
         </button>
@@ -269,10 +269,10 @@ const Inventory: React.FC = () => {
         </div>
       )}
 
-      <div className="border-b border-gray-200">
+      <div className="border-b border-white/10">
         <nav className="flex gap-1">
           {tabs.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === t.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            <button key={t.id} onClick={() => setTab(t.id)} className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === t.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-300'}`}>
               {t.label}
             </button>
           ))}
@@ -282,9 +282,9 @@ const Inventory: React.FC = () => {
       {tab === 'resumen' && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+            <div className="rounded-xl border border-blue-100 bg-blue-500/10 p-4">
               <p className="text-xs font-semibold uppercase text-blue-600">Productos</p>
-              <p className="mt-2 text-3xl font-bold text-blue-900">{products.length}</p>
+              <p className="mt-2 text-3xl font-bold text-blue-200">{products.length}</p>
             </div>
             <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
               <p className="text-xs font-semibold uppercase text-emerald-600">Proveedores</p>
@@ -299,13 +299,13 @@ const Inventory: React.FC = () => {
               <p className="mt-2 text-3xl font-bold text-amber-900">{lowStock.length}</p>
             </div>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-x-auto">
-            <div className="border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">Estado de Stock</h3>
+          <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm overflow-x-auto">
+            <div className="border-b border-white/5 px-4 py-3 flex items-center justify-between">
+              <h3 className="font-semibold text-white">Estado de Stock</h3>
               <button onClick={() => setTab('productos')} className="text-xs text-blue-600 hover:underline">Ver todos →</button>
             </div>
-            <table className="min-w-full divide-y divide-gray-100 text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+            <table className="min-w-full divide-y divide-white/5 text-sm">
+              <thead className="bg-white/5 text-xs uppercase text-slate-400">
                 <tr>
                   <th className="px-4 py-3 text-left">SKU</th>
                   <th className="px-4 py-3 text-left">Producto</th>
@@ -315,16 +315,16 @@ const Inventory: React.FC = () => {
                   <th className="px-4 py-3 text-right">Estado</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/5">
                 {products.slice(0, 10).map(p => {
                   const qty = p.stock_quantity ?? p.current_stock ?? 0
                   return (
-                    <tr key={p.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.sku || '-'}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{p.name}</td>
-                      <td className="px-4 py-3 text-gray-600">{supplierName(p.supplier_id)}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-900">{qty}</td>
-                      <td className="px-4 py-3 text-right text-gray-500">{p.min_stock_level}</td>
+                    <tr key={p.id} className="hover:bg-white/5">
+                      <td className="px-4 py-3 font-mono text-xs text-slate-400">{p.sku || '-'}</td>
+                      <td className="px-4 py-3 font-medium text-white">{p.name}</td>
+                      <td className="px-4 py-3 text-slate-400">{supplierName(p.supplier_id)}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-white">{qty}</td>
+                      <td className="px-4 py-3 text-right text-slate-400">{p.min_stock_level}</td>
                       <td className="px-4 py-3 text-right">
                         <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${stockBadge(qty, p.min_stock_level)}`}>
                           {qty <= 0 ? 'Sin stock' : qty <= p.min_stock_level ? 'Bajo' : 'OK'}
@@ -333,7 +333,7 @@ const Inventory: React.FC = () => {
                     </tr>
                   )
                 })}
-                {!products.length && <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500">Sin productos registrados.</td></tr>}
+                {!products.length && <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-400">Sin productos registrados.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -344,16 +344,16 @@ const Inventory: React.FC = () => {
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="relative flex-1 min-w-[200px]">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input value={searchProduct} onChange={e => setSearchProduct(e.target.value)} placeholder="Buscar por nombre o SKU..." className="w-full rounded-lg border border-gray-300 pl-9 pr-3 py-2 text-sm" />
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+              <input value={searchProduct} onChange={e => setSearchProduct(e.target.value)} placeholder="Buscar por nombre o SKU..." className="w-full rounded-lg border border-white/20 pl-9 pr-3 py-2 text-sm" />
             </div>
             <button onClick={openAddProduct} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">
               <PlusIcon className="h-4 w-4" /> Nuevo Producto
             </button>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100 text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+          <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm overflow-x-auto">
+            <table className="min-w-full divide-y divide-white/5 text-sm">
+              <thead className="bg-white/5 text-xs uppercase text-slate-400">
                 <tr>
                   <th className="px-4 py-3 text-left">SKU</th>
                   <th className="px-4 py-3 text-left">Nombre</th>
@@ -366,34 +366,34 @@ const Inventory: React.FC = () => {
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/5">
                 {filteredProducts.map(p => {
                   const qty = p.stock_quantity ?? p.current_stock ?? 0
                   return (
-                    <tr key={p.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.sku || '-'}</td>
+                    <tr key={p.id} className="hover:bg-white/5">
+                      <td className="px-4 py-3 font-mono text-xs text-slate-400">{p.sku || '-'}</td>
                       <td className="px-4 py-3">
-                        <p className="font-medium text-gray-900">{p.name}</p>
-                        {p.description && <p className="text-xs text-gray-400 truncate max-w-[200px]">{p.description}</p>}
+                        <p className="font-medium text-white">{p.name}</p>
+                        {p.description && <p className="text-xs text-slate-500 truncate max-w-[200px]">{p.description}</p>}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{supplierName(p.supplier_id)}</td>
-                      <td className="px-4 py-3 text-right text-gray-700">${p.unit_cost.toFixed(2)}</td>
-                      <td className="px-4 py-3 text-right text-gray-700">${p.unit_price.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-slate-400">{supplierName(p.supplier_id)}</td>
+                      <td className="px-4 py-3 text-right text-slate-300">${p.unit_cost.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right text-slate-300">${p.unit_price.toFixed(2)}</td>
                       <td className="px-4 py-3 text-right">
                         <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${stockBadge(qty, p.min_stock_level)}`}>{qty}</span>
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-500">{p.min_stock_level}</td>
-                      <td className="px-4 py-3 text-xs text-gray-500">{p.location || '-'}</td>
+                      <td className="px-4 py-3 text-right text-slate-400">{p.min_stock_level}</td>
+                      <td className="px-4 py-3 text-xs text-slate-400">{p.location || '-'}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <button onClick={() => openEditProduct(p)} className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-blue-600"><PencilSquareIcon className="h-4 w-4" /></button>
-                          <button onClick={() => deleteProduct(p)} className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"><TrashIcon className="h-4 w-4" /></button>
+                          <button onClick={() => openEditProduct(p)} className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-blue-600"><PencilSquareIcon className="h-4 w-4" /></button>
+                          <button onClick={() => deleteProduct(p)} className="rounded p-1 text-slate-500 hover:bg-rose-500/10 hover:text-red-600"><TrashIcon className="h-4 w-4" /></button>
                         </div>
                       </td>
                     </tr>
                   )
                 })}
-                {!filteredProducts.length && <tr><td colSpan={9} className="px-4 py-8 text-center text-sm text-gray-500">Sin productos.</td></tr>}
+                {!filteredProducts.length && <tr><td colSpan={9} className="px-4 py-8 text-center text-sm text-slate-400">Sin productos.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -407,9 +407,9 @@ const Inventory: React.FC = () => {
               <PlusIcon className="h-4 w-4" /> Nuevo Proveedor
             </button>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100 text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+          <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm overflow-x-auto">
+            <table className="min-w-full divide-y divide-white/5 text-sm">
+              <thead className="bg-white/5 text-xs uppercase text-slate-400">
                 <tr>
                   <th className="px-4 py-3 text-left">Nombre</th>
                   <th className="px-4 py-3 text-left">Email</th>
@@ -418,22 +418,22 @@ const Inventory: React.FC = () => {
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/5">
                 {suppliers.map(s => (
-                  <tr key={s.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{s.name}</td>
-                    <td className="px-4 py-3 text-gray-600">{s.contact_email || '-'}</td>
-                    <td className="px-4 py-3 text-gray-600">{s.contact_phone || '-'}</td>
-                    <td className="px-4 py-3 text-gray-600 truncate max-w-[200px]">{s.address || '-'}</td>
+                  <tr key={s.id} className="hover:bg-white/5">
+                    <td className="px-4 py-3 font-medium text-white">{s.name}</td>
+                    <td className="px-4 py-3 text-slate-400">{s.contact_email || '-'}</td>
+                    <td className="px-4 py-3 text-slate-400">{s.contact_phone || '-'}</td>
+                    <td className="px-4 py-3 text-slate-400 truncate max-w-[200px]">{s.address || '-'}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => openEditSupplier(s)} className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-blue-600"><PencilSquareIcon className="h-4 w-4" /></button>
-                        <button onClick={() => deleteSupplier(s)} className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"><TrashIcon className="h-4 w-4" /></button>
+                        <button onClick={() => openEditSupplier(s)} className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-blue-600"><PencilSquareIcon className="h-4 w-4" /></button>
+                        <button onClick={() => deleteSupplier(s)} className="rounded p-1 text-slate-500 hover:bg-rose-500/10 hover:text-red-600"><TrashIcon className="h-4 w-4" /></button>
                       </div>
                     </td>
                   </tr>
                 ))}
-                {!suppliers.length && <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-500">Sin proveedores registrados.</td></tr>}
+                {!suppliers.length && <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-400">Sin proveedores registrados.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -444,8 +444,8 @@ const Inventory: React.FC = () => {
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <AdjustmentsHorizontalIcon className="h-4 w-4 text-gray-500" />
-              <select value={mvFilter} onChange={e => setMvFilter(e.target.value as typeof mvFilter)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+              <AdjustmentsHorizontalIcon className="h-4 w-4 text-slate-400" />
+              <select value={mvFilter} onChange={e => setMvFilter(e.target.value as typeof mvFilter)} className="rounded-lg border border-white/20 px-3 py-2 text-sm">
                 <option value="">Todos los movimientos</option>
                 <option value="in">▲ Entradas</option>
                 <option value="out">▼ Salidas</option>
@@ -456,9 +456,9 @@ const Inventory: React.FC = () => {
               <PlusIcon className="h-4 w-4" /> Registrar Movimiento
             </button>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100 text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+          <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm overflow-x-auto">
+            <table className="min-w-full divide-y divide-white/5 text-sm">
+              <thead className="bg-white/5 text-xs uppercase text-slate-400">
                 <tr>
                   <th className="px-4 py-3 text-left">Fecha</th>
                   <th className="px-4 py-3 text-left">Tipo</th>
@@ -470,28 +470,28 @@ const Inventory: React.FC = () => {
                   <th className="px-4 py-3 text-left">Notas</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/5">
                 {filteredMovements.map(m => {
                   const prod = products.find(p => p.id === m.product_id)
                   return (
-                    <tr key={m.id} className="hover:bg-gray-50">
-                      <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500">{m.created_at ? new Date(m.created_at).toLocaleString('es') : '-'}</td>
+                    <tr key={m.id} className="hover:bg-white/5">
+                      <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-400">{m.created_at ? new Date(m.created_at).toLocaleString('es') : '-'}</td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${mvTypeBadge[m.movement_type] || 'bg-gray-100 text-gray-600'}`}>
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${mvTypeBadge[m.movement_type] || 'bg-white/10 text-slate-400'}`}>
                           {m.movement_type === 'in' ? <ArrowUpIcon className="h-3 w-3" /> : m.movement_type === 'out' ? <ArrowDownIcon className="h-3 w-3" /> : <AdjustmentsHorizontalIcon className="h-3 w-3" />}
                           {mvTypeLabel[m.movement_type] || m.movement_type}
                         </span>
                       </td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{prod?.name || m.product_name || `#${m.product_id}`}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-900">{m.movement_type === 'out' ? '-' : '+'}{m.quantity}</td>
-                      <td className="px-4 py-3 text-right text-gray-600">{m.unit_cost ? `$${Number(m.unit_cost).toFixed(2)}` : '-'}</td>
-                      <td className="px-4 py-3 text-gray-600">{m.reason || '-'}</td>
-                      <td className="px-4 py-3 text-xs text-gray-500">{m.reference || '-'}</td>
-                      <td className="px-4 py-3 text-xs text-gray-500 truncate max-w-[150px]">{m.notes || '-'}</td>
+                      <td className="px-4 py-3 font-medium text-white">{prod?.name || m.product_name || `#${m.product_id}`}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-white">{m.movement_type === 'out' ? '-' : '+'}{m.quantity}</td>
+                      <td className="px-4 py-3 text-right text-slate-400">{m.unit_cost ? `$${Number(m.unit_cost).toFixed(2)}` : '-'}</td>
+                      <td className="px-4 py-3 text-slate-400">{m.reason || '-'}</td>
+                      <td className="px-4 py-3 text-xs text-slate-400">{m.reference || '-'}</td>
+                      <td className="px-4 py-3 text-xs text-slate-400 truncate max-w-[150px]">{m.notes || '-'}</td>
                     </tr>
                   )
                 })}
-                {!filteredMovements.length && <tr><td colSpan={8} className="px-4 py-8 text-center text-sm text-gray-500">Sin movimientos registrados.</td></tr>}
+                {!filteredMovements.length && <tr><td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-400">Sin movimientos registrados.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -517,8 +517,8 @@ const Inventory: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-700">Proveedor</label>
-                <select value={productForm.supplier_id ?? ''} onChange={e => setProductForm(f => ({ ...f, supplier_id: e.target.value ? Number(e.target.value) : null }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                <label className="mb-1 block text-xs font-medium text-slate-300">Proveedor</label>
+                <select value={productForm.supplier_id ?? ''} onChange={e => setProductForm(f => ({ ...f, supplier_id: e.target.value ? Number(e.target.value) : null }))} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm">
                   <option value="">Sin proveedor</option>
                   {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
@@ -526,7 +526,7 @@ const Inventory: React.FC = () => {
               <Input label="Ubicación en almacén" value={productForm.location} onChange={e => setProductForm(f => ({ ...f, location: e.target.value }))} placeholder="Ej: Estante A-3" />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setProductModal({ open: false, editing: null })} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancelar</button>
+              <button onClick={() => setProductModal({ open: false, editing: null })} className="rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/5">Cancelar</button>
               <button onClick={saveProduct} disabled={productSaving} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">{productSaving ? 'Guardando...' : productModal.editing ? 'Actualizar' : 'Crear Producto'}</button>
             </div>
           </div>
@@ -543,7 +543,7 @@ const Inventory: React.FC = () => {
             </div>
             <Textarea label="Dirección" value={supplierForm.address} onChange={e => setSupplierForm(f => ({ ...f, address: e.target.value }))} placeholder="Dirección completa" />
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setSupplierModal({ open: false, editing: null })} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancelar</button>
+              <button onClick={() => setSupplierModal({ open: false, editing: null })} className="rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/5">Cancelar</button>
               <button onClick={saveSupplier} disabled={supplierSaving} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">{supplierSaving ? 'Guardando...' : supplierModal.editing ? 'Actualizar' : 'Crear Proveedor'}</button>
             </div>
           </div>
@@ -554,16 +554,16 @@ const Inventory: React.FC = () => {
         <Modal title="Registrar Movimiento de Inventario" onClose={() => setMovementModal(false)}>
           <div className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-700">Producto *</label>
-              <select value={mvForm.product_id} onChange={e => setMvForm(f => ({ ...f, product_id: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+              <label className="mb-1 block text-xs font-medium text-slate-300">Producto *</label>
+              <select value={mvForm.product_id} onChange={e => setMvForm(f => ({ ...f, product_id: e.target.value }))} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm">
                 <option value="">Seleccionar producto...</option>
                 {products.map(p => <option key={p.id} value={p.id}>{p.name} (SKU: {p.sku || '-'})</option>)}
               </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-700">Tipo *</label>
-                <select value={mvForm.movement_type} onChange={e => setMvForm(f => ({ ...f, movement_type: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                <label className="mb-1 block text-xs font-medium text-slate-300">Tipo *</label>
+                <select value={mvForm.movement_type} onChange={e => setMvForm(f => ({ ...f, movement_type: e.target.value }))} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm">
                   <option value="in">▲ Entrada (compra/devolución)</option>
                   <option value="out">▼ Salida (uso/venta/instalación)</option>
                   <option value="adjustment">⇄ Ajuste de inventario</option>
@@ -578,7 +578,7 @@ const Inventory: React.FC = () => {
             <Input label="Motivo" value={mvForm.reason} onChange={e => setMvForm(f => ({ ...f, reason: e.target.value }))} placeholder="Ej: Compra a proveedor, instalación cliente #123" />
             <Textarea label="Notas" value={mvForm.notes} onChange={e => setMvForm(f => ({ ...f, notes: e.target.value }))} placeholder="Observaciones adicionales" />
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setMovementModal(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancelar</button>
+              <button onClick={() => setMovementModal(false)} className="rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/5">Cancelar</button>
               <button onClick={saveMovement} disabled={mvSaving} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">{mvSaving ? 'Registrando...' : 'Registrar en Kardex'}</button>
             </div>
           </div>

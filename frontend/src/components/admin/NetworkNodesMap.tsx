@@ -189,20 +189,20 @@ export default function NetworkNodesMap() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">🗺️ Mapa de Red</h2>
-          <p className="text-sm text-gray-500">Nodos de infraestructura y clientes en tiempo real</p>
+          <h2 className="text-xl font-bold text-white dark:text-white">🗺️ Mapa de Red</h2>
+          <p className="text-sm text-slate-400">Nodos de infraestructura y clientes en tiempo real</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">🟢 {onlineCount} online</span>
-          <span className="px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold">🔴 {offlineCount} offline</span>
-          <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">🔵 {filteredNodes.length} nodos</span>
+          <span className="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold">🟢 {onlineCount} online</span>
+          <span className="px-2 py-1 rounded-full bg-rose-500/20 text-rose-400 text-xs font-semibold">🔴 {offlineCount} offline</span>
+          <span className="px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold">🔵 {filteredNodes.length} nodos</span>
           <button onClick={() => setShowNodeForm(true)} className="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">+ Nodo</button>
-          <button onClick={load} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm hover:bg-gray-300">↻ Actualizar</button>
+          <button onClick={load} className="px-3 py-1 bg-white/15 dark:bg-gray-700 text-slate-300 dark:text-gray-200 rounded-lg text-sm hover:bg-gray-300">↻ Actualizar</button>
         </div>
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap gap-3 bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+      <div className="flex flex-wrap gap-3 bg-white/5 backdrop-blur-md dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-white/5 dark:border-gray-700">
         <select aria-label="Filtrar por tipo de nodo" value={filter.nodeType} onChange={e => setFilter(f => ({ ...f, nodeType: e.target.value }))}
           className="text-sm border rounded-lg px-2 py-1 dark:bg-gray-700 dark:text-white dark:border-gray-600">
           <option value="all">Todos los tipos</option>
@@ -218,7 +218,7 @@ export default function NetworkNodesMap() {
           <option value="coax">Coaxial</option>
           <option value="copper">Cobre</option>
         </select>
-        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-400 cursor-pointer">
           <input type="checkbox" checked={filter.showOffline} onChange={e => setFilter(f => ({ ...f, showOffline: e.target.checked }))} />
           Mostrar clientes offline
         </label>
@@ -226,13 +226,13 @@ export default function NetworkNodesMap() {
 
       {/* Mapa */}
       {loading ? (
-        <div className="h-96 flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-xl">
+        <div className="h-96 flex items-center justify-center bg-white/5 dark:bg-gray-800 rounded-xl">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
         </div>
       ) : error ? (
-        <div className="h-96 flex items-center justify-center bg-red-50 rounded-xl text-red-600">{error}</div>
+        <div className="h-96 flex items-center justify-center bg-rose-500/10 rounded-xl text-red-600">{error}</div>
       ) : (
-        <div className="rounded-xl overflow-hidden shadow-md border border-gray-200 dark:border-gray-700" style={{ height: 520 }}>
+        <div className="rounded-xl overflow-hidden shadow-md border border-white/10 dark:border-gray-700" style={{ height: 520 }}>
           <MapContainer center={[-4.0, -79.2]} zoom={12} style={{ height: '100%', width: '100%' }}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' />
@@ -256,18 +256,18 @@ export default function NetworkNodesMap() {
                 <Popup>
                   <div className="min-w-[180px]">
                     <p className="font-bold text-base">{nodeIcons[node.node_type]} {node.name}</p>
-                    <p className="text-xs text-gray-500 capitalize">{node.node_type} · {node.technology}</p>
+                    <p className="text-xs text-slate-400 capitalize">{node.node_type} · {node.technology}</p>
                     {node.zone && <p className="text-xs">📍 {node.zone}</p>}
-                    {node.address && <p className="text-xs text-gray-500">{node.address}</p>}
+                    {node.address && <p className="text-xs text-slate-400">{node.address}</p>}
                     {node.capacity != null && (
                       <p className="text-xs">Puertos: {node.used_ports}/{node.capacity}</p>
                     )}
                     <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      node.status === 'active' ? 'bg-green-100 text-green-700' :
-                      node.status === 'fault' ? 'bg-red-100 text-red-700' :
-                      node.status === 'maintenance' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-gray-100 text-gray-600'}`}>{node.status}</span>
-                    {node.notes && <p className="text-xs mt-1 text-gray-500 italic">{node.notes}</p>}
+                      node.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' :
+                      node.status === 'fault' ? 'bg-rose-500/20 text-rose-400' :
+                      node.status === 'maintenance' ? 'bg-amber-500/20 text-amber-400' :
+                      'bg-white/10 text-slate-400'}`}>{node.status}</span>
+                    {node.notes && <p className="text-xs mt-1 text-slate-400 italic">{node.notes}</p>}
                   </div>
                 </Popup>
               </Marker>
@@ -281,11 +281,11 @@ export default function NetworkNodesMap() {
                 <Popup>
                   <div className="min-w-[160px]">
                     <p className="font-bold">{c.name}</p>
-                    <p className="text-xs text-gray-500">{c.ip_address}</p>
+                    <p className="text-xs text-slate-400">{c.ip_address}</p>
                     {c.plan_name && <p className="text-xs">📶 {c.plan_name}</p>}
                     <p className="text-xs capitalize">🔌 {c.access_technology}</p>
                     <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      c.status === 'online' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      c.status === 'online' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
                       {c.status === 'online' ? '🟢 En línea' : '🔴 Offline'}
                     </span>
                   </div>
@@ -297,7 +297,7 @@ export default function NetworkNodesMap() {
       )}
 
       {/* Leyenda */}
-      <div className="flex flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-400">
+      <div className="flex flex-wrap gap-3 text-xs text-slate-400 dark:text-slate-500">
         {Object.entries(nodeIcons).map(([type, icon]) => (
           <span key={type}>{icon} {type.toUpperCase()}</span>
         ))}
@@ -308,8 +308,8 @@ export default function NetworkNodesMap() {
       {/* Modal: Crear nodo */}
       {showNodeForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">➕ Nuevo Nodo de Red</h3>
+          <div className="bg-white/5 backdrop-blur-md dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold mb-4 text-white dark:text-white">➕ Nuevo Nodo de Red</h3>
             <div className="flex flex-col gap-3">
               <input placeholder="Nombre *" value={newNode.name} onChange={e => setNewNode(n => ({ ...n, name: e.target.value }))}
                 className="border rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600" />
@@ -347,7 +347,7 @@ export default function NetworkNodesMap() {
                 {saving ? 'Guardando...' : 'Crear Nodo'}
               </button>
               <button onClick={() => setShowNodeForm(false)}
-                className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg py-2 text-sm hover:bg-gray-300">
+                className="flex-1 bg-white/15 dark:bg-gray-700 text-slate-300 dark:text-gray-200 rounded-lg py-2 text-sm hover:bg-gray-300">
                 Cancelar
               </button>
             </div>

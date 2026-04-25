@@ -14,7 +14,7 @@ const AIDiagnosis: React.FC<AIDiagnosisProps> = ({ analysis, error, isLoading })
   if (isLoading) {
     return (
       <div className="p-6 bg-gray-800 border border-gray-700 rounded-lg shadow-lg animate-pulse">
-        <div className="flex items-center text-gray-400">
+        <div className="flex items-center text-slate-500">
           <SparklesIcon className="h-6 w-6 mr-3 animate-spin" />
           <h3 className="text-xl font-semibold">Generando diagnóstico con IA...</h3>
         </div>
@@ -29,7 +29,7 @@ const AIDiagnosis: React.FC<AIDiagnosisProps> = ({ analysis, error, isLoading })
 
   if (error) {
     return (
-      <div className="p-6 bg-red-900/20 border border-red-700 text-red-300 rounded-lg shadow-lg">
+      <div className="p-6 bg-red-900/20 border border-red-700 text-red-300 rounded-lg shadow-xl">
         <div className="flex items-center">
           <ExclamationTriangleIcon className="h-6 w-6 mr-3" />
           <h3 className="text-xl font-semibold">Error en el Diagnóstico</h3>
@@ -44,7 +44,7 @@ const AIDiagnosis: React.FC<AIDiagnosisProps> = ({ analysis, error, isLoading })
   }
 
   return (
-    <div className="p-6 bg-gray-800 border border-gray-700 rounded-lg shadow-lg">
+    <div className="p-6 bg-gray-800 border border-gray-700 rounded-lg shadow-xl">
       <div className="flex items-center text-cyan-400">
         <SparklesIcon className="h-6 w-6 mr-3" />
         <h3 className="text-2xl font-semibold">Análisis de Red por IA</h3>

@@ -131,13 +131,13 @@ const ExtraServices: React.FC = () => {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Servicios adicionales</h2>
-          <p className="text-sm text-gray-600">Catalogo comercial, precios y estado operativo de addons.</p>
+          <h2 className="text-2xl font-bold text-white">Servicios adicionales</h2>
+          <p className="text-sm text-slate-400">Catalogo comercial, precios y estado operativo de addons.</p>
         </div>
         <button
           onClick={load}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60"
         >
           <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Actualizando...' : 'Actualizar'}
@@ -145,11 +145,11 @@ const ExtraServices: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-          <p className="text-xs font-semibold uppercase text-blue-700">Servicios activos</p>
-          <p className="mt-2 text-2xl font-bold text-blue-900">{summary.active}</p>
+        <div className="rounded-xl border border-blue-100 bg-blue-500/10 p-4">
+          <p className="text-xs font-semibold uppercase text-blue-300">Servicios activos</p>
+          <p className="mt-2 text-2xl font-bold text-blue-200">{summary.active}</p>
         </div>
-        <div className="rounded-xl border border-violet-100 bg-violet-50 p-4">
+        <div className="rounded-xl border border-violet-100 bg-violet-500/10 p-4">
           <p className="text-xs font-semibold uppercase text-violet-700">Suscriptores</p>
           <p className="mt-2 text-2xl font-bold text-violet-900">{summary.subscribers}</p>
         </div>
@@ -160,46 +160,46 @@ const ExtraServices: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <form onSubmit={createService} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-3 font-semibold text-gray-900">Nuevo servicio</h3>
+        <form onSubmit={createService} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
+          <h3 className="mb-3 font-semibold text-white">Nuevo servicio</h3>
           <div className="space-y-3">
             <input
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               placeholder="Nombre"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
             <input
               value={form.category}
               onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
               placeholder="Categoria"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
             <textarea
               value={form.description}
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
               rows={3}
               placeholder="Descripcion"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
             <div className="grid grid-cols-2 gap-2">
               <input
                 value={form.monthly_price}
                 onChange={(e) => setForm((prev) => ({ ...prev, monthly_price: e.target.value }))}
                 placeholder="Mensual"
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               />
               <input
                 value={form.one_time_fee}
                 onChange={(e) => setForm((prev) => ({ ...prev, one_time_fee: e.target.value }))}
                 placeholder="Unico"
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-white/20 px-3 py-2 text-sm"
               />
             </div>
             <select
               value={form.status}
               onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as ServiceStatus }))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             >
               <option value="active">active</option>
               <option value="disabled">disabled</option>
@@ -214,13 +214,13 @@ const ExtraServices: React.FC = () => {
           </div>
         </form>
 
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm xl:col-span-2">
-          <div className="border-b border-gray-100 px-4 py-3">
-            <h3 className="font-semibold text-gray-900">Catalogo</h3>
+        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm xl:col-span-2">
+          <div className="border-b border-white/5 px-4 py-3">
+            <h3 className="font-semibold text-white">Catalogo</h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100 text-sm">
-              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+            <table className="min-w-full divide-y divide-white/5 text-sm">
+              <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
                 <tr>
                   <th className="px-4 py-3 text-left">Servicio</th>
                   <th className="px-4 py-3 text-left">Categoria</th>
@@ -230,20 +230,20 @@ const ExtraServices: React.FC = () => {
                   <th className="px-4 py-3 text-left">Estado</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/5">
                 {items.map((item) => (
                   <tr key={item.id}>
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{item.name}</p>
-                      <p className="text-xs text-gray-500">{item.description}</p>
-                      <p className="mt-1 text-[11px] text-gray-500">
+                      <p className="font-medium text-white">{item.name}</p>
+                      <p className="text-xs text-slate-400">{item.description}</p>
+                      <p className="mt-1 text-[11px] text-slate-400">
                         creado por {item.created_by_name || 'system'} - {formatDateTime(item.created_at)}
                       </p>
-                      <p className="text-[11px] text-gray-500">
+                      <p className="text-[11px] text-slate-400">
                         actualizado por {item.updated_by_name || 'system'} - {formatDateTime(item.updated_at)}
                       </p>
                     </td>
-                    <td className="px-4 py-3 text-gray-700">{item.category}</td>
+                    <td className="px-4 py-3 text-slate-300">{item.category}</td>
                     <td className="px-4 py-3 text-right">
                       <input
                         type="number"
@@ -257,7 +257,7 @@ const ExtraServices: React.FC = () => {
                           )
                         }
                         onBlur={() => updateService(item.id, { monthly_price: item.monthly_price })}
-                        className="w-20 rounded-md border border-gray-300 px-2 py-1 text-xs text-right"
+                        className="w-20 rounded-md border border-white/20 px-2 py-1 text-xs text-right"
                       />
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -273,28 +273,28 @@ const ExtraServices: React.FC = () => {
                           )
                         }
                         onBlur={() => updateService(item.id, { one_time_fee: item.one_time_fee })}
-                        className="w-20 rounded-md border border-gray-300 px-2 py-1 text-xs text-right"
+                        className="w-20 rounded-md border border-white/20 px-2 py-1 text-xs text-right"
                       />
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900">{item.subscribers}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-white">{item.subscribers}</td>
                     <td className="px-4 py-3">
                       <select
                         value={item.status}
                         onChange={(e) => updateService(item.id, { status: e.target.value as ServiceStatus })}
-                        className={`rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold ${
+                        className={`rounded-md border border-white/20 px-2 py-1 text-xs font-semibold ${
                           item.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'
                         }`}
                       >
                         <option value="active">active</option>
                         <option value="disabled">disabled</option>
                       </select>
-                      {savingId === item.id && <span className="ml-2 text-xs text-gray-500">...</span>}
+                      {savingId === item.id && <span className="ml-2 text-xs text-slate-400">...</span>}
                     </td>
                   </tr>
                 ))}
                 {!items.length && (
                   <tr>
-                    <td className="px-4 py-8 text-center text-sm text-gray-500" colSpan={6}>
+                    <td className="px-4 py-8 text-center text-sm text-slate-400" colSpan={6}>
                       Sin servicios adicionales cargados.
                     </td>
                   </tr>

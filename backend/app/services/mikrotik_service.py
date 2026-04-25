@@ -1459,15 +1459,31 @@ class MikroTikService:
             issues = []
             
             # Check CPU
-            cpu_load_str = str(health['router'].get('cpu_load', '0')).replace('%', '')
-            cpu_load = int(float(cpu_load_str)) if cpu_load_str.isdigit() or cpu_load_str.replace('.', '', 1).isdigit() else 0
+            cpu_load_str = str(health['router'].get('cpu_load', '0')).replace('%', '').strip()
+            try:
+                cpu_load = int(float(cpu_load_str))
+            except ValueError:
+                cpu_load = 0
+                
             if cpu_load > 80:
                 issues.append(f"CPU high: {cpu_load}%")
             
             # Check memory
-            free_mem = int(health['router'].get('free_memory', 0))
-            total_mem = int(health['router'].get('total_memory', 1))
-            memory_usage = ((total_mem - free_mem) / total_mem) * 100
+            def safe_int(val, default):
+                try:
+                    if str(val).strip().lower() == 'unknown':
+                        return default
+                    return int(float(str(val).strip()))
+                except (ValueError, TypeError):
+                    return default
+                    
+            free_mem = safe_int(health['router'].get('free_memory'), 0)
+            total_mem = safe_int(health['router'].get('total_memory'), 1)
+            
+            memory_usage = 0
+            if total_mem > 0:
+                memory_usage = ((total_mem - free_mem) / total_mem) * 100
+                
             if memory_usage > 85:
                 issues.append(f"Memory high: {memory_usage:.1f}%")
             

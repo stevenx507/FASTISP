@@ -11,13 +11,13 @@ interface StatsCardProps {
 }
 
 const colorVariants = {
-  blue: { bg: 'bg-blue-50', text: 'text-blue-700', dark: 'text-blue-600', icon: 'text-blue-500' },
-  green: { bg: 'bg-green-50', text: 'text-green-700', dark: 'text-green-600', icon: 'text-green-500' },
-  purple: { bg: 'bg-purple-50', text: 'text-purple-700', dark: 'text-purple-600', icon: 'text-purple-500' },
-  orange: { bg: 'bg-orange-50', text: 'text-orange-700', dark: 'text-orange-600', icon: 'text-orange-500' },
-  red: { bg: 'bg-red-50', text: 'text-red-700', dark: 'text-red-600', icon: 'text-red-500' },
-  emerald: { bg: 'bg-emerald-50', text: 'text-emerald-700', dark: 'text-emerald-600', icon: 'text-emerald-500' },
-  cyan: { bg: 'bg-cyan-50', text: 'text-cyan-700', dark: 'text-cyan-600', icon: 'text-cyan-500' }
+  blue: { bg: 'bg-blue-500/10', border: 'border-blue-500/50', text: 'text-blue-400', value: 'text-white', icon: 'text-blue-400' },
+  green: { bg: 'bg-green-500/10', border: 'border-green-500/50', text: 'text-green-400', value: 'text-white', icon: 'text-green-400' },
+  purple: { bg: 'bg-purple-500/10', border: 'border-purple-500/50', text: 'text-purple-400', value: 'text-white', icon: 'text-purple-400' },
+  orange: { bg: 'bg-orange-500/10', border: 'border-orange-500/50', text: 'text-orange-400', value: 'text-white', icon: 'text-orange-400' },
+  red: { bg: 'bg-red-500/10', border: 'border-red-500/50', text: 'text-red-400', value: 'text-white', icon: 'text-red-400' },
+  emerald: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/50', text: 'text-emerald-400', value: 'text-white', icon: 'text-emerald-400' },
+  cyan: { bg: 'bg-cyan-500/10', border: 'border-cyan-500/50', text: 'text-cyan-400', value: 'text-white', icon: 'text-cyan-400' }
 }
 
 export const StatsCard: React.FC<StatsCardProps> = ({ 
@@ -28,15 +28,15 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   return (
     <motion.div
       whileHover={{ y: -4 }}
-      className={`${colors.bg} rounded-xl p-6 border-l-4 border-${color}-600 shadow-sm hover:shadow-md transition-all`}
+      className={`${colors.bg} backdrop-blur-md rounded-xl p-6 border border-white/5 border-l-4 ${colors.border} shadow-lg hover:bg-white/10 transition-all`}
     >
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <p className={`text-sm font-medium ${colors.text}`}>{title}</p>
-          <p className={`text-3xl font-bold ${colors.dark} mt-2`}>{value}</p>
-          {subtitle && <p className="text-xs text-gray-600 mt-1">{subtitle}</p>}
+          <p className={`text-3xl font-bold ${colors.value} mt-2`}>{value}</p>
+          {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
           {trend !== undefined && (
-            <p className={`text-xs mt-2 ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`text-xs mt-2 ${trend > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
               {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}% vs mes anterior
             </p>
           )}
