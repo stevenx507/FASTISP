@@ -3089,6 +3089,31 @@ def delete_router(router_id):
     return jsonify({'success': True, 'deleted_id': str(router_id_int)}), 200
 
 
+@mikrotik_bp.route('/routers/<int:router_id>/ai-diagnose', methods=['GET'])
+@jwt_required()
+@admin_required()
+def get_ai_diagnosis(router_id):
+    try:
+        service = AIDiagnosticService(router_id)
+        diagnosis = service.run_diagnosis()
+        return jsonify({"success": True, "diagnosis": diagnosis}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@mikrotik_bp.route('/routers/<int:router_id>/logs', methods=['GET'])
+@jwt_required()
+@admin_required()
+def get_router_logs(router_id):
+    limit = request.args.get('limit', 200, type=int)
+    try:
+        with MikroTikService(router_id) as service:
+            logs = service.get_logs(limit=limit)
+            return jsonify({"success": True, "logs": logs}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @mikrotik_bp.route('/onboarding/profile', methods=['GET'])
 @admin_required()
 def get_mikrotik_onboarding_profile():

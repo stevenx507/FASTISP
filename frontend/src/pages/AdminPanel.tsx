@@ -1,4 +1,4 @@
-﻿import React, { useState, Fragment, useEffect } from 'react'
+import React, { useState, Fragment, useEffect } from 'react'
 import { Dialog, Transition, Menu } from '@headlessui/react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -74,7 +74,10 @@ import PlanChangeModal from '../components/admin/PlanChangeModal'
 import ManualPaymentModal from '../components/admin/ManualPaymentModal'
 import InteractiveDocs from '../components/admin/InteractiveDocs'
 import SstpProvisioning from './SstpProvisioning'
+import InfrastructureMap from './InfrastructureMap'
+import AssetTracking from './AssetTracking'
 import { apiClient } from '../lib/apiClient'
+
 import { normalizeRole } from '../lib/roles'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
@@ -116,7 +119,9 @@ const ALL_NAV_GROUPS: NavGroup[] = [
       { id: 'olt',         name: 'OLT',               icon: ServerIcon },
       { id: 'sstp',        name: 'Túneles SSTP',      icon: ShieldCheckIcon },
       { id: 'maps',        name: 'Mapa de Red',       icon: MapIcon },
+      { id: 'gis',         name: 'Infraestructura GIS', icon: MapIcon },
       { id: 'billing',     name: 'Facturación',       icon: CreditCardIcon },
+
       { id: 'monitoring',  name: 'Monitoreo',         icon: SignalIcon },
       { id: 'connectivity', name: 'Conectividad ISP',  icon: ServerIcon },
       { id: 'noc',         name: 'NOC',               icon: PresentationChartLineIcon },
@@ -197,7 +202,9 @@ const ALL_NAV_GROUPS: NavGroup[] = [
     bgColor: 'from-teal-500/20 to-cyan-500/10',
     items: [
       { id: 'inventory', name: 'Inventario', icon: CubeIcon },
+      { id: 'assets',    name: 'Control Seriales', icon: QrCodeIcon },
     ],
+
   },
   {
     id: 'staff',
@@ -495,7 +502,10 @@ const AdminPanel: React.FC = () => {
     tickets: <TicketsAdmin />,
     backups: <BackupsView />,
     settings: <SettingsView />,
+    gis: <InfrastructureMap />,
+    assets: <AssetTracking />,
   }
+
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">

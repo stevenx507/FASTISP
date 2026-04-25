@@ -10,8 +10,14 @@ import TechApp from './pages/TechApp'
 import ClientUsage from './pages/ClientUsage'
 import ClientSupport from './pages/ClientSupport'
 import ClientProfile from './pages/ClientProfile'
+import ClientWiFi from './pages/ClientWiFi'
 import PlatformAdmin from './pages/PlatformAdmin'
 import PlatformBootstrap from './pages/PlatformBootstrap'
+import InfrastructureMap from './pages/InfrastructureMap'
+import AssetTracking from './pages/AssetTracking'
+import BIDashboard from './pages/BIDashboard'
+import PartnerPortal from './pages/PartnerPortal'
+
 import { useAuthStore } from './store/authStore'
 import ProtectedRoute from './components/ProtectedRoute'
 import { roleHomePath } from './lib/roles'
@@ -31,12 +37,18 @@ function App() {
             <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['client']}><ClientDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/billing" element={<ProtectedRoute allowedRoles={['client']}><BillingPortal /></ProtectedRoute>} />
             <Route path="/dashboard/usage" element={<ProtectedRoute allowedRoles={['client']}><ClientUsage /></ProtectedRoute>} />
+            <Route path="/dashboard/wifi" element={<ProtectedRoute allowedRoles={['client']}><ClientWiFi /></ProtectedRoute>} />
             <Route path="/dashboard/support" element={<ProtectedRoute allowedRoles={['client']}><ClientSupport /></ProtectedRoute>} />
             <Route path="/dashboard/profile" element={<ProtectedRoute allowedRoles={['client']}><ClientProfile /></ProtectedRoute>} />
             <Route path="/tech" element={<ProtectedRoute allowedRoles={['admin', 'platform_admin', 'tech', 'support', 'billing', 'noc', 'operator']}><TechApp /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin', 'platform_admin', 'tech', 'support', 'billing', 'noc', 'operator']}><AdminPanel /></ProtectedRoute>} />
             <Route path="/admin/sstp" element={<ProtectedRoute allowedRoles={['admin', 'platform_admin', 'tech', 'noc', 'operator']}><SstpProvisioning /></ProtectedRoute>} />
+            <Route path="/admin/gis" element={<ProtectedRoute allowedRoles={['admin', 'platform_admin', 'tech', 'noc', 'operator']}><InfrastructureMap /></ProtectedRoute>} />
+            <Route path="/admin/assets" element={<ProtectedRoute allowedRoles={['admin', 'platform_admin', 'tech', 'noc', 'operator']}><AssetTracking /></ProtectedRoute>} />
+            <Route path="/admin/bi" element={<ProtectedRoute allowedRoles={['admin', 'platform_admin', 'billing', 'noc']}><BIDashboard /></ProtectedRoute>} />
+            <Route path="/partner" element={<ProtectedRoute allowedRoles={['partner', 'admin']}><PartnerPortal /></ProtectedRoute>} />
             <Route path="/platform" element={<ProtectedRoute allowedRoles={['platform_admin']}><PlatformAdmin /></ProtectedRoute>} />
+
             <Route path="/platform/bootstrap" element={isAuthenticated ? <Navigate to={authHome} /> : <PlatformBootstrap />} />
             <Route path="*" element={<Navigate to={isAuthenticated ? authHome : "/login"} />} />
           </Routes>

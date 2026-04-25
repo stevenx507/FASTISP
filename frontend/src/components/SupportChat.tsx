@@ -51,22 +51,7 @@ const priorityBadge: Record<TicketPriority, string> = {
   urgent: 'bg-rose-500/20 text-rose-400',
 }
 
-const buildAssistantReply = (input: string) => {
-  const text = input.toLowerCase()
-  if (text.includes('lento') || text.includes('latencia') || text.includes('ping')) {
-    return 'Te recomiendo ejecutar el diagnostico rapido y, si el problema sigue, crear un ticket con prioridad alta.'
-  }
-  if (text.includes('sin conexion') || text.includes('no tengo') || text.includes('no navega')) {
-    return 'Puedo ayudarte a revisar tu enlace. Ejecuta diagnostico y revisamos los resultados.'
-  }
-  if (text.includes('factura') || text.includes('pago')) {
-    return 'Para facturas puedes ir a Facturacion. Si hay error en pago, abre ticket y adjunta detalle de la transaccion.'
-  }
-  if (text.includes('ticket')) {
-    return 'Completa el formulario de ticket con asunto, detalle y prioridad. Te mostrare el seguimiento aqui mismo.'
-  }
-  return 'Recibido. Puedo correr diagnostico de red y abrir un ticket para que el equipo tecnico lo atienda.'
-}
+
 
 const formatDate = (value?: string) => {
   if (!value) return '-'
@@ -142,24 +127,25 @@ const SupportChat: React.FC = () => {
     }
   }
 
-  const sendMessage = (content: string) => {
+  const sendMessage = async (content: string) => {
     const text = content.trim()
     if (!text) return
 
-    setMessages((prev) => [
-      ...prev,
-      { id: `user-${Date.now()}`, role: 'user', text },
-      { id: `assistant-${Date.now() + 1}`, role: 'assistant', text: buildAssistantReply(text) },
-    ])
-
-    if (!ticketDescription.trim()) {
-      setTicketDescription(text)
-    }
-    if (!ticketSubject.trim()) {
-      setTicketSubject(text.slice(0, 80))
-    }
-
+    const userMsg: ChatMessage = { id: `user-${Date.now()}`, role: 'user', text }
+    setMessages((prev) => [...prev, userMsg])
     setDraft('')
+
+    if (!ticketDescription.trim()) setTicketDescription(text)
+    if (!ticketSubject.trim()) setTicketSubject(text.slice(0, 80))
+
+    try {
+      const response = await apiClient.post('/client/support/ai-chat', { message: text }) as { reply?: string }
+      if (response.reply) {
+        addAssistantMessage(response.reply)
+      }
+    } catch (err) {
+      addAssistantMessage("Lo siento, no pude contactar con el asistente de IA. Intentemos de nuevo en un momento.")
+    }
   }
 
   const createTicket = async () => {

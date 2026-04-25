@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timedelta
+from datetime import datetime, timedelta
 from functools import wraps
 import csv
 import hashlib
@@ -10,7 +10,7 @@ import string
 import time
 import uuid
 
-from flask import Blueprint, jsonify, request, Response, current_app
+from flask import Blueprint, jsonify, request, Response, current_app, send_file
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, verify_jwt_in_request
 
 from app.models import (
@@ -38,9 +38,14 @@ from app.models import (
 from app import limiter, cache, db, mail
 import pyotp
 import requests
+from app.services.ai_diagnostic_service import AIDiagnosticService
+from app.services.ai_support_service import AISupportService
+from app.services.pdf_service import PDFService
+from app.services.billing_service import billing_service
 from app.services.mikrotik_service import MikroTikService
 from app.services.monitoring_service import MonitoringService
 from app.services.snmp_service import snmp_service
+from app.lib.messaging import MessagingManager
 from app.tenancy import current_tenant_id, tenant_access_allowed
 from datetime import date
 from werkzeug.exceptions import BadRequest
@@ -1650,7 +1655,7 @@ def notifications_feed():
 
 
 @main_bp.route('/auth/login', methods=['POST'])
-@limiter.limit("10/minute")
+@limiter.limit("5 per minute")
 def login():
     data = request.get_json()
     if not data or not data.get('email') or not data.get('password'):
@@ -2305,6 +2310,12 @@ def change_plan(client_id):
 
     db.session.commit()
 
+    # Phase 5: Automated WhatsApp Notification
+    try:
+        MessagingManager.notify_invoice_created(invoice)
+    except Exception as e:
+        current_app.logger.error(f"Failed to send WhatsApp notification for invoice {invoice.id}: {e}")
+
     return jsonify({
         "client": client.to_dict(),
         "subscription": subscription.to_dict(),
@@ -2352,6 +2363,32 @@ def manual_payment():
     invoice.status = 'paid'
     db.session.add(payment)
     db.session.commit()
+
+    # Phase 5: Automated WhatsApp Notification
+    try:
+        MessagingManager.notify_payment_confirmed(payment)
+    except Exception as e:
+        current_app.logger.error(f"Failed to send WhatsApp notification for payment {payment.id}: {e}")
+
+    # Phase 5: Partner Commission Generation
+    if invoice.subscription and invoice.subscription.client and invoice.subscription.client.partner_id:
+        try:
+            from app.models import Partner, PartnerCommission
+            client = invoice.subscription.client
+            partner = db.session.get(Partner, client.partner_id)
+            if partner:
+                commission_amount = float(payment.amount) * (partner.commission_percentage / 100)
+                commission = PartnerCommission(
+                    partner_id=partner.id,
+                    client_id=client.id,
+                    invoice_id=invoice.id,
+                    amount=commission_amount,
+                    status='pending'
+                )
+                db.session.add(commission)
+                db.session.commit()
+        except Exception as e:
+            current_app.logger.error(f"Failed to generate partner commission for payment {payment.id}: {e}")
 
     return jsonify({"invoice": invoice.to_dict(), "payment": payment.to_dict()}), 201
 
@@ -3195,6 +3232,14 @@ def tickets_admin_update(ticket_id):
 
     db.session.add(ticket)
     db.session.commit()
+
+    # Phase 5: Automated WhatsApp Notification
+    if assigned_to and assigned_to != ticket.assigned_to:
+        try:
+            MessagingManager.notify_tech_assigned(ticket, assigned_to)
+        except Exception as e:
+            current_app.logger.error(f"Failed to send WhatsApp notification for ticket assignment {ticket.id}: {e}")
+
     _notify_incident(f"Ticket #{ticket.id} actualizado: status={status}, assigned={assigned_to}", severity="info")
     return jsonify({"ticket": ticket.to_dict(), "success": True}), 200
 
@@ -3265,6 +3310,52 @@ def client_notification_preferences():
         return jsonify({"success": True, "preferences": prefs}), 200
     prefs = cache.get(key) or {"email": True, "whatsapp": False, "push": False}
     return jsonify({"preferences": prefs}), 200
+
+
+@main_bp.route('/client/wifi-settings', methods=['GET', 'POST'])
+@jwt_required()
+def client_wifi_settings():
+    current_user_id = _current_user_id()
+    if current_user_id is None:
+        return jsonify({"error": "Token de usuario invalido."}), 401
+    
+    user = db.session.get(User, current_user_id)
+    if not user or user.role != 'client':
+        return jsonify({'success': False, 'error': 'Access denied'}), 403
+    
+    client = user.client
+    if not client or not client.router_id:
+        return jsonify({'success': False, 'error': 'No router associated with this client'}), 404
+    
+    if request.method == 'GET':
+        return jsonify({
+            'success': True,
+            'ssid': client.ssid_router_wifi or f"ISPMAX_{client.id}",
+            'has_password': bool(client.password_ssid_wifi)
+        })
+    
+    # POST
+    data = request.get_json() or {}
+    ssid = data.get('ssid')
+    password = data.get('password')
+    
+    if not ssid or not password:
+        return jsonify({'success': False, 'error': 'SSID and password are required'}), 400
+    
+    if len(password) < 8:
+        return jsonify({'success': False, 'error': 'Password must be at least 8 characters'}), 400
+
+    try:
+        with MikroTikService(client.router_id) as service:
+            if service.update_wifi(ssid, password):
+                client.ssid_router_wifi = ssid
+                client.password_ssid_wifi = password
+                db.session.commit()
+                return jsonify({'success': True, 'message': 'WiFi settings updated successfully'})
+            else:
+                return jsonify({'success': False, 'error': 'Could not update WiFi on router'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @main_bp.route('/ops/run-job', methods=['POST'])
@@ -3648,25 +3739,28 @@ def get_usage_history():
     data_points = [0.0] * days
     try:
         client = query.first()
-        tags = {}
-        if client and client.router_id:
-            tags['router_id'] = str(client.router_id)
+        tags = {'client_id': str(client.id)}
         monitoring = MonitoringService()
-        series = monitoring.query_metrics('interface_traffic', time_range=f'-{days}d', tags=tags or None)
-        # Aggregate bytes to GB per day if available
+        # Query client_traffic instead of interface_traffic for per-client data
+        series = monitoring.query_metrics('client_traffic', time_range=f'-{days}d', tags=tags)
+        
+        # Aggregate Mbps to GB per day (assuming 1 minute poll intervals)
         for point in series:
             ts = point.get('_time') or point.get('time')
-            rx = float(point.get('rx_bytes', 0) or 0)
-            tx = float(point.get('tx_bytes', 0) or 0)
-            total_gb = (rx + tx) / (1024**3)
+            rx = float(point.get('download_rate', 0) or 0)
+            tx = float(point.get('upload_rate', 0) or 0)
+            
+            # bps to GB in 60s interval: (bps * 60 / 8) / 1024^3
+            total_gb = ((rx + tx) * 60 / 8) / (1024**3)
+            
             parsed_ts = _parse_iso_datetime(ts)
             if parsed_ts:
                 day_idx = (today - parsed_ts.date()).days
                 if 0 <= day_idx < days:
                     data_points[days - 1 - day_idx] += total_gb
     except Exception as exc:
-        current_app.logger.info("Uso histórico usando fallback: %s", exc)
-        data_points = [0.0] * days
+        current_app.logger.info("Uso histrico usando fallback: %s", exc)
+        pass
 
     usage_data = {
         "labels": labels,
@@ -3681,6 +3775,46 @@ def get_usage_history():
         ],
     }
     return jsonify(usage_data), 200
+
+
+@main_bp.route('/client/support/ai-chat', methods=['POST'])
+@jwt_required()
+def client_support_ai_chat():
+    client_id = get_jwt_identity()
+    data = request.get_json()
+    message = data.get('message', '')
+    
+    if not message:
+        return jsonify({"error": "Mensaje vacio"}), 400
+        
+    try:
+        service = AISupportService(client_id)
+        reply = service.get_response(message)
+        return jsonify({"reply": reply}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@main_bp.route('/client/invoices/<int:invoice_id>/pdf', methods=['GET'])
+@jwt_required()
+def client_invoice_pdf(invoice_id):
+    client_id = get_jwt_identity()
+    invoice = db.session.get(Invoice, invoice_id)
+    
+    if not invoice or invoice.client_id != client_id:
+        return jsonify({"error": "Factura no encontrada"}), 404
+        
+    try:
+        pdf_buffer = PDFService.generate_invoice_pdf(invoice)
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name=f"Factura_ISPMAX_{invoice.id}.pdf",
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 
 @main_bp.route('/admin/routers/usage', methods=['GET'])
@@ -3755,8 +3889,18 @@ def admin_list_clients():
     plan_id = _parse_int(plan_id_raw) if plan_id_raw is not None else None
     if plan_id_raw is not None and plan_id is None:
         return jsonify({"error": "plan_id invalido"}), 400
-    clients = _collect_admin_clients(tenant_id, term=term, status_filter=status_filter, plan_id=plan_id)
-    return jsonify({"items": clients, "count": len(clients)}), 200
+    page = _parse_int(request.args.get('page')) or 1
+    per_page = _parse_int(request.args.get('per_page')) or 50
+    
+    data = _collect_admin_clients(
+        tenant_id, 
+        term=term, 
+        status_filter=status_filter, 
+        plan_id=plan_id,
+        page=page,
+        per_page=per_page
+    )
+    return jsonify(data), 200
 
 
 def _client_status(client: Client) -> str:
@@ -3781,7 +3925,7 @@ def _serialize_admin_client(client: Client) -> dict:
     }
 
 
-def _collect_admin_clients(tenant_id, term: str | None = None, status_filter: str | None = None, plan_id: int | None = None) -> list[dict]:
+def _collect_admin_clients(tenant_id, term: str | None = None, status_filter: str | None = None, plan_id: int | None = None, page: int = 1, per_page: int = 50) -> dict:
     query = Client.query.options(
         joinedload(Client.plan),
         joinedload(Client.user),
@@ -3793,9 +3937,14 @@ def _collect_admin_clients(tenant_id, term: str | None = None, status_filter: st
     if plan_id is not None:
         query = query.filter_by(plan_id=plan_id)
 
+    # Nota: El filtrado por status y term sigue siendo en Python por la complejidad de subscriptions[0].status
+    # pero ahora solo devolvemos una pagina.
+    # TODO: Refactorizar status a un campo denormalizado en Client para filtrado SQL real.
+    
     normalized_term = str(term or '').strip().lower()
     normalized_status = str(status_filter or '').strip().lower()
-    items: list[dict] = []
+    
+    all_items: list[dict] = []
     for row in query.order_by(Client.id.asc()).all():
         payload = _serialize_admin_client(row)
         if normalized_status and payload["status"] != normalized_status:
@@ -3810,8 +3959,19 @@ def _collect_admin_clients(tenant_id, term: str | None = None, status_filter: st
             ]
             if not any(normalized_term in candidate for candidate in haystack):
                 continue
-        items.append(payload)
-    return items
+        all_items.append(payload)
+    
+    total = len(all_items)
+    start = (page - 1) * per_page
+    end = start + per_page
+    
+    return {
+        "items": all_items[start:end],
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "pages": (total + per_page - 1) // per_page
+    }
 
 
 @main_bp.route('/admin/clients/export', methods=['GET'])
@@ -8712,6 +8872,186 @@ def admin_inventory_reports_movements_summary():
     }
     return jsonify(summary), 200
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Fase 4: Operación a Escala e Infraestructura GIS
+# ─────────────────────────────────────────────────────────────────────────────
+
+@main_bp.route('/admin/inventory/units', methods=['GET'])
+@permission_required('inventory.read')
+def admin_inventory_list_units():
+    tenant_id = current_tenant_id()
+    serial = request.args.get('serial', '').strip()
+    status = request.args.get('status', '').strip()
+    product_id = _parse_int(request.args.get('product_id'))
+
+    query = _tenant_scoped_query(ProductUnit, tenant_id)
+    if serial:
+        query = query.filter(ProductUnit.serial_number.ilike(f"%{serial}%"))
+    if status:
+        query = query.filter(ProductUnit.status == status)
+    if product_id:
+        query = query.filter(ProductUnit.product_id == product_id)
+
+    units = query.all()
+    return jsonify({"items": [u.to_dict() for u in units], "count": len(units)}), 200
 
 
+@main_bp.route('/admin/inventory/units', methods=['POST'])
+@permission_required('inventory.write')
+def admin_inventory_create_unit():
+    tenant_id = current_tenant_id()
+    data = request.get_json() or {}
+    
+    unit = ProductUnit(
+        product_id=data.get('product_id'),
+        serial_number=data.get('serial_number'),
+        mac_address=data.get('mac_address'),
+        status=data.get('status', 'available'),
+        total_length=data.get('total_length'),
+        remaining_length=data.get('remaining_length') or data.get('total_length'),
+        notes=data.get('notes'),
+        tenant_id=tenant_id
+    )
 
+    db.session.add(unit)
+    
+    # Update product stock automatically
+    product = db.session.get(Product, unit.product_id)
+    if product:
+        product.stock_quantity += 1
+        
+    db.session.commit()
+    return jsonify(unit.to_dict()), 201
+
+
+@main_bp.route('/admin/gis/naps', methods=['GET'])
+@jwt_required()
+def admin_gis_list_naps():
+    tenant_id = current_tenant_id()
+    naps = _tenant_scoped_query(NapBox, tenant_id).all()
+    return jsonify({"items": [n.to_dict() for n in naps]}), 200
+
+
+@main_bp.route('/admin/gis/naps', methods=['POST'])
+@permission_required('network.write')
+def admin_gis_create_nap():
+    tenant_id = current_tenant_id()
+    data = request.get_json() or {}
+    
+    nap = NapBox(
+        name=data.get('name'),
+        address=data.get('address'),
+        latitude=data.get('latitude'),
+        longitude=data.get('longitude'),
+        capacity=data.get('capacity', 16),
+        status=data.get('status', 'active'),
+        notes=data.get('notes'),
+        tenant_id=tenant_id
+    )
+    db.session.add(nap)
+    db.session.commit()
+    return jsonify(nap.to_dict()), 201
+
+
+@main_bp.route('/admin/gis/lines', methods=['GET'])
+@jwt_required()
+def admin_gis_list_lines():
+    tenant_id = current_tenant_id()
+    lines = _tenant_scoped_query(FiberLine, tenant_id).all()
+    return jsonify({"items": [l.to_dict() for l in lines]}), 200
+
+
+@main_bp.route('/admin/gis/lines', methods=['POST'])
+@permission_required('network.write')
+def admin_gis_create_line():
+    tenant_id = current_tenant_id()
+    data = request.get_json() or {}
+    
+    line = FiberLine(
+        name=data.get('name'),
+        path_geojson=data.get('path'),
+        color=data.get('color', '#3b82f6'),
+        fiber_type=data.get('fiber_type'),
+        status=data.get('status', 'active'),
+        tenant_id=tenant_id
+    )
+    db.session.add(line)
+    db.session.commit()
+    return jsonify(line.to_dict()), 201
+
+
+@main_bp.route('/admin/analytics/business', methods=['GET'])
+@permission_required('audit.read')
+def admin_analytics_business():
+    from app.services.analytics_service import AnalyticsService
+    tenant_id = current_tenant_id()
+    metrics = AnalyticsService.build_business_metrics(tenant_id)
+    return jsonify(metrics), 200
+
+
+@main_bp.route('/partner/stats', methods=['GET'])
+@jwt_required()
+def partner_stats():
+    user_id = _current_user_id()
+    from app.models import Partner, PartnerCommission
+    partner = Partner.query.filter_by(user_id=user_id).first()
+    if not partner:
+        return jsonify({"error": "No eres un aliado registrado"}), 403
+    
+    total_commissions = db.session.query(db.func.sum(PartnerCommission.amount)).filter_by(partner_id=partner.id, status='paid').scalar() or 0
+    pending_commissions = db.session.query(db.func.sum(PartnerCommission.amount)).filter_by(partner_id=partner.id, status='pending').scalar() or 0
+    total_sales = len(partner.referred_clients)
+    
+    return jsonify({
+        "name": partner.company_name or partner.user.name,
+        "balance": float(pending_commissions),
+        "total_paid": float(total_commissions),
+        "totalSales": total_sales,
+        "rank": "Gold" if total_sales > 10 else "Silver",
+        "commission_rate": partner.commission_percentage
+    }), 200
+
+
+@main_bp.route('/partner/commissions', methods=['GET'])
+@jwt_required()
+def partner_commissions_list():
+    user_id = _current_user_id()
+    from app.models import Partner, PartnerCommission
+    partner = Partner.query.filter_by(user_id=user_id).first()
+    if not partner:
+        return jsonify({"error": "Acceso denegado"}), 403
+    
+    commissions = PartnerCommission.query.filter_by(partner_id=partner.id).order_by(PartnerCommission.created_at.desc()).all()
+    return jsonify([c.to_dict() for c in commissions]), 200
+
+
+@main_bp.route('/partner/prospects', methods=['POST'])
+@jwt_required()
+def partner_register_prospect():
+    user_id = _current_user_id()
+    from app.models import Partner, Client
+    partner = Partner.query.filter_by(user_id=user_id).first()
+    if not partner:
+        return jsonify({"error": "Acceso denegado"}), 403
+    
+    data = request.get_json() or {}
+    name = data.get('name')
+    phone = data.get('phone')
+    address = data.get('address')
+    
+    if not name or not phone:
+        return jsonify({"error": "Nombre y teléfono son requeridos"}), 400
+        
+    prospect = Client(
+        full_name=name,
+        phone=phone,
+        address=address,
+        tenant_id=partner.tenant_id,
+        partner_id=partner.id,
+        tipo_cliente='prepago',
+        comentarios=f"Registrado por aliado: {partner.company_name}"
+    )
+    db.session.add(prospect)
+    db.session.commit()
+    
+    return jsonify({"success": True, "client_id": prospect.id}), 201

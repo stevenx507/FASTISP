@@ -414,6 +414,73 @@ class MikroTikService:
             logger.error(f"Unexpected error configuring WiFi: {e}")
             return False
     
+    def update_wifi(self, ssid: str, password: str, interface: str = "wlan1") -> bool:
+        """Update WiFi settings (SSID and Password) on the router"""
+        if not self.api:
+            return False
+        try:
+            wireless_api = self.api.get_resource('/interface/wireless')
+            
+            # Find the interface (usually number 0 or by name)
+            interfaces = wireless_api.get()
+            found_iface = None
+            for iface in interfaces:
+                if iface.get('name') == interface:
+                    found_iface = iface
+                    break
+            
+            if not found_iface:
+                # Try interface 0 if wlan1 not found
+                if interfaces:
+                    found_iface = interfaces[0]
+                else:
+                    logger.warning("No wireless interfaces found.")
+                    return False
+            
+            iface_id = found_iface['.id']
+            profile_name = found_iface.get('security-profile', 'default')
+            
+            # 1. Update SSID
+            wireless_api.set(id=iface_id, ssid=ssid)
+            
+            # 2. Update Security Profile
+            security_api = self.api.get_resource('/interface/wireless/security-profiles')
+            if profile_name == 'default':
+                # Create a custom profile if using default
+                profile_name = "ispmax_wifi"
+                existing = security_api.get(name=profile_name)
+                if not existing:
+                    security_api.add(
+                        name=profile_name,
+                        mode="dynamic-keys",
+                        authentication_types="wpa2-psk",
+                        wpa2_pre_shared_key=password
+                    )
+                else:
+                    security_api.set(id=existing[0]['.id'], wpa2_pre_shared_key=password)
+                
+                # Apply the new profile to the interface
+                wireless_api.set(id=iface_id, security_profile=profile_name)
+            else:
+                # Update the existing profile
+                profiles = security_api.get(name=profile_name)
+                if profiles:
+                    security_api.set(id=profiles[0]['.id'], wpa2_pre_shared_key=password)
+                else:
+                    # Fallback to creating a profile
+                    security_api.add(
+                        name=profile_name,
+                        mode="dynamic-keys",
+                        authentication_types="wpa2-psk",
+                        wpa2_pre_shared_key=password
+                    )
+
+            logger.info(f"WiFi settings updated: SSID={ssid}")
+            return True
+        except Exception as e:
+            logger.error(f"Error updating WiFi: {e}")
+            return False
+    
     # ==================== PLAN FEATURES ====================
     
     def _apply_plan_features(self, client: Client, plan: Plan) -> bool:

@@ -14,11 +14,13 @@ import {
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../store/authStore'
 import { apiClient } from '../lib/apiClient'
+import NocAlertListener from './admin/NocAlertListener'
 
 const tabs = [
   { id: 'dashboard', name: 'Dashboard', path: '/dashboard', icon: ChartBarIcon },
   { id: 'billing', name: 'Facturacion', path: '/dashboard/billing', icon: CreditCardIcon },
   { id: 'usage', name: 'Uso detallado', path: '/dashboard/usage', icon: WifiIcon },
+  { id: 'wifi', name: 'Mi WiFi', path: '/dashboard/wifi', icon: WifiIcon },
   { id: 'support', name: 'Soporte', path: '/dashboard/support', icon: ChatBubbleLeftRightIcon },
   { id: 'profile', name: 'Mi perfil', path: '/dashboard/profile', icon: UserCircleIcon },
 ]
@@ -175,6 +177,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   return (
     <>
+      <NocAlertListener />
       <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_left,_#071327,_#0b1221)] text-gray-100">
         <Transition.Root show={sidebarOpen} as={Fragment}>
           <Dialog as="div" className="relative z-40 md:hidden" onClose={setSidebarOpen}>

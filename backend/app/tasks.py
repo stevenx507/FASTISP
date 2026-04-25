@@ -11,7 +11,7 @@ import os
 import subprocess
 
 from app import celery, db
-from app.models import MikroTikRouter, Subscription, Client
+from app.models import MikroTikRouter, Subscription, Client, AuditLog
 from app.services.analytics_service import analytics_service
 from app.services.mikrotik_service import MikroTikService
 from app.services.monitoring_service import MonitoringService
@@ -141,6 +141,27 @@ def poll_mikrotik_metrics(self):
                                     'tx_packets': int(iface.get('tx_packets', 0)),
                                 }
                                 monitoring_service.write_metric('interface_traffic', fields, tags)
+
+                    queues = mikrotik_service.get_queue_stats()
+                    if queues:
+                        for q in queues:
+                            name = q.get('name', '')
+                            cid = None
+                            if name.startswith('client_'):
+                                try:
+                                    cid = name.split('_')[1]
+                                except: pass
+                            
+                            tags = {'router_id': str(router.id), 'queue_name': name}
+                            if cid: tags['client_id'] = cid
+                            
+                            fields = {'queued_bytes': int(q.get('queued_bytes', 0))}
+                            try:
+                                rate_parts = q.get('rate', '0/0').split('/')
+                                fields['upload_rate'] = int(rate_parts[0])
+                                fields['download_rate'] = int(rate_parts[1])
+                            except: pass
+                            monitoring_service.write_metric('client_traffic', fields, tags)
 
                 snmp_profile = snmp_service.router_profile(router)
                 if snmp_profile.get('enabled'):
@@ -279,9 +300,12 @@ def enforce_billing_status() -> Dict[str, Any]:
     """
     today = datetime.utcnow().date()
     updated: List[Dict[str, Any]] = []
+    grace_period_days = 3
 
     for sub in Subscription.query.all():
         original_status = sub.status
+        
+        # 1. Marcar como past_due si ya paso la fecha de cobro
         if sub.next_charge and sub.next_charge < today and sub.status == 'active':
             sub.status = 'past_due'
 
@@ -289,14 +313,48 @@ def enforce_billing_status() -> Dict[str, Any]:
         if not client and sub.client_id:
             client = db.session.get(Client, sub.client_id)
 
-        if sub.status in ('past_due', 'suspended') and client and client.router_id:
+        # 2. Logica de suspension con periodo de gracia
+        grace_date = sub.next_charge + timedelta(days=grace_period_days) if sub.next_charge else today
+        
+        is_past_grace = sub.status == 'past_due' and today > grace_date
+        
+        if (is_past_grace or sub.status == 'suspended') and client and client.router_id:
+            # Solo intentar suspender si no estaba ya suspendido en MikroTik (opcional, MikroTikService suele ser idempotente)
             with MikroTikService(client.router_id) as service:
                 service.suspend_client(client, reason='billing')
-            sub.status = 'suspended'
-            _send_billing_notification(sub, f'Tu servicio esta suspendido por pago vencido (sub {sub.id}).')
+            
+            if sub.status != 'suspended':
+                sub.status = 'suspended'
+                # Auditoria de suspension
+                audit = AuditLog(
+                    tenant_id=sub.tenant_id,
+                    action='auto_suspend',
+                    entity_type='client',
+                    entity_id=str(client.id),
+                    meta={
+                        'subscription_id': sub.id,
+                        'reason': 'payment_overdue',
+                        'next_charge': sub.next_charge.isoformat() if sub.next_charge else None,
+                        'grace_date': grace_date.isoformat()
+                    }
+                )
+                db.session.add(audit)
+                _send_billing_notification(sub, f'Tu servicio ha sido suspendido por falta de pago (Vencimiento: {sub.next_charge}).')
+
         elif sub.status == 'active' and client and client.router_id:
             with MikroTikService(client.router_id) as service:
                 service.activate_client(client)
+            
+            if original_status == 'suspended':
+                # Auditoria de reactivacion
+                audit = AuditLog(
+                    tenant_id=sub.tenant_id,
+                    action='auto_restore',
+                    entity_type='client',
+                    entity_id=str(client.id),
+                    meta={'subscription_id': sub.id, 'reason': 'payment_received'}
+                )
+                db.session.add(audit)
 
         if sub.status != original_status:
             updated.append({"subscription_id": sub.id, "from": original_status, "to": sub.status})
@@ -460,27 +518,4 @@ def update_client_bandwidth(self, router_id: int, client_ip: str,
         raise
 
 
-@celery.task(
-    bind=True,
-    name='app.tasks.heartbeat_check',
-    max_retries=1,
-)
-def heartbeat_check(self) -> Dict[str, Any]:
-    """
-    Pilar 2: Verifica la conectividad VPN de todos los routers cada minuto.
-    Genera alertas automáticas cuando un MikroTik se detecta offline.
-    Programado en Celery Beat cada 60 segundos (ver init.py).
-    """
-    try:
-        from app.services.heartbeat_service import run_heartbeat_check
-        summary = run_heartbeat_check()
-        current_app.logger.info(
-            'Heartbeat check completado: %d online, %d offline, %d total',
-            summary.get('online', 0),
-            summary.get('offline', 0),
-            summary.get('total', 0),
-        )
-        return summary
-    except Exception as exc:
-        current_app.logger.error('Error en heartbeat_check: %s', exc)
-        raise
+

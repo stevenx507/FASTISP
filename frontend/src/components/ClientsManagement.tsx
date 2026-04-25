@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import {
@@ -259,31 +260,39 @@ const ClientsManagement: React.FC = () => {
     return createPortal(content, document.body)
   }
 
-  const load = async () => {
-    setLoading(true)
-    try {
-      void loadOltDevices()
-    const [clientsResp, plansResp, routersResp] = await Promise.allSettled([
-        apiClient.get('/admin/clients'),
+  const { data: initData, isLoading: queryLoading, refetch } = useQuery({
+    queryKey: ['clients_init', page, pageSize, searchTerm, filterStatus],
+    queryFn: async () => {
+      const q = searchTerm ? `&q=${encodeURIComponent(searchTerm)}` : ''
+      const status = filterStatus !== 'all' ? `&status=${filterStatus}` : ''
+      const url = `/admin/clients?page=${page}&per_page=${pageSize}${q}${status}`
+      
+      const [clientsResp, plansResp, routersResp] = await Promise.all([
+        apiClient.get(url),
         apiClient.get('/plans'),
         apiClient.get('/routers'),
       ])
-
-      if (clientsResp.status === 'fulfilled') setClients(clientsResp.value.items || [])
-      if (plansResp.status === 'fulfilled') setPlans(plansResp.value.items || [])
-      if (routersResp.status === 'fulfilled') {
-        setRouters(routersResp.value.routers || routersResp.value.items || [])
+      return {
+        clients: (clientsResp as any).items || [],
+        total: (clientsResp as any).total || 0,
+        plans: (plansResp as any).items || [],
+        routers: (routersResp as any).routers || (routersResp as any).items || [],
       }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'No se pudieron cargar los datos')
-    } finally {
-      setLoading(false)
     }
-  }
+  })
 
   useEffect(() => {
-    void load()
-  }, [])
+    if (initData) {
+      setClients(initData.clients)
+      setPlans(initData.plans)
+      setRouters(initData.routers)
+      void loadOltDevices()
+    }
+  }, [initData])
+
+  const load = useCallback(() => {
+    refetch()
+  }, [refetch])
 
   // Close herramientas on outside click
   useEffect(() => {
@@ -320,11 +329,11 @@ const ClientsManagement: React.FC = () => {
       })
   }, [clients, filterStatus, searchTerm, sortBy, colSearch])
 
-  const totalPages = Math.max(1, Math.ceil(allFiltered.length / pageSize))
+  const totalPages = Math.max(1, Math.ceil((initData?.total || 0) / pageSize))
   const filteredClients = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return allFiltered.slice(start, start + pageSize)
-  }, [allFiltered, page, pageSize])
+    // Con paginacion de servidor, clients ya contiene solo la pagina actual
+    return clients
+  }, [clients])
 
   const allPageSelected = filteredClients.length > 0 && filteredClients.every((c) => selectedIds.has(c.id))
   const toggleSelectAll = () => {

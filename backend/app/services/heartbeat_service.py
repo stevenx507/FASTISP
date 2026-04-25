@@ -229,6 +229,21 @@ def _trigger_offline_alert(router, check_result: dict) -> None:
         db.session.commit()
         logger.warning(f"Alerta generada: MikroTik Offline - {router.name}")
 
+        # Emitir via WebSockets para el panel administrativo
+        try:
+            from app import socketio
+            socketio.emit('noc_alert', {
+                'id': alert.id,
+                'router_id': router.id,
+                'router_name': router.name,
+                'title': alert.title,
+                'message': alert.message,
+                'severity': alert.severity,
+                'timestamp': alert.starts_at.isoformat()
+            })
+        except Exception as ws_err:
+            logger.error(f"Error emitting socketio alert: {ws_err}")
+
     except Exception as e:
         logger.error(f"Error generando alerta offline para router {router.id}: {e}")
 

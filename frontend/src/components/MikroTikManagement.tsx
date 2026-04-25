@@ -6,6 +6,8 @@ import {
   ShieldCheckIcon,
   UserGroupIcon,
   WifiIcon,
+  SparklesIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline'
 import AIDiagnosis from './AIDiagnosis'
 import ActionsHeader from './ActionsHeader'
@@ -762,7 +764,7 @@ const MikroTikManagement: React.FC = () => {
   const [routers, setRouters] = useState<RouterItem[]>([])
   const [selectedRouter, setSelectedRouter] = useState<RouterItem | null>(null)
   const [routerStats, setRouterStats] = useState<RouterStats | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'queues' | 'connections' | 'config' | 'security' | 'traffic_flow'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'queues' | 'connections' | 'config' | 'security' | 'traffic_flow' | 'ai_diagnosis' | 'logs'>('overview')
 
   const [isLoading, setIsLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
@@ -778,6 +780,8 @@ const MikroTikManagement: React.FC = () => {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null)
   const [aiError, setAiError] = useState<string | null>(null)
   const [isAiLoading, setIsAiLoading] = useState(false)
+  const [logs, setLogs] = useState<any[]>([])
+  const [logsLoading, setLogsLoading] = useState(false)
 
   const [toasts, setToasts] = useState<Toast[]>([])
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -1558,6 +1562,22 @@ const MikroTikManagement: React.FC = () => {
       setAiError(message)
     } finally {
       setIsAiLoading(false)
+    }
+  }
+
+  const loadLogs = async () => {
+    if (!selectedRouter) return
+    setLogsLoading(true)
+    try {
+      const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/logs?limit=200`)
+      const data = (await safeJson(response)) as { success?: boolean; logs?: any[] } | null
+      if (response.ok && data?.success) {
+        setLogs(data.logs || [])
+      }
+    } catch (err) {
+      addToast('error', 'Error al cargar logs del router')
+    } finally {
+      setLogsLoading(false)
     }
   }
 
@@ -2950,10 +2970,16 @@ const MikroTikManagement: React.FC = () => {
                 { id: 'config', name: 'Configuracion', icon: CogIcon },
                 { id: 'security', name: 'Seguridad', icon: ShieldCheckIcon },
                 { id: 'traffic_flow', name: 'Traffic Flow', icon: ChartBarIcon },
+                { id: 'ai_diagnosis', name: 'IA Diagnosis', icon: SparklesIcon },
+                { id: 'logs', name: 'Logs', icon: DocumentTextIcon },
               ].map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as 'overview' | 'queues' | 'connections' | 'config' | 'security' | 'traffic_flow')}
+                  onClick={() => {
+                    setActiveTab(tab.id as any)
+                    if (tab.id === 'logs') void loadLogs()
+                    if (tab.id === 'ai_diagnosis' && !aiAnalysis) void runAiDiagnosis()
+                  }}
                   className={`flex items-center space-x-2 border-b-2 px-1 py-3 text-sm font-medium ${
                     activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-300'
                   }`}
@@ -2993,6 +3019,54 @@ const MikroTikManagement: React.FC = () => {
                     addToast={addToast}
                     openConfirm={openConfirm}
                   />
+                )}
+                {activeTab === 'ai_diagnosis' && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-sm font-medium text-slate-400">Diagnóstico Inteligente (AI)</h4>
+                      <button 
+                        onClick={runAiDiagnosis} 
+                        disabled={isAiLoading}
+                        className="text-xs bg-blue-600/20 text-blue-400 px-3 py-1 rounded-full border border-blue-500/30 hover:bg-blue-600/30"
+                      >
+                        {isAiLoading ? 'Analizando...' : 'Refrescar Análisis'}
+                      </button>
+                    </div>
+                    <AIDiagnosis analysis={aiAnalysis} error={aiError} isLoading={isAiLoading} />
+                  </div>
+                )}
+                {activeTab === 'logs' && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-sm font-medium text-slate-400">Logs del Router (RouterOS)</h4>
+                      <button 
+                        onClick={loadLogs} 
+                        disabled={logsLoading}
+                        className="text-xs bg-white/5 text-slate-300 px-3 py-1 rounded-full border border-white/10 hover:bg-white/10"
+                      >
+                        {logsLoading ? 'Cargando...' : 'Actualizar Logs'}
+                      </button>
+                    </div>
+                    <div className="max-h-[500px] overflow-y-auto rounded-lg bg-black/40 p-4 font-mono text-xs">
+                      {logsLoading ? (
+                        <div className="py-10 text-center text-slate-500">Cargando logs...</div>
+                      ) : logs.length === 0 ? (
+                        <div className="py-10 text-center text-slate-500">No hay logs recientes.</div>
+                      ) : (
+                        <div className="space-y-1">
+                          {logs.map((log, idx) => (
+                            <div key={idx} className="flex gap-2">
+                              <span className="text-slate-500 shrink-0">{log.time}</span>
+                              <span className={`shrink-0 ${log.topics?.includes('error') ? 'text-red-400' : 'text-cyan-500'}`}>
+                                [{log.topics}]
+                              </span>
+                              <span className="text-slate-300">{log.message}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
                 {activeTab === 'config' && (
                   <div className="space-y-4">

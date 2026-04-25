@@ -158,9 +158,32 @@ const BillingManagement: React.FC<Props> = ({ onSelectInvoice, mode = 'client' }
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm flex gap-2">
-                      <button className="text-cyan-300 hover:text-white font-semibold flex items-center gap-1">
+                      <button 
+                        onClick={async () => {
+                          try {
+                            const url = `${import.meta.env.VITE_API_URL || '/api'}/client/invoices/${inv.id}/pdf`
+                            const response = await fetch(url, {
+                              headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                              }
+                            })
+                            if (!response.ok) throw new Error('Error al descargar PDF')
+                            const blob = await response.blob()
+                            const downloadUrl = window.URL.createObjectURL(blob)
+                            const link = document.createElement('a')
+                            link.href = downloadUrl
+                            link.setAttribute('download', `Factura_ISPMAX_${inv.id}.pdf`)
+                            document.body.appendChild(link)
+                            link.click()
+                            link.remove()
+                          } catch (err) {
+                            toast.error('No se pudo descargar la factura')
+                          }
+                        }}
+                        className="text-cyan-300 hover:text-white font-semibold flex items-center gap-1"
+                      >
                         <ArrowDownTrayIcon className="w-4 h-4" />
-                        Descargar
+                        PDF
                       </button>
                       {mode === 'admin' && (
                         <button

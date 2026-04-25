@@ -16,6 +16,7 @@ from flask_mail import Mail
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_caching import Cache
+from flask_socketio import SocketIO
 from prometheus_flask_exporter import PrometheusMetrics
 from celery import Celery
 from celery.schedules import crontab
@@ -30,6 +31,7 @@ mail = Mail()
 limiter = Limiter(key_func=get_remote_address)
 metrics = PrometheusMetrics.for_app_factory()
 cache = Cache()
+socketio = SocketIO(cors_allowed_origins="*", message_queue=os.environ.get('REDIS_URL') or 'redis://localhost:6379/0')
 celery = Celery(__name__, broker=Config.CELERY_BROKER_URL, backend=Config.CELERY_RESULT_BACKEND)
 
 def create_app(config_name_or_class='development'):
@@ -96,6 +98,7 @@ def create_app(config_name_or_class='development'):
     limiter.init_app(app)
     metrics.init_app(app)
     cache.init_app(app)
+    socketio.init_app(app)
 
     @jwt.expired_token_loader
     def handle_expired_jwt(jwt_header, jwt_payload):
