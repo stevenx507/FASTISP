@@ -545,7 +545,7 @@ const PlatformAdmin: React.FC = () => {
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">FastISP Master</p>
             <h1 className="text-2xl font-black text-white">Admin Total de Plataforma</h1>
-            <p className="text-sm text-slate-300">Control de tenants, cuentas admin y salud global del SaaS.</p>
+            <p className="text-sm text-slate-300">Control de usuarios, cuentas admin y salud global del SaaS.</p>
           </div>
           <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2">
             <ShieldCheckIcon className="h-5 w-5 text-emerald-300" />
@@ -568,7 +568,7 @@ const PlatformAdmin: React.FC = () => {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
             {[
               {
-                label: 'Tenants',
+                label: 'Usuarios ISP',
                 value: overview.tenants_total,
                 meta: `Activos ${overview.tenants_active} | Inactivos ${overview.tenants_inactive}`,
                 icon: BuildingOffice2Icon,
@@ -620,7 +620,7 @@ const PlatformAdmin: React.FC = () => {
           <div className="rounded-2xl border border-white/10 bg-slate-900/55 p-5 shadow-[0_20px_50px_-35px_rgba(15,23,42,1)]">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-bold text-white">Tenants registrados</h2>
+                <h2 className="text-lg font-bold text-white">Usuarios ISP registrados</h2>
                 <p className="text-sm text-slate-300">Aislamiento por subdominio y control operativo centralizado.</p>
               </div>
               <button
@@ -666,7 +666,7 @@ const PlatformAdmin: React.FC = () => {
             </div>
 
             {loading ? (
-              <div className="py-14 text-center text-slate-300">Cargando tenants...</div>
+              <div className="py-14 text-center text-slate-300">Cargando usuarios...</div>
             ) : (
               <div className="space-y-3">
                 {filteredTenants.map((tenant) => {
@@ -791,7 +791,7 @@ const PlatformAdmin: React.FC = () => {
                 })}
                 {!filteredTenants.length && (
                   <div className="rounded-xl border border-dashed border-white/20 py-8 text-center text-sm text-slate-400">
-                    No hay tenants para este filtro.
+                    No hay usuarios para este filtro.
                   </div>
                 )}
               </div>
@@ -803,7 +803,7 @@ const PlatformAdmin: React.FC = () => {
           <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-5">
             <div className="mb-4 flex items-center gap-2">
               <PlusCircleIcon className="h-5 w-5 text-cyan-300" />
-              <h2 className="text-lg font-bold text-white">Alta de tenant</h2>
+              <h2 className="text-lg font-bold text-white">Alta de usuario ISP</h2>
             </div>
             <form onSubmit={submitCreateTenant} className="space-y-3">
               <input
@@ -896,7 +896,7 @@ const PlatformAdmin: React.FC = () => {
                   onChange={(event) => setTenantForm((prev) => ({ ...prev, is_active: event.target.checked }))}
                   className="rounded border-slate-500 bg-slate-900"
                 />
-                Crear tenant activo
+                Crear usuario activo
               </label>
               <div className="flex items-center gap-2 pt-1">
                 <div className="h-px flex-1 bg-white/10" />
@@ -929,7 +929,7 @@ const PlatformAdmin: React.FC = () => {
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-400 disabled:opacity-60"
               >
                 <PlusCircleIcon className="h-4 w-4" />
-                {busy ? 'Creando...' : 'Crear tenant y usuario'}
+                {busy ? 'Creando...' : 'Crear usuario y cuenta admin'}
               </button>
             </form>
           </div>
@@ -938,7 +938,7 @@ const PlatformAdmin: React.FC = () => {
             <div className="rounded-2xl border border-emerald-300/25 bg-emerald-500/10 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-200">Credenciales generadas</p>
               <p className="mt-2 text-xs text-emerald-100">
-                Tenant: <strong>{createdTenantCredential.tenant}</strong>
+                Usuario: <strong>{createdTenantCredential.tenant}</strong>
               </p>
               <p className="text-xs text-emerald-100">
                 Email: <strong>{createdTenantCredential.email}</strong>
@@ -954,7 +954,7 @@ const PlatformAdmin: React.FC = () => {
       {editingTenant && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4" onClick={closeAllModals}>
           <div className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-900 p-5" onClick={(event) => event.stopPropagation()}>
-            <h3 className="text-lg font-bold text-white">Editar tenant</h3>
+            <h3 className="text-lg font-bold text-white">Editar usuario ISP</h3>
             <form onSubmit={submitEditTenant} className="mt-4 space-y-3">
               <input
                 value={editForm.name}
@@ -984,7 +984,7 @@ const PlatformAdmin: React.FC = () => {
       {billingTarget && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4" onClick={closeAllModals}>
           <div className="w-full max-w-xl rounded-2xl border border-white/15 bg-slate-900 p-5" onClick={(event) => event.stopPropagation()}>
-            <h3 className="text-lg font-bold text-white">Suscripcion de {billingTarget.name}</h3>
+            <h3 className="text-lg font-bold text-white">Suscripción de {billingTarget.name}</h3>
             <form onSubmit={submitBillingUpdate} className="mt-4 space-y-3">
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 <select

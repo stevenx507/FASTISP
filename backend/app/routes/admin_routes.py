@@ -3287,7 +3287,7 @@ def platform_create_tenant():
             return jsonify({"error": "admin_email ya existe"}), 409
         if int(tenant.max_admins or 0) < 1:
             db.session.rollback()
-            return jsonify({"error": "El plan del tenant no permite crear admins"}), 409
+            return jsonify({"error": "El plan del usuario no permite crear admins"}), 409
         admin_password = str(data.get('admin_password') or '').strip() or _generate_router_password()
         admin_user = User(
             name=admin_name,
