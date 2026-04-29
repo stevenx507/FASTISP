@@ -17,7 +17,7 @@ class BillingService:
             stripe.api_key = current_app.config.get('STRIPE_SECRET_KEY')
             self._stripe_initialized = True
 
-    def create_checkout_session(self, invoice_id: int, success_url: str, cancel_url: str):
+    def create_checkout_session(self, invoice_id: int, success_url: str, cancel_url: str, method: str = 'card'):
         """Crea una sesión de pago en Stripe para una factura específica."""
         self._init_stripe()
         invoice = db.session.get(Invoice, invoice_id)
@@ -25,17 +25,29 @@ class BillingService:
             raise ValueError("Factura no encontrada")
 
         client = invoice.client
-        
+        currency = invoice.currency.lower() or 'usd'
+        amount = int(invoice.total_amount * 100) # centavos
+
+        # PagoEfectivo requiere PEN
+        payment_method_types = [method]
+        if method == 'pagoefectivo':
+            if currency != 'pen':
+                # Conversion simple USD -> PEN (Tasa 3.80 aprox)
+                # En produccion esto deberia ser configurable
+                exchange_rate = 3.80
+                amount = int(invoice.total_amount * exchange_rate * 100)
+                currency = 'pen'
+
         session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
+            payment_method_types=payment_method_types,
             line_items=[{
                 'price_data': {
-                    'currency': invoice.currency.lower() or 'usd',
+                    'currency': currency,
                     'product_data': {
                         'name': f"Internet Service - {invoice.number}",
-                        'description': f"Periodo: {invoice.period_start} a {invoice.period_end}",
+                        'description': f"Periodo: {invoice.period_start} a {invoice.period_end}" if hasattr(invoice, 'period_start') else f"Factura {invoice.number}",
                     },
-                    'unit_amount': int(invoice.total_amount * 100), # Stripe usa centavos
+                    'unit_amount': amount,
                 },
                 'quantity': 1,
             }],
@@ -47,7 +59,8 @@ class BillingService:
             metadata={
                 'invoice_id': invoice.id,
                 'client_id': client.id,
-                'tenant_id': invoice.tenant_id
+                'tenant_id': invoice.tenant_id,
+                'payment_method': method
             }
         )
         return session

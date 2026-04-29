@@ -44,10 +44,10 @@ const BillingPortal: React.FC = () => {
 
   useEffect(() => { load() }, [])
 
-  const pay = async (invoiceId: number) => {
+  const pay = async (invoiceId: number, method: string = 'card') => {
     setPaying(invoiceId)
     try {
-      const res = await apiClient.post(`/payments/stripe/create-checkout/${invoiceId}`)
+      const res = await apiClient.post(`/payments/stripe/create-checkout/${invoiceId}`, { method })
       if (res?.url) {
         window.location.href = res.url
       } else {
@@ -55,7 +55,7 @@ const BillingPortal: React.FC = () => {
       }
     } catch (err) {
       console.error(err)
-      toast.error('No se pudo iniciar la pasarela de pago de Stripe.')
+      toast.error(`No se pudo iniciar la pasarela de pago (${method}).`)
     } finally {
       setPaying(null)
     }
@@ -96,13 +96,27 @@ const BillingPortal: React.FC = () => {
                     {inv.status}
                   </span>
                   {inv.status !== 'paid' && (
-                    <button
-                      onClick={() => pay(inv.id)}
-                      disabled={paying === inv.id}
-                      className="text-xs px-3 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors disabled:opacity-50"
-                    >
-                      {paying === inv.id ? 'Procesando...' : 'Pagar'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => pay(inv.id, 'card')}
+                        disabled={paying === inv.id}
+                        className="group relative inline-flex items-center gap-1 overflow-hidden rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-blue-500 hover:shadow-[0_0_15px_rgba(37,99,235,0.4)] disabled:opacity-50"
+                        title="Pagar con Tarjeta de Crédito/Débito"
+                      >
+                        <span className="relative z-10">Tarjeta</span>
+                        <div className="absolute inset-0 z-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-[100%]" />
+                      </button>
+                      
+                      <button
+                        onClick={() => pay(inv.id, 'pagoefectivo')}
+                        disabled={paying === inv.id}
+                        className="group relative inline-flex items-center gap-1 overflow-hidden rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-slate-900 transition-all hover:bg-amber-400 hover:shadow-[0_0_15px_rgba(245,158,11,0.4)] disabled:opacity-50"
+                        title="Pagar en Efectivo (Banca Móvil, Agentes, Western Union)"
+                      >
+                        <span className="relative z-10 font-bold text-black">CIP / Efectivo</span>
+                        <div className="absolute inset-0 z-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-500 group-hover:translate-x-[100%]" />
+                      </button>
+                    </div>
                   )}
                 </div>
               </motion.div>

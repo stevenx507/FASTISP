@@ -3646,14 +3646,17 @@ def admin_billing_promises_update(promise_id):
 @jwt_required()
 def create_stripe_checkout(invoice_id):
     """Crea una sesión de Stripe para que el cliente pague su factura."""
+    data = request.get_json() or {}
+    method = data.get('method', 'card')
+    
     success_url = request.args.get('success_url', current_app.config.get('FRONTEND_URL') + '/billing/success')
     cancel_url = request.args.get('cancel_url', current_app.config.get('FRONTEND_URL') + '/billing/cancel')
     
     try:
-        session = billing_service.create_checkout_session(invoice_id, success_url, cancel_url)
+        session = billing_service.create_checkout_session(invoice_id, success_url, cancel_url, method=method)
         return jsonify({'id': session.id, 'url': session.url}), 200
     except Exception as e:
-        logger.error(f"Error creating Stripe checkout: {e}")
+        logger.error(f"Error creating Stripe checkout ({method}): {e}")
         return jsonify({'error': str(e)}), 500
 
 @billing_bp.route('/payments/stripe/webhook', methods=['POST'])
