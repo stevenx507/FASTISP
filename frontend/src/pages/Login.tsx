@@ -19,21 +19,23 @@ declare global {
 const LoginHeader: React.FC = () => {
   const { branding } = useTheme()
   return (
-    <div className="flex flex-col gap-3 text-left">
-      <div className="inline-flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2 ring-1 ring-white/20 backdrop-blur">
-        {branding.logo_url ? (
-          <img src={branding.logo_url} alt={branding.brand_name} className="h-5 w-auto object-contain" />
-        ) : (
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">{branding.brand_name} Cloud</span>
-        )}
-        <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+    <div className="flex flex-col gap-6 text-left">
+      <div className="flex items-center gap-3">
+        <div className="h-12 w-12 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
+          <span className="text-2xl font-black text-white">I</span>
+        </div>
+        <span className="text-3xl font-black tracking-tighter text-white">
+          ISPFAST
+        </span>
       </div>
-      <h1 className="text-4xl font-black leading-tight text-white">
-        Conecta, gestiona <br /> y escala tu red ISP
+      <h1 className="text-5xl lg:text-7xl font-black leading-[1.1] text-white">
+        Tu Red, <br />
+        <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
+          Más Inteligente.
+        </span>
       </h1>
-      <p className="max-w-xl text-lg text-white/80">
-        Portal unificado para operaciones, soporte y clientes finales. Control total de facturacion,
-        monitoreo y aprovisionamiento sin friccion.
+      <p className="max-w-md text-lg text-slate-400 leading-relaxed">
+        Gestiona operaciones, monitoreo en tiempo real y soporte autónomo con IA desde un solo lugar.
       </p>
     </div>
   )
@@ -190,16 +192,16 @@ const LoginForm: React.FC = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label className="mb-2 block text-sm font-medium text-slate-700">Correo electronico</label>
+        <label className="mb-2 block text-sm font-medium text-slate-400">Correo Electrónico</label>
         <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <EnvelopeIcon className="h-5 w-5 text-slate-400" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+            <EnvelopeIcon className="h-5 w-5 text-slate-500" />
           </div>
           <input
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="block w-full rounded-xl border border-slate-300 bg-white/5 backdrop-blur-md py-3 pl-10 pr-3 text-slate-900 placeholder:text-slate-400 transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+            className="block w-full rounded-2xl border border-white/10 bg-white/5 py-4 pl-12 pr-4 text-white placeholder:text-slate-500 transition-all focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 outline-none"
             placeholder="usuario@ejemplo.com"
             required
           />
@@ -207,21 +209,21 @@ const LoginForm: React.FC = () => {
       </div>
 
       <div>
-        <label className="mb-2 block text-sm font-medium text-slate-700">Password</label>
+        <label className="mb-2 block text-sm font-medium text-slate-400">Contraseña</label>
         <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <LockClosedIcon className="h-5 w-5 text-slate-400" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+            <LockClosedIcon className="h-5 w-5 text-slate-500" />
           </div>
           <input
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="block w-full rounded-xl border border-slate-300 bg-white/5 backdrop-blur-md py-3 pl-10 pr-12 text-slate-900 placeholder:text-slate-400 transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+            className="block w-full rounded-2xl border border-white/10 bg-white/5 py-4 pl-12 pr-12 text-white placeholder:text-slate-500 transition-all focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 outline-none"
             placeholder="********"
             required
           />
-          <button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute inset-y-0 right-0 flex items-center pr-3">
-            {showPassword ? <EyeSlashIcon className="h-5 w-5 text-slate-500 hover:text-slate-800" /> : <EyeIcon className="h-5 w-5 text-slate-500 hover:text-slate-800" />}
+          <button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute inset-y-0 right-0 flex items-center pr-4">
+            {showPassword ? <EyeSlashIcon className="h-5 w-5 text-slate-500 hover:text-white" /> : <EyeIcon className="h-5 w-5 text-slate-500 hover:text-white" />}
           </button>
         </div>
       </div>
@@ -234,9 +236,9 @@ const LoginForm: React.FC = () => {
             type="checkbox"
             checked={rememberMe}
             onChange={handleRememberMeChange}
-            className="h-4 w-4 rounded border-slate-300 bg-white/5 backdrop-blur-md text-primary focus:ring-primary/30"
+            className="h-4 w-4 rounded border-white/10 bg-white/5 text-cyan-500 focus:ring-cyan-500/30"
           />
-          <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-700">
+          <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-400">
             Recordarme
           </label>
         </div>
@@ -246,67 +248,24 @@ const LoginForm: React.FC = () => {
             setRecoveryEmail((prev) => prev || email)
             setShowRecovery((prev) => !prev)
           }}
-          className="text-sm font-medium text-emerald-700 hover:text-emerald-900"
+          className="text-sm font-medium text-cyan-400 hover:text-cyan-300 transition-colors"
         >
-          Olvide mi password
+          ¿Olvidaste tu contraseña?
         </button>
       </div>
-
-      {showRecovery && (
-        <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-semibold text-slate-800">Recuperar password</p>
-          <input
-            type="email"
-            value={recoveryEmail}
-            onChange={(event) => setRecoveryEmail(event.target.value)}
-            className="block w-full rounded-xl border border-slate-300 bg-white/5 backdrop-blur-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20"
-            placeholder="correo@ejemplo.com"
-          />
-          <button
-            type="button"
-            onClick={() => void handleRequestPasswordReset()}
-            disabled={isRecovering}
-            className="w-full rounded-xl border border-slate-300 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-60"
-          >
-            {isRecovering ? 'Enviando...' : 'Solicitar token de recuperacion'}
-          </button>
-
-          <input
-            value={recoveryToken}
-            onChange={(event) => setRecoveryToken(event.target.value)}
-            className="block w-full rounded-xl border border-slate-300 bg-white/5 backdrop-blur-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-            placeholder="Token de recuperacion"
-          />
-          <input
-            type="password"
-            value={recoveryPassword}
-            onChange={(event) => setRecoveryPassword(event.target.value)}
-            className="block w-full rounded-xl border border-slate-300 bg-white/5 backdrop-blur-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-            placeholder="Nueva password"
-          />
-          <button
-            type="button"
-            onClick={() => void handleResetPassword()}
-            disabled={isRecovering}
-            className="w-full rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
-          >
-            {isRecovering ? 'Procesando...' : 'Restablecer password'}
-          </button>
-        </div>
-      )}
 
       <button
         type="submit"
         disabled={isLoading}
-        className="flex w-full justify-center rounded-xl border border-transparent bg-gradient-to-r from-primary via-primary/80 to-secondary px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-full justify-center rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-4 text-sm font-bold text-white shadow-xl shadow-cyan-500/20 transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-50"
       >
         {isLoading ? (
           <div className="flex items-center">
-            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-white" />
-            Iniciando sesion...
+            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            Autenticando...
           </div>
         ) : (
-          'Iniciar sesion'
+          'Iniciar Sesión'
         )}
       </button>
 
@@ -315,10 +274,10 @@ const LoginForm: React.FC = () => {
           type="button"
           onClick={() => window.google?.accounts?.id?.prompt()}
           disabled={!isGoogleReady}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white/5 backdrop-blur-md px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm font-bold text-white transition-all hover:bg-white/10 disabled:opacity-50"
         >
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="h-5 w-5" />
-          {isGoogleReady ? 'Continuar con Google' : 'Cargando Google...'}
+          Continuar con Google
         </button>
       )}
     </form>
@@ -336,70 +295,49 @@ const Login: React.FC = () => {
   }, [isAuthenticated, navigate, user?.role])
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 text-white">
-      <div className="absolute inset-0 opacity-60 blur-3xl" aria-hidden>
-        <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-primary/30" />
-        <div className="absolute right-0 top-10 h-80 w-80 rounded-full bg-secondary/20" />
-        <div className="absolute bottom-0 left-20 h-64 w-64 rounded-full bg-primary/20" />
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Background Orbs */}
+      <div className="absolute top-0 left-0 w-full h-full -z-10 overflow-hidden">
+        <div className="absolute -top-20 -left-20 w-96 h-96 bg-cyan-500/20 rounded-full blur-[120px]" />
+        <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px]" />
       </div>
 
-      <div className="relative grid min-h-screen lg:grid-cols-5">
-        <div className="flex items-center px-8 py-12 lg:col-span-3 lg:px-16">
+      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-12 items-center">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="hidden lg:block"
+        >
           <LoginHeader />
-        </div>
+        </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center justify-center px-6 py-12 lg:col-span-2 lg:px-10"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md mx-auto bg-slate-900/50 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-8 lg:p-12 shadow-2xl"
         >
-          <div className="w-full max-w-md rounded-2xl border border-white/40 bg-white/95 p-8 text-slate-900 shadow-2xl backdrop-blur-xl">
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-500">Acceso seguro</p>
-                <h2 className="text-2xl font-bold text-slate-900">Iniciar sesion</h2>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 font-bold text-white">
-                ISP
-              </div>
-            </div>
+          <div className="mb-8">
+            <h2 className="text-2xl font-black text-white mb-2">Bienvenido</h2>
+            <p className="text-slate-400 text-sm">Ingresa tus credenciales para continuar.</p>
+          </div>
 
-            <LoginForm />
+          <LoginForm />
 
-            <div className="mt-8 text-center text-sm text-slate-600">
-              No tienes una cuenta?
-              <button
+          <div className="mt-10 text-center">
+             <p className="text-slate-500 text-xs mb-4 uppercase tracking-widest font-bold">ISPFAST Platform v2.0</p>
+             <button
                 type="button"
-                onClick={() => toast.success('Contacta a soporte para crear una cuenta')}
-                className="ml-1 font-semibold text-emerald-700 hover:text-emerald-900"
+                onClick={() => navigate('/')}
+                className="text-cyan-400 hover:text-cyan-300 text-sm font-bold transition-colors"
               >
-                Contacta a tu proveedor
+                ← Volver al Inicio
               </button>
-            </div>
-            <div className="mt-3 text-center">
-              <button
-                type="button"
-                onClick={() => navigate('/platform/bootstrap')}
-                className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700 hover:text-cyan-900"
-              >
-                Bootstrap admin total
-              </button>
-            </div>
           </div>
         </motion.div>
-      </div>
-
-      <div className="absolute bottom-6 left-0 right-0 px-6 lg:px-12">
-        <div className="flex flex-wrap gap-3 text-xs text-white/60">
-          <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1">Monitoreo NOC en vivo</span>
-          <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1">Scripts rapidos Mikrotik/OLT</span>
-          <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1">Pagos y facturacion integrados</span>
-          <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1">App movil tech</span>
-        </div>
       </div>
     </div>
   )
 }
 
 export default Login
+

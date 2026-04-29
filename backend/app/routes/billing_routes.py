@@ -3677,6 +3677,26 @@ def admin_generate_invoices():
     count = billing_service.generate_monthly_invoices(tenant_id)
     return jsonify({'success': True, 'generated_count': count}), 200
 
+@billing_bp.route('/billing/invoices/<int:invoice_id>/pdf', methods=['GET'])
+@jwt_required()
+def download_invoice_pdf(invoice_id):
+    """Genera y descarga el PDF de una factura."""
+    from flask import send_file
+    from app.services.pdf_service import PDFService
+    
+    invoice = db.session.get(Invoice, invoice_id)
+    if not invoice:
+        return jsonify({"error": "Factura no encontrada"}), 404
+        
+    pdf_buffer = PDFService.generate_invoice_pdf(invoice)
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f"Factura_{invoice.number}.pdf"
+    )
+
+
 
 
 

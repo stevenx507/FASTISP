@@ -487,9 +487,24 @@ const AdminPanel: React.FC = () => {
               setSelectedClientId(parsed)
               setShowPlanModal(true)
             }}
-            className="px-4 py-2 rounded-xl bg-cyan-500 text-white font-semibold hover:bg-cyan-400 transition-colors shadow"
+            className="px-4 py-2 rounded-xl bg-slate-800 text-white font-semibold hover:bg-slate-700 transition-colors shadow border border-white/10"
           >
             Cambiar plan
+          </button>
+          <button
+            onClick={async () => {
+              if (!window.confirm('¿Generar facturas masivas para este mes?')) return
+              try {
+                const res = await apiClient.post('/admin/billing/generate-batch')
+                alert(`Éxito: Se generaron ${res.generated_count} facturas.`)
+              } catch (err) {
+                alert('Error al generar facturas masivas.')
+              }
+            }}
+            className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-500 transition-colors shadow flex items-center gap-2"
+          >
+            <CalendarDaysIcon className="h-5 w-5" />
+            Generar Facturas del Mes
           </button>
         </div>
         <BillingManagement
@@ -501,6 +516,7 @@ const AdminPanel: React.FC = () => {
         />
       </div>
     ),
+
     monitoring: <MonitoringView />,
     connectivity: <ConnectivityDashboard />,
     noc: <NocDashboard />,

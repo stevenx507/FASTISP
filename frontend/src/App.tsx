@@ -16,6 +16,7 @@ import PlatformBootstrap from './pages/PlatformBootstrap'
 import InfrastructureMap from './pages/InfrastructureMap'
 import AssetTracking from './pages/AssetTracking'
 import BIDashboard from './pages/BIDashboard'
+import LandingPage from './pages/LandingPage'
 import PartnerPortal from './pages/PartnerPortal'
 
 import { useAuthStore } from './store/authStore'
@@ -32,8 +33,9 @@ function App() {
         <div className="app-shell min-h-screen">
           <Toaster position="top-right" />
           <Routes>
-            <Route path="/" element={<Navigate to={isAuthenticated ? authHome : "/login"} />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/" element={isAuthenticated ? <Navigate to={authHome} /> : <LandingPage />} />
+            <Route path="/login" element={isAuthenticated ? <Navigate to={authHome} /> : <Login />} />
+
             <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['client']}><ClientDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/billing" element={<ProtectedRoute allowedRoles={['client']}><BillingPortal /></ProtectedRoute>} />
             <Route path="/dashboard/usage" element={<ProtectedRoute allowedRoles={['client']}><ClientUsage /></ProtectedRoute>} />

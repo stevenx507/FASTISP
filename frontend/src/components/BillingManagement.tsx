@@ -161,7 +161,7 @@ const BillingManagement: React.FC<Props> = ({ onSelectInvoice, mode = 'client' }
                       <button 
                         onClick={async () => {
                           try {
-                            const url = `${import.meta.env.VITE_API_URL || '/api'}/client/invoices/${inv.id}/pdf`
+                            const url = `${import.meta.env.VITE_API_URL || '/api'}/billing/invoices/${inv.id}/pdf`
                             // FIX #4: Usar token del store en lugar de localStorage('token')
                             const token = useAuthStore.getState().token || ''
                             const response = await fetch(url, {
