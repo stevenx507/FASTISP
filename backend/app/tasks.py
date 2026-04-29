@@ -150,7 +150,8 @@ def poll_mikrotik_metrics(self):
                             if name.startswith('client_'):
                                 try:
                                     cid = name.split('_')[1]
-                                except: pass
+                                except Exception as e:
+                                    current_app.logger.warning('Failed to parse client ID from queue %s: %s', name, e)
                             
                             tags = {'router_id': str(router.id), 'queue_name': name}
                             if cid: tags['client_id'] = cid
@@ -160,7 +161,8 @@ def poll_mikrotik_metrics(self):
                                 rate_parts = q.get('rate', '0/0').split('/')
                                 fields['upload_rate'] = int(rate_parts[0])
                                 fields['download_rate'] = int(rate_parts[1])
-                            except: pass
+                            except Exception as e:
+                                current_app.logger.warning('Failed to parse queue rates for %s: %s', name, e)
                             monitoring_service.write_metric('client_traffic', fields, tags)
 
                 snmp_profile = snmp_service.router_profile(router)

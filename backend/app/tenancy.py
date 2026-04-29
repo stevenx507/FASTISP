@@ -161,7 +161,7 @@ def tenant_admin_required():
             if user_id is None:
                 return jsonify({'error': 'Token de usuario invalido.'}), 401
             user = db.session.get(User, user_id)
-            if not user or user.role != 'admin':
+            if not user or user.role not in ('admin', 'platform_admin'):
                 return jsonify({'error': 'Acceso denegado. Se requiere rol de administrador.'}), 403
 
             tenant_id = current_tenant_id()

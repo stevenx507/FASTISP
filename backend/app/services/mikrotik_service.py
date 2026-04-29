@@ -23,6 +23,9 @@ class MikroTikService:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.disconnect()
+        
+    def __repr__(self):
+        return f"MikroTikService({self.router_id})"
     
     def __init__(self, router_id: Optional[int] = None):
         self.router = None

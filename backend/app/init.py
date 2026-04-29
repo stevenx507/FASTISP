@@ -195,13 +195,23 @@ def create_app(config_name_or_class='development'):
     # Register blueprints (prefijo único /api/* — sin duplicados /api/v1/*)
     # FIX #3: Registrar cada blueprint UNA sola vez para evitar rutas fantasma,
     # rate-limit doble y colisiones de nombre en url_for().
-    from app.routes.main_routes import main_bp
+    from app.routes.auth_routes import auth_bp
+    from app.routes.billing_routes import billing_bp
+    from app.routes.client_routes import client_bp
+    from app.routes.admin_routes import admin_bp
+    from app.routes.support_routes import support_bp
+    from app.routes.misc_routes import misc_bp
     from app.routes.mikrotik import mikrotik_bp
     from app.routes.olt import olt_bp
     from app.routes.network import network_bp
     from app.routes.sstp import sstp_bp
     from app.routes.isp_management import bp as isp_management_bp
-    app.register_blueprint(main_bp, url_prefix='/api')
+    app.register_blueprint(auth_bp, url_prefix='/api')
+    app.register_blueprint(billing_bp, url_prefix='/api')
+    app.register_blueprint(client_bp, url_prefix='/api')
+    app.register_blueprint(admin_bp, url_prefix='/api')
+    app.register_blueprint(support_bp, url_prefix='/api')
+    app.register_blueprint(misc_bp, url_prefix='/api')
     app.register_blueprint(mikrotik_bp, url_prefix='/api/mikrotik')
     app.register_blueprint(olt_bp, url_prefix='/api/olt')
     app.register_blueprint(sstp_bp, url_prefix='/api/sstp')
