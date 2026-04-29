@@ -1,4 +1,5 @@
-﻿import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
+import { useTheme } from '../contexts/ThemeContext'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { EyeIcon, EyeSlashIcon, EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline'
@@ -15,21 +16,28 @@ declare global {
   }
 }
 
-const LoginHeader: React.FC = () => (
-  <div className="flex flex-col gap-3 text-left">
-    <div className="inline-flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2 ring-1 ring-white/20 backdrop-blur">
-      <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">FastISP Cloud</span>
-      <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+const LoginHeader: React.FC = () => {
+  const { branding } = useTheme()
+  return (
+    <div className="flex flex-col gap-3 text-left">
+      <div className="inline-flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2 ring-1 ring-white/20 backdrop-blur">
+        {branding.logo_url ? (
+          <img src={branding.logo_url} alt={branding.brand_name} className="h-5 w-auto object-contain" />
+        ) : (
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">{branding.brand_name} Cloud</span>
+        )}
+        <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+      </div>
+      <h1 className="text-4xl font-black leading-tight text-white">
+        Conecta, gestiona <br /> y escala tu red ISP
+      </h1>
+      <p className="max-w-xl text-lg text-white/80">
+        Portal unificado para operaciones, soporte y clientes finales. Control total de facturacion,
+        monitoreo y aprovisionamiento sin friccion.
+      </p>
     </div>
-    <h1 className="text-4xl font-black leading-tight text-white">
-      Conecta, gestiona <br /> y escala tu red ISP
-    </h1>
-    <p className="max-w-xl text-lg text-white/80">
-      Portal unificado para operaciones, soporte y clientes finales. Control total de facturacion,
-      monitoreo y aprovisionamiento sin friccion.
-    </p>
-  </div>
-)
+  )
+}
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState(safeStorage.getItem('rememberedEmail') || '')

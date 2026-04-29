@@ -35,6 +35,10 @@
   --banner-grad-end: rgba(34, 197, 94, 0.55);
   --banner-text: #e7fff3;
   --btn-glow: rgba(99, 102, 241, 0.7);
+  --primary-color: #3b82f6;
+  --primary-color-hover: #3b82f6cc;
+  --secondary-color: #1e293b;
+  --logo-url: none;
 }
 
 [data-theme='emerald'] {
@@ -138,7 +142,32 @@
 
 @layer components {
   .btn-primary {
-    @apply rounded-lg bg-cyan-600 px-4 py-2 font-medium text-white shadow-sm transition hover:bg-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:ring-offset-2;
+    @apply rounded-lg px-4 py-2 font-medium text-white shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2;
+    background-color: var(--primary-color);
+    transition: background-color 0.3s ease, filter 0.2s ease;
+  }
+  
+  .btn-primary:hover {
+    filter: brightness(1.1);
+  }
+
+  /* Botón de marca blanca: usa el color primario del tenant */
+  .btn-branded {
+    @apply rounded-lg px-4 py-2 font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2;
+    background-color: var(--primary-color);
+    transition: background-color 0.3s ease, filter 0.2s ease;
+  }
+
+  .btn-branded:hover {
+    filter: brightness(1.12);
+  }
+
+  /* Contenedor de logo de tenant: usa la variable --logo-url */
+  .logo-branded {
+    background-image: var(--logo-url);
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
   }
 
   .card {

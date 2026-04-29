@@ -53,6 +53,13 @@ class Tenant(db.Model):
     max_clients = db.Column(db.Integer, nullable=False, default=300)
     trial_ends_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+    # --- SaaS Branding (Marca Blanca) ---
+    brand_name = db.Column(db.String(120), nullable=True)
+    logo_url = db.Column(db.String(255), nullable=True)
+    primary_color = db.Column(db.String(20), default='#3b82f6')
+    secondary_color = db.Column(db.String(20), default='#1e293b')
+    custom_domain = db.Column(db.String(120), unique=True, nullable=True)
 
     users = db.relationship('User', back_populates='tenant')
     clients = db.relationship('Client', back_populates='tenant')
@@ -82,6 +89,11 @@ class Tenant(db.Model):
             'max_routers': self.max_routers,
             'max_clients': self.max_clients,
             'trial_ends_at': self.trial_ends_at.isoformat() if self.trial_ends_at else None,
+            'brand_name': self.brand_name,
+            'logo_url': self.logo_url,
+            'primary_color': self.primary_color,
+            'secondary_color': self.secondary_color,
+            'custom_domain': self.custom_domain,
         }
 
 
@@ -385,6 +397,7 @@ class MikroTikRouter(db.Model):
     _password_encrypted = db.Column(db.LargeBinary, nullable=False, name='password') # Stored as encrypted bytes
     api_port = db.Column(db.Integer, default=8728)
     is_active = db.Column(db.Boolean, default=True)
+    device_type = db.Column(db.String(20), default='mikrotik') # mikrotik, huawei_olt, vsol_olt, etc.
     last_seen = db.Column(db.DateTime)
     alert_config = db.Column(db.JSON, nullable=True)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True)
@@ -456,6 +469,7 @@ class MikroTikRouter(db.Model):
             'control_hotspot': bool(self.control_hotspot),
             'traffic_flow_enabled': bool(self.traffic_flow_enabled),
             'status': 'online' if self.is_active else 'offline',
+            'device_type': self.device_type,
             'tenant_id': self.tenant_id,
             'vpn_ip': self.vpn_ip_address,
             'vpn_username': self.vpn_username,

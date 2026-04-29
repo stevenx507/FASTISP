@@ -43,6 +43,7 @@ from app.services.ai_support_service import AISupportService
 from app.services.pdf_service import PDFService
 from app.services.billing_service import billing_service
 from app.services.mikrotik_service import MikroTikService
+from app.services.branding_service import BrandingService
 from app.services.monitoring_service import MonitoringService
 from app.services.snmp_service import snmp_service
 from app.lib.messaging import MessagingManager
@@ -9055,3 +9056,52 @@ def partner_register_prospect():
     db.session.commit()
     
     return jsonify({"success": True, "client_id": prospect.id}), 201
+
+
+@main_bp.route('/branding/config', methods=['GET'])
+def get_branding_config():
+    """
+    Public endpoint to get branding configuration for the UI.
+    Resuelve el tenant por:
+      1. Query param ?tenant_id=X
+      2. Host header (subdominio o custom_domain)
+      3. Primer tenant activo (fallback)
+    """
+    tenant_id = request.args.get('tenant_id', type=int)
+    host = request.host if not tenant_id else None
+    config = BrandingService.get_config(tenant_id=tenant_id, host=host)
+    return jsonify(config), 200
+
+
+@main_bp.route('/branding/config', methods=['PATCH'])
+@admin_required()
+def update_branding_config():
+    """
+    Admin endpoint para actualizar la configuración de marca blanca del tenant.
+    Campos permitidos: brand_name, logo_url, primary_color, secondary_color, custom_domain.
+    """
+    tenant_id = current_tenant_id()
+    if not tenant_id:
+        return jsonify({"error": "No se pudo determinar el tenant actual"}), 400
+
+    data = request.get_json() or {}
+    allowed = {"brand_name", "logo_url", "primary_color", "secondary_color", "custom_domain"}
+    filtered = {k: v for k, v in data.items() if k in allowed}
+
+    if not filtered:
+        return jsonify({"error": "No se proporcionaron campos de branding válidos"}), 400
+
+    try:
+        updated = BrandingService.update_config(tenant_id=tenant_id, data=filtered)
+        _audit(
+            "branding_update",
+            entity_type="tenant",
+            entity_id=tenant_id,
+            metadata={"fields_updated": list(filtered.keys())},
+        )
+        return jsonify({"success": True, "branding": updated}), 200
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except Exception as exc:
+        current_app.logger.error("Error actualizando branding: %s", exc)
+        return jsonify({"error": "Error interno actualizando branding"}), 500

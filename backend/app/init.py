@@ -4,6 +4,7 @@ Main application factory
 """
 import json
 import logging
+import os
 import time
 import uuid
 
@@ -120,9 +121,13 @@ def create_app(config_name_or_class='development'):
     allowed_origins = app.config.get('CORS_ORIGINS') or []
     if isinstance(allowed_origins, str):
         allowed_origins = [o.strip() for o in allowed_origins.split(',') if o.strip()]
+    
+    # FIX #6: Evitar "*" si supports_credentials=True. Usar fallback seguro.
+    origins = allowed_origins if allowed_origins else ["http://localhost:5173", "http://127.0.0.1:5173"]
+    
     cors_resources = {
         r"/api/*": {
-            "origins": allowed_origins or "*",
+            "origins": origins,
             "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
             "supports_credentials": True,
@@ -187,7 +192,9 @@ def create_app(config_name_or_class='development'):
     # Ensure desired log level is set
     app.logger.setLevel(getattr(logging, log_level, logging.INFO))
     
-    # Register blueprints
+    # Register blueprints (prefijo único /api/* — sin duplicados /api/v1/*)
+    # FIX #3: Registrar cada blueprint UNA sola vez para evitar rutas fantasma,
+    # rate-limit doble y colisiones de nombre en url_for().
     from app.routes.main_routes import main_bp
     from app.routes.mikrotik import mikrotik_bp
     from app.routes.olt import olt_bp
@@ -198,14 +205,7 @@ def create_app(config_name_or_class='development'):
     app.register_blueprint(mikrotik_bp, url_prefix='/api/mikrotik')
     app.register_blueprint(olt_bp, url_prefix='/api/olt')
     app.register_blueprint(sstp_bp, url_prefix='/api/sstp')
-    app.register_blueprint(main_bp, url_prefix='/api/v1', name='main_v1')
-    app.register_blueprint(
-        mikrotik_bp, url_prefix='/api/v1/mikrotik', name='mikrotik_v1'
-    )
-    app.register_blueprint(olt_bp, url_prefix='/api/v1/olt', name='olt_v1')
     app.register_blueprint(network_bp, url_prefix='/api/network')
-    app.register_blueprint(network_bp, url_prefix='/api/v1/network', name='network_v1')
-    app.register_blueprint(sstp_bp, url_prefix='/api/v1/sstp', name='sstp_v1')
     # Pilar 1-4: ISP Management (heartbeat, VPN, comandos MikroTik, seguridad)
     app.register_blueprint(isp_management_bp)
 

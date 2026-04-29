@@ -403,8 +403,10 @@ const SstpProvisioning: React.FC = () => {
 
   const handleDownloadScript = async (tunnel: SstpTunnel) => {
     try {
-      // Use fetch directly for blob download
-      const token = localStorage.getItem('access_token') || ''
+      // FIX #4: Obtener token desde Zustand en lugar de localStorage
+      const { useAuthStore } = await import('../store/authStore')
+      const token = useAuthStore.getState().token || ''
+      
       const apiBase = (window as unknown as { __API_BASE__?: string }).__API_BASE__ || '/api'
       const response = await fetch(`${apiBase}/sstp/tunnels/${tunnel.id}/script`, {
         headers: { Authorization: `Bearer ${token}` },

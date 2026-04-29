@@ -297,73 +297,147 @@ def execute_router_operation(self, router_id: int, operation: str, payload: Opti
 def enforce_billing_status() -> Dict[str, Any]:
     """
     Auto-suspende clientes vencidos y reactiva los que volvieron a 'active'.
+
+    FIXES aplicados:
+    - FIX #2: Filtra solo suscripciones relevantes (no .all()) con joinedload
+              para evitar N+1 queries y respetar el aislamiento multi-tenant.
+    - FIX #9: Commit atómico por suscripción con rollback en error,
+              eliminando el estado inconsistente entre MikroTik y la DB.
     """
+    from sqlalchemy.orm import joinedload
+
     today = datetime.utcnow().date()
     updated: List[Dict[str, Any]] = []
+    errors: List[Dict[str, Any]] = []
     grace_period_days = 3
 
-    for sub in Subscription.query.all():
+    # FIX #2: Solo traer suscripciones que realmente necesitan evaluación
+    # (con fecha de cobro definida y estado relevante). Eager load del cliente.
+    candidate_subs = (
+        Subscription.query
+        .filter(
+            Subscription.status.in_(['active', 'past_due', 'suspended']),
+            Subscription.next_charge.isnot(None),
+        )
+        .options(joinedload(Subscription.client))
+        .all()
+    )
+
+    current_app.logger.info(
+        'enforce_billing_status: evaluando %s suscripciones.', len(candidate_subs)
+    )
+
+    for sub in candidate_subs:
         original_status = sub.status
-        
-        # 1. Marcar como past_due si ya paso la fecha de cobro
-        if sub.next_charge and sub.next_charge < today and sub.status == 'active':
-            sub.status = 'past_due'
 
-        client: Optional[Client] = sub.client
-        if not client and sub.client_id:
-            client = db.session.get(Client, sub.client_id)
+        try:
+            # 1. Marcar como past_due si ya pasó la fecha de cobro
+            if sub.next_charge < today and sub.status == 'active':
+                sub.status = 'past_due'
 
-        # 2. Logica de suspension con periodo de gracia
-        grace_date = sub.next_charge + timedelta(days=grace_period_days) if sub.next_charge else today
-        
-        is_past_grace = sub.status == 'past_due' and today > grace_date
-        
-        if (is_past_grace or sub.status == 'suspended') and client and client.router_id:
-            # Solo intentar suspender si no estaba ya suspendido en MikroTik (opcional, MikroTikService suele ser idempotente)
-            with MikroTikService(client.router_id) as service:
-                service.suspend_client(client, reason='billing')
-            
-            if sub.status != 'suspended':
-                sub.status = 'suspended'
-                # Auditoria de suspension
-                audit = AuditLog(
-                    tenant_id=sub.tenant_id,
-                    action='auto_suspend',
-                    entity_type='client',
-                    entity_id=str(client.id),
-                    meta={
-                        'subscription_id': sub.id,
-                        'reason': 'payment_overdue',
-                        'next_charge': sub.next_charge.isoformat() if sub.next_charge else None,
-                        'grace_date': grace_date.isoformat()
-                    }
+            client: Optional[Client] = sub.client
+            if not client and sub.client_id:
+                client = db.session.get(Client, sub.client_id)
+
+            # 2. Lógica de suspensión con período de gracia
+            grace_date = sub.next_charge + timedelta(days=grace_period_days)
+            is_past_grace = sub.status == 'past_due' and today > grace_date
+
+            if (is_past_grace or sub.status == 'suspended') and client and client.router_id:
+                # FIX #9: Primero persistir el estado en DB, luego aplicar en MikroTik
+                if sub.status != 'suspended':
+                    sub.status = 'suspended'
+                    audit = AuditLog(
+                        tenant_id=sub.tenant_id,
+                        action='auto_suspend',
+                        entity_type='client',
+                        entity_id=str(client.id),
+                        meta={
+                            'subscription_id': sub.id,
+                            'reason': 'payment_overdue',
+                            'next_charge': sub.next_charge.isoformat(),
+                            'grace_date': grace_date.isoformat(),
+                        },
+                    )
+                    db.session.add(audit)
+                    db.session.add(sub)
+                    db.session.commit()  # Commit atómico ANTES de tocar MikroTik
+
+                # Aplicar en MikroTik DESPUÉS de que la DB está consistente
+                try:
+                    with MikroTikService(client.router_id) as service:
+                        service.suspend_client(client, reason='billing')
+                except Exception as mt_err:
+                    current_app.logger.warning(
+                        'MikroTik suspend failed for client %s (DB ya actualizada): %s',
+                        client.id, mt_err
+                    )
+
+                _send_billing_notification(
+                    sub,
+                    f'Tu servicio ha sido suspendido por falta de pago '
+                    f'(Vencimiento: {sub.next_charge}).'
                 )
-                db.session.add(audit)
-                _send_billing_notification(sub, f'Tu servicio ha sido suspendido por falta de pago (Vencimiento: {sub.next_charge}).')
 
-        elif sub.status == 'active' and client and client.router_id:
-            with MikroTikService(client.router_id) as service:
-                service.activate_client(client)
-            
-            if original_status == 'suspended':
-                # Auditoria de reactivacion
-                audit = AuditLog(
-                    tenant_id=sub.tenant_id,
-                    action='auto_restore',
-                    entity_type='client',
-                    entity_id=str(client.id),
-                    meta={'subscription_id': sub.id, 'reason': 'payment_received'}
-                )
-                db.session.add(audit)
+            elif sub.status == 'active' and client and client.router_id:
+                # Reactivación: también commit atómico primero
+                if original_status == 'suspended':
+                    audit = AuditLog(
+                        tenant_id=sub.tenant_id,
+                        action='auto_restore',
+                        entity_type='client',
+                        entity_id=str(client.id),
+                        meta={'subscription_id': sub.id, 'reason': 'payment_received'},
+                    )
+                    db.session.add(audit)
 
-        if sub.status != original_status:
-            updated.append({"subscription_id": sub.id, "from": original_status, "to": sub.status})
-        db.session.add(sub)
+                db.session.add(sub)
+                db.session.commit()  # Commit atómico ANTES de tocar MikroTik
 
-    db.session.commit()
-    summary = {"timestamp": datetime.utcnow().isoformat() + "Z", "updated": updated, "count": len(updated)}
+                try:
+                    with MikroTikService(client.router_id) as service:
+                        service.activate_client(client)
+                except Exception as mt_err:
+                    current_app.logger.warning(
+                        'MikroTik activate failed for client %s (DB ya actualizada): %s',
+                        client.id, mt_err
+                    )
+            else:
+                # Sin cambio relevante: solo actualizar la suscripción si cambió
+                if sub.status != original_status:
+                    db.session.add(sub)
+                    db.session.commit()
+
+            if sub.status != original_status:
+                updated.append({
+                    'subscription_id': sub.id,
+                    'tenant_id': sub.tenant_id,
+                    'from': original_status,
+                    'to': sub.status,
+                })
+
+        except Exception as exc:
+            # Rollback solo de esta suscripción, continuar con las demás
+            db.session.rollback()
+            errors.append({'subscription_id': sub.id, 'error': str(exc)})
+            current_app.logger.error(
+                'Error procesando suscripción %s: %s', sub.id, exc, exc_info=True
+            )
+
+    summary = {
+        'timestamp': datetime.utcnow().isoformat() + 'Z',
+        'evaluated': len(candidate_subs),
+        'updated': updated,
+        'count': len(updated),
+        'errors': errors,
+        'error_count': len(errors),
+    }
     current_app.logger.info('Billing enforcement summary: %s', json.dumps(summary, ensure_ascii=True))
     return summary
+
+
+
+
 
 
 @celery.task(name='app.tasks.run_backups')

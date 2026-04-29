@@ -372,9 +372,14 @@ class MikroTikService:
                 logger.info("No wireless interfaces, skipping WiFi config")
                 return True
             
+            # FIX #10: Usar el brand_name del tenant si existe, para soportar SaaS whitelabeling
+            brand_name = "ISPFAST"
+            if client.tenant and client.tenant.brand_name:
+                brand_name = "".join(c for c in client.tenant.brand_name if c.isalnum() or c == '-')
+                
             # Default WiFi configuration
             wifi_config = config or {
-                'ssid_prefix': 'ISPMAX',
+                'ssid_prefix': brand_name,
                 'security': 'wpa2',
                 'band': '2ghz-b/g/n',
                 'channel': 'auto'
@@ -515,9 +520,11 @@ class MikroTikService:
         """Configure IPv6 for client"""
         try:
             # Enable IPv6 on interface
+            # FIX: client.id es int, no se puede hacer slice — usar str() y formatear como hex
+            client_hex = format(client.id, '04x')  # ej: 42 → '002a'
             ipv6_api = self.api.get_resource('/ipv6/address')
             ipv6_api.add(
-                address=f"2001:db8::{client.id[-8:]}/64",
+                address=f"2001:db8::{client_hex}/64",
                 interface="bridge-local",
                 comment=f"IPv6 Cliente: {client.full_name}"
             )
@@ -695,7 +702,12 @@ class MikroTikService:
             return False
 
     def update_queue_limit(self, queue_id: str, download_speed: str, upload_speed: str) -> bool:
-        """Updates the max-limit of a simple queue."""
+        """Updates the max-limit of a simple queue.
+        
+        RouterOS max-limit format: download/upload (NOT upload/download).
+        FIX: los parámetros estaban invertidos, causando que todos los cambios
+        de plan aplicaran los límites de ancho de banda al revés.
+        """
         if not self.api:
             return False
         try:
@@ -705,7 +717,8 @@ class MikroTikService:
                 logger.warning(f"Queue with ID '{queue_id}' not found for updating limit.")
                 return False
             
-            new_limit = f"{upload_speed}M/{download_speed}M"
+            # FIX: RouterOS espera download/upload (no upload/download)
+            new_limit = f"{download_speed}M/{upload_speed}M"
             queue_api.set(id=queue_id, max_limit=new_limit)
             logger.info(f"Queue '{queue_id}' max-limit updated to {new_limit}.")
             return True

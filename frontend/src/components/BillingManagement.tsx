@@ -162,9 +162,11 @@ const BillingManagement: React.FC<Props> = ({ onSelectInvoice, mode = 'client' }
                         onClick={async () => {
                           try {
                             const url = `${import.meta.env.VITE_API_URL || '/api'}/client/invoices/${inv.id}/pdf`
+                            // FIX #4: Usar token del store en lugar de localStorage('token')
+                            const token = useAuthStore.getState().token || ''
                             const response = await fetch(url, {
                               headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                'Authorization': `Bearer ${token}`
                               }
                             })
                             if (!response.ok) throw new Error('Error al descargar PDF')

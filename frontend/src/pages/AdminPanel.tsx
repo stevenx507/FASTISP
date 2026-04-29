@@ -1,4 +1,5 @@
 import React, { useState, Fragment, useEffect } from 'react'
+import { useTheme } from '../contexts/ThemeContext'
 import { Dialog, Transition, Menu } from '@headlessui/react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -232,6 +233,7 @@ const AdminPanel: React.FC = () => {
   })
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ core: true })
   const { logout, user, tenantContextId, setTenantContext } = useAuthStore()
+  const { branding } = useTheme()
 
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loadingNotifications, setLoadingNotifications] = useState(false)
@@ -338,11 +340,15 @@ const AdminPanel: React.FC = () => {
     <div className="flex h-full flex-col">
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 shadow-lg shadow-cyan-500/30">
-          <span className="text-sm font-black text-white">IM</span>
-        </div>
+        {branding.logo_url ? (
+          <img src={branding.logo_url} alt={branding.brand_name} className="h-10 w-10 object-contain rounded-lg" />
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 shadow-lg shadow-cyan-500/30">
+            <span className="text-sm font-black text-white">{branding.brand_name?.[0] || 'I'}</span>
+          </div>
+        )}
         <div>
-          <p className="text-base font-black text-white leading-tight">ISPMAX</p>
+          <p className="text-base font-black text-white leading-tight">{branding.brand_name}</p>
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300">Panel Admin</p>
         </div>
       </div>
@@ -590,7 +596,7 @@ const AdminPanel: React.FC = () => {
 
           {/* Breadcrumb / title */}
           <div className="flex-1 flex items-center gap-2 min-w-0">
-            <span className="text-xs text-slate-500 hidden sm:block">ISPMAX</span>
+            <span className="text-xs text-slate-500 hidden sm:block">{branding.brand_name}</span>
             <ChevronRightIcon className="h-3 w-3 text-slate-600 hidden sm:block" />
             <h2 className="text-sm font-bold text-white truncate">{activeLabel}</h2>
           </div>

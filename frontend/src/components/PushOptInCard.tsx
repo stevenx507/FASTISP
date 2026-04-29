@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { BellAlertIcon, SparklesIcon } from '@heroicons/react/24/outline'
 import { usePushNotifications } from '../lib/usePushNotifications'
 import toast from 'react-hot-toast'
+import { useTheme } from '../contexts/ThemeContext'
 
 interface Props {
   className?: string
@@ -11,6 +12,7 @@ interface Props {
 const PushOptInCard: React.FC<Props> = ({ className = '' }) => {
   const { isSupported, permission, requestPermission, triggerLocalNotification } = usePushNotifications()
   const [isRequesting, setIsRequesting] = useState(false)
+  const { branding } = useTheme()
 
   const handleEnable = async () => {
     if (!isSupported) {
@@ -22,7 +24,8 @@ const PushOptInCard: React.FC<Props> = ({ className = '' }) => {
     setIsRequesting(false)
     if (result === 'granted') {
       toast.success('Notificaciones activadas')
-      await triggerLocalNotification('ISPMAX', '¡Bienvenido! Recibirás avisos críticos aquí.')
+      // FIX #11: Usar brand_name dinámico en lugar de ISPMAX
+      await triggerLocalNotification(branding.brand_name, '¡Bienvenido! Recibirás avisos críticos aquí.')
     } else {
       toast.error('Debes permitir notificaciones para recibir avisos')
     }

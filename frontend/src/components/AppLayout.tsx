@@ -15,6 +15,7 @@ import {
 import { useAuthStore } from '../store/authStore'
 import { apiClient } from '../lib/apiClient'
 import NocAlertListener from './admin/NocAlertListener'
+import { useTheme } from '../contexts/ThemeContext'
 
 const tabs = [
   { id: 'dashboard', name: 'Dashboard', path: '/dashboard', icon: ChartBarIcon },
@@ -65,6 +66,7 @@ const resolveRouteTitle = (pathname: string) => {
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const { user, logout } = useAuthStore()
+  const { branding } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -224,10 +226,16 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   </Transition.Child>
 
                   <div className="flex flex-shrink-0 items-center px-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500">
-                      <span className="text-lg font-bold text-black">IM</span>
-                    </div>
-                    <h1 className="ml-3 text-xl font-bold text-white">ISPMAX</h1>
+                    {branding.logo_url ? (
+                      <img src={branding.logo_url} alt={branding.brand_name} className="h-10 w-auto max-w-[8rem] object-contain" />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500">
+                        <span className="text-lg font-bold text-white">
+                          {branding.brand_name?.slice(0, 2).toUpperCase() || 'IS'}
+                        </span>
+                      </div>
+                    )}
+                    <h1 className="ml-3 text-xl font-bold text-white">{branding.brand_name}</h1>
                   </div>
 
                   <div className="mt-5 h-0 flex-1 overflow-y-auto">
@@ -243,11 +251,17 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <div className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
           <div className="card flex flex-grow flex-col overflow-y-auto border-r border-transparent bg-[rgba(255,255,255,0.02)] pt-5">
             <div className="flex flex-shrink-0 items-center px-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-neon-cyan to-violet shadow-md">
-                <span className="text-lg font-extrabold text-black">IM</span>
-              </div>
+              {branding.logo_url ? (
+                <img src={branding.logo_url} alt={branding.brand_name} className="h-10 w-auto max-w-[7rem] object-contain" />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-neon-cyan to-violet shadow-md">
+                  <span className="text-lg font-extrabold text-white">
+                    {branding.brand_name?.slice(0, 2).toUpperCase() || 'IS'}
+                  </span>
+                </div>
+              )}
               <div className="ml-3">
-                <h1 className="text-xl font-extrabold tracking-tight text-white">ISPMAX</h1>
+                <h1 className="text-xl font-extrabold tracking-tight text-white">{branding.brand_name}</h1>
                 <p className="text-sm text-slate-500">Panel del cliente</p>
               </div>
             </div>
