@@ -36,14 +36,18 @@ class AISupportService:
             """Reinicia el equipo (Router/ONT) del cliente remotamente."""
             return self._call_tool("reboot_cpe")
 
-        tools = [get_billing_status, check_signal, reboot_cpe]
+        def generate_connection_script():
+            """Genera el script de RouterOS para conectar este equipo remotamente al sistema ISPFAST."""
+            return self._call_tool("generate_connection_script")
+
+        tools = [get_billing_status, check_signal, reboot_cpe, generate_connection_script]
 
         try:
             context = self._build_context()
             model = genai.GenerativeModel(
                 model_name='gemini-1.5-flash',
                 tools=tools,
-                system_instruction=f"Eres el asistente virtual de ISPMAX. Tienes herramientas para diagnosticar la señal, ver facturación y reiniciar equipos. No inventes datos, usa las herramientas. Contexto: {context}"
+                system_instruction=f"Eres el asistente virtual de ISPMAX. Tienes herramientas para diagnosticar la señal, ver facturación, reiniciar equipos y GENERAR SCRIPTS DE CONEXIÓN REMOTA. No inventes datos, usa las herramientas. Contexto: {context}"
             )
             
             chat = model.start_chat(enable_automatic_function_calling=True)
@@ -89,6 +93,20 @@ class AISupportService:
                     return "El reinicio se ha solicitado exitosamente. Tu conexión volverá en un par de minutos." if success else f"Error: {msg}"
             except:
                 return "Error al enviar comando de reinicio al equipo."
+        
+        elif name == "generate_connection_script":
+            from flask import current_app
+            endpoint = current_app.config.get('MIKROTIK_WG_ENDPOINT', 'vpn.fastisp.cloud:51820')
+            server_pubkey = current_app.config.get('MIKROTIK_WG_SERVER_PUBLIC_KEY', 'SERVER_PUBLIC_KEY_HERE')
+            
+            script = f"""# Script de Conexion Remota ISPFAST
+/interface wireguard add name=wg-ispfast comment="Conexion a Sistema Central"
+/interface wireguard peers add allowed-address=10.255.0.0/16,10.0.0.0/8 endpoint-address={endpoint.split(':')[0]} endpoint-port={endpoint.split(':')[1]} interface=wg-ispfast public-key="{server_pubkey}" persistent-keepalive=25s
+/ip address add address=10.255.0.{self.client_id}/24 interface=wg-ispfast
+/ip firewall filter add chain=input protocol=tcp dst-port=8728,22 src-address=10.255.0.0/24 action=accept comment="Permitir API/SSH desde ISPFAST"
+/system note set note="Conectado a ISPFAST - Cliente ID: {self.client_id}"
+"""
+            return f"He generado el script de conexión para el MikroTik. El técnico debe copiarlo y pegarlo en el terminal del router:\n\n```routeros\n{script}\n```"
         
         return "Herramienta no implementada."
 
