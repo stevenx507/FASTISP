@@ -71,7 +71,7 @@ interface TenantPlanTemplatesResponse {
 }
 
 const defaultPlanTemplates: Record<string, TenantPlanTemplate> = {
-  starter: { monthly_price: 39, max_admins: 2, max_routers: 5, max_clients: 400 },
+  starter: { monthly_price: 8, max_admins: 2, max_routers: 5, max_clients: 400 },
   growth: { monthly_price: 89, max_admins: 5, max_routers: 20, max_clients: 2000 },
   pro: { monthly_price: 179, max_admins: 10, max_routers: 60, max_clients: 8000 },
   enterprise: { monthly_price: 399, max_admins: 30, max_routers: 250, max_clients: 50000 },
@@ -111,9 +111,9 @@ const PlatformAdmin: React.FC = () => {
     slug: '',
     is_active: true,
     plan_code: 'starter',
-    billing_status: 'active',
+    billing_status: 'trial',
     billing_cycle: 'monthly',
-    monthly_price: '',
+    monthly_price: '8',
     max_admins: '',
     max_routers: '',
     max_clients: '',

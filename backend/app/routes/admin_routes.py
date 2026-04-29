@@ -472,7 +472,7 @@ TENANT_BILLING_ALLOWED_STATUS = {"trial", "active", "past_due", "suspended", "ca
 TENANT_BILLING_ALLOWED_CYCLES = {"monthly", "quarterly", "yearly"}
 TENANT_PLAN_TEMPLATES = {
     "starter": {
-        "monthly_price": 39.0,
+        "monthly_price": 8.0,
         "max_admins": 2,
         "max_routers": 5,
         "max_clients": 400,
@@ -3243,7 +3243,7 @@ def platform_create_tenant():
     billing_status = _normalize_tenant_billing_status(data.get('billing_status'))
     if 'billing_status' in data and not billing_status:
         return jsonify({"error": "billing_status invalido"}), 400
-    billing_status = billing_status or 'active'
+    billing_status = billing_status or 'trial'
 
     billing_cycle = _normalize_tenant_billing_cycle(data.get('billing_cycle'))
     if 'billing_cycle' in data and not billing_cycle:

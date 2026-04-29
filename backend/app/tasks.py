@@ -667,3 +667,40 @@ def generate_monthly_invoices_task():
     current_app.logger.info(f"Generated {count} monthly invoices automatically.")
     return {'count': count}
 
+
+@celery.task(name='app.tasks.enforce_tenant_billing')
+def enforce_tenant_billing() -> Dict[str, Any]:
+    """
+    Verifica el estado de facturación de los ISPs (Tenants).
+    Si el trial expira, cambia el status a 'past_due'.
+    """
+    from app.models import Tenant
+    today = datetime.utcnow()
+    updated_tenants = []
+
+    tenants = Tenant.query.filter(
+        Tenant.billing_status.in_(['trial', 'active']),
+        Tenant.trial_ends_at.isnot(None)
+    ).all()
+
+    for tenant in tenants:
+        if tenant.trial_ends_at < today:
+            old_status = tenant.billing_status
+            tenant.billing_status = 'past_due'
+            db.session.add(tenant)
+            updated_tenants.append({
+                'id': tenant.id,
+                'name': tenant.name,
+                'old_status': old_status,
+                'new_status': 'past_due'
+            })
+
+    if updated_tenants:
+        db.session.commit()
+    
+    return {
+        'count': len(updated_tenants),
+        'updated': updated_tenants,
+        'timestamp': today.isoformat()
+    }
+

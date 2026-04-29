@@ -90,6 +90,10 @@ def create_app(config_name_or_class='development'):
             'task': 'app.tasks.generate_monthly_invoices_task',
             'schedule': crontab(minute=0, hour=0, day_of_month=1),
         },
+        'enforce-tenant-billing-hourly': {
+            'task': 'app.tasks.enforce_tenant_billing',
+            'schedule': 3600.0, # Cada hora
+        },
     }
 
     # Define the Celery task context
