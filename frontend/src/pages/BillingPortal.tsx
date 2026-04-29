@@ -44,18 +44,18 @@ const BillingPortal: React.FC = () => {
 
   useEffect(() => { load() }, [])
 
-  const pay = async (invoiceId: number, amount: number, currency: string) => {
+  const pay = async (invoiceId: number) => {
     setPaying(invoiceId)
     try {
-      const res = await apiClient.post('/payments/checkout', { invoice_id: invoiceId, amount, currency, method: 'transfer' })
-      if (res?.payment_url) {
-        window.open(res.payment_url, '_blank')
+      const res = await apiClient.post(`/payments/stripe/create-checkout/${invoiceId}`)
+      if (res?.url) {
+        window.location.href = res.url
+      } else {
+        throw new Error('No se recibió URL de pago')
       }
-      toast.success('Pago registrado, pendiente de confirmación.')
-      load()
     } catch (err) {
       console.error(err)
-      toast.error('No se pudo iniciar el pago.')
+      toast.error('No se pudo iniciar la pasarela de pago de Stripe.')
     } finally {
       setPaying(null)
     }
@@ -97,7 +97,7 @@ const BillingPortal: React.FC = () => {
                   </span>
                   {inv.status !== 'paid' && (
                     <button
-                      onClick={() => pay(inv.id, inv.total_amount ?? inv.amount, inv.currency || 'USD')}
+                      onClick={() => pay(inv.id)}
                       disabled={paying === inv.id}
                       className="text-xs px-3 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors disabled:opacity-50"
                     >

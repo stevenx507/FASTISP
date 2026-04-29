@@ -86,6 +86,10 @@ def create_app(config_name_or_class='development'):
             'task': 'app.tasks.scheduled_ai_diagnostic',
             'schedule': crontab(minute=0, hour='*/4'),
         },
+        'monthly-invoice-generation': {
+            'task': 'app.tasks.generate_monthly_invoices_task',
+            'schedule': crontab(minute=0, hour=0, day_of_month=1),
+        },
     }
 
     # Define the Celery task context

@@ -658,3 +658,12 @@ def scheduled_ai_diagnostic() -> Dict[str, Any]:
     }
     current_app.logger.info(f"AI diagnostic scan finished: {summary}")
     return summary
+
+@celery.task(name='app.tasks.generate_monthly_invoices_task')
+def generate_monthly_invoices_task():
+    """Generación masiva de facturas el primer día del mes."""
+    from app.services.billing_service import billing_service
+    count = billing_service.generate_monthly_invoices()
+    current_app.logger.info(f"Generated {count} monthly invoices automatically.")
+    return {'count': count}
+

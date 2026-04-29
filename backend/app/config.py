@@ -110,6 +110,11 @@ class Config:
     # OpenAI
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
+    # Stripe (Payments)
+    STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
+    STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
+    STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
+
     # ACS / TR-069
     ACS_BASE_URL = os.environ.get('ACS_BASE_URL', '')
     ACS_API_KEY = os.environ.get('ACS_API_KEY', '')

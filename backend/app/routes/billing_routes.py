@@ -3640,5 +3640,43 @@ def admin_billing_promises_update(promise_id):
     _audit("billing_promise_update", entity_type="billing_promise", entity_id=promise.id, metadata={"changes": list(data.keys())})
     return jsonify({"success": True, "promise": payload}), 200
 
+# --- STRIPE INTEGRATION ---
+
+@billing_bp.route('/payments/stripe/create-checkout/<int:invoice_id>', methods=['POST'])
+@jwt_required()
+def create_stripe_checkout(invoice_id):
+    """Crea una sesión de Stripe para que el cliente pague su factura."""
+    success_url = request.args.get('success_url', current_app.config.get('FRONTEND_URL') + '/billing/success')
+    cancel_url = request.args.get('cancel_url', current_app.config.get('FRONTEND_URL') + '/billing/cancel')
+    
+    try:
+        session = billing_service.create_checkout_session(invoice_id, success_url, cancel_url)
+        return jsonify({'id': session.id, 'url': session.url}), 200
+    except Exception as e:
+        logger.error(f"Error creating Stripe checkout: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@billing_bp.route('/payments/stripe/webhook', methods=['POST'])
+def stripe_webhook():
+    """Recibe notificaciones de Stripe sobre pagos completados."""
+    payload = request.get_data()
+    sig_header = request.headers.get('STRIPE_SIGNATURE')
+    
+    try:
+        billing_service.process_stripe_webhook(payload, sig_header)
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        logger.error(f"Stripe Webhook Error: {e}")
+        return jsonify({'error': str(e)}), 400
+
+@billing_bp.route('/admin/billing/generate-batch', methods=['POST'])
+@jwt_required()
+def admin_generate_invoices():
+    """Trigger manual para generación de facturas del mes."""
+    tenant_id = current_tenant_id()
+    count = billing_service.generate_monthly_invoices(tenant_id)
+    return jsonify({'success': True, 'generated_count': count}), 200
+
+
 
 
