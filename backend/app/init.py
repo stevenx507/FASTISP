@@ -82,6 +82,10 @@ def create_app(config_name_or_class='development'):
             'task': 'app.tasks.heartbeat_check',
             'schedule': 60.0,
         },
+        'ai-predictive-diagnostic-every-4h': {
+            'task': 'app.tasks.scheduled_ai_diagnostic',
+            'schedule': crontab(minute=0, hour='*/4'),
+        },
     }
 
     # Define the Celery task context

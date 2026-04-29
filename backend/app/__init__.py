@@ -11,6 +11,7 @@ from .init import (
     metrics,
     cache,
     celery,
+    socketio,
 )
 
 __all__ = [
@@ -23,4 +24,5 @@ __all__ = [
     "metrics",
     "cache",
     "celery",
+    "socketio",
 ]

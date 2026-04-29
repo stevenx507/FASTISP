@@ -35,7 +35,7 @@ from app.models import (
     TicketComment,
     User,
 )
-from app import limiter, cache, db, mail
+from app import limiter, cache, db, mail, socketio
 import pyotp
 import requests
 from app.services.ai_diagnostic_service import AIDiagnosticService
@@ -1064,6 +1064,16 @@ def _notify_incident(message: str, severity: str = "info"):
             )
         except Exception:
             current_app.logger.warning("WonderPush notify failed")
+
+    # Real-Time 2.0: Emitir a través de WebSockets
+    try:
+        socketio.emit('notification_received', {
+            'message': message,
+            'severity': severity,
+            'timestamp': datetime.utcnow().isoformat() + 'Z'
+        }, namespace='/')
+    except Exception as e:
+        current_app.logger.warning(f"Socket emit failed in _notify_incident: {e}")
 
 # Helper para verificar rol de admin
 def admin_required():

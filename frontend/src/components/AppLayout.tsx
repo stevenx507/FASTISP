@@ -1,5 +1,7 @@
 import React, { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { io } from 'socket.io-client'
+import { config } from '../lib/config'
 import { Dialog, Transition, Menu } from '@headlessui/react'
 import {
   ChartBarIcon,
@@ -123,30 +125,41 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   }
 
   useEffect(() => {
-    let mounted = true
-    const check = async () => {
-      try {
-        const res = await fetch('/api/health')
-        if (!mounted) return
-        setServiceActive(res.ok)
-      } catch {
-        if (mounted) setServiceActive(false)
+    // Real-Time 2.0: Conexión vía Socket.io para reemplazar polling
+    const socketUrl = config.API_BASE_URL.replace('/api', '')
+    const socket = io(socketUrl, {
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+    })
+
+    socket.on('health_update', (data) => {
+      // Si somos admin, data tiene 'routers'.
+      if (user?.role === 'admin') {
+        const anyOnline = data.routers?.some((r: any) => r.health_score > 0)
+        setServiceActive(anyOnline)
+      } else {
+        setServiceActive(true)
       }
-    }
+    })
 
-    check()
-    const id = setInterval(check, 15000)
-    return () => {
-      mounted = false
-      clearInterval(id)
-    }
-  }, [])
+    socket.on('notification_received', (data) => {
+      const newItem: NotificationItem = {
+        id: String(Date.now()),
+        message: data.message,
+        time: data.timestamp || new Date().toISOString(),
+        read: false,
+        href: inferNotificationHref(data.message),
+      }
+      setNotifications(prev => [newItem, ...prev.slice(0, 19)])
+    })
 
-  useEffect(() => {
+    // Cargas iniciales
     loadNotifications()
-    const timer = setInterval(loadNotifications, 30000)
-    return () => clearInterval(timer)
-  }, [loadNotifications])
+
+    return () => {
+      socket.disconnect()
+    }
+  }, [loadNotifications, user?.role])
 
   const NavigationLinks: React.FC<{ isMobile?: boolean }> = ({ isMobile = false }) => (
     <nav className={isMobile ? 'space-y-1 px-2' : 'flex-1 space-y-1 px-2 pb-4'}>

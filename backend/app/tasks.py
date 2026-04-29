@@ -10,8 +10,9 @@ from flask import current_app
 import os
 import subprocess
 
-from app import celery, db
+from app import celery, db, socketio
 from app.models import MikroTikRouter, Subscription, Client, AuditLog
+from app.services.ai_diagnostic_service import AIDiagnosticService
 from app.services.analytics_service import analytics_service
 from app.services.mikrotik_service import MikroTikService
 from app.services.monitoring_service import MonitoringService
@@ -211,6 +212,16 @@ def poll_mikrotik_metrics(self):
 
         daily_kpis = analytics_service.build_daily_network_kpis(snapshots)
         current_app.logger.info('Daily KPI snapshot: %s', json.dumps(daily_kpis, ensure_ascii=True))
+        
+        # Real-Time 2.0: Emitir estado de salud consolidado a los clientes conectados
+        try:
+            socketio.emit('health_update', {
+                'routers': snapshots,
+                'timestamp': datetime.utcnow().isoformat() + 'Z'
+            }, namespace='/')
+        except Exception as e:
+            current_app.logger.warning('Failed to emit health_update via socket: %s', e)
+
         current_app.logger.info('Finished metrics poll.')
     finally:
         _release_lock(lock_client, lock_key, lock_token)
@@ -595,3 +606,55 @@ def update_client_bandwidth(self, router_id: int, client_ip: str,
 
 
 
+@celery.task(name='app.tasks.scheduled_ai_diagnostic')
+def scheduled_ai_diagnostic() -> Dict[str, Any]:
+    """
+    Sentinel de IA: Analiza routers con baja salud y genera diagnósticos preventivos.
+    """
+    current_app.logger.info('Starting AI predictive diagnostic scan...')
+    # Seleccionamos routers activos con salud menor a 85
+    # En un entorno real, esto consultaría la última salud en Redis
+    routers = MikroTikRouter.query.filter_by(is_active=True).all()
+    diagnostics_run = 0
+    alerts_emitted = 0
+
+    for router in routers:
+        # Consultar salud desde Redis (snapshot)
+        redis_client = _get_redis_client()
+        if not redis_client: continue
+        
+        snapshot_json = redis_client.get(f"router:snapshot:{router.id}")
+        if not snapshot_json: continue
+        
+        snapshot = json.loads(snapshot_json)
+        health_score = float(snapshot.get('health_score', 100))
+
+        # Solo ejecutamos IA si la salud es baja o hay alertas críticas
+        if health_score < 85:
+            try:
+                current_app.logger.info(f"Triggering AI Diagnostic for {router.name} (Score: {health_score})")
+                ai_service = AIDiagnosticService(router.id)
+                result = ai_service.run_diagnosis()
+                
+                if result.get('analysis'):
+                    diagnostics_run += 1
+                    # Emitir alerta NOC via Socket
+                    alert_payload = {
+                        'title': f'🤖 IA: Diagnóstico Preventivo - {router.name}',
+                        'message': result['analysis'][:500] + '...', # Truncar para el toast
+                        'router_name': router.name,
+                        'severity': 'warning' if health_score > 60 else 'critical'
+                    }
+                    socketio.emit('noc_alert', alert_payload, namespace='/')
+                    alerts_emitted += 1
+                    
+            except Exception as e:
+                current_app.logger.error(f"AI Diagnostic failed for router {router.id}: {e}")
+
+    summary = {
+        'diagnostics_run': diagnostics_run,
+        'alerts_emitted': alerts_emitted,
+        'timestamp': datetime.utcnow().isoformat() + 'Z'
+    }
+    current_app.logger.info(f"AI diagnostic scan finished: {summary}")
+    return summary
