@@ -1,6 +1,6 @@
 # backend/app/services/ai_support_service.py
 import os
-import openai
+import google.generativeai as genai
 import logging
 from app.models import Client, Plan, db
 
@@ -8,83 +8,53 @@ logger = logging.getLogger(__name__)
 
 class AISupportService:
     """
-    Servicio de asistencia inteligente para clientes del ISP.
-    Utiliza OpenAI para responder dudas comunes basándose en el contexto del sistema.
+    Servicio de asistencia inteligente para clientes del ISP usando Google Gemini.
+    Utiliza Function Calling para interactuar con el sistema de forma gratuita.
     """
     def __init__(self, client_id: int):
         self.client_id = client_id
         self.client = db.session.get(Client, self.client_id)
-        openai.api_key = os.getenv("OPENAI_API_KEY")
+        api_key = os.getenv("GEMINI_API_KEY")
+        if api_key:
+            genai.configure(api_key=api_key)
 
     def get_response(self, user_message: str) -> str:
-        if not openai.api_key:
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
             return "El servicio de chat inteligente no está configurado. Por favor, contacta a soporte humano."
 
-        tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_billing_status",
-                    "description": "Consulta el saldo pendiente y estado de facturación del cliente.",
-                    "parameters": {"type": "object", "properties": {}}
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "check_signal",
-                    "description": "Realiza un diagnóstico de la señal de fibra óptica (niveles de potencia).",
-                    "parameters": {"type": "object", "properties": {}}
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "reboot_cpe",
-                    "description": "Reinicia el equipo (Router/ONT) del cliente remotamente.",
-                    "parameters": {"type": "object", "properties": {}}
-                }
-            }
-        ]
+        # Definir herramientas para Gemini
+        def get_billing_status():
+            """Consulta el saldo pendiente y estado de facturación del cliente."""
+            return self._call_tool("get_billing_status")
+
+        def check_signal():
+            """Realiza un diagnóstico de la señal de fibra óptica (niveles de potencia)."""
+            return self._call_tool("check_signal")
+
+        def reboot_cpe():
+            """Reinicia el equipo (Router/ONT) del cliente remotamente."""
+            return self._call_tool("reboot_cpe")
+
+        tools = [get_billing_status, check_signal, reboot_cpe]
 
         try:
             context = self._build_context()
-            messages = [
-                {"role": "system", "content": f"Eres el asistente virtual de ISPMAX. Tienes herramientas para diagnosticar la señal, ver facturación y reiniciar equipos. No inventes datos, usa las herramientas. Contexto: {context}"},
-                {"role": "user", "content": user_message}
-            ]
-            
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo-0125",
-                messages=messages,
+            model = genai.GenerativeModel(
+                model_name='gemini-1.5-flash',
                 tools=tools,
-                tool_choice="auto"
+                system_instruction=f"Eres el asistente virtual de ISPMAX. Tienes herramientas para diagnosticar la señal, ver facturación y reiniciar equipos. No inventes datos, usa las herramientas. Contexto: {context}"
             )
             
-            response_message = response.choices[0].message
+            chat = model.start_chat(enable_automatic_function_calling=True)
+            response = chat.send_message(user_message)
             
-            if response_message.get("tool_calls"):
-                for tool_call in response_message.tool_calls:
-                    function_name = tool_call.function.name
-                    function_response = self._call_tool(function_name)
-                    
-                    messages.append(response_message)
-                    messages.append({
-                        "tool_call_id": tool_call.id,
-                        "role": "tool",
-                        "name": function_name,
-                        "content": function_response,
-                    })
-                
-                second_response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo-0125",
-                    messages=messages,
-                )
-                return second_response.choices[0].message['content'].strip()
+            if response and response.text:
+                return response.text.strip()
             
-            return response_message['content'].strip()
+            return "Lo siento, no pude procesar tu solicitud técnica en este momento."
         except Exception as e:
-            logger.error(f"Error en AI Support Tool Calling: {e}")
+            logger.error(f"Error en AI Support Gemini: {e}")
             return "Lo siento, tuve un problema al procesar tu solicitud técnica. ¿Puedes intentarlo de nuevo?"
 
     def _call_tool(self, name: str) -> str:
