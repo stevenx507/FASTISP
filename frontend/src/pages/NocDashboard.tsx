@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   SignalIcon, 
@@ -12,6 +12,7 @@ import {
 import { apiClient } from '../lib/apiClient'
 import { config } from '../lib/config'
 import { BarChart, LineChart } from '../components/Chart'
+import NetworkTopology from '../components/admin/NetworkTopology'
 
 interface NocSummary {
   uptime: string

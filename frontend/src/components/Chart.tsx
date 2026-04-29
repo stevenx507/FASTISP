@@ -106,7 +106,7 @@ export const BarChart: React.FC<BarChartProps> = ({ data, title, showValues = tr
             <div className="w-full bg-white/15 rounded-full h-3 overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
-                animate={{ width: `${(d.value / maxValue) * 100}%` }}
+                animate={{ width: `${maxValue > 0 ? (d.value / maxValue) * 100 : 0}%` }}
                 className={`h-3 rounded-full ${d.color || 'bg-blue-600'}`}
                 transition={{ duration: 0.8, delay: i * 0.1 }}
               />
