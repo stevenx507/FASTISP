@@ -199,7 +199,7 @@ const LoginForm: React.FC = () => {
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="block w-full rounded-xl border border-slate-300 bg-white/5 backdrop-blur-md py-3 pl-10 pr-3 text-slate-900 placeholder:text-slate-400 transition-colors focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+            className="block w-full rounded-xl border border-slate-300 bg-white/5 backdrop-blur-md py-3 pl-10 pr-3 text-slate-900 placeholder:text-slate-400 transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
             placeholder="usuario@ejemplo.com"
             required
           />
@@ -216,7 +216,7 @@ const LoginForm: React.FC = () => {
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="block w-full rounded-xl border border-slate-300 bg-white/5 backdrop-blur-md py-3 pl-10 pr-12 text-slate-900 placeholder:text-slate-400 transition-colors focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+            className="block w-full rounded-xl border border-slate-300 bg-white/5 backdrop-blur-md py-3 pl-10 pr-12 text-slate-900 placeholder:text-slate-400 transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
             placeholder="********"
             required
           />
@@ -234,7 +234,7 @@ const LoginForm: React.FC = () => {
             type="checkbox"
             checked={rememberMe}
             onChange={handleRememberMeChange}
-            className="h-4 w-4 rounded border-slate-300 bg-white/5 backdrop-blur-md text-emerald-500 focus:ring-emerald-300"
+            className="h-4 w-4 rounded border-slate-300 bg-white/5 backdrop-blur-md text-primary focus:ring-primary/30"
           />
           <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-700">
             Recordarme
@@ -259,7 +259,7 @@ const LoginForm: React.FC = () => {
             type="email"
             value={recoveryEmail}
             onChange={(event) => setRecoveryEmail(event.target.value)}
-            className="block w-full rounded-xl border border-slate-300 bg-white/5 backdrop-blur-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+            className="block w-full rounded-xl border border-slate-300 bg-white/5 backdrop-blur-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20"
             placeholder="correo@ejemplo.com"
           />
           <button
@@ -298,7 +298,7 @@ const LoginForm: React.FC = () => {
       <button
         type="submit"
         disabled={isLoading}
-        className="flex w-full justify-center rounded-xl border border-transparent bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-full justify-center rounded-xl border border-transparent bg-gradient-to-r from-primary via-primary/80 to-secondary px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isLoading ? (
           <div className="flex items-center">
@@ -338,9 +338,9 @@ const Login: React.FC = () => {
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 text-white">
       <div className="absolute inset-0 opacity-60 blur-3xl" aria-hidden>
-        <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-emerald-500/30" />
-        <div className="absolute right-0 top-10 h-80 w-80 rounded-full bg-blue-600/20" />
-        <div className="absolute bottom-0 left-20 h-64 w-64 rounded-full bg-teal-400/20" />
+        <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-primary/30" />
+        <div className="absolute right-0 top-10 h-80 w-80 rounded-full bg-secondary/20" />
+        <div className="absolute bottom-0 left-20 h-64 w-64 rounded-full bg-primary/20" />
       </div>
 
       <div className="relative grid min-h-screen lg:grid-cols-5">

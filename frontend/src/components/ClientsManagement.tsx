@@ -308,32 +308,21 @@ const ClientsManagement: React.FC = () => {
   const allFiltered = useMemo(() => {
     return clients
       .filter((item) => {
-        const q = searchTerm.trim().toLowerCase()
-        const matchesGlobal =
-          !q ||
-          item.name.toLowerCase().includes(q) ||
-          String(item.username || '').toLowerCase().includes(q) ||
-          String(item.ip_address || '').includes(q) ||
-          String(item.email || '').toLowerCase().includes(q)
-        const matchesStatus = filterStatus === 'all' || item.status === filterStatus
         const matchesName = !colSearch.name || item.name.toLowerCase().includes(colSearch.name.toLowerCase())
         const matchesUser = !colSearch.username || String(item.username || '').toLowerCase().includes(colSearch.username.toLowerCase())
         const matchesIp   = !colSearch.ip || String(item.ip_address || '').includes(colSearch.ip)
         const matchesLan  = !colSearch.lan_interface || String(item.lan_interface || '').toLowerCase().includes(colSearch.lan_interface.toLowerCase())
         const matchesDia  = !colSearch.dia_corte || String(item.dia_corte ?? '').includes(colSearch.dia_corte)
-        return matchesGlobal && matchesStatus && matchesName && matchesUser && matchesIp && matchesLan && matchesDia
+        return matchesName && matchesUser && matchesIp && matchesLan && matchesDia
       })
       .sort((a, b) => {
         if (sortBy === 'plan') return String(a.plan || '').localeCompare(String(b.plan || ''))
         return String(a.name || '').localeCompare(String(b.name || ''))
       })
-  }, [clients, filterStatus, searchTerm, sortBy, colSearch])
+  }, [clients, sortBy, colSearch])
 
   const totalPages = Math.max(1, Math.ceil((initData?.total || 0) / pageSize))
-  const filteredClients = useMemo(() => {
-    // Con paginacion de servidor, clients ya contiene solo la pagina actual
-    return clients
-  }, [clients])
+  const filteredClients = allFiltered
 
   const allPageSelected = filteredClients.length > 0 && filteredClients.every((c) => selectedIds.has(c.id))
   const toggleSelectAll = () => {
@@ -836,11 +825,11 @@ const ClientsManagement: React.FC = () => {
                       )}
                     </div>
                     {/* Edit button (orange) */}
-                    <button title="Editar" onClick={() => toast(`Editar ${client.name} â€” prÃ³ximamente`)}
-                      className="flex h-7 w-7 items-center justify-center rounded bg-orange-400 text-white text-xs hover:opacity-80">âœ</button>
+                    <button title="Editar" onClick={() => toast(`Editar ${client.name} — prÃ³ximamente`)}
+                      className="flex h-7 w-7 items-center justify-center rounded bg-orange-400 text-white text-xs hover:opacity-80">✎ </button>
                     {/* View button (blue) */}
                     <button title="Ver detalle" onClick={() => openPortalModal(client)}
-                      className="flex h-7 w-7 items-center justify-center rounded bg-blue-500 text-white text-xs hover:opacity-80">ðŸ‘</button>
+                      className="flex h-7 w-7 items-center justify-center rounded bg-blue-500 text-white text-xs hover:opacity-80">👤 </button>
                   </div>
                 </td>
               </motion.tr>
@@ -855,7 +844,7 @@ const ClientsManagement: React.FC = () => {
       {/* â”€â”€ Pagination â”€â”€ */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-white/5 px-5 py-3">
         <span className="text-xs text-slate-400">
-          Mostrando {Math.min((page-1)*pageSize+1, allFiltered.length)}â€“{Math.min(page*pageSize, allFiltered.length)} de {allFiltered.length} registros en {clients.length} clientes
+          Mostrando {Math.min((page-1)*pageSize+1, initData?.total || 0)}–{Math.min(page*pageSize, initData?.total || 0)} de {initData?.total || 0} registros totales
         </span>
         <div className="flex items-center gap-1">
           <button onClick={() => setPage(1)} disabled={page===1} className="rounded border border-white/20 px-2 py-1 text-xs text-slate-400 disabled:opacity-40">Â«</button>

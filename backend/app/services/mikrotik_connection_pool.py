@@ -5,6 +5,8 @@ Manages a pool of RouterOS API connections for efficiency.
 from routeros_api import RouterOsApiPool
 from routeros_api.exceptions import RouterOsApiConnectionError
 import logging
+import threading
+import time
 from threading import Lock
 from queue import Queue, Empty
 from app import db
@@ -19,6 +21,55 @@ class MikroTikConnectionPool:
         self.checkout_timeout = checkout_timeout
         self._pools = {}  # {router_id: {connections: Queue, lock: Lock, in_use: int}}
         self._pool_lock = Lock() # Protects access to _pools dictionary
+        
+        # Keep-alive thread to prevent session timeouts and evict dead connections
+        self._stop_event = threading.Event()
+        self._keep_alive_thread = threading.Thread(target=self._keep_alive_loop, name="MikroTikKeepAlive", daemon=True)
+        self._keep_alive_thread.start()
+
+    def _keep_alive_loop(self):
+        """Background loop to ping idle connections every 30 seconds."""
+        logger.info("MikroTik Keep-Alive thread started.")
+        while not self._stop_event.is_set():
+            try:
+                # Wait 30s but wake up immediately if stop_event is set
+                if self._stop_event.wait(30):
+                    break
+                
+                with self._pool_lock:
+                    router_ids = list(self._pools.keys())
+                
+                for rid in router_ids:
+                    router_pool = self._pools.get(rid)
+                    if not router_pool:
+                        continue
+                    
+                    # We only check idle connections currently in the queue
+                    q = router_pool["connections"]
+                    num_to_check = q.qsize()
+                    
+                    for _ in range(num_to_check):
+                        if self._stop_event.is_set():
+                            return
+                        
+                        try:
+                            api, pool_obj = q.get_nowait()
+                            # Use a very short check. If it fails, we discard.
+                            if self._is_connection_alive(api):
+                                q.put((api, pool_obj))
+                            else:
+                                logger.debug(f"Evicting dead connection for router {rid} during keep-alive.")
+                                try:
+                                    pool_obj.disconnect()
+                                except Exception:
+                                    pass
+                        except Empty:
+                            break
+                        except Exception as e:
+                            logger.debug(f"Keep-alive check failed for router {rid}: {e}")
+            except Exception as e:
+                logger.error(f"Unexpected error in MikroTik keep-alive loop: {e}")
+
 
     def _create_new_connection(self, router: MikroTikRouter):
         """Creates and returns a new RouterOS API connection."""

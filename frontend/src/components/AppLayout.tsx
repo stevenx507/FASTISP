@@ -158,7 +158,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           onClick={() => isMobile && setSidebarOpen(false)}
           className={({ isActive }) =>
             `group flex items-center rounded-md px-2 py-2 text-sm font-medium ${
-              isActive ? 'bg-blue-500/10 text-blue-300' : 'text-slate-400 hover:bg-white/10 hover:text-white'
+              isActive ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:bg-white/10 hover:text-white'
             }`
           }
         >
@@ -166,7 +166,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             <>
               <tab.icon
                 className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                  isActive ? 'text-blue-600' : 'text-slate-500 group-hover:text-white'
+                  isActive ? 'text-primary' : 'text-slate-500 group-hover:text-white'
                 }`}
               />
               {tab.name}
@@ -229,7 +229,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     {branding.logo_url ? (
                       <img src={branding.logo_url} alt={branding.brand_name} className="h-10 w-auto max-w-[8rem] object-contain" />
                     ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-secondary">
                         <span className="text-lg font-bold text-white">
                           {branding.brand_name?.slice(0, 2).toUpperCase() || 'IS'}
                         </span>
@@ -254,7 +254,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               {branding.logo_url ? (
                 <img src={branding.logo_url} alt={branding.brand_name} className="h-10 w-auto max-w-[7rem] object-contain" />
               ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-neon-cyan to-violet shadow-md">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-secondary shadow-md">
                   <span className="text-lg font-extrabold text-white">
                     {branding.brand_name?.slice(0, 2).toUpperCase() || 'IS'}
                   </span>

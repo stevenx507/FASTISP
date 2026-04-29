@@ -1604,40 +1604,38 @@ def _collect_admin_clients(tenant_id, term: str | None = None, status_filter: st
     if plan_id is not None:
         query = query.filter_by(plan_id=plan_id)
 
-    # Nota: El filtrado por status y term sigue siendo en Python por la complejidad de subscriptions[0].status
-    # pero ahora solo devolvemos una pagina.
-    # TODO: Refactorizar status a un campo denormalizado en Client para filtrado SQL real.
-    
-    normalized_term = str(term or '').strip().lower()
+    normalized_term = str(term or '').strip()
+    if normalized_term:
+        search_pattern = f"%{normalized_term}%"
+        # Hacemos join outer con User para poder buscar por email
+        query = query.outerjoin(User, Client.user_id == User.id).filter(
+            or_(
+                Client.full_name.ilike(search_pattern),
+                Client.ip_address.ilike(search_pattern),
+                User.email.ilike(search_pattern)
+            )
+        )
+
     normalized_status = str(status_filter or '').strip().lower()
+    if normalized_status:
+        # Join con Subscription para filtrar por estado
+        query = query.join(Subscription, Client.id == Subscription.client_id).filter(
+            Subscription.status == normalized_status
+        )
+
+    # Distinct es necesario si el term search o status join causa duplicados
+    query = query.distinct()
+
+    pagination = query.order_by(Client.id.asc()).paginate(page=page, per_page=per_page, error_out=False)
     
-    all_items: list[dict] = []
-    for row in query.order_by(Client.id.asc()).all():
-        payload = _serialize_admin_client(row)
-        if normalized_status and payload["status"] != normalized_status:
-            continue
-        if normalized_term:
-            haystack = [
-                str(payload.get("id") or "").lower(),
-                str(payload.get("name") or "").lower(),
-                str(payload.get("ip_address") or "").lower(),
-                str(payload.get("email") or "").lower(),
-                str(payload.get("plan") or "").lower(),
-            ]
-            if not any(normalized_term in candidate for candidate in haystack):
-                continue
-        all_items.append(payload)
-    
-    total = len(all_items)
-    start = (page - 1) * per_page
-    end = start + per_page
+    all_items = [_serialize_admin_client(row) for row in pagination.items]
     
     return {
-        "items": all_items[start:end],
-        "total": total,
-        "page": page,
-        "per_page": per_page,
-        "pages": (total + per_page - 1) // per_page
+        "items": all_items,
+        "total": pagination.total,
+        "page": pagination.page,
+        "per_page": pagination.per_page,
+        "pages": pagination.pages
     }
 
 

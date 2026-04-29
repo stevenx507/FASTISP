@@ -114,7 +114,7 @@ def poll_mikrotik_metrics(self):
                     current_app.logger.warning('Could not connect to router %s via API.', router.name)
 
                 if api_available:
-                    resources = mikrotik_service.get_router_info()
+                    resources = mikrotik_service.get_router_info(use_snapshot=False)
                     if resources:
                         tags = {'router_name': router.name, 'router_id': str(router.id)}
                         fields = {

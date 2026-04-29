@@ -2930,6 +2930,33 @@ def get_router(router_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@mikrotik_bp.route('/routers/<router_id>/refresh', methods=['POST'])
+@admin_required()
+def refresh_router_stats(router_id):
+    """Force refresh router stats from real API"""
+    try:
+        router = _router_for_request(router_id)
+        if not router:
+            return jsonify({'success': False, 'error': 'Router not found'}), 404
+
+        with MikroTikService(router_id) as service:
+            if not service.api:
+                return jsonify({'success': False, 'error': 'Could not connect to router API'}), 503
+            
+            # Force refresh by setting use_snapshot=False
+            router_info = service.get_router_info(use_snapshot=False)
+            interface_stats = service.get_interface_stats()
+            
+        return jsonify({
+            'success': True,
+            'info': router_info,
+            'interfaces': interface_stats
+        }), 200
+    except Exception as e:
+        logger.error(f"Error refreshing router {router_id}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @mikrotik_bp.route('/routers/<router_id>', methods=['PATCH'])
 @admin_required()
 def update_router(router_id):

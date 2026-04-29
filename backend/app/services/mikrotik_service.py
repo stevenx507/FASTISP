@@ -783,24 +783,37 @@ class MikroTikService:
 
     # ==================== ROUTER MANAGEMENT ====================
     
-    @cache.memoize(timeout=60) # Cache for 1 minute
-    def get_router_info(self) -> Dict:
-        """Get router information and status"""
+    def get_router_info(self, use_snapshot: bool = True) -> Dict:
+        """
+        Get router information and status.
+        If use_snapshot is True, it tries to read the last successful poll from cache.
+        """
+        cache_key = f"router_snapshot:{self.router_id}"
+        
+        if use_snapshot:
+            cached_data = cache.get(cache_key)
+            if cached_data:
+                logger.debug(f"Returning cached snapshot for router {self.router_id}")
+                return cached_data
+
         if not self.api:
             return {}
+
         try:
-            # This method is called by others that manage the connection lifecycle.
-            # It doesn't need its own try/finally/disconnect block.
             system_resource = self.api.get_resource('/system/resource')
             system_identity = self.api.get_resource('/system/identity')
             system_routerboard = self.api.get_resource('/system/routerboard')
             
-            info = system_resource.get()[0]
-            identity = system_identity.get()[0]
+            info_list = system_resource.get()
+            info = info_list[0] if info_list else {}
+            
+            identity_list = system_identity.get()
+            identity = identity_list[0] if identity_list else {}
+            
             routerboard_data = system_routerboard.get()
             routerboard = routerboard_data[0] if routerboard_data else {}
             
-            return {
+            payload = {
                 'identity': identity.get('name', 'Unknown'),
                 'model': routerboard.get('model', 'Unknown'),
                 'serial_number': routerboard.get('serial-number', 'Unknown'),
@@ -809,11 +822,21 @@ class MikroTikService:
                 'cpu_load': info.get('cpu-load', 'Unknown'),
                 'free_memory': info.get('free-memory', 'Unknown'),
                 'total_memory': info.get('total-memory', 'Unknown'),
-                'board_name': info.get('board-name', 'Unknown')
+                'board_name': info.get('board-name', 'Unknown'),
+                'updated_at': datetime.utcnow().isoformat()
             }
-        except (RouterOsApiError, IndexError, TypeError) as e:
-            logger.error(f"Error getting router info: {e}")
+            
+            # Update the snapshot in cache
+            cache.set(cache_key, payload, timeout=300) # 5 minutes TTL for the snapshot
+            return payload
+            
+        except (RouterOsApiError, IndexError, TypeError, Exception) as e:
+            logger.error(f"Error getting router info for {self.router_id}: {e}")
+            # If API fails but we didn't use snapshot, try to fall back to snapshot as last resort
+            if not use_snapshot:
+                return cache.get(cache_key) or {}
             return {}
+
     
     @cache.memoize(timeout=30) # Cache for 30 seconds
     def get_interface_stats(self) -> List[Dict]:

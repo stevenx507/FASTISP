@@ -8,16 +8,24 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#b9e6ff',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5a9',
-          600: '#0891b2',
-          700: '#075985',
-          800: '#064e63',
-          900: '#063642',
+          DEFAULT: 'var(--primary-color)',
+          hover: 'var(--primary-color-hover)',
+          ...{
+            50: '#f0f9ff',
+            100: '#e0f2fe',
+            200: '#b9e6ff',
+            300: '#7dd3fc',
+            400: '#38bdf8',
+            500: 'var(--primary-color)',
+            600: 'var(--primary-color-hover)',
+            700: '#075985',
+            800: '#064e63',
+            900: '#063642',
+          }
+        },
+        secondary: {
+          DEFAULT: 'var(--secondary-color)',
+          500: 'var(--secondary-color)',
         },
         neon: {
           cyan: '#00F5D4',
