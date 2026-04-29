@@ -37,10 +37,92 @@ from app.models import (
 from app.routes.main_routes import admin_required, staff_required, _current_user_id
 from app.services.bandwidth_reuse_service import bandwidth_reuse_service, REUSE_RATIOS, QUEUE_TYPES, QUEUE_ALGORITHMS
 from app.services.mikrotik_service import MikroTikService
+from app.services.monitoring_service import monitoring_service
 from app.tenancy import current_tenant_id, tenant_access_allowed
 
 network_bp = Blueprint("network", __name__)
 logger = logging.getLogger(__name__)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ANALYTICS & TOPOLOGY
+# ─────────────────────────────────────────────────────────────────────────────
+
+@network_bp.route("/analytics/traffic", methods=["GET"])
+@admin_required()
+def get_network_traffic_analytics():
+    """
+    Obtiene métricas históricas de tráfico para el dashboard avanzado.
+    Rango por defecto: 24h.
+    """
+    router_id = request.args.get("router_id")
+    time_range = request.args.get("range", "-24h")
+    
+    tags = {}
+    if router_id:
+        tags["router_id"] = str(router_id)
+        
+    try:
+        # Consultar tráfico agregado
+        metrics = monitoring_service.query_metrics(
+            measurement="client_traffic",
+            time_range=time_range,
+            tags=tags,
+            fields=["download_rate", "upload_rate"]
+        )
+        return jsonify({"metrics": metrics})
+    except Exception as e:
+        logger.error(f"Error fetching traffic analytics: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@network_bp.route("/topology", methods=["GET"])
+@admin_required()
+def get_network_topology():
+    """
+    Genera un grafo de la topología de red (Routers -> Nodos -> Clientes).
+    """
+    tenant_id = current_tenant_id()
+    
+    # 1. Routers
+    router_query = MikroTikRouter.query.filter_by(is_active=True)
+    if tenant_id:
+        router_query = router_query.filter_by(tenant_id=tenant_id)
+    routers = router_query.all()
+    
+    nodes_graph = []
+    edges = []
+    
+    for r in routers:
+        nodes_graph.append({
+            "id": f"router_{r.id}",
+            "type": "router",
+            "label": r.name,
+            "status": "online" # Simplificado
+        })
+        
+        # 2. Nodos conectados a este router
+        child_nodes = NetworkNode.query.filter_by(router_id=r.id).all()
+        for n in child_nodes:
+            nodes_graph.append({
+                "id": f"node_{n.id}",
+                "type": n.node_type,
+                "label": n.name,
+                "status": n.status
+            })
+            edges.append({"from": f"router_{r.id}", "to": f"node_{n.id}"})
+            
+            # 3. Clientes conectados a este nodo (vía perfil de red)
+            # Nota: Esto puede ser pesado si hay miles, limitamos para la vista de topología
+            clients_in_node = ClientNetworkProfile.query.filter_by(nap_id=n.id).limit(20).all()
+            for cp in clients_in_node:
+                nodes_graph.append({
+                    "id": f"client_{cp.client_id}",
+                    "type": "client",
+                    "label": f"C-{cp.client_id}",
+                    "status": "online"
+                })
+                edges.append({"from": f"node_{n.id}", "to": f"client_{cp.client_id}"})
+                
+    return jsonify({"nodes": nodes_graph, "edges": edges})
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers

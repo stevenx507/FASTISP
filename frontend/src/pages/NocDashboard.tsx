@@ -56,16 +56,29 @@ const PremiumStatCard: React.FC<{
 const NocDashboard: React.FC = () => {
   const [summary, setSummary] = useState<NocSummary | null>(null)
   const [alerts, setAlerts] = useState<any[]>([])
+  const [trafficData, setTrafficData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'traffic' | 'topology'>('traffic')
 
   const loadData = async () => {
     try {
-      const [s, a] = await Promise.all([
+      const [s, a, t] = await Promise.all([
         apiClient.get('/network/noc-summary'),
-        apiClient.get('/network/alerts')
+        apiClient.get('/network/alerts'),
+        apiClient.get('/network/analytics/traffic?range=-24h')
       ])
       setSummary(s)
       setAlerts(a.alerts || [])
+      
+      // Transformar datos de InfluxDB para el gráfico
+      if (t.metrics) {
+        const formatted = t.metrics.map((m: any) => ({
+          label: new Date(m._time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          value: Math.round((m.download_rate || 0) / 1000000), // Mbps
+          color: 'bg-cyan-500'
+        }))
+        setTrafficData(formatted)
+      }
     } catch (err) {
       console.error('[NOC] error', err)
     } finally {
@@ -79,13 +92,7 @@ const NocDashboard: React.FC = () => {
     return () => clearInterval(id)
   }, [])
 
-  const mockTrafficData = useMemo(() => {
-    return Array.from({ length: 12 }).map((_, i) => ({
-      label: `${i * 2}h`,
-      value: Math.floor(Math.random() * 500) + 200,
-      color: 'bg-cyan-500'
-    }))
-  }, [])
+
 
   return (
     <div className="min-h-screen space-y-8 pb-12">
@@ -152,17 +159,66 @@ const NocDashboard: React.FC = () => {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="rounded-3xl border border-white/10 bg-slate-900/40 p-8 shadow-2xl backdrop-blur-xl"
+            className="rounded-3xl border border-white/10 bg-slate-900/40 p-8 shadow-2xl backdrop-blur-xl min-h-[450px]"
           >
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                <SignalIcon className="h-5 w-5 text-cyan-400" />
-                Flujo de Tráfico Agregado (24h)
+                {activeTab === 'traffic' ? (
+                  <>
+                    <SignalIcon className="h-5 w-5 text-cyan-400" />
+                    Flujo de Tráfico Agregado (24h)
+                  </>
+                ) : (
+                  <>
+                    <ServerIcon className="h-5 w-5 text-amber-400" />
+                    Topología Jerárquica de Red
+                  </>
+                )}
               </h2>
+              <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                <button 
+                  onClick={() => setActiveTab('traffic')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'traffic' ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20' : 'text-slate-400 hover:text-white'}`}
+                >
+                  Tráfico
+                </button>
+                <button 
+                  onClick={() => setActiveTab('topology')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'topology' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-slate-400 hover:text-white'}`}
+                >
+                  Topología
+                </button>
+              </div>
             </div>
-            <div className="h-64">
-              <BarChart data={mockTrafficData} title="" showValues={false} />
-            </div>
+            
+            <AnimatePresence mode="wait">
+              {activeTab === 'traffic' ? (
+                <motion.div 
+                  key="traffic"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="h-72"
+                >
+                  {trafficData.length > 0 ? (
+                    <BarChart data={trafficData} title="" showValues={false} />
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-slate-500 italic">
+                      No hay datos de tráfico disponibles para este periodo.
+                    </div>
+                  )}
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="topology"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                >
+                  <NetworkTopology />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
