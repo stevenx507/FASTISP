@@ -63,4 +63,4 @@ Flask-Caching==1.11.1
 # Development & Linting
 ruff==0.1.9
 pytest==8.3.5
-gevent-websocket==0.36.2
+gevent-websocket==0.10.1
