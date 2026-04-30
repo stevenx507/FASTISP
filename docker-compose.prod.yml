@@ -182,8 +182,8 @@ services:
       start_period: 30s
 
   traefik:
-    # Traefik v3 usa Docker API 1.41+ nativamente (compatible con Docker Engine 27+)
-    image: traefik:v3.3
+    # Downgrade to v2.11 to fix API version mismatch
+    image: traefik:v2.11
     command:
       - --api.insecure=false
       - --providers.docker=true
