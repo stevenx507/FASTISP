@@ -3,7 +3,7 @@ MikroTik API endpoints
 """
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import get_jwt_identity, jwt_required
-from app.routes.main_routes import admin_required
+from app.routes.auth_routes import admin_required
 from app import db
 from app.models import AdminSystemSetting, MikroTikRouter, Client, Plan, Tenant, User
 from app.services.mikrotik_service import MikroTikService

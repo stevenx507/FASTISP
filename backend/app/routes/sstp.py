@@ -21,7 +21,7 @@ import logging
 
 from app import db
 from app.models import MikroTikRouter, SstpTunnel, User
-from app.routes.main_routes import admin_required
+from app.routes.auth_routes import admin_required
 from app.tenancy import current_tenant_id
 from app.services.sstp_service import (
     provision_sstp_tunnel, revoke_sstp_tunnel, ensure_sstp_user,

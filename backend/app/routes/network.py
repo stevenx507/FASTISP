@@ -34,7 +34,7 @@ from app.models import (
     Tenant,
     User,
 )
-from app.routes.main_routes import admin_required, staff_required, _current_user_id
+from app.routes.auth_routes import admin_required, staff_required, _current_user_id
 from app.services.bandwidth_reuse_service import bandwidth_reuse_service, REUSE_RATIOS, QUEUE_TYPES, QUEUE_ALGORITHMS
 from app.services.mikrotik_service import MikroTikService
 from app.services.monitoring_service import monitoring_service

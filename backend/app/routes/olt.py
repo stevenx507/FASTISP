@@ -18,7 +18,7 @@ from sqlalchemy.orm import joinedload
 
 from app import cache, db
 from app.models import AdminInstallation, AdminSystemSetting, AuditLog, Client, ClientNetworkProfile, User
-from app.routes.main_routes import admin_required
+from app.routes.auth_routes import admin_required
 from app.services.acs_service import ACSService
 from app.services.olt_script_service import OLTScriptService, SUPPORTED_VENDORS
 from app.services.monitoring_service import monitoring_service
