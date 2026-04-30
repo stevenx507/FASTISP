@@ -249,11 +249,11 @@ const formatRunMode = (value?: string | null) => {
   return 'simulate'
 }
 
-const panelBaseClass = 'rounded-2xl border border-white/10 bg-slate-900/70 p-4 shadow-sm shadow-black/10'
-const inputClass = 'rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 outline-none transition'
-const buttonPrimaryClass = 'rounded-lg px-3 py-2 text-sm font-semibold transition duration-150 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/25'
-const buttonSecondaryClass = 'rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-100 transition duration-150 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500/10'
-const buttonDangerClass = 'rounded-lg border border-rose-400/40 bg-rose-500/20 px-3 py-2 text-sm text-rose-200 transition duration-150 hover:bg-rose-500/30 focus:outline-none focus:ring-2 focus:ring-rose-500/15'
+const panelBaseClass = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50'
+const inputClass = 'rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-coral-500 focus:ring-2 focus:ring-coral-500/20 outline-none transition'
+const buttonPrimaryClass = 'rounded-lg px-3 py-2 text-sm font-semibold transition duration-150 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-coral-500/25'
+const buttonSecondaryClass = 'rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 transition duration-150 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-coral-500/10'
+const buttonDangerClass = 'rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 transition duration-150 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-500/15'
 
 const intentLabel = (value: OltActionIntent) => {
   if (value === 'authorize') return 'Autorizar'
@@ -263,11 +263,11 @@ const intentLabel = (value: OltActionIntent) => {
 }
 
 const toneCardClass = (tone: 'cyan' | 'emerald' | 'amber' | 'rose' | 'slate') => {
-  if (tone === 'cyan') return 'border-cyan-400/20 bg-cyan-500/10 text-cyan-100'
-  if (tone === 'emerald') return 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100'
-  if (tone === 'amber') return 'border-amber-400/20 bg-amber-500/10 text-amber-100'
-  if (tone === 'rose') return 'border-rose-400/20 bg-rose-500/10 text-rose-100'
-  return 'border-white/10 bg-slate-800/70 text-slate-100'
+  if (tone === 'cyan') return 'border-cyan-200 bg-cyan-50 text-cyan-900'
+  if (tone === 'emerald') return 'border-emerald-200 bg-emerald-50 text-emerald-900'
+  if (tone === 'amber') return 'border-amber-200 bg-amber-50 text-amber-900'
+  if (tone === 'rose') return 'border-rose-200 bg-rose-50 text-rose-900'
+  return 'border-slate-200 bg-slate-50 text-slate-800'
 }
 
 const toneProgressClass = (tone: 'cyan' | 'emerald' | 'amber' | 'rose' | 'slate') => {
@@ -1153,46 +1153,46 @@ const OltManagement: React.FC = () => {
 
   return (
     <div className="enterprise-dashboard space-y-6">
-      <div className="overflow-hidden rounded-2xl border border-cyan-400/20 bg-slate-950 shadow-[0_25px_80px_rgba(15,23,42,0.45)]">
-        <div className="bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.22),_transparent_32%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.18),_transparent_28%),linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(2,6,23,0.96))] p-6">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 p-6">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-3xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300">OLT Command Center</p>
-              <h2 className="mt-2 text-3xl font-semibold text-white">Panel profesional para operacion OLT y ONUs</h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-coral-500">OLT Command Center</p>
+              <h2 className="mt-2 text-3xl font-semibold text-slate-900">Panel profesional para operacion OLT y ONUs</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
                 Consola unificada para reachability, preflight ONU, ejecucion controlada y trazabilidad operativa.
                 La idea es que el operador vea en segundos si la OLT esta lista, cual es la ruta sugerida y que riesgo
                 tiene la siguiente accion.
               </p>
             </div>
             <div className="grid gap-2 text-xs sm:grid-cols-2 xl:w-[26rem]">
-              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">OLT actual</p>
-                <p className="mt-2 text-base font-semibold text-white">{selectedDevice?.name || 'Sin seleccion'}</p>
-                <p className="mt-1 text-slate-300">{selectedDevice?.host || 'Define una OLT para continuar'}</p>
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">OLT actual</p>
+                <p className="mt-2 text-base font-semibold text-slate-900">{selectedDevice?.name || 'Sin seleccion'}</p>
+                <p className="mt-1 text-slate-600">{selectedDevice?.host || 'Define una OLT para continuar'}</p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Ruta de gestion</p>
-                <p className="mt-2 text-base font-semibold text-white">
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Ruta de gestion</p>
+                <p className="mt-2 text-base font-semibold text-slate-900">
                   {remoteOptions?.readiness?.management_path?.label || connection?.management_path?.label || 'Pendiente'}
                 </p>
-                <p className="mt-1 text-slate-300">
+                <p className="mt-1 text-slate-600">
                   {remoteOptions?.readiness?.host_analysis?.label || connection?.host_analysis?.label || 'Sin clasificar'}
                 </p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Modo activo</p>
-                <p className="mt-2 text-base font-semibold text-white">{formatRunMode(runMode)}</p>
-                <p className="mt-1 text-slate-300">
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Modo activo</p>
+                <p className="mt-2 text-base font-semibold text-slate-900">{formatRunMode(runMode)}</p>
+                <p className="mt-1 text-slate-600">
                   {runMode === 'live' ? 'Cambio real con guardrails activos.' : 'Validacion segura antes de live.'}
                 </p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Ultimo check</p>
-                <p className="mt-2 text-base font-semibold text-white">
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Ultimo check</p>
+                <p className="mt-2 text-base font-semibold text-slate-900">
                   {formatCheckedAt(remoteOptions?.readiness?.checked_at || connection?.checked_at)}
                 </p>
-                <p className="mt-1 text-slate-300">
+                <p className="mt-1 text-slate-600">
                   {remoteOptions?.readiness?.summary || connection?.summary || 'Ejecuta test de conexion para poblar diagnostico.'}
                 </p>
               </div>
@@ -1203,14 +1203,14 @@ const OltManagement: React.FC = () => {
             {operationalSummaryCards.map((card) => (
               <div key={card.id} className={`rounded-2xl border px-4 py-4 ${toneCardClass(card.tone)}`}>
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-300/90">{card.label}</p>
-                  <span className="rounded-full bg-slate-950/40 px-2 py-1 text-[10px] font-semibold text-white/90">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-600">{card.label}</p>
+                  <span className="rounded-full bg-white/60 px-2 py-1 text-[10px] font-semibold text-slate-800">
                     {Math.max(0, Math.min(100, Math.round(card.progress)))}%
                   </span>
                 </div>
-                <p className="mt-3 text-lg font-semibold text-white">{card.value}</p>
-                <p className="mt-1 min-h-[2.5rem] text-sm text-slate-200/90">{card.detail}</p>
-                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-950/50">
+                <p className="mt-3 text-lg font-semibold text-slate-900">{card.value}</p>
+                <p className="mt-1 min-h-[2.5rem] text-sm text-slate-700">{card.detail}</p>
+                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-200">
                   <div
                     className={`h-full rounded-full transition-all ${toneProgressClass(card.tone)}`}
                     style={{ width: `${Math.max(4, Math.min(100, Math.round(card.progress)))}%` }}
@@ -1222,9 +1222,9 @@ const OltManagement: React.FC = () => {
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-slate-900/70 p-5">
-        <h3 className="text-lg font-semibold text-white">Alta OLT rapida</h3>
-        <p className="mt-1 text-xs text-slate-300">
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 className="text-lg font-semibold text-slate-900">Alta OLT rapida</h3>
+        <p className="mt-1 text-xs text-slate-600">
           Registra nuevas OLT para gestion desde VPS y pruebas remotas. Para conexion live, usa ACL y VPN privada.
         </p>
         <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-5">
@@ -1269,7 +1269,7 @@ const OltManagement: React.FC = () => {
             <button
               onClick={createDevice}
               disabled={savingDevice}
-              className={`${buttonPrimaryClass} bg-cyan-500 text-slate-900 disabled:opacity-60`}
+              className={`${buttonPrimaryClass} bg-coral-500 text-white disabled:opacity-60 shadow-lg shadow-coral-500/20`}
             >
               {savingDevice ? 'Guardando...' : 'Agregar'}
             </button>
@@ -1312,8 +1312,8 @@ const OltManagement: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
-        <div className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
-          <label className="text-xs text-slate-300">Vendor</label>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <label className="text-xs text-slate-600">Vendor</label>
           <select
             value={selectedVendor}
             onChange={(e) => setSelectedVendor(e.target.value)}
@@ -1328,8 +1328,8 @@ const OltManagement: React.FC = () => {
           </select>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
-          <label className="text-xs text-slate-300">OLT</label>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <label className="text-xs text-slate-600">OLT</label>
           <select
             value={selectedDeviceId}
             onChange={(e) => setSelectedDeviceId(e.target.value)}
@@ -1350,7 +1350,7 @@ const OltManagement: React.FC = () => {
               <span className={`rounded-full px-2 py-1 font-semibold ${statusPillClass(remoteOptions?.readiness?.status)}`}>
                 {remoteOptions?.readiness?.status_label || 'sin diagnostico'}
               </span>
-              <span className="rounded-full bg-slate-800 px-2 py-1 text-slate-300">
+              <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">
                 score {Math.max(0, Math.min(100, Math.round(remoteOptions?.readiness?.score || 0)))}
               </span>
             </div>
@@ -1367,8 +1367,8 @@ const OltManagement: React.FC = () => {
           )}
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
-          <label className="text-xs text-slate-300">Modo de ejecucion</label>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <label className="text-xs text-slate-600">Template de servicio</label>
           <select
             value={runMode}
             onChange={(e) => setRunMode(e.target.value as RunMode)}
@@ -1378,7 +1378,7 @@ const OltManagement: React.FC = () => {
             <option value="dry-run">dry-run</option>
             <option value="live">live</option>
           </select>
-          <label className="mt-2 flex items-center gap-2 text-xs text-slate-300">
+          <label className="mt-2 flex items-center gap-2 text-xs text-slate-600">
             <input
               type="checkbox"
               checked={liveConfirm}
@@ -1394,7 +1394,7 @@ const OltManagement: React.FC = () => {
                 placeholder="Ticket de cambio (ej. CHG-2026-001)"
                 className={`mt-2 w-full ${inputClass}`}
               />
-              <label className="mt-2 flex items-center gap-2 text-xs text-slate-300">
+              <label className="mt-2 flex items-center gap-2 text-xs text-slate-600">
                 <input
                   type="checkbox"
                   checked={preflightAck}
