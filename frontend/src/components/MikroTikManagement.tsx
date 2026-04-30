@@ -3718,7 +3718,7 @@ const MikroTikManagement: React.FC = () => {
                             <p className="text-sm font-semibold text-slate-200">Script acceso directo API/SSH</p>
                             <button
                               onClick={() => copyScript('script API', quickConnect.scripts?.direct_api_script || '')}
-                              className="rounded bg-gray-800 px-2 py-1 text-xs font-semibold text-white hover:bg-gray-700"
+                              className="rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-gray-200"
                             >
                               Copiar
                             </button>

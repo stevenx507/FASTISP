@@ -124,19 +124,19 @@ const ScriptModal: React.FC<{
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl" onClick={(event) => event.stopPropagation()}>
+      <div className="bg-white border border-gray-200 shadow-xl rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl" onClick={(event) => event.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-700">
+        <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
               <CommandLineIcon className="w-5 h-5 text-cyan-400" />
             </div>
             <div>
-              <h2 className="text-white font-semibold">Script del Servidor SSTP</h2>
+              <h2 className="text-slate-800 font-bold">Script del Servidor SSTP</h2>
               <p className="text-slate-500 text-sm">{tunnel.router_name} · {tunnel.username}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors text-xl">✕</button>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-800 transition-colors text-xl">✕</button>
         </div>
 
         {/* Info banner */}
@@ -150,21 +150,21 @@ const ScriptModal: React.FC<{
 
         {/* Credentials summary */}
         <div className="mx-5 mt-3 grid grid-cols-2 gap-2">
-          <div className="bg-gray-800 rounded-lg p-3">
+          <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
             <p className="text-slate-500 text-xs mb-1">Servidor SSTP (router)</p>
-            <p className="text-white font-mono text-sm">{tunnel.server_host}:{tunnel.server_port}</p>
+            <p className="text-slate-800 font-mono text-sm">{tunnel.server_host}:{tunnel.server_port}</p>
           </div>
-          <div className="bg-gray-800 rounded-lg p-3">
+          <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
             <p className="text-slate-500 text-xs mb-1">Usuario PPP</p>
-            <p className="text-white font-mono text-sm">{tunnel.username}</p>
+            <p className="text-slate-800 font-mono text-sm">{tunnel.username}</p>
           </div>
-          <div className="bg-gray-800 rounded-lg p-3">
+          <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
             <p className="text-slate-500 text-xs mb-1">Gateway local</p>
-            <p className="text-white font-mono text-sm">{tunnel.server_ip}</p>
+            <p className="text-slate-800 font-mono text-sm">{tunnel.server_ip}</p>
           </div>
-          <div className="bg-gray-800 rounded-lg p-3">
+          <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
             <p className="text-slate-500 text-xs mb-1">Primer cliente</p>
-            <p className="text-white font-mono text-sm">{tunnel.client_ip}</p>
+            <p className="text-slate-800 font-mono text-sm">{tunnel.client_ip}</p>
           </div>
         </div>
 
@@ -173,7 +173,7 @@ const ScriptModal: React.FC<{
           <button
             onClick={() => setShowVerify(false)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              !showVerify ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-500 hover:text-white'
+              !showVerify ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             Script del Servidor SSTP
@@ -181,7 +181,7 @@ const ScriptModal: React.FC<{
           <button
             onClick={() => setShowVerify(true)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              showVerify ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-500 hover:text-white'
+              showVerify ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             Script de Verificación
@@ -191,12 +191,12 @@ const ScriptModal: React.FC<{
         {/* Script content */}
         <div className="flex-1 overflow-hidden mx-5 mt-2 mb-5">
           <div className="relative">
-            <pre className="bg-gray-950 border border-gray-700 rounded-xl p-4 text-xs text-green-300 font-mono overflow-auto h-64 leading-relaxed whitespace-pre-wrap">
+            <pre className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-xs text-slate-700 font-mono overflow-auto h-64 leading-relaxed whitespace-pre-wrap">
               {showVerify ? tunnel.verification_script : tunnel.script}
             </pre>
             <button
               onClick={() => handleCopy(showVerify ? tunnel.verification_script || '' : tunnel.script || '')}
-              className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded-lg transition-colors"
+              className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-slate-700 border border-gray-200 text-xs rounded-lg transition-colors"
             >
               {copied
                 ? <CheckCircleSolid className="w-3.5 h-3.5 text-emerald-400" />
@@ -217,7 +217,7 @@ const ScriptModal: React.FC<{
           </button>
           <button
             onClick={onClose}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-slate-700 border border-gray-200 rounded-lg text-sm font-medium transition-colors"
           >
             Cerrar
           </button>
@@ -239,15 +239,15 @@ const ProvisionModal: React.FC<{
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl" onClick={(event) => event.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-gray-700">
+      <div className="bg-white border border-gray-200 shadow-xl rounded-2xl w-full max-w-md shadow-2xl" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
               <PlusIcon className="w-5 h-5 text-emerald-400" />
             </div>
-            <h2 className="text-white font-semibold">Configurar Servidor SSTP</h2>
+            <h2 className="text-slate-800 font-bold">Configurar Servidor SSTP</h2>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors text-xl">✕</button>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-800 transition-colors text-xl">✕</button>
         </div>
 
         <div className="p-5 space-y-4">
@@ -260,7 +260,7 @@ const ProvisionModal: React.FC<{
               title="Seleccionar router MikroTik"
               value={selectedRouter || ''}
               onChange={e => setSelectedRouter(Number(e.target.value))}
-              className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500"
+              className="w-full bg-white border border-gray-200 text-slate-800 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500"
             >
               <option value="">Seleccionar router...</option>
               {routers.map(r => (
@@ -281,7 +281,7 @@ const ProvisionModal: React.FC<{
               onChange={e => setNotes(e.target.value)}
               placeholder="Ej: Router principal sede norte..."
               rows={3}
-              className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500 resize-none"
+              className="w-full bg-white border border-gray-200 text-slate-800 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500 resize-none"
             />
           </div>
 
@@ -306,7 +306,7 @@ const ProvisionModal: React.FC<{
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
+            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-slate-700 border border-gray-200 rounded-lg text-sm font-medium transition-colors"
           >
             Cancelar
           </button>
@@ -476,9 +476,9 @@ const SstpProvisioning: React.FC = () => {
   )
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-6">
+    <div className="min-h-screen bg-transparent text-slate-800 p-6">
       {/* Header */}
-      <div className="relative mb-8 rounded-2xl overflow-hidden bg-gradient-to-r from-gray-900 via-cyan-950/40 to-gray-900 border border-cyan-500/20 p-6">
+      <div className="relative mb-8 rounded-2xl overflow-hidden bg-white shadow-sm border border-black/5 p-6">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-cyan-500/10 via-transparent to-transparent pointer-events-none" />
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-4">
@@ -487,7 +487,7 @@ const SstpProvisioning: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-white">Servidores SSTP Nativo MikroTik</h1>
+                <h1 className="text-2xl font-bold text-slate-800">Servidores SSTP Nativo MikroTik</h1>
                 <span className="px-2 py-0.5 bg-cyan-500/20 border border-cyan-500/30 rounded-full text-cyan-300 text-xs font-medium">VPN</span>
               </div>
               <p className="text-slate-500 text-sm mt-0.5">Aprovisionamiento automático vía API MikroTik para routers clientes ISP</p>
@@ -521,7 +521,7 @@ const SstpProvisioning: React.FC = () => {
       {/* Stats */}
       {status && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-gradient-to-br from-gray-900 to-emerald-950/30 border border-emerald-500/20 rounded-xl p-4 hover:border-emerald-500/40 transition-all hover:shadow-lg hover:shadow-emerald-500/5">
+          <div className="bg-white border border-black/5 shadow-sm rounded-xl p-4 hover:border-emerald-500/40 transition-all hover:shadow-lg hover:shadow-emerald-500/5">
             <div className="flex items-center justify-between mb-2">
               <p className="text-slate-500 text-xs font-medium">Servidores Activos</p>
               <div className="p-1.5 bg-emerald-500/10 rounded-lg"><SignalSolid className="w-4 h-4 text-emerald-400" /></div>
@@ -529,15 +529,15 @@ const SstpProvisioning: React.FC = () => {
             <p className="text-3xl font-bold text-emerald-400">{status.active_tunnels}</p>
             <p className="text-slate-400 text-xs mt-1">de {status.total_tunnels} totales</p>
           </div>
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800/50 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-all hover:shadow-lg hover:shadow-gray-500/5">
+          <div className="bg-white border border-black/5 shadow-sm rounded-xl p-4 hover:border-gray-600 transition-all hover:shadow-lg hover:shadow-gray-500/5">
             <div className="flex items-center justify-between mb-2">
               <p className="text-slate-500 text-xs font-medium">Total Servidores</p>
               <div className="p-1.5 bg-gray-500/10 rounded-lg"><WifiIcon className="w-4 h-4 text-slate-500" /></div>
             </div>
-            <p className="text-3xl font-bold text-white">{status.total_tunnels}</p>
+            <p className="text-3xl font-bold text-slate-800">{status.total_tunnels}</p>
             <p className="text-slate-400 text-xs mt-1">{status.revoked_tunnels} revocados</p>
           </div>
-          <div className="bg-gradient-to-br from-gray-900 to-cyan-950/30 border border-cyan-500/20 rounded-xl p-4 hover:border-cyan-500/40 transition-all hover:shadow-lg hover:shadow-cyan-500/5">
+          <div className="bg-white border border-black/5 shadow-sm rounded-xl p-4 hover:border-cyan-500/40 transition-all hover:shadow-lg hover:shadow-cyan-500/5">
             <div className="flex items-center justify-between mb-2">
               <p className="text-slate-500 text-xs font-medium">Arquitectura</p>
               <div className="p-1.5 bg-cyan-500/10 rounded-lg"><ServerIcon className="w-4 h-4 text-cyan-400" /></div>
@@ -545,7 +545,7 @@ const SstpProvisioning: React.FC = () => {
             <p className="text-sm font-mono text-cyan-400 font-bold">{status.architecture}</p>
             <p className="text-slate-400 text-xs mt-1">Puerto {status.server_port}</p>
           </div>
-          <div className="bg-gradient-to-br from-gray-900 to-purple-950/30 border border-purple-500/20 rounded-xl p-4 hover:border-purple-500/40 transition-all hover:shadow-lg hover:shadow-purple-500/5">
+          <div className="bg-white border border-black/5 shadow-sm rounded-xl p-4 hover:border-purple-500/40 transition-all hover:shadow-lg hover:shadow-purple-500/5">
             <div className="flex items-center justify-between mb-2">
               <p className="text-slate-500 text-xs font-medium">Pool de IPs</p>
               <div className="p-1.5 bg-purple-500/10 rounded-lg"><SignalIcon className="w-4 h-4 text-purple-400" /></div>
@@ -558,7 +558,7 @@ const SstpProvisioning: React.FC = () => {
 
       {/* Certificate info */}
       {status?.certificate_fingerprint && status.certificate_fingerprint !== 'UNKNOWN' && (
-        <div className="mb-6 p-3 bg-gray-900 border border-gray-700 rounded-xl flex items-center gap-3">
+        <div className="mb-6 p-3 bg-white border border-gray-200 shadow-xl rounded-xl flex items-center gap-3">
           <KeyIcon className="w-4 h-4 text-yellow-400 flex-shrink-0" />
           <div>
             <p className="text-slate-500 text-xs">Huella del certificado (CA MikroTik)</p>
@@ -576,7 +576,7 @@ const SstpProvisioning: React.FC = () => {
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               filterStatus === f
                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                : 'text-slate-500 hover:text-white border border-transparent'
+                : 'text-slate-500 hover:text-slate-800 border border-transparent'
             }`}
           >
             {f === 'all' ? 'Todos' : f === 'active' ? 'Activos' : 'Revocados'}
@@ -584,7 +584,7 @@ const SstpProvisioning: React.FC = () => {
         ))}
         <button
           onClick={loadData}
-          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:text-white text-sm transition-colors"
+          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:text-slate-800 text-sm transition-colors"
         >
           <ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           Actualizar
@@ -597,7 +597,7 @@ const SstpProvisioning: React.FC = () => {
           <ArrowPathIcon className="w-8 h-8 text-cyan-400 animate-spin" />
         </div>
       ) : filteredTunnels.length === 0 ? (
-        <div className="text-center py-24 rounded-2xl border border-dashed border-gray-700 bg-gray-900/50">
+        <div className="text-center py-24 rounded-2xl border border-dashed border-gray-200 bg-white/50">
           <div className="p-4 bg-cyan-500/10 rounded-2xl border border-cyan-500/20 inline-flex mb-4">
             <ShieldCheckIcon className="w-10 h-10 text-cyan-500/60" />
           </div>
@@ -616,10 +616,10 @@ const SstpProvisioning: React.FC = () => {
           {filteredTunnels.map(tunnel => (
             <div
               key={tunnel.id}
-              className={`bg-gray-900 border rounded-xl p-4 transition-all hover:-translate-y-0.5 ${
+              className={`bg-white border rounded-xl p-4 transition-all hover:-translate-y-0.5 ${
                 tunnel.status === 'active'
-                  ? 'border-gray-700 hover:border-emerald-500/40 hover:shadow-lg hover:shadow-emerald-500/5'
-                  : 'border-gray-800 opacity-70 hover:border-gray-700'
+                  ? 'border-gray-200 hover:border-emerald-500/40 hover:shadow-lg hover:shadow-emerald-500/5'
+                  : 'border-gray-100 opacity-70 hover:border-gray-200'
               }`}
             >
               <div className="flex items-start justify-between gap-4">
@@ -633,7 +633,7 @@ const SstpProvisioning: React.FC = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-white font-semibold">{tunnel.router_name}</h3>
+                      <h3 className="text-slate-800 font-bold">{tunnel.router_name}</h3>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${statusColor(tunnel.status)}`}>
                         {tunnel.status === 'active'
                           ? <CheckCircleIcon className="w-3 h-3" />
@@ -752,7 +752,7 @@ const SstpProvisioning: React.FC = () => {
                     </div>
                   )}
                   {connectionResult[tunnel.id].recommendations && connectionResult[tunnel.id].recommendations!.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-gray-700">
+                    <div className="mt-2 pt-2 border-t border-gray-200">
                       {connectionResult[tunnel.id].recommendations!.map((rec, i) => (
                         <p key={i} className="text-yellow-300/80 text-[11px]">- {rec}</p>
                       ))}
@@ -791,7 +791,7 @@ const SstpProvisioning: React.FC = () => {
           {selectedTunnel.api_results && selectedTunnel.api_results.length > 0 && (
             <details className="text-emerald-400 text-xs">
               <summary className="cursor-pointer hover:text-emerald-300">Ver comandos aplicados ({selectedTunnel.api_results.length})</summary>
-              <pre className="mt-2 bg-gray-950 rounded p-2 text-xs overflow-auto max-h-32">
+              <pre className="mt-2 bg-gray-50 rounded border border-gray-200 p-2 text-xs overflow-auto max-h-32">
                 {selectedTunnel.api_results.join('\n')}
               </pre>
             </details>

@@ -594,7 +594,7 @@ const ClientsManagement: React.FC = () => {
         className={`flex h-8 w-8 items-center justify-center rounded text-white text-xs font-bold shadow ${color} hover:opacity-80 transition`}>
         {children}
       </button>
-      <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition z-50">
+      <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-white shadow-lg border border-gray-100 px-2 py-1 text-xs text-slate-800 opacity-0 group-hover:opacity-100 transition z-50">
         {tip}
       </span>
     </div>

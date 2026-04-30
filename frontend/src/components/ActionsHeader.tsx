@@ -59,7 +59,7 @@ const ActionsHeader: React.FC<ActionsHeaderProps> = ({
         <button
           onClick={onShowLogs}
           disabled={actionLoading}
-          className="flex items-center space-x-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
+          className="flex items-center space-x-2 px-4 py-2 bg-white shadow-sm border border-gray-200 text-slate-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
         >
           <span>Ver Logs</span>
         </button>
