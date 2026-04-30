@@ -3116,10 +3116,10 @@ def delete_router(router_id):
     return jsonify({'success': True, 'deleted_id': str(router_id_int)}), 200
 
 
-@mikrotik_bp.route('/routers/<int:router_id>/ai-diagnose', methods=['GET'])
+@mikrotik_bp.route('/routers/<int:router_id>/ai-diagnose-v1', methods=['GET'])
 @jwt_required()
 @admin_required()
-def get_ai_diagnosis(router_id):
+def get_ai_diagnosis_v1(router_id):
     try:
         service = AIDiagnosticService(router_id)
         diagnosis = service.run_diagnosis()
