@@ -76,27 +76,27 @@ const BIDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Activity className="w-12 h-12 text-blue-500 animate-spin" />
+      <div className="min-h-screen bg-[#FDF5E6] flex items-center justify-center">
+        <Activity className="w-12 h-12 text-coral-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6">
+    <div className="min-h-screen bg-[#FDF5E6] text-slate-800 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-coral-500 to-coral-600 bg-clip-text text-transparent">
               Business Intelligence
             </h1>
-            <p className="text-slate-400 mt-1">Métricas de crecimiento y salud financiera</p>
+            <p className="text-slate-500 mt-1">Métricas de crecimiento y salud financiera</p>
           </div>
           <div className="flex gap-3">
-            <button className="px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-2">
+            <button className="px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 text-slate-700 font-medium shadow-sm">
               <MapIcon className="w-4 h-4" /> Mapa de Calor
             </button>
-            <button className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-500 transition-colors font-medium">
+            <button className="px-4 py-2 bg-coral-500 text-white rounded-lg hover:bg-coral-600 transition-colors font-medium shadow-sm">
               Exportar Reporte
             </button>
           </div>
@@ -140,7 +140,7 @@ const BIDashboard: React.FC = () => {
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl backdrop-blur-sm">
+          <div className="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm">
             <h3 className="text-lg font-semibold mb-6">Crecimiento de Ingresos (MRR)</h3>
             <div className="h-[300px]">
               <Line 
@@ -168,7 +168,7 @@ const BIDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl backdrop-blur-sm">
+          <div className="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm">
             <h3 className="text-lg font-semibold mb-6">Adquisición de Clientes</h3>
             <div className="h-[300px]">
               <Bar 
@@ -186,7 +186,7 @@ const BIDashboard: React.FC = () => {
                   maintainAspectRatio: false,
                   plugins: { legend: { display: false } },
                   scales: {
-                    y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } },
+                    y: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b' } },
                     x: { grid: { display: false }, ticks: { color: '#64748b' } }
                   }
                 }}
@@ -197,8 +197,8 @@ const BIDashboard: React.FC = () => {
 
         {/* Footer info */}
         <div className="flex justify-between items-center text-slate-500 text-sm">
-          <p>Última actualización: {metrics ? new Date(metrics.timestamp).toLocaleString() : '---'}</p>
-          <p>ISPFAST Intelligence Engine v5.0</p>
+          <p className="text-slate-500 text-sm">Última actualización: {metrics ? new Date(metrics.timestamp).toLocaleString() : '---'}</p>
+          <p className="text-slate-400 text-sm">ISPFAST Intelligence Engine v5.0</p>
         </div>
       </div>
     </div>
@@ -206,9 +206,9 @@ const BIDashboard: React.FC = () => {
 };
 
 const MetricCard = ({ title, value, change, trend, icon, description }: any) => (
-  <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-all group">
+  <div className="bg-white border border-gray-100 p-6 rounded-2xl hover:border-coral-200 hover:shadow-md transition-all group shadow-sm">
     <div className="flex justify-between items-start mb-4">
-      <div className="p-3 bg-slate-950 rounded-xl group-hover:scale-110 transition-transform">
+      <div className="p-3 bg-gray-50 rounded-xl group-hover:scale-110 transition-transform border border-gray-100">
         {icon}
       </div>
       <div className={`flex items-center gap-1 text-sm font-medium ${trend === 'up' ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -217,9 +217,9 @@ const MetricCard = ({ title, value, change, trend, icon, description }: any) => 
       </div>
     </div>
     <div className="space-y-1">
-      <h3 className="text-slate-400 text-sm font-medium">{title}</h3>
-      <p className="text-2xl font-bold text-white">{value}</p>
-      <p className="text-slate-500 text-xs mt-2">{description}</p>
+      <h3 className="text-slate-500 text-sm font-medium">{title}</h3>
+      <p className="text-2xl font-bold text-slate-900">{value}</p>
+      <p className="text-slate-400 text-xs mt-2">{description}</p>
     </div>
   </div>
 );

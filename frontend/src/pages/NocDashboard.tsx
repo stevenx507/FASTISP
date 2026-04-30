@@ -35,16 +35,16 @@ const PremiumStatCard: React.FC<{
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     whileHover={{ scale: 1.02 }}
-    className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/40 p-6 shadow-2xl backdrop-blur-xl"
+    className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 shadow-sm hover:shadow-md transition-shadow"
   >
     <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full opacity-10 blur-3xl ${colorClass}`} />
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{label}</p>
-        <h3 className="mt-2 text-3xl font-black text-white">{value}</h3>
+        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</p>
+        <h3 className="mt-2 text-3xl font-black text-slate-900">{value}</h3>
         {trend && (
-          <p className={`mt-2 text-xs font-semibold ${trend.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {trend} <span className="text-slate-500 font-normal ml-1">vs últ. 24h</span>
+          <p className={`mt-2 text-xs font-semibold ${trend.startsWith('+') ? 'text-emerald-600' : 'text-rose-600'}`}>
+            {trend} <span className="text-slate-400 font-normal ml-1">vs últ. 24h</span>
           </p>
         )}
       </div>
@@ -97,26 +97,26 @@ const NocDashboard: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen space-y-8 pb-12">
+    <div className="min-h-screen bg-[#FDF5E6] space-y-8 pb-12">
       {/* Header Section */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-white">
-            Network Operations <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">Center</span>
+          <h1 className="text-4xl font-black tracking-tight text-slate-900">
+            Network Operations <span className="text-transparent bg-clip-text bg-gradient-to-r from-coral-500 to-coral-600">Center</span>
           </h1>
-          <p className="mt-2 text-slate-400 font-medium">Monitoreo crítico de infraestructura ISPMAX v2.0</p>
+          <p className="mt-2 text-slate-500 font-medium">Monitoreo crítico de infraestructura ISPMAX v2.0</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <button 
             onClick={() => window.location.href = '/admin/gis'}
-            className="flex items-center gap-2 rounded-xl bg-blue-600/20 px-4 py-2 text-sm font-bold text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 transition-all"
+            className="flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 border border-blue-200 hover:bg-blue-100 transition-all"
           >
             <GlobeAltIcon className="h-4 w-4" />
             Infraestructura GIS
           </button>
           <button 
             onClick={() => { setLoading(true); loadData(); }}
-            className="flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2 text-sm font-bold text-white border border-white/10 hover:bg-white/10 transition-all"
+            className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-slate-700 border border-gray-200 hover:bg-gray-50 transition-all"
           >
             <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refrescar Ahora
@@ -161,13 +161,13 @@ const NocDashboard: React.FC = () => {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="rounded-3xl border border-white/10 bg-slate-900/40 p-8 shadow-2xl backdrop-blur-xl min-h-[450px]"
+            className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm min-h-[450px]"
           >
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-xl font-bold text-white flex items-center gap-3">
+              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-3">
                 {activeTab === 'traffic' ? (
                   <>
-                    <SignalIcon className="h-5 w-5 text-cyan-400" />
+                    <SignalIcon className="h-5 w-5 text-coral-500" />
                     Flujo de Tráfico Agregado (24h)
                   </>
                 ) : (
@@ -177,16 +177,16 @@ const NocDashboard: React.FC = () => {
                   </>
                 )}
               </h2>
-              <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+              <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200">
                 <button 
                   onClick={() => setActiveTab('traffic')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'traffic' ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20' : 'text-slate-400 hover:text-white'}`}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'traffic' ? 'bg-coral-500 text-white shadow-lg shadow-coral-500/20' : 'text-slate-500 hover:text-slate-800'}`}
                 >
                   Tráfico
                 </button>
                 <button 
                   onClick={() => setActiveTab('topology')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'topology' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-slate-400 hover:text-white'}`}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'topology' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-slate-500 hover:text-slate-800'}`}
                 >
                   Topología
                 </button>
@@ -205,7 +205,7 @@ const NocDashboard: React.FC = () => {
                   {trafficData.length > 0 ? (
                     <BarChart data={trafficData} title="" showValues={false} />
                   ) : (
-                    <div className="h-full flex items-center justify-center text-slate-500 italic">
+                    <div className="h-full flex items-center justify-center text-slate-400 italic">
                       No hay datos de tráfico disponibles para este periodo.
                     </div>
                   )}
@@ -241,9 +241,9 @@ const NocDashboard: React.FC = () => {
 
         {/* Alerts Sidebar */}
         <div className="space-y-6">
-          <div className="rounded-3xl border border-white/10 bg-slate-900/40 p-6 shadow-2xl backdrop-blur-xl h-full">
+          <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm h-full">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">Eventos Live</h2>
+              <h2 className="text-xl font-bold text-slate-800">Eventos Live</h2>
               <span className="flex h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
             </div>
             
@@ -255,21 +255,21 @@ const NocDashboard: React.FC = () => {
                       key={a.id || i}
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className={`rounded-2xl border p-4 transition-all hover:bg-white/5 ${
-                        a.severity === 'critical' ? 'border-rose-500/30 bg-rose-500/5' : 
-                        a.severity === 'warning' ? 'border-amber-500/30 bg-amber-500/5' : 
-                        'border-white/10 bg-white/5'
+                      className={`rounded-2xl border p-4 transition-all hover:bg-gray-50 ${
+                        a.severity === 'critical' ? 'border-rose-200 bg-rose-50' : 
+                        a.severity === 'warning' ? 'border-amber-200 bg-amber-50' : 
+                        'border-gray-100 bg-gray-50'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className={`text-xs font-black uppercase tracking-widest ${
-                            a.severity === 'critical' ? 'text-rose-400' : 
-                            a.severity === 'warning' ? 'text-amber-400' : 'text-blue-400'
+                            a.severity === 'critical' ? 'text-rose-600' : 
+                            a.severity === 'warning' ? 'text-amber-600' : 'text-blue-600'
                           }`}>
                             {a.severity || 'INFO'}
                           </p>
-                          <p className="mt-1 text-sm font-bold text-white leading-tight">{a.message}</p>
+                          <p className="mt-1 text-sm font-bold text-slate-800 leading-tight">{a.message}</p>
                           <p className="mt-2 text-[10px] font-medium text-slate-500 uppercase">
                             {a.target || 'GLOBAL'} • {a.since || 'Justo ahora'}
                           </p>
@@ -293,7 +293,7 @@ const NocDashboard: React.FC = () => {
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="rounded-3xl border border-white/10 bg-slate-900/40 overflow-hidden shadow-2xl backdrop-blur-xl"
+          className="rounded-3xl border border-gray-100 bg-white overflow-hidden shadow-sm"
         >
           <div className="p-6 border-b border-white/10 flex items-center justify-between">
             <h2 className="text-xl font-bold text-white flex items-center gap-3">

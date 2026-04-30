@@ -98,21 +98,21 @@ const AssetTracking: React.FC = () => {
   );
 
   return (
-    <div className="p-6 space-y-8 min-h-screen bg-slate-950 text-slate-200">
+    <div className="p-6 space-y-8 min-h-screen bg-[#FDF5E6] text-slate-800">
       {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight flex items-center">
-            <QrCodeIcon className="w-8 h-8 mr-3 text-blue-500" />
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center">
+            <QrCodeIcon className="w-8 h-8 mr-3 text-coral-500" />
             Trazabilidad de Seriales
           </h1>
-          <p className="text-slate-400 mt-1">Control individual de equipos y activos por número de serie único.</p>
+          <p className="text-slate-500 mt-1">Control individual de equipos y activos por número de serie único.</p>
         </div>
         
         <div className="flex items-center space-x-3">
           <button 
             onClick={fetchData}
-            className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+            className="p-2 rounded-xl bg-white border border-gray-200 text-slate-600 hover:bg-gray-50 transition-colors"
           >
             <ArrowPathIcon className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
@@ -139,20 +139,20 @@ const AssetTracking: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl hover:bg-white/10 transition-colors"
+            className="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all"
           >
             <div className="flex items-center justify-between">
-              <stat.icon className={`w-8 h-8 ${stat.color} opacity-80`} />
-              <span className="text-2xl font-black text-white">{stat.value}</span>
+              <stat.icon className={`w-8 h-8 ${stat.color}`} />
+              <span className="text-2xl font-black text-slate-800">{stat.value}</span>
             </div>
-            <p className="mt-4 text-sm font-medium text-slate-400">{stat.label}</p>
+            <p className="mt-4 text-sm font-medium text-slate-500">{stat.label}</p>
           </motion.div>
         ))}
       </div>
 
       {/* Main Table Area */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-        <div className="p-6 border-b border-white/10 flex flex-col md:flex-row gap-4 justify-between bg-white/[0.02]">
+      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+        <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row gap-4 justify-between bg-gray-50/50">
           <div className="relative flex-grow max-w-md">
             <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
             <input 
@@ -160,12 +160,12 @@ const AssetTracking: React.FC = () => {
               placeholder="Buscar por serial o MAC..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-11 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+              className="w-full bg-white border border-gray-200 rounded-xl py-2.5 pl-11 pr-4 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-coral-500/20 focus:border-coral-400 transition-all"
             />
           </div>
           
           <div className="flex space-x-2">
-            <select className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-slate-300 focus:outline-none">
+            <select className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-coral-500/20 focus:border-coral-400">
               <option value="">Todos los Estados</option>
               <option value="available">Disponible</option>
               <option value="assigned">Asignado</option>
@@ -177,7 +177,7 @@ const AssetTracking: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="text-slate-500 text-xs font-bold uppercase tracking-widest border-b border-white/10">
+              <tr className="text-slate-500 text-xs font-bold uppercase tracking-widest border-b border-gray-100 bg-gray-50">
                 <th className="px-6 py-4">Equipo / Producto</th>
                 <th className="px-6 py-4">Serial #</th>
                 <th className="px-6 py-4">MAC Address</th>
@@ -185,19 +185,19 @@ const AssetTracking: React.FC = () => {
                 <th className="px-6 py-4 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-gray-50">
               {filteredUnits.length > 0 ? filteredUnits.map((unit) => {
                 const product = products.find(p => p.id === unit.product_id);
                 return (
                   <motion.tr 
                     layout
                     key={unit.id} 
-                    className="hover:bg-white/[0.03] transition-colors group"
+                    className="hover:bg-gray-50 transition-colors group"
                   >
                     <td className="px-6 py-5">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mr-3">
-                          <CubeIcon className="w-6 h-6 text-blue-400" />
+                        <div className="w-10 h-10 rounded-lg bg-coral-50 flex items-center justify-center mr-3">
+                          <CubeIcon className="w-6 h-6 text-coral-500" />
                         </div>
                         <div>
                           <p className="text-sm font-bold text-white">{product?.name || 'Producto Desconocido'}</p>
@@ -253,26 +253,26 @@ const AssetTracking: React.FC = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowAddModal(false)}
-              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+              className="absolute inset-0 bg-slate-800/50 backdrop-blur-sm"
             />
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-md bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+              className="relative w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden"
             >
-              <div className="p-6 border-b border-white/10 bg-white/[0.02]">
-                <h3 className="text-xl font-bold text-white">Registrar Equipo</h3>
-                <p className="text-slate-400 text-sm">Añade una unidad única al inventario con su serial.</p>
+              <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+                <h3 className="text-xl font-bold text-slate-900">Registrar Equipo</h3>
+                <p className="text-slate-500 text-sm">Añade una unidad única al inventario con su serial.</p>
               </div>
 
               <form onSubmit={handleAddUnit} className="p-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Producto</label>
+                  <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5 ml-1">Producto</label>
                   <select 
                     value={newUnit.product_id}
                     onChange={(e) => setNewUnit({...newUnit, product_id: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-coral-500/20 focus:border-coral-400"
                   >
                     <option value="">Seleccionar Producto...</option>
                     {products.map(p => (
@@ -290,7 +290,7 @@ const AssetTracking: React.FC = () => {
                       value={newUnit.serial_number}
                       onChange={(e) => setNewUnit({...newUnit, serial_number: e.target.value})}
                       placeholder="S/N: XXXXXXXX"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-coral-500/20 focus:border-coral-400"
                     />
                   </div>
                   <div>
@@ -300,7 +300,7 @@ const AssetTracking: React.FC = () => {
                       value={newUnit.mac_address}
                       onChange={(e) => setNewUnit({...newUnit, mac_address: e.target.value})}
                       placeholder="00:00:00:00:00:00"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-coral-500/20 focus:border-coral-400"
                     />
                   </div>
                 </div>
@@ -313,7 +313,7 @@ const AssetTracking: React.FC = () => {
                       value={(newUnit as any).total_length || ''}
                       onChange={(e) => setNewUnit({...newUnit, total_length: e.target.value} as any)}
                       placeholder="Ej: 1000"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-coral-500/20 focus:border-coral-400"
                     />
                   </div>
                   <div>
@@ -323,7 +323,7 @@ const AssetTracking: React.FC = () => {
                       value={newUnit.notes}
                       onChange={(e) => setNewUnit({...newUnit, notes: e.target.value})}
                       placeholder="Obs. adicionales"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-coral-500/20 focus:border-coral-400"
                     />
                   </div>
                 </div>
@@ -332,13 +332,13 @@ const AssetTracking: React.FC = () => {
                   <button 
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-slate-400 font-bold hover:bg-white/5 transition-all"
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-slate-600 font-bold hover:bg-gray-50 transition-all"
                   >
                     Cancelar
                   </button>
                   <button 
                     type="submit"
-                    className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-500 shadow-lg shadow-blue-900/20 transition-all"
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-coral-500 text-white font-bold hover:bg-coral-600 shadow-lg shadow-coral-500/20 transition-all"
                   >
                     Guardar
                   </button>

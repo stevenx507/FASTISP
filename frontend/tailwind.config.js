@@ -47,11 +47,6 @@ export default {
           400: '#f9e7bc',
           500: '#f7dfa7',
         },
-        neon: {
-          cyan: '#00F5D4',
-          violet: '#7C3AED',
-          pink: '#FF2D95'
-        },
         surface: {
           50: '#FDF5E6',
           100: '#f3f4f6'
