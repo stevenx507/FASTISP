@@ -509,13 +509,13 @@ const AdminPanel: React.FC = () => {
               leaveFrom="translate-x-0"
               leaveTo="-translate-x-full"
             >
-              <Dialog.Panel className="relative flex w-72 flex-col bg-slate-900 border-r border-white/10 shadow-2xl">
+              <Dialog.Panel className="relative flex w-72 flex-col bg-white border-r border-gray-100 shadow-2xl">
                 <div className="absolute top-3 right-3">
                   <button
                     onClick={() => setSidebarOpen(false)}
                     title="Cerrar menú"
                     aria-label="Cerrar menú"
-                    className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
+                    className="rounded-lg p-1.5 text-slate-400 hover:bg-gray-100 hover:text-slate-800"
                   >
                     <XMarkIcon className="h-5 w-5" />
                   </button>
@@ -592,34 +592,34 @@ const AdminPanel: React.FC = () => {
                 leaveFrom="transform opacity-100 scale-100"
                 leaveTo="transform opacity-0 scale-95"
               >
-                <Menu.Items className="absolute right-0 z-30 mt-2 w-96 origin-top-right rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl focus:outline-none overflow-hidden">
-                  <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
-                    <p className="text-sm font-bold text-white">Notificaciones</p>
+                <Menu.Items className="absolute right-0 z-30 mt-2 w-96 origin-top-right rounded-2xl border border-gray-100 bg-white shadow-xl focus:outline-none overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                    <p className="text-sm font-bold text-slate-800">Notificaciones</p>
                     <div className="flex items-center gap-3">
                       <button
                         onClick={loadNotifications}
                         disabled={loadingNotifications}
-                        className="text-xs text-slate-400 hover:text-white disabled:opacity-50 transition-colors"
+                        className="text-xs text-slate-400 hover:text-slate-600 disabled:opacity-50 transition-colors"
                       >
                         {loadingNotifications ? 'Actualizando...' : 'Refrescar'}
                       </button>
                       <button
                         onClick={handleMarkAllAsRead}
                         disabled={unreadCount === 0}
-                        className="text-xs text-cyan-400 hover:text-cyan-300 disabled:opacity-40 transition-colors"
+                        className="text-xs text-coral-500 hover:text-coral-600 disabled:opacity-40 transition-colors"
                       >
                         Leer todas
                       </button>
                       <button
                         onClick={handleClearAll}
                         disabled={notifications.length === 0}
-                        className="text-xs text-slate-500 hover:text-slate-300 disabled:opacity-40 transition-colors"
+                        className="text-xs text-slate-400 hover:text-slate-600 disabled:opacity-40 transition-colors"
                       >
                         Limpiar
                       </button>
                     </div>
                   </div>
-                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-800">
+                  <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
                     {notifications.length > 0 ? (
                       notifications.map((n) => {
                         const Icon = notifIcons[n.type]
@@ -628,14 +628,14 @@ const AdminPanel: React.FC = () => {
                             {({ active }) => (
                               <button
                                 onClick={() => handleMarkAsRead(n.id)}
-                                className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors ${active ? 'bg-white/5' : ''}`}
+                                className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors ${active ? 'bg-gray-50' : ''}`}
                               >
                                 {!n.read && (
-                                  <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-cyan-400" />
+                                  <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-coral-400" />
                                 )}
                                 <Icon className={`mt-0.5 h-4 w-4 flex-shrink-0 ${notifColors[n.type]} ${n.read ? 'ml-4' : ''}`} />
                                 <div className="min-w-0 flex-1">
-                                  <p className={`text-xs leading-snug ${n.read ? 'text-slate-400' : 'text-slate-100 font-medium'}`}>
+                                  <p className={`text-xs leading-snug ${n.read ? 'text-slate-400' : 'text-slate-800 font-medium'}`}>
                                     {n.message}
                                   </p>
                                   <p className="mt-0.5 text-[10px] text-slate-500">
@@ -648,7 +648,7 @@ const AdminPanel: React.FC = () => {
                         )
                       })
                     ) : (
-                      <div className="py-10 text-center text-sm text-slate-500">Sin notificaciones</div>
+                      <div className="py-10 text-center text-sm text-slate-400">Sin notificaciones</div>
                     )}
                   </div>
                 </Menu.Items>
@@ -657,7 +657,7 @@ const AdminPanel: React.FC = () => {
 
             {/* Profile */}
             <Menu as="div" className="relative">
-              <Menu.Button className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 text-sm font-bold text-white shadow hover:brightness-110 transition-all">
+              <Menu.Button className="flex h-9 w-9 items-center justify-center rounded-xl bg-coral-500 text-sm font-bold text-white shadow-lg shadow-coral-500/25 hover:brightness-110 transition-all">
                 {(user?.name?.[0] ?? 'A').toUpperCase()}
               </Menu.Button>
               <Transition
@@ -669,17 +669,17 @@ const AdminPanel: React.FC = () => {
                 leaveFrom="transform opacity-100 scale-100"
                 leaveTo="transform opacity-0 scale-95"
               >
-                <Menu.Items className="absolute right-0 z-30 mt-2 w-52 origin-top-right rounded-2xl border border-slate-700 bg-slate-900 py-1 shadow-2xl focus:outline-none overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-700">
-                    <p className="text-sm font-semibold text-white truncate">{user?.name || 'Admin ISP'}</p>
-                    <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+                <Menu.Items className="absolute right-0 z-30 mt-2 w-52 origin-top-right rounded-2xl border border-gray-100 bg-white py-1 shadow-xl focus:outline-none overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-sm font-bold text-slate-800 truncate">{user?.name || 'Admin ISP'}</p>
+                    <p className="text-xs text-slate-500 truncate">{user?.email}</p>
                   </div>
                   {isPlatformAdminMode && (
                     <Menu.Item>
                       {({ active }) => (
                         <button
                           onClick={handleExitTenantMode}
-                          className={`flex w-full items-center gap-2 px-4 py-2.5 text-sm text-amber-300 transition-colors ${active ? 'bg-white/5' : ''}`}
+                          className={`flex w-full items-center gap-2 px-4 py-2.5 text-sm text-amber-600 font-medium transition-colors ${active ? 'bg-gray-50' : ''}`}
                         >
                           <ArrowLeftOnRectangleIcon className="h-4 w-4" />
                           Volver a Admin Total
@@ -691,7 +691,7 @@ const AdminPanel: React.FC = () => {
                     {({ active }) => (
                       <button
                         onClick={logout}
-                        className={`flex w-full items-center gap-2 px-4 py-2.5 text-sm text-rose-400 transition-colors ${active ? 'bg-white/5' : ''}`}
+                        className={`flex w-full items-center gap-2 px-4 py-2.5 text-sm text-rose-500 font-medium transition-colors ${active ? 'bg-gray-50' : ''}`}
                       >
                         <ArrowLeftOnRectangleIcon className="h-4 w-4" />
                         Cerrar sesión

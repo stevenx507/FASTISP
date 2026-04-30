@@ -24,15 +24,12 @@ const Login: React.FC = () => {
     e.preventDefault()
     setIsLoading(true)
     try {
-      const success = await login(email, password)
-      if (success) {
-        toast.success('¡Bienvenido a ISPFAST!')
-        navigate('/admin')
-      } else {
-        toast.error('Credenciales incorrectas')
-      }
+      await login(email, password)
+      toast.success('¡Bienvenido a ISPFAST!')
+      navigate('/admin')
     } catch (error) {
-      toast.error('Error al conectar con el servidor')
+      const msg = error instanceof Error ? error.message : 'Error al conectar con el servidor'
+      toast.error(msg)
     } finally {
       setIsLoading(false)
     }

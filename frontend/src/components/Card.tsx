@@ -23,19 +23,19 @@ export const Card: React.FC<CardProps> = ({
   return (
     <Component
       whileHover={hoverable ? { y: -4 } : undefined}
-      className={`bg-white/5 backdrop-blur-md rounded-lg shadow-sm border border-white/10 overflow-hidden ${
-        hoverable ? 'transition-shadow hover:shadow-md' : ''
+      className={`bg-white rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100 overflow-hidden ${
+        hoverable ? 'transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)]' : ''
       } ${className}`}
     >
       {(title || description) && (
-        <div className="p-6 border-b border-white/10">
-          {title && <h3 className="text-lg font-semibold text-white">{title}</h3>}
-          {description && <p className="text-sm text-slate-400 mt-1">{description}</p>}
+        <div className="p-6 border-b border-gray-100">
+          {title && <h3 className="text-lg font-bold text-slate-800">{title}</h3>}
+          {description && <p className="text-sm text-slate-500 mt-1">{description}</p>}
         </div>
       )}
       <div className="p-6">{children}</div>
       {footer && (
-        <div className="px-6 py-4 bg-white/5 border-t border-white/10">
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
           {footer}
         </div>
       )}

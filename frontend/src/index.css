@@ -64,7 +64,7 @@ body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-synthesis: none;
     color: var(--text-main);
-    background: var(--bg-ivory);
+    background: linear-gradient(135deg, var(--bg-ivory) 0%, #FFFFFF 100%);
     background-attachment: fixed;
   }
 
@@ -83,14 +83,14 @@ body {
 #root,
 .app-shell {
   min-height: 100vh;
-  background: var(--bg-ivory);
+  background: transparent;
 }
 
 @layer components {
   .btn-primary {
-    @apply rounded-xl px-5 py-2.5 font-bold text-white shadow-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply rounded-xl px-5 py-2.5 font-bold text-white transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2;
     background-color: var(--primary-color);
-    box-shadow: 0 4px 14px 0 rgba(255, 105, 97, 0.39);
+    box-shadow: 0 8px 20px -4px rgba(255, 105, 97, 0.4);
   }
   
   .btn-primary:hover {

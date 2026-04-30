@@ -9,12 +9,12 @@ interface BadgeProps {
 }
 
 const variantStyles = {
-  default: 'bg-white/10 text-slate-200',
-  primary: 'bg-blue-500/20 text-blue-300',
-  success: 'bg-emerald-500/20 text-emerald-300',
-  warning: 'bg-amber-500/20 text-amber-300',
-  danger: 'bg-rose-500/20 text-rose-300',
-  info: 'bg-cyan-100 text-cyan-800'
+  default: 'bg-gray-100 text-slate-600',
+  primary: 'bg-coral-50 text-coral-600',
+  success: 'bg-emerald-50 text-emerald-700',
+  warning: 'bg-amber-50 text-amber-700',
+  danger: 'bg-rose-50 text-rose-700',
+  info: 'bg-cyan-50 text-cyan-700'
 }
 
 const sizeStyles = {
@@ -33,7 +33,7 @@ export const Badge: React.FC<BadgeProps> = ({
     <motion.span
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      className={`inline-block rounded-full font-medium ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      className={`inline-block rounded-full font-bold ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
     >
       {children}
     </motion.span>
@@ -50,11 +50,11 @@ interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'size' | 'children
 }
 
 const buttonVariants = {
-  primary: 'bg-blue-600 hover:bg-blue-700 text-white',
-  secondary: 'bg-white/15 hover:bg-gray-300 text-white',
-  success: 'bg-green-600 hover:bg-green-700 text-white',
-  danger: 'bg-red-600 hover:bg-red-700 text-white',
-  warning: 'bg-yellow-600 hover:bg-yellow-700 text-white'
+  primary: 'bg-coral-500 hover:bg-coral-600 text-white shadow-md shadow-coral-500/20',
+  secondary: 'bg-gray-100 hover:bg-gray-200 text-slate-700',
+  success: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+  danger: 'bg-rose-500 hover:bg-rose-600 text-white',
+  warning: 'bg-amber-500 hover:bg-amber-600 text-white'
 }
 
 const buttonSizes = {
@@ -80,7 +80,7 @@ export const Button: React.FC<ButtonProps> = ({
       whileTap={{ scale: disabled ? 1 : 0.98 }}
       disabled={loading || disabled}
       className={`
-        flex items-center justify-center gap-2 rounded-lg font-medium transition
+        flex items-center justify-center gap-2 rounded-xl font-bold transition
         disabled:opacity-50 disabled:cursor-not-allowed
         ${buttonVariants[variant]} ${buttonSizes[size]}
         ${fullWidth ? 'w-full' : ''} ${className}
