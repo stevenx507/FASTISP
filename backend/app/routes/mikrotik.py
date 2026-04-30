@@ -5159,6 +5159,7 @@ def get_sstp_status(router_id):
                 'server_ip': tunnel.server_ip,
                 'client_ip': tunnel.client_ip,
                 'router_name': router.name,
+                'api_port': router.api_port or 8728,
                 'provisioned_at': tunnel.created_at.isoformat() if tunnel.created_at else '',
                 'hub': 'FASTISP',
                 'fingerprint': '',

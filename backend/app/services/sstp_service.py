@@ -137,6 +137,7 @@ def _active_tunnel_payload(router) -> dict | None:
         "server_port": tunnel.server_port,
         "server_ip": tunnel.server_ip,
         "client_ip": tunnel.client_ip,
+        "api_port": getattr(router, "api_port", 8728) or 8728,
         "fingerprint": get_certificate_fingerprint(),
         "router_name": getattr(router, "name", "mikrotik"),
         "provisioned_at": tunnel.created_at.isoformat() if tunnel.created_at else datetime.utcnow().isoformat(),
@@ -168,6 +169,7 @@ def provision_sstp_tunnel(router) -> dict:
         "server_port": SSTP_SERVER_PORT,
         "server_ip": server_ip,
         "client_ip": client_ip,
+        "api_port": router.api_port or 8728,
         "fingerprint": "MIKROTIK-NATIVE-CERT",
         "router_name": router.name,
         "provisioned_at": datetime.utcnow().isoformat(),
@@ -458,6 +460,7 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
     """Genera el script RouterOS para configurar el servidor SSTP nativo."""
     username = prov.get("username", "")
     password = prov.get("password", "")
+    api_port = prov.get("api_port") or 8728
     router_name = prov.get("router_name", "mikrotik")
     router_address = prov.get("server_host", "0.0.0.0")
     provisioned_at = prov.get("provisioned_at", datetime.utcnow().isoformat())
@@ -477,9 +480,9 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
 
     # Firewall rules: RouterOS src-address NO acepta listas separadas por coma,
     # hay que generar una regla por cada origen.
-    fw_api_rules = f'/ip firewall filter add chain=input protocol=tcp dst-port=8728 src-address={SSTP_API_ALLOWED_SUBNET} action=accept comment="FastISP: Permitir API" place-before=0'
+    fw_api_rules = f'/ip firewall filter add chain=input protocol=tcp dst-port={api_port} src-address={SSTP_API_ALLOWED_SUBNET} action=accept comment="FastISP: Permitir API" place-before=0'
     if vps_ip:
-        fw_api_rules += f'\n/ip firewall filter add chain=input protocol=tcp dst-port=8728 src-address={vps_ip}/32 action=accept comment="FastISP: Permitir API VPS" place-before=0'
+        fw_api_rules += f'\n/ip firewall filter add chain=input protocol=tcp dst-port={api_port} src-address={vps_ip}/32 action=accept comment="FastISP: Permitir API VPS" place-before=0'
 
     return f"""# FastISP - Servidor SSTP Nativo - {router_name}
 # Generado: {provisioned_at}
@@ -528,7 +531,7 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
 /user add name={_routeros_quote(username)} password={_routeros_quote(password)} group={SSTP_API_GROUP_NAME} comment="FastISP API user"
 
 # --- 7. API habilitada (VPS + pool SSTP) ---
-/ip service set api port=8728 disabled=no address="{api_addresses}"
+/ip service set api port={api_port} disabled=no address="{api_addresses}"
 
 # --- 8. Firewall de entrada para SSTP y API ---
 /ip firewall filter add chain=input protocol=tcp dst-port={SSTP_SERVER_PORT} action=accept comment="FastISP: Permitir SSTP" place-before=0
