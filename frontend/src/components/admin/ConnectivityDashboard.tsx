@@ -64,10 +64,10 @@ type Tab = 'monitor' | 'vpn' | 'security' | 'commands'
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const statusConfig = {
-  online:          { label: 'En línea',       dot: 'bg-emerald-400', badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30', Icon: SignalIcon },
-  warning:         { label: 'Advertencia',    dot: 'bg-amber-400',   badge: 'bg-amber-500/20 text-amber-300 border-amber-500/30',       Icon: ExclamationTriangleIcon },
-  offline:         { label: 'Offline',        dot: 'bg-rose-500',    badge: 'bg-rose-500/20 text-rose-300 border-rose-500/30',          Icon: SignalSlashIcon },
-  never_connected: { label: 'Sin conectar',   dot: 'bg-slate-500',   badge: 'bg-slate-700/60 text-slate-400 border-slate-600/40',       Icon: XCircleIcon },
+  online:          { label: 'En línea',       dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', Icon: SignalIcon },
+  warning:         { label: 'Advertencia',    dot: 'bg-amber-500',   badge: 'bg-amber-50 text-amber-700 border-amber-200',       Icon: ExclamationTriangleIcon },
+  offline:         { label: 'Offline',        dot: 'bg-rose-500',    badge: 'bg-rose-50 text-rose-700 border-rose-200',          Icon: SignalSlashIcon },
+  never_connected: { label: 'Sin conectar',   dot: 'bg-slate-400',   badge: 'bg-slate-100 text-slate-600 border-slate-200',       Icon: XCircleIcon },
 }
 
 const copyToClipboard = async (text: string) => {
@@ -82,12 +82,12 @@ const formatLastSeen = (val: string | null, mins: number | null) => {
   return `Hace ${Math.round(mins / 60)} h`
 }
 
-const inputCls = 'w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none transition'
-const btnPrimary = 'inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-500 disabled:opacity-50 transition focus:outline-none'
-const btnDanger = 'inline-flex items-center gap-2 rounded-lg bg-rose-600/80 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-500 disabled:opacity-50 transition focus:outline-none'
-const btnSuccess = 'inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition focus:outline-none'
-const btnSecondary = 'inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 transition focus:outline-none'
-const card = 'rounded-2xl border border-white/10 bg-slate-900/70 p-5 shadow'
+const inputCls = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-coral-500 focus:ring-2 focus:ring-coral-500/20 outline-none transition'
+const btnPrimary = 'inline-flex items-center gap-2 rounded-lg bg-coral-500 px-3 py-2 text-sm font-semibold text-white hover:bg-coral-600 disabled:opacity-50 transition focus:outline-none'
+const btnDanger = 'inline-flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50 transition focus:outline-none'
+const btnSuccess = 'inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition focus:outline-none'
+const btnSecondary = 'inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 transition focus:outline-none'
+const card = 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
@@ -273,12 +273,12 @@ const ConnectivityDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-cyan-400">ISP Orquestador</p>
-          <h2 className="text-2xl font-bold text-white">Dashboard de Conectividad</h2>
-          <p className="text-sm text-slate-400">Los 4 pilares del sistema ISP profesional</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-coral-500">ISP Orquestador</p>
+          <h2 className="text-2xl font-bold text-slate-900">Dashboard de Conectividad</h2>
+          <p className="text-sm text-slate-700">Los 4 pilares del sistema ISP profesional</p>
         </div>
         <div className="flex items-center gap-2">
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-400">
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-600">
             <input
               type="checkbox"
               checked={autoRefresh}
@@ -298,14 +298,14 @@ const ConnectivityDashboard: React.FC = () => {
       {summary && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {[
-            { label: 'Total',         val: summary.total,           cls: 'text-white' },
-            { label: 'En línea',      val: summary.online,          cls: 'text-emerald-400' },
-            { label: 'Offline',       val: summary.offline,         cls: 'text-rose-400' },
-            { label: 'Advertencia',   val: summary.warning,         cls: 'text-amber-400' },
-            { label: 'Sin conectar',  val: summary.never_connected, cls: 'text-slate-400' },
+            { label: 'Total',         val: summary.total,           cls: 'text-slate-950' },
+            { label: 'En línea',      val: summary.online,          cls: 'text-emerald-700' },
+            { label: 'Offline',       val: summary.offline,         cls: 'text-rose-700' },
+            { label: 'Advertencia',   val: summary.warning,         cls: 'text-amber-700' },
+            { label: 'Sin conectar',  val: summary.never_connected, cls: 'text-slate-700' },
           ].map(item => (
             <div key={item.label} className={card}>
-              <p className="text-xs text-slate-400">{item.label}</p>
+              <p className="text-xs text-slate-600">{item.label}</p>
               <p className={`mt-1 text-3xl font-bold ${item.cls}`}>{item.val}</p>
             </div>
           ))}
@@ -313,15 +313,15 @@ const ConnectivityDashboard: React.FC = () => {
       )}
 
       {/* Tab bar */}
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/10 bg-slate-900/60 p-1">
+      <div className="flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1">
         {tabs.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold transition ${
               tab === t.id
-                ? 'bg-cyan-600 text-white shadow'
-                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                ? 'bg-coral-500 text-white shadow'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
             }`}
           >
             <t.Icon className="h-4 w-4" />
@@ -340,7 +340,7 @@ const ConnectivityDashboard: React.FC = () => {
           )}
 
           {connectivity?.generated_at && (
-            <p className="text-right text-[10px] text-slate-500">
+            <p className="text-right text-[10px] text-slate-700">
               Último check: {new Date(connectivity.generated_at).toLocaleString('es-CO')}
             </p>
           )}
@@ -354,31 +354,31 @@ const ConnectivityDashboard: React.FC = () => {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className={`rounded-2xl border p-4 shadow ${
-                    r.status === 'offline' ? 'border-rose-500/40 bg-rose-900/10' :
-                    r.status === 'warning' ? 'border-amber-500/30 bg-amber-900/10' :
-                    r.status === 'online'  ? 'border-emerald-500/20 bg-emerald-900/5' :
-                    'border-white/10 bg-slate-900/60'
+                  className={`rounded-2xl border p-4 shadow-sm ${
+                    r.status === 'offline' ? 'border-rose-200 bg-rose-50' :
+                    r.status === 'warning' ? 'border-amber-200 bg-amber-50' :
+                    r.status === 'online'  ? 'border-emerald-200 bg-emerald-50' :
+                    'border-slate-200 bg-white'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <span className={`mt-0.5 inline-block h-2.5 w-2.5 flex-shrink-0 rounded-full ${cfg.dot} ${r.status === 'online' ? 'animate-pulse' : ''}`} />
-                      <p className="text-sm font-semibold text-white">{r.router_name}</p>
+                      <p className="text-sm font-semibold text-slate-800">{r.router_name}</p>
                     </div>
                     <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${cfg.badge}`}>
                       {cfg.label}
                     </span>
                   </div>
 
-                  <div className="mt-3 space-y-1 text-xs text-slate-400">
-                    <p>IP VPN: <span className="font-mono text-slate-200">{r.vpn_ip || 'No asignada'}</span></p>
-                    <p>API Port: <span className="text-slate-300">{r.api_port || 8728}</span></p>
-                    <p>Último contacto: <span className="text-slate-300">{formatLastSeen(r.last_seen, r.minutes_since_seen)}</span></p>
+                  <div className="mt-3 space-y-1 text-xs text-slate-700">
+                    <p>IP VPN: <span className="font-mono text-slate-700">{r.vpn_ip || 'No asignada'}</span></p>
+                    <p>API Port: <span className="text-slate-600">{r.api_port || 8728}</span></p>
+                    <p>Último contacto: <span className="text-slate-600">{formatLastSeen(r.last_seen, r.minutes_since_seen)}</span></p>
                   </div>
 
                   {r.status === 'offline' && (
-                    <div className="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+                    <div className="mt-3 rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs text-rose-600">
                       ⚠ MikroTik Offline — Verifica el túnel SSTP en el equipo
                     </div>
                   )}
@@ -399,9 +399,9 @@ const ConnectivityDashboard: React.FC = () => {
       {/* ── TAB 2: VPN Orchestrator ──────────────────────────────────────── */}
       {tab === 'vpn' && (
         <div className="space-y-4">
-          <div className={`${card} border-l-4 border-l-cyan-500`}>
-            <p className="text-xs font-semibold uppercase text-cyan-400">Pilar 1 — Orquestador VPN</p>
-            <p className="mt-1 text-sm text-slate-300">
+          <div className={`${card} border-l-4 border-l-coral-500`}>
+            <p className="text-xs font-semibold uppercase text-coral-500">Pilar 1 — Orquestador VPN</p>
+            <p className="mt-1 text-sm text-slate-700">
               El sistema configura automáticamente un servidor SSTP nativo por router y guarda las credenciales de
               gestión cada vez que se provisiona. Usa "Provisionar" para re-generar credenciales o para routers
               existentes que aún no tienen SSTP nativo asignado.
@@ -411,8 +411,8 @@ const ConnectivityDashboard: React.FC = () => {
           {/* VPN Sessions */}
           <div className={card}>
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <WifiIcon className="h-4 w-4 text-cyan-400" /> Servidores SSTP Nativos Activos
+              <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                <WifiIcon className="h-4 w-4 text-coral-500" /> Servidores SSTP Nativos Activos
               </h3>
               <button onClick={() => void loadVpnSessions()} disabled={loadingVpnSessions} className={btnSecondary}>
                 <ArrowPathIcon className={`h-3.5 w-3.5 ${loadingVpnSessions ? 'animate-spin' : ''}`} />
@@ -430,10 +430,10 @@ const ConnectivityDashboard: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <p className="mt-3 text-xs text-slate-500">Sin servidores SSTP activos registrados.</p>
+                <p className="mt-3 text-xs text-slate-700">Sin servidores SSTP activos registrados.</p>
               )
             ) : (
-              <p className="mt-3 text-xs text-slate-500">Cargando sesiones...</p>
+              <p className="mt-3 text-xs text-slate-700">Cargando sesiones...</p>
             )}
           </div>
 
@@ -446,11 +446,11 @@ const ConnectivityDashboard: React.FC = () => {
                 <div key={r.router_id} className={card}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-bold text-white">{r.router_name}</p>
-                      <p className="text-xs text-slate-400">
-                        IP VPN: <span className="font-mono text-cyan-300">{vpnRes?.vpn_ip || r.vpn_ip || 'Por asignar'}</span>
+                      <p className="text-sm font-bold text-slate-800">{r.router_name}</p>
+                      <p className="text-xs text-slate-700">
+                        IP VPN: <span className="font-mono text-coral-500">{vpnRes?.vpn_ip || r.vpn_ip || 'Por asignar'}</span>
                         {vpnRes?.vpn_username && (
-                          <span className="ml-3">Usuario: <span className="font-mono text-emerald-300">{vpnRes.vpn_username}</span></span>
+                          <span className="ml-3">Usuario: <span className="font-mono text-emerald-600">{vpnRes.vpn_username}</span></span>
                         )}
                       </p>
                     </div>
@@ -474,7 +474,7 @@ const ConnectivityDashboard: React.FC = () => {
                   </div>
 
                   {vpnRes && (
-                    <div className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-300">
+                    <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
                       <p>✓ SSTP nativo provisionado</p>
                       {vpnRes.sstp_url && <p>URL: <span className="font-mono">{vpnRes.sstp_url}</span></p>}
                     </div>
@@ -484,7 +484,7 @@ const ConnectivityDashboard: React.FC = () => {
             })}
 
             {routers.length === 0 && (
-              <p className="text-center text-sm text-slate-500 py-8">No hay routers. Agrega uno en el módulo MikroTik.</p>
+              <p className="text-center text-sm text-slate-700 py-8">No hay routers. Agrega uno en el módulo MikroTik.</p>
             )}
           </div>
         </div>
@@ -502,11 +502,11 @@ const ConnectivityDashboard: React.FC = () => {
           </div>
 
           <div className={`${card}`}>
-            <h3 className="mb-3 text-sm font-semibold text-white">Reglas de seguridad aplicadas:</h3>
-            <ul className="space-y-2 text-xs text-slate-300">
-              <li className="flex items-start gap-2"><CheckCircleIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400" /> <span><strong>IP Service restrict:</strong> Limita /ip service api al rango 10.100.0.0/16 (solo VPN interna)</span></li>
-              <li className="flex items-start gap-2"><CheckCircleIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400" /> <span><strong>Drop externa:</strong> Firewall descarta paquetes API (8728/8729) fuera de la VPN</span></li>
-              <li className="flex items-start gap-2"><CheckCircleIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400" /> <span><strong>Anti brute-force:</strong> Rate limit en intentos de login a la API</span></li>
+            <h3 className="mb-3 text-sm font-semibold text-slate-800">Reglas de seguridad aplicadas:</h3>
+            <ul className="space-y-2 text-xs text-slate-600">
+              <li className="flex items-start gap-2"><CheckCircleIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" /> <span><strong>IP Service restrict:</strong> Limita /ip service api al rango 10.100.0.0/16 (solo VPN interna)</span></li>
+              <li className="flex items-start gap-2"><CheckCircleIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" /> <span><strong>Drop externa:</strong> Firewall descarta paquetes API (8728/8729) fuera de la VPN</span></li>
+              <li className="flex items-start gap-2"><CheckCircleIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" /> <span><strong>Anti brute-force:</strong> Rate limit en intentos de login a la API</span></li>
             </ul>
           </div>
 
@@ -518,8 +518,8 @@ const ConnectivityDashboard: React.FC = () => {
                 <div key={r.router_id} className={card}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-bold text-white">{r.router_name}</p>
-                      <p className="text-xs text-slate-400">IP VPN: {r.vpn_ip || 'No asignada'} | Puerto API: {r.api_port || 8728}</p>
+                      <p className="text-sm font-bold text-slate-800">{r.router_name}</p>
+                      <p className="text-xs text-slate-700">IP VPN: {r.vpn_ip || 'No asignada'} | Puerto API: {r.api_port || 8728}</p>
                     </div>
                     <button
                       onClick={() => void secureApi(r.router_id)}
@@ -537,7 +537,7 @@ const ConnectivityDashboard: React.FC = () => {
                   )}
 
                   {secRes && (
-                    <div className={`mt-3 rounded-lg border px-3 py-2 text-xs ${secRes.success ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-300' : 'border-rose-500/20 bg-rose-500/5 text-rose-300'}`}>
+                    <div className={`mt-3 rounded-lg border px-3 py-2 text-xs ${secRes.success ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
                       {secRes.success ? '✓' : '✗'} {secRes.message}
                     </div>
                   )}
@@ -546,13 +546,13 @@ const ConnectivityDashboard: React.FC = () => {
             })}
 
             {routers.length === 0 && (
-              <p className="text-center text-sm text-slate-500 py-8">No hay routers registrados.</p>
+              <p className="text-center text-sm text-slate-700 py-8">No hay routers registrados.</p>
             )}
           </div>
 
           <div className={`${card} mt-4`}>
-            <h3 className="mb-2 text-sm font-semibold text-white flex items-center gap-2">
-              <DocumentTextIcon className="h-4 w-4 text-amber-400" /> Recomendación: iptables en el servidor VPS
+            <h3 className="mb-2 text-sm font-semibold text-slate-800 flex items-center gap-2">
+              <DocumentTextIcon className="h-4 w-4 text-amber-600" /> Recomendación: iptables en el servidor VPS
             </h3>
             <p className="mb-2 text-xs text-slate-400">Ejecuta esto en el servidor Ubuntu para que nadie fuera de la VPN pueda acceder a los puertos API de los MikroTik:</p>
             <div className="relative rounded-lg bg-slate-950 p-3 font-mono text-xs text-emerald-300">
@@ -582,8 +582,8 @@ netfilter-persistent save`}</pre>
       {tab === 'commands' && (
         <div className="space-y-4">
           <div className={`${card} border-l-4 border-l-violet-500`}>
-            <p className="text-xs font-semibold uppercase text-violet-400">Pilar 4 — Plantillas de Comandos</p>
-            <p className="mt-1 text-sm text-slate-300">
+            <p className="text-xs font-semibold uppercase text-violet-600">Pilar 4 — Plantillas de Comandos</p>
+            <p className="mt-1 text-sm text-slate-700">
               Ejecuta comandos en tiempo real en cualquier router: corte por mora, reactivación,
               control de ancho de banda y lectura de tráfico. Todos los cambios se aplican
               directamente en el RouterOS vía API.
@@ -591,10 +591,10 @@ netfilter-persistent save`}</pre>
           </div>
 
           <div className={card}>
-            <h3 className="mb-4 text-sm font-bold text-white">Parámetros de comando</h3>
+            <h3 className="mb-4 text-sm font-bold text-slate-800">Parámetros de comando</h3>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-400">Router</label>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">Router</label>
                 <select
                   value={cmdRouterIds}
                   onChange={e => setCmdRouterIds(e.target.value)}
@@ -607,20 +607,20 @@ netfilter-persistent save`}</pre>
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-400">IP del cliente</label>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">IP del cliente</label>
                 <input value={cmdClientIp} onChange={e => setCmdClientIp(e.target.value)} placeholder="192.168.1.100" className={inputCls} />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-400">Nombre cliente (opcional)</label>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">Nombre cliente (opcional)</label>
                 <input value={cmdClientName} onChange={e => setCmdClientName(e.target.value)} placeholder="Juan Pérez" className={inputCls} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-400">Bajada (Mbps)</label>
+                  <label className="mb-1 block text-xs font-semibold text-slate-600">Bajada (Mbps)</label>
                   <input type="number" value={cmdDownload} onChange={e => setCmdDownload(e.target.value)} min="1" className={inputCls} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-400">Subida (Mbps)</label>
+                  <label className="mb-1 block text-xs font-semibold text-slate-600">Subida (Mbps)</label>
                   <input type="number" value={cmdUpload} onChange={e => setCmdUpload(e.target.value)} min="1" className={inputCls} />
                 </div>
               </div>
@@ -652,7 +652,7 @@ netfilter-persistent save`}</pre>
 
           {/* Command reference */}
           <div className={card}>
-            <h3 className="mb-3 text-sm font-semibold text-white">Referencia de comandos RouterOS</h3>
+            <h3 className="mb-3 text-sm font-semibold text-slate-800">Referencia de comandos RouterOS</h3>
             <div className="space-y-3">
               {[
                 { title: 'Corte por mora', color: 'rose', cmd: '/ip firewall address-list add list=fastisp-morosos address=<IP> comment="FASTISP-MOROSO: Cliente"' },
@@ -662,7 +662,7 @@ netfilter-persistent save`}</pre>
               ].map(item => (
                 <div key={item.title} className="rounded-lg border border-white/5 bg-slate-950/60 p-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-slate-300">{item.title}</p>
+                    <p className="text-xs font-semibold text-slate-600">{item.title}</p>
                     <button
                       onClick={async () => { if (await copyToClipboard(item.cmd)) toast.success('Copiado') }}
                       className="text-slate-500 hover:text-white"
@@ -684,9 +684,9 @@ netfilter-persistent save`}</pre>
           <div className="my-4 w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
               <div>
-                <p className="text-xs font-semibold uppercase text-cyan-400">Script de Onboarding</p>
-                <h3 className="text-lg font-bold text-white">{showScriptModal.name}</h3>
-                <p className="text-xs text-slate-400">Copia y pega este script en Terminal del MikroTik (New Terminal)</p>
+                <p className="text-xs font-semibold uppercase text-coral-500">Script de Onboarding</p>
+                <h3 className="text-lg font-bold text-slate-800">{showScriptModal.name}</h3>
+                <p className="text-xs text-slate-700">Copia y pega este script en Terminal del MikroTik (New Terminal)</p>
               </div>
               <button onClick={() => setShowScriptModal(null)} className="rounded-full p-2 text-slate-400 hover:bg-white/10 hover:text-white">
                 <XMarkIcon className="h-5 w-5" />

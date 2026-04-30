@@ -545,7 +545,7 @@ const PlatformAdmin: React.FC = () => {
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-coral-500">FastISP Master</p>
             <h1 className="text-2xl font-black text-slate-900">Admin Total de Plataforma</h1>
-            <p className="text-sm text-slate-500">Control de usuarios, cuentas admin y salud global del SaaS.</p>
+            <p className="text-sm text-slate-700">Control de usuarios, cuentas admin y salud global del SaaS.</p>
           </div>
           <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2">
             <ShieldCheckIcon className="h-5 w-5 text-emerald-500" />
@@ -608,11 +608,11 @@ const PlatformAdmin: React.FC = () => {
                 className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
               >
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{card.label}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">{card.label}</p>
                   <card.icon className="h-5 w-5 text-coral-500" />
                 </div>
                 <p className="mt-3 text-3xl font-black text-slate-900">{card.value}</p>
-                <p className="mt-1 text-xs text-slate-400">{card.meta}</p>
+                <p className="mt-1 text-xs text-slate-600">{card.meta}</p>
               </div>
             ))}
           </div>
@@ -621,7 +621,7 @@ const PlatformAdmin: React.FC = () => {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Usuarios ISP registrados</h2>
-                <p className="text-sm text-slate-500">Aislamiento por subdominio y control operativo centralizado.</p>
+                <p className="text-sm text-slate-700">Aislamiento por subdominio y control operativo centralizado.</p>
               </div>
               <button
                 onClick={() => void loadPlatformData()}
@@ -666,7 +666,7 @@ const PlatformAdmin: React.FC = () => {
             </div>
 
             {loading ? (
-              <div className="py-14 text-center text-slate-500">Cargando usuarios...</div>
+              <div className="py-14 text-center text-slate-700">Cargando usuarios...</div>
             ) : (
               <div className="space-y-3">
                 {filteredTenants.map((tenant) => {
@@ -690,8 +690,8 @@ const PlatformAdmin: React.FC = () => {
                               {tenant.billing_status}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-500">{tenant.host || `${tenant.slug}.fastisp.cloud`}</p>
-                          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
+                          <p className="text-xs text-slate-700">{tenant.host || `${tenant.slug}.fastisp.cloud`}</p>
+                          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-700">
                             <p>
                               <span className="text-slate-400">Creado:</span> {formatDateTime(tenant.created_at)}
                             </p>

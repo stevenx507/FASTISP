@@ -3002,11 +3002,11 @@ const MikroTikManagement: React.FC = () => {
             </nav>
           </div>
 
-          <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
+          <div className="rounded-2xl border border-slate-100 bg-white p-8 shadow-sm">
             {isLoading ? (
               <div className="py-12 text-center">
                 <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
-                <p className="mt-4 text-slate-400">Cargando informacion del router...</p>
+                <p className="mt-4 text-slate-600">Cargando informacion del router...</p>
               </div>
             ) : (
               <>
@@ -3034,7 +3034,7 @@ const MikroTikManagement: React.FC = () => {
                 {activeTab === 'ai_diagnosis' && (
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <h4 className="text-sm font-medium text-slate-400">Diagnóstico Inteligente (AI)</h4>
+                      <h4 className="text-sm font-medium text-slate-700">Diagnóstico Inteligente (AI)</h4>
                       <button 
                         onClick={runAiDiagnosis} 
                         disabled={isAiLoading}
@@ -3049,11 +3049,11 @@ const MikroTikManagement: React.FC = () => {
                 {activeTab === 'logs' && (
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <h4 className="text-sm font-medium text-slate-400">Logs del Router (RouterOS)</h4>
+                      <h4 className="text-sm font-medium text-slate-700">Logs del Router (RouterOS)</h4>
                       <button 
                         onClick={loadLogs} 
                         disabled={logsLoading}
-                        className="text-xs bg-white/5 text-slate-300 px-3 py-1 rounded-full border border-white/10 hover:bg-white/10"
+                        className="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200 hover:bg-slate-200"
                       >
                         {logsLoading ? 'Cargando...' : 'Actualizar Logs'}
                       </button>
@@ -3068,10 +3068,10 @@ const MikroTikManagement: React.FC = () => {
                           {logs.map((log, idx) => (
                             <div key={idx} className="flex gap-2">
                               <span className="text-slate-500 shrink-0">{log.time}</span>
-                              <span className={`shrink-0 ${log.topics?.includes('error') ? 'text-red-400' : 'text-cyan-500'}`}>
+                              <span className={`shrink-0 ${log.topics?.includes('error') ? 'text-rose-600' : 'text-cyan-600'}`}>
                                 [{log.topics}]
                               </span>
-                              <span className="text-slate-300">{log.message}</span>
+                              <span className="text-slate-600">{log.message}</span>
                             </div>
                           ))}
                         </div>
@@ -3081,7 +3081,7 @@ const MikroTikManagement: React.FC = () => {
                 )}
                 {activeTab === 'config' && (
                   <div className="space-y-4">
-                    <h4 className="text-lg font-semibold text-white">Conexion remota guiada</h4>
+                    <h4 className="text-lg font-semibold text-slate-800">Conexion remota guiada</h4>
                     <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div>
@@ -3101,14 +3101,14 @@ const MikroTikManagement: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-200">Perfil de acceso WAN</p>
+                        <p className="text-sm font-semibold text-slate-700">Perfil de acceso WAN</p>
                         <div className="flex items-center gap-2">
                           <select
                             value={quickConnectScope}
                             onChange={(e) => setQuickConnectScope(e.target.value as 'auto' | 'public' | 'private')}
-                            className="rounded border border-white/20 bg-white/5 backdrop-blur-md px-2 py-1 text-xs text-white"
+                            className="rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-800"
                           >
                             <option value="auto">Auto detectar</option>
                             <option value="public">Forzar publica</option>
@@ -3124,28 +3124,28 @@ const MikroTikManagement: React.FC = () => {
                         </div>
                       </div>
                       {quickConnect?.access_profile && (
-                        <div className="mt-2 space-y-1 text-xs text-slate-300">
+                        <div className="mt-2 space-y-1 text-xs text-slate-600">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-slate-500/20 px-2 py-1 font-semibold text-slate-300 border border-slate-500/30">
+                            <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-600 border border-slate-200">
                               detectado: {quickConnect.access_profile.detected_scope || 'unknown'}
                             </span>
-                            <span className="rounded-full bg-blue-500/20 px-2 py-1 font-semibold text-blue-300 border border-blue-500/30">
+                            <span className="rounded-full bg-blue-50 px-2 py-1 font-semibold text-blue-600 border border-blue-100">
                               efectivo: {quickConnect.access_profile.effective_scope || 'unknown'}
                             </span>
-                            <span className="rounded-full bg-emerald-500/20 px-2 py-1 font-semibold text-emerald-400 border border-emerald-500/30">
+                            <span className="rounded-full bg-emerald-50 px-2 py-1 font-semibold text-emerald-600 border border-emerald-100">
                               recomendado: {quickConnect.access_profile.recommended_transport || '-'}
                             </span>
                           </div>
-                          <p className="text-slate-400">{quickConnect.access_profile.reason || '-'}</p>
+                          <p className="text-slate-600">{quickConnect.access_profile.reason || '-'}</p>
                         </div>
                       )}
                     </div>
-                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                       <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
                         <div>
-                          <p className="text-sm font-semibold text-slate-200">Diagnostico de conexion API</p>
-                          <p className="text-xs text-slate-400">Muestra la causa real del ultimo test: DNS, puerto, login API y ruta sugerida para el operador.</p>
-                          <p className="text-[11px] text-slate-400">
+                          <p className="text-sm font-semibold text-slate-700">Diagnostico de conexion API</p>
+                          <p className="text-xs text-slate-600">Muestra la causa real del ultimo test: DNS, puerto, login API y ruta sugerida para el operador.</p>
+                          <p className="text-[11px] text-slate-600">
                             Monitoreo automatico cada {Math.round(CONNECTION_POLL_INTERVAL_MS / 1000)}s mientras esta abierta esta pestaña.
                             Ultimo check: {formatConnectionCheckedAt(activeConnectionSnapshot?.checkedAt)}
                           </p>
@@ -3161,40 +3161,40 @@ const MikroTikManagement: React.FC = () => {
                         )}
                       </div>
                       {!activeConnectionDiagnostics && (
-                        <p className="text-xs text-slate-400">Todavia no hay un diagnostico guardado para este router. Usa "Probar conexion" o la validacion del wizard.</p>
+                        <p className="text-xs text-slate-600">Todavia no hay un diagnostico guardado para este router. Usa "Probar conexion" o la validacion del wizard.</p>
                       )}
                       {activeConnectionDiagnostics && (
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span
+                             <span
                               className={`rounded-full px-2 py-1 text-xs font-semibold border ${
                                 activeConnectionDiagnostics.success 
-                                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
-                                  : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                                  ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
+                                  : 'bg-amber-50 text-amber-600 border-amber-200'
                               }`}
                             >
                               {activeConnectionDiagnostics.summary || 'Sin resumen'}
                             </span>
                             {activeConnectionDiagnostics.transport_hint && (
-                              <span className="rounded-full bg-sky-500/20 px-2 py-1 text-xs font-semibold text-sky-400 border border-sky-500/30">
+                              <span className="rounded-full bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-600 border border-sky-200">
                                 Ruta sugerida: {activeConnectionDiagnostics.transport_hint}
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-slate-700">
                             Host <strong>{activeConnectionDiagnostics.host || selectedRouter.ip_address}</strong>:{' '}
                             <strong>{activeConnectionDiagnostics.api_port || '-'}</strong> | tipo:{' '}
                             <strong>{describeHostScope(activeConnectionDiagnostics.host_scope)}</strong>
                           </p>
-                          <ul className="space-y-1 text-xs text-slate-300">
+                          <ul className="space-y-1 text-xs text-slate-800">
                             {(activeConnectionDiagnostics.checks || []).map((check) => {
                               const severity = check.severity || (check.ok ? 'ok' : 'warning')
                               const toneClass =
                                 severity === 'critical'
-                                  ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                                  ? 'bg-rose-50 text-rose-600 border-rose-200'
                                   : severity === 'warning'
-                                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                                    : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                    ? 'bg-amber-50 text-amber-600 border-amber-200'
+                                    : 'bg-emerald-50 text-emerald-600 border-emerald-200'
                               return (
                                 <li key={check.id} className="flex flex-wrap items-center gap-2">
                                   <span className={`rounded px-2 py-0.5 font-semibold ${toneClass}`}>{check.id}</span>
@@ -3204,9 +3204,9 @@ const MikroTikManagement: React.FC = () => {
                             })}
                           </ul>
                           {(activeConnectionDiagnostics.recommendations || []).length > 0 && (
-                            <div className="rounded border border-sky-500/30 bg-sky-500/10 p-2">
-                              <p className="text-xs font-semibold uppercase text-sky-400">Mejoras sugeridas</p>
-                              <ul className="mt-1 space-y-1 text-xs text-sky-200/80">
+                            <div className="rounded border border-sky-200 bg-sky-50 p-2">
+                              <p className="text-xs font-semibold uppercase text-sky-700">Mejoras sugeridas</p>
+                              <ul className="mt-1 space-y-1 text-xs text-sky-800">
                                 {(activeConnectionDiagnostics.recommendations || []).map((item, idx) => (
                                   <li key={`${item}-${idx}`}>- {item}</li>
                                 ))}
@@ -3216,11 +3216,11 @@ const MikroTikManagement: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                         <div>
-                          <p className="text-sm font-semibold text-slate-200">Monitoreo SNMP</p>
-                          <p className="text-xs text-slate-400">
+                          <p className="text-sm font-semibold text-slate-700">Monitoreo SNMP</p>
+                          <p className="text-xs text-slate-600">
                             Configura sondeo para CPU, memoria, temperatura, voltaje, senal u optica desde esta misma vista.
                           </p>
                         </div>
@@ -3228,8 +3228,8 @@ const MikroTikManagement: React.FC = () => {
                           <span
                             className={`rounded-full px-2 py-1 text-xs font-semibold border ${
                               routerSnmpProfile?.enabled 
-                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
-                                : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
+                                : 'bg-slate-100 text-slate-500 border-slate-200'
                             }`}
                           >
                             {routerSnmpProfile?.enabled ? 'SNMP activo' : 'SNMP inactivo'}
@@ -3237,8 +3237,8 @@ const MikroTikManagement: React.FC = () => {
                           <span
                             className={`rounded-full px-2 py-1 text-xs font-semibold border ${
                               routerSnmpRuntimeAvailable === false 
-                                ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' 
-                                : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                ? 'bg-amber-50 text-amber-600 border-amber-200' 
+                                : 'bg-blue-50 text-blue-600 border-blue-200'
                             }`}
                           >
                             {routerSnmpRuntimeAvailable === false ? 'Backend sin runtime SNMP' : 'Backend listo'}
@@ -3250,49 +3250,49 @@ const MikroTikManagement: React.FC = () => {
                       ) : (
                         <div className="space-y-3">
                           <div className="grid grid-cols-1 gap-3 xl:grid-cols-4">
-                            <label className="rounded border border-white/10 bg-white/5 backdrop-blur-md p-3 text-xs text-slate-300">
-                              <span className="mb-1 block font-semibold text-slate-200">Host</span>
+                            <label className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
+                              <span className="mb-1 block font-semibold text-slate-700">Host</span>
                               <input
                                 value={routerSnmpForm.host}
                                 onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, host: e.target.value }))}
                                 placeholder={selectedRouter.ip_address}
-                                className="w-full rounded border border-white/20 px-2 py-1 text-xs text-white"
+                                className="w-full rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
                               />
                             </label>
-                            <label className="rounded border border-white/10 bg-white/5 backdrop-blur-md p-3 text-xs text-slate-300">
-                              <span className="mb-1 block font-semibold text-slate-200">Community</span>
+                            <label className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
+                              <span className="mb-1 block font-semibold text-slate-700">Community</span>
                               <input
                                 value={routerSnmpForm.community}
                                 onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, community: e.target.value }))}
                                 placeholder={routerSnmpProfile?.community_preview || 'public'}
-                                className="w-full rounded border border-white/20 px-2 py-1 text-xs text-white"
+                                className="w-full rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
                               />
-                              <span className="mt-1 block text-[11px] text-slate-400">
+                              <span className="mt-1 block text-[11px] text-slate-600">
                                 {routerSnmpProfile?.community_configured ? `Actual: ${routerSnmpProfile.community_preview || 'configurada'}` : 'Escribe una nueva para guardarla.'}
                               </span>
                             </label>
-                            <label className="rounded border border-white/10 bg-white/5 backdrop-blur-md p-3 text-xs text-slate-300">
-                              <span className="mb-1 block font-semibold text-slate-200">Puerto / timeout / retries</span>
+                            <label className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
+                              <span className="mb-1 block font-semibold text-slate-700">Puerto / timeout / retries</span>
                               <div className="grid grid-cols-3 gap-2">
                                 <input
                                   value={routerSnmpForm.port}
                                   onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, port: e.target.value }))}
-                                  className="rounded border border-white/20 px-2 py-1 text-xs text-white"
+                                  className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
                                 />
                                 <input
                                   value={routerSnmpForm.timeout_seconds}
                                   onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, timeout_seconds: e.target.value }))}
-                                  className="rounded border border-white/20 px-2 py-1 text-xs text-white"
+                                  className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
                                 />
                                 <input
                                   value={routerSnmpForm.retries}
                                   onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, retries: e.target.value }))}
-                                  className="rounded border border-white/20 px-2 py-1 text-xs text-white"
+                                  className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
                                 />
                               </div>
                             </label>
-                            <div className="rounded border border-white/10 bg-white/5 backdrop-blur-md p-3 text-xs text-slate-300">
-                              <span className="mb-2 block font-semibold text-slate-200">Switches</span>
+                            <div className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
+                              <span className="mb-2 block font-semibold text-slate-700">Switches</span>
                               <div className="space-y-2">
                                 <label className="flex items-center justify-between gap-2">
                                   <span>SNMP habilitado</span>
@@ -3322,15 +3322,15 @@ const MikroTikManagement: React.FC = () => {
                             </div>
                           </div>
 
-                          <label className="block rounded border border-white/10 bg-white/5 backdrop-blur-md p-3 text-xs text-slate-300">
-                            <span className="mb-1 block font-semibold text-slate-200">Interfaces a graficar</span>
+                          <label className="block rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
+                            <span className="mb-1 block font-semibold text-slate-700">Interfaces a graficar</span>
                             <input
                               value={routerSnmpForm.interface_names}
                               onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, interface_names: e.target.value }))}
                               placeholder="ether1, sfp1, bridge"
-                              className="w-full rounded border border-white/20 px-2 py-1 text-xs text-white"
+                              className="w-full rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
                             />
-                            <span className="mt-1 block text-[11px] text-slate-400">
+                            <span className="mt-1 block text-[11px] text-slate-600">
                               Dejalo vacio para leer todas las interfaces expuestas por SNMP.
                             </span>
                           </label>
@@ -3351,21 +3351,21 @@ const MikroTikManagement: React.FC = () => {
                                 ? (routerSnmpForm[field.scaleKey as keyof RouterSnmpFormState] as string)
                                 : ''
                               return (
-                                <div key={field.key} className="rounded border border-white/10 bg-white/5 backdrop-blur-md p-3 text-xs text-slate-300">
-                                  <span className="mb-1 block font-semibold text-slate-200">{field.label}</span>
+                                <div key={field.key} className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
+                                  <span className="mb-1 block font-semibold text-slate-700">{field.label}</span>
                                   <div className={`grid gap-2 ${field.scaleKey ? 'grid-cols-[minmax(0,1fr)_88px]' : 'grid-cols-1'}`}>
                                     <input
                                       value={currentValue}
                                       onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
                                       placeholder="OID"
-                                      className="rounded border border-white/20 px-2 py-1 text-xs text-white"
+                                      className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
                                     />
                                     {field.scaleKey && (
                                       <input
                                         value={currentScale}
                                         onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, [field.scaleKey]: e.target.value }))}
                                         placeholder="scale"
-                                        className="rounded border border-white/20 px-2 py-1 text-xs text-white"
+                                        className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
                                       />
                                     )}
                                   </div>
@@ -3375,36 +3375,36 @@ const MikroTikManagement: React.FC = () => {
                           </div>
 
                           <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-                            <label className="rounded border border-white/10 bg-white/5 backdrop-blur-md p-3 text-xs text-slate-300">
-                              <span className="mb-1 block font-semibold text-slate-200">Temp. critica C</span>
+                            <label className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
+                              <span className="mb-1 block font-semibold text-slate-700">Temp. critica C</span>
                               <input
                                 value={routerSnmpForm.threshold_temperature}
                                 onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, threshold_temperature: e.target.value }))}
-                                className="w-full rounded border border-white/20 px-2 py-1 text-xs text-white"
+                                className="w-full rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
                               />
                             </label>
-                            <label className="rounded border border-white/10 bg-white/5 backdrop-blur-md p-3 text-xs text-slate-300">
-                              <span className="mb-1 block font-semibold text-slate-200">Voltaje minimo</span>
+                            <label className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
+                              <span className="mb-1 block font-semibold text-slate-700">Voltaje minimo</span>
                               <input
                                 value={routerSnmpForm.threshold_voltage_min}
                                 onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, threshold_voltage_min: e.target.value }))}
-                                className="w-full rounded border border-white/20 px-2 py-1 text-xs text-white"
+                                className="w-full rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
                               />
                             </label>
-                            <label className="rounded border border-white/10 bg-white/5 backdrop-blur-md p-3 text-xs text-slate-300">
-                              <span className="mb-1 block font-semibold text-slate-200">Senal minima dBm</span>
+                            <label className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
+                              <span className="mb-1 block font-semibold text-slate-700">Senal minima dBm</span>
                               <input
                                 value={routerSnmpForm.threshold_signal_min}
                                 onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, threshold_signal_min: e.target.value }))}
-                                className="w-full rounded border border-white/20 px-2 py-1 text-xs text-white"
+                                className="w-full rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
                               />
                             </label>
-                            <label className="rounded border border-white/10 bg-white/5 backdrop-blur-md p-3 text-xs text-slate-300">
-                              <span className="mb-1 block font-semibold text-slate-200">Optica minima dBm</span>
+                            <label className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
+                              <span className="mb-1 block font-semibold text-slate-700">Optica minima dBm</span>
                               <input
                                 value={routerSnmpForm.threshold_optical_min}
                                 onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, threshold_optical_min: e.target.value }))}
-                                className="w-full rounded border border-white/20 px-2 py-1 text-xs text-white"
+                                className="w-full rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
                               />
                             </label>
                           </div>
@@ -3500,7 +3500,7 @@ const MikroTikManagement: React.FC = () => {
                               Blockers {(routerReadiness.blockers || []).length}
                             </span>
                           </div>
-                          <ul className="space-y-1 text-xs text-slate-300">
+                          <ul className="space-y-1 text-xs text-slate-600">
                             {(routerReadiness.checks || []).map((check) => {
                               const severity = check.severity || (check.ok ? 'ok' : 'warning')
                               const toneClass =

@@ -1406,7 +1406,7 @@ const OltManagement: React.FC = () => {
           )}
         </div>
 
-        <div className="flex flex-col justify-center gap-2 rounded-xl border border-white/10 bg-slate-900/70 p-4">
+        <div className="flex flex-col justify-center gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <button
             onClick={loadCatalog}
             disabled={loadingCatalog || busy}
@@ -1432,8 +1432,8 @@ const OltManagement: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <div className="space-y-4 rounded-xl border border-white/10 bg-slate-900/70 p-5">
-          <h3 className="text-lg font-semibold text-white">Operaciones ONU</h3>
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-800">Operaciones ONU</h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="Serial ONU" className={`col-span-2 ${inputClass}`} />
             <input value={frame} onChange={(e) => setFrame(e.target.value)} placeholder="Frame" className={inputClass} />
@@ -1457,17 +1457,17 @@ const OltManagement: React.FC = () => {
             <input value={srvProfile} onChange={(e) => setSrvProfile(e.target.value)} placeholder="Srv profile" className={inputClass} />
           </div>
 
-          <div className="rounded-lg border border-white/10 bg-slate-800/60 p-3">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-xs font-semibold uppercase text-slate-300">Preflight ONU</p>
-                <p className="mt-1 text-xs text-slate-400">Semaforo para validar la siguiente operacion antes de ejecutar cambios.</p>
+                <p className="text-xs font-semibold uppercase text-slate-500">Preflight ONU</p>
+                <p className="mt-1 text-xs text-slate-600">Semaforo para validar la siguiente operacion antes de ejecutar cambios.</p>
               </div>
               <div className="flex items-center gap-2">
                 <select
                   value={onuIntent}
                   onChange={(e) => setOnuIntent(e.target.value as OltActionIntent)}
-                  className="rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-slate-100"
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800"
                 >
                   <option value="authorize">Autorizar</option>
                   <option value="suspend">Suspender</option>
@@ -1480,18 +1480,18 @@ const OltManagement: React.FC = () => {
               </div>
             </div>
 
-            <p className="mt-3 text-sm text-slate-100">{onuPreflight.summary}</p>
+            <p className="mt-3 text-sm text-slate-900">{onuPreflight.summary}</p>
 
             <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
               {onuPreflight.checks.map((check) => (
-                <div key={check.id} className="rounded border border-white/10 bg-slate-900/50 px-3 py-2 text-xs">
+                <div key={check.id} className="rounded border border-slate-200 bg-white px-3 py-2 text-xs">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-100">{check.label}</span>
+                    <span className="text-slate-800">{check.label}</span>
                     <span className={`rounded-full px-2 py-0.5 font-semibold ${checkPillClass(check.ok, check.severity)}`}>
                       {check.ok ? 'ok' : check.severity || 'warn'}
                     </span>
                   </div>
-                  {!!check.detail && <p className="mt-1 text-slate-400">{check.detail}</p>}
+                  {!!check.detail && <p className="mt-1 text-slate-600">{check.detail}</p>}
                 </div>
               ))}
             </div>
@@ -1506,7 +1506,7 @@ const OltManagement: React.FC = () => {
                 </ul>
               </div>
             )}
-            <ul className="mt-3 space-y-1 text-xs text-slate-300">
+            <ul className="mt-3 space-y-1 text-xs text-slate-600">
               {onuPreflight.recommendations.map((item) => (
                 <li key={item}>- {item}</li>
               ))}
@@ -1532,8 +1532,8 @@ const OltManagement: React.FC = () => {
           )}
         </div>
 
-        <div className="space-y-4 rounded-xl border border-white/10 bg-slate-900/70 p-5">
-          <h3 className="text-lg font-semibold text-white">Scripts y acceso remoto OLT</h3>
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-800">Scripts y acceso remoto OLT</h3>
           <select
             value={customAction}
             onChange={(e) => setCustomAction(e.target.value)}
@@ -1547,7 +1547,7 @@ const OltManagement: React.FC = () => {
             value={customPayload}
             onChange={(e) => setCustomPayload(e.target.value)}
             rows={7}
-            className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-xs font-mono text-slate-100"
+            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono text-slate-800"
           />
           <div className="grid grid-cols-2 gap-2">
             <button onClick={runCustomScript} disabled={busy} className={`${buttonPrimaryClass} bg-cyan-500 text-slate-900 disabled:opacity-60`}>
@@ -1560,13 +1560,13 @@ const OltManagement: React.FC = () => {
 
           {!!quickScript && <pre className="max-h-44 overflow-auto rounded-lg p-3 text-xs">{quickScript}</pre>}
 
-          <div className="space-y-2 rounded-lg border border-white/10 bg-slate-800/60 p-3">
+          <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-semibold uppercase text-slate-300">Conectividad remota</p>
+              <p className="text-xs font-semibold uppercase text-slate-500">Conectividad remota</p>
               <button
                 onClick={() => selectedDeviceId && loadRemoteOptions(selectedDeviceId)}
                 disabled={busy || refreshingReadiness || !selectedDeviceId}
-                className="rounded bg-slate-700 px-2 py-1 text-[10px] text-slate-100 disabled:opacity-50"
+                className="rounded bg-slate-200 px-2 py-1 text-[10px] text-slate-700 disabled:opacity-50"
               >
                 {refreshingReadiness ? 'Actualizando...' : 'Refrescar readiness'}
               </button>
@@ -1576,68 +1576,68 @@ const OltManagement: React.FC = () => {
                 <span className={`rounded-full px-2 py-1 font-semibold ${statusPillClass(remoteOptions?.readiness?.status)}`}>
                   {remoteOptions?.readiness?.status_label || remoteOptions?.readiness?.status || 'sin estado'}
                 </span>
-                <span className="rounded-full bg-cyan-500/20 px-2 py-1 font-semibold text-cyan-200">
+                <span className="rounded-full bg-cyan-50 px-2 py-1 font-semibold text-cyan-700">
                   readiness {Math.max(0, Math.min(100, Math.round(remoteOptions.readiness.score)))} / 100
                 </span>
                 {!!remoteOptions?.readiness?.missing?.length && (
-                  <span className="rounded-full bg-amber-500/20 px-2 py-1 font-semibold text-amber-200">
+                  <span className="rounded-full bg-amber-50 px-2 py-1 font-semibold text-amber-700">
                     faltantes {remoteOptions.readiness.missing.length}
                   </span>
                 )}
               </div>
             )}
-            <p className="text-sm text-slate-100">
+            <p className="text-sm text-slate-900">
               {remoteOptions?.readiness?.summary || 'Cargando diagnostico de reachability OLT.'}
             </p>
             <div className="grid grid-cols-1 gap-2 text-xs md:grid-cols-2">
-              <div className="rounded border border-white/10 bg-slate-900/50 px-3 py-2">
-                <p className="font-semibold text-slate-100">Ruta sugerida</p>
-                <p className="mt-1 text-slate-300">{remoteOptions?.readiness?.management_path?.label || '-'}</p>
+              <div className="rounded border border-slate-200 bg-white px-3 py-2">
+                <p className="font-semibold text-slate-800">Ruta sugerida</p>
+                <p className="mt-1 text-slate-600">{remoteOptions?.readiness?.management_path?.label || '-'}</p>
               </div>
-              <div className="rounded border border-white/10 bg-slate-900/50 px-3 py-2">
-                <p className="font-semibold text-slate-100">Tipo de host</p>
-                <p className="mt-1 text-slate-300">{remoteOptions?.readiness?.host_analysis?.label || '-'}</p>
+              <div className="rounded border border-slate-200 bg-white px-3 py-2">
+                <p className="font-semibold text-slate-800">Tipo de host</p>
+                <p className="mt-1 text-slate-600">{remoteOptions?.readiness?.host_analysis?.label || '-'}</p>
                 {!!remoteOptions?.readiness?.host_analysis?.detail && (
-                  <p className="mt-1 text-slate-400">{remoteOptions.readiness.host_analysis.detail}</p>
+                  <p className="mt-1 text-slate-600">{remoteOptions.readiness.host_analysis.detail}</p>
                 )}
               </div>
             </div>
             {!!remoteOptions?.readiness?.checked_at && (
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-600">
                 ultimo check {formatCheckedAt(remoteOptions.readiness.checked_at)}
               </p>
             )}
             <div className="space-y-2 text-xs">
               <div className="flex items-center justify-between gap-2">
-                <code className="truncate text-slate-100">{remoteOptions?.options?.direct_login || '-'}</code>
+                <code className="truncate text-slate-800">{remoteOptions?.options?.direct_login || '-'}</code>
                 <button onClick={() => copyOption('login directo', remoteOptions?.options?.direct_login)} className={`${buttonSecondaryClass} px-2 py-1 text-[10px]`}>Copiar</button>
               </div>
               <div className="flex items-center justify-between gap-2">
-                <code className="truncate text-slate-100">{remoteOptions?.options?.jump_host_ssh || '-'}</code>
+                <code className="truncate text-slate-800">{remoteOptions?.options?.jump_host_ssh || '-'}</code>
                 <button onClick={() => copyOption('jump host', remoteOptions?.options?.jump_host_ssh)} className={`${buttonSecondaryClass} px-2 py-1 text-[10px]`}>Copiar</button>
               </div>
               <div className="flex items-center justify-between gap-2">
-                <code className="truncate text-slate-100">{remoteOptions?.options?.reverse_tunnel_template || '-'}</code>
+                <code className="truncate text-slate-800">{remoteOptions?.options?.reverse_tunnel_template || '-'}</code>
                 <button onClick={() => copyOption('reverse tunnel', remoteOptions?.options?.reverse_tunnel_template)} className={`${buttonSecondaryClass} px-2 py-1 text-[10px]`}>Copiar</button>
               </div>
             </div>
             {(remoteOptions?.readiness?.checks || []).length > 0 && (
               <div className="space-y-1 text-xs">
                 {(remoteOptions?.readiness?.checks || []).map((check) => (
-                  <div key={check.id} className="rounded border border-white/10 bg-slate-900/50 px-2 py-1">
+                  <div key={check.id} className="rounded border border-slate-200 bg-white px-2 py-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-100">{check.label}</span>
+                      <span className="text-slate-800">{check.label}</span>
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${checkPillClass(check.ok, check.severity)}`}>
                         {check.ok ? 'ok' : check.severity || 'warn'}
                       </span>
                     </div>
-                    {!!check.detail && <p className="mt-1 text-slate-400">{check.detail}</p>}
+                    {!!check.detail && <p className="mt-1 text-slate-600">{check.detail}</p>}
                   </div>
                 ))}
               </div>
             )}
             {(remoteOptions?.readiness?.recommendations || []).length > 0 && (
-              <ul className="space-y-1 text-xs text-slate-300">
+              <ul className="space-y-1 text-xs text-slate-600">
                 {(remoteOptions?.readiness?.recommendations || []).map((recommendation, idx) => (
                   <li key={idx}>- {recommendation}</li>
                 ))}
@@ -1652,13 +1652,13 @@ const OltManagement: React.FC = () => {
             )}
           </div>
 
-          <div className="space-y-2 rounded-lg border border-white/10 bg-slate-800/60 p-3">
+          <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-semibold uppercase text-slate-300">Grafana readiness</p>
+              <p className="text-xs font-semibold uppercase text-slate-500">Grafana readiness</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => copyOption('grafana health', remoteOptions?.grafana?.health_url || '')}
-                  className="rounded bg-slate-700 px-2 py-1 text-[10px] text-slate-100"
+                  className="rounded bg-slate-200 px-2 py-1 text-[10px] text-slate-700"
                 >
                   Copiar health URL
                 </button>
@@ -1673,18 +1673,18 @@ const OltManagement: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <span
                 className={`rounded-full px-2 py-1 font-semibold ${
-                  remoteOptions?.grafana?.configured ? 'bg-cyan-500/20 text-cyan-200' : 'bg-amber-500/20 text-amber-200'
+                  remoteOptions?.grafana?.configured ? 'bg-cyan-50 text-cyan-700' : 'bg-amber-50 text-amber-700'
                 }`}
               >
                 {remoteOptions?.grafana?.configured ? 'configurado' : 'sin configurar'}
               </span>
               {remoteOptions?.grafana?.reachable === true && (
-                <span className="rounded-full bg-emerald-500/20 px-2 py-1 font-semibold text-emerald-300">
+                <span className="rounded-full bg-emerald-50 px-2 py-1 font-semibold text-emerald-700">
                   reachable {remoteOptions?.grafana?.status_code || 200}
                 </span>
               )}
               {remoteOptions?.grafana?.reachable === false && (
-                <span className="rounded-full bg-rose-500/20 px-2 py-1 font-semibold text-rose-300">
+                <span className="rounded-full bg-rose-50 px-2 py-1 font-semibold text-rose-700">
                   unreachable
                 </span>
               )}
@@ -1714,19 +1714,19 @@ const OltManagement: React.FC = () => {
         </div>
       </div>
 
-      <div className="rounded-xl border border-cyan-400/20 bg-slate-900/70 p-5">
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Provisionamiento Zero-Touch</p>
-            <h3 className="mt-2 text-xl font-semibold text-white">Autoriza la ONU y vincula el cliente en un solo flujo</h3>
-            <p className="mt-2 text-sm text-slate-300">
+            <h3 className="mt-2 text-xl font-semibold text-slate-800">Autoriza la ONU y vincula el cliente en un solo flujo</h3>
+            <p className="mt-2 text-sm text-slate-600">
               Usa el mismo run mode del panel. En <span className="text-cyan-200">simulate/dry-run</span> genera preview de la
               vinculacion; en <span className="text-emerald-200">live</span> autoriza la ONU, actualiza el perfil de red del
               cliente y marca la instalacion.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <span className={`rounded-full px-3 py-2 text-xs font-semibold ${runMode === 'live' ? 'bg-rose-500/20 text-rose-200' : 'bg-cyan-500/20 text-cyan-200'}`}>
+            <span className={`rounded-full px-3 py-2 text-xs font-semibold ${runMode === 'live' ? 'bg-rose-50 text-rose-700' : 'bg-cyan-50 text-cyan-700'}`}>
               {runMode === 'live' ? 'modo live' : `modo ${runMode}`}
             </span>
             <button
@@ -1747,9 +1747,9 @@ const OltManagement: React.FC = () => {
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-3">
-          <div className="space-y-3 rounded-xl border border-white/10 bg-slate-800/60 p-4">
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-semibold uppercase text-slate-300">Cliente objetivo</p>
+              <p className="text-xs font-semibold uppercase text-slate-500">Cliente objetivo</p>
               <span className="rounded-full bg-slate-900 px-2 py-1 text-[10px] text-slate-300">
                 {provisionClients.length} resultado(s)
               </span>
@@ -1783,21 +1783,21 @@ const OltManagement: React.FC = () => {
             </select>
 
             {selectedProvisionClient ? (
-              <div className="rounded-lg border border-white/10 bg-slate-900/60 p-3 text-xs text-slate-300">
-                <p className="text-sm font-semibold text-white">{selectedProvisionClient.name}</p>
+              <div className="rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                <p className="text-sm font-semibold text-slate-800">{selectedProvisionClient.name}</p>
                 <div className="mt-2 space-y-1">
-                  <p>Plan: <span className="text-slate-100">{selectedProvisionClient.plan || '-'}</span></p>
-                  <p>Correo: <span className="text-slate-100">{selectedProvisionClient.email || '-'}</span></p>
-                  <p>PPPoE: <span className="text-slate-100">{selectedProvisionClient.pppoe_username || '-'}</span></p>
-                  <p>Router: <span className="text-slate-100">{selectedProvisionClient.router_name || '-'}</span></p>
-                  <p>IP: <span className="text-slate-100">{selectedProvisionClient.ip_address || '-'}</span></p>
+                  <p>Plan: <span className="text-slate-800">{selectedProvisionClient.plan || '-'}</span></p>
+                  <p>Correo: <span className="text-slate-800">{selectedProvisionClient.email || '-'}</span></p>
+                  <p>PPPoE: <span className="text-slate-800">{selectedProvisionClient.pppoe_username || '-'}</span></p>
+                  <p>Router: <span className="text-slate-800">{selectedProvisionClient.router_name || '-'}</span></p>
+                  <p>IP: <span className="text-slate-800">{selectedProvisionClient.ip_address || '-'}</span></p>
                 </div>
-                <div className="mt-3 rounded border border-white/10 bg-slate-950/60 px-3 py-2">
-                  <p className="font-semibold text-slate-100">Vinculo actual</p>
-                  <p className="mt-1">OLT: <span className="text-slate-100">{selectedProvisionClient.network_profile?.olt_id || '-'}</span></p>
-                  <p>Puerto: <span className="text-slate-100">{selectedProvisionClient.network_profile?.olt_port || '-'}</span></p>
-                  <p>ONU serial: <span className="text-slate-100">{selectedProvisionClient.network_profile?.onu_serial || '-'}</span></p>
-                  <p>Modelo: <span className="text-slate-100">{selectedProvisionClient.network_profile?.onu_model || '-'}</span></p>
+                <div className="mt-3 rounded border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="font-semibold text-slate-800">Vinculo actual</p>
+                  <p className="mt-1">OLT: <span className="text-slate-800">{selectedProvisionClient.network_profile?.olt_id || '-'}</span></p>
+                  <p>Puerto: <span className="text-slate-800">{selectedProvisionClient.network_profile?.olt_port || '-'}</span></p>
+                  <p>ONU serial: <span className="text-slate-800">{selectedProvisionClient.network_profile?.onu_serial || '-'}</span></p>
+                  <p>Modelo: <span className="text-slate-800">{selectedProvisionClient.network_profile?.onu_model || '-'}</span></p>
                 </div>
               </div>
             ) : (
@@ -1807,9 +1807,9 @@ const OltManagement: React.FC = () => {
             )}
           </div>
 
-          <div className="space-y-3 rounded-xl border border-white/10 bg-slate-800/60 p-4">
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-semibold uppercase text-slate-300">Instalacion y metadatos</p>
+              <p className="text-xs font-semibold uppercase text-slate-500">Instalacion y metadatos</p>
               <span className="rounded-full bg-slate-900 px-2 py-1 text-[10px] text-slate-300">
                 {filteredProvisionInstallations.length} abierta(s)
               </span>
@@ -1837,7 +1837,7 @@ const OltManagement: React.FC = () => {
               onChange={(e) => setProvisionNotes(e.target.value)}
               rows={4}
               placeholder="Notas para guardar en perfil tecnico / instalacion"
-              className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-slate-100"
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
             />
             <label className="flex items-center gap-2 text-xs text-slate-300">
               <input
@@ -1849,18 +1849,18 @@ const OltManagement: React.FC = () => {
             </label>
 
             {selectedProvisionInstallation ? (
-              <div className="rounded-lg border border-white/10 bg-slate-900/60 p-3 text-xs text-slate-300">
-                <p className="text-sm font-semibold text-white">{selectedProvisionInstallation.id}</p>
+              <div className="rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-600">
+                <p className="text-sm font-semibold text-slate-800">{selectedProvisionInstallation.id}</p>
                 <div className="mt-2 space-y-1">
-                  <p>Estado: <span className="text-slate-100">{selectedProvisionInstallation.status || '-'}</span></p>
-                  <p>Tecnico: <span className="text-slate-100">{selectedProvisionInstallation.technician || '-'}</span></p>
-                  <p>Agenda: <span className="text-slate-100">{formatIsoDate(selectedProvisionInstallation.scheduled_for)}</span></p>
-                  <p>Direccion: <span className="text-slate-100">{selectedProvisionInstallation.address || '-'}</span></p>
+                  <p>Estado: <span className="text-slate-800">{selectedProvisionInstallation.status || '-'}</span></p>
+                  <p>Tecnico: <span className="text-slate-800">{selectedProvisionInstallation.technician || '-'}</span></p>
+                  <p>Agenda: <span className="text-slate-800">{formatIsoDate(selectedProvisionInstallation.scheduled_for)}</span></p>
+                  <p>Direccion: <span className="text-slate-800">{selectedProvisionInstallation.address || '-'}</span></p>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   {Object.entries(selectedProvisionInstallation.checklist || {}).map(([key, value]) => (
-                    <div key={key} className="rounded border border-white/10 bg-slate-950/60 px-2 py-1">
-                      <p className="text-[10px] uppercase text-slate-400">{key}</p>
+                    <div key={key} className="rounded border border-slate-200 bg-white px-2 py-1">
+                      <p className="text-[10px] uppercase text-slate-600">{key}</p>
                       <p className={`mt-1 font-semibold ${value ? 'text-emerald-300' : 'text-amber-200'}`}>
                         {value ? 'ok' : 'pendiente'}
                       </p>
@@ -1875,9 +1875,9 @@ const OltManagement: React.FC = () => {
             )}
           </div>
 
-          <div className="space-y-3 rounded-xl border border-white/10 bg-slate-800/60 p-4">
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-semibold uppercase text-slate-300">Resultado zero-touch</p>
+              <p className="text-xs font-semibold uppercase text-slate-500">Resultado zero-touch</p>
               <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${
                 provisioningSummary.success === false
                   ? 'bg-rose-500/20 text-rose-300'
@@ -1890,25 +1890,25 @@ const OltManagement: React.FC = () => {
             </div>
             {provisioningResult ? (
               <>
-                <div className="rounded-lg border border-white/10 bg-slate-900/60 p-3 text-xs text-slate-300">
-                  <p>Cliente: <span className="text-slate-100">{provisioningSummary.clientName}</span></p>
-                  <p>Puerto OLT: <span className="text-slate-100">{provisioningSummary.oltPort}</span></p>
-                  <p>VLAN: <span className="text-slate-100">{provisioningSummary.vlan}</span></p>
-                  <p className="mt-2 text-sm text-slate-100">{provisioningSummary.message}</p>
+                <div className="rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                  <p>Cliente: <span className="text-slate-800">{provisioningSummary.clientName}</span></p>
+                  <p>Puerto OLT: <span className="text-slate-800">{provisioningSummary.oltPort}</span></p>
+                  <p>VLAN: <span className="text-slate-800">{provisioningSummary.vlan}</span></p>
+                  <p className="mt-2 text-sm text-slate-800">{provisioningSummary.message}</p>
                 </div>
                 {!!provisioningSummary.noteLine && (
-                  <div className="rounded border border-white/10 bg-slate-950/60 px-3 py-2 text-xs text-slate-300">
-                    <p className="font-semibold text-slate-100">Bitacora propuesta</p>
+                  <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                    <p className="font-semibold text-slate-800">Bitacora propuesta</p>
                     <p className="mt-2">{provisioningSummary.noteLine}</p>
                   </div>
                 )}
-                <details className="rounded border border-white/10 bg-slate-950/60 p-2 text-xs text-slate-300">
-                  <summary className="cursor-pointer font-semibold text-slate-100">Ver respuesta zero-touch</summary>
+                <details className="rounded border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
+                  <summary className="cursor-pointer font-semibold text-slate-800">Ver respuesta zero-touch</summary>
                   <pre className="mt-2 max-h-72 overflow-auto rounded p-2 text-xs">{JSON.stringify(provisioningResult, null, 2)}</pre>
                 </details>
               </>
             ) : (
-              <div className="rounded-lg border border-dashed border-white/10 bg-slate-950/40 p-4 text-sm text-slate-300">
+              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
                 Busca el cliente, confirma puerto/serial/VLAN arriba y luego ejecuta el preview o el live.
               </div>
             )}
@@ -1917,25 +1917,25 @@ const OltManagement: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <div className="space-y-3 rounded-xl border border-white/10 bg-slate-900/70 p-5">
-          <h3 className="text-lg font-semibold text-white">Estado actual</h3>
+        <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-800">Estado actual</h3>
           <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
-            <div className="rounded-lg border border-white/10 bg-slate-800/70 p-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs uppercase text-slate-300">Conexion</p>
+                <p className="text-xs uppercase text-slate-500">Conexion</p>
                 <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${statusPillClass(connection?.status)}`}>
                   {connection?.status_label || connection?.status || 'sin prueba'}
                 </span>
               </div>
-              <p className="mt-2 text-sm text-slate-100">
+              <p className="mt-2 text-sm text-slate-700">
                 {connection?.summary || 'Ejecuta "Test conexion" para obtener diagnostico completo de la OLT.'}
               </p>
-              <div className="mt-3 space-y-1 text-xs text-slate-300">
-                <p>Ruta sugerida: <span className="text-slate-100">{connection?.management_path?.label || '-'}</span></p>
-                <p>Host: <span className="text-slate-100">{connection?.host_analysis?.label || '-'}</span></p>
-                <p>Mensaje: <span className="text-slate-100">{connection?.connection?.message || '-'}</span></p>
+              <div className="mt-3 space-y-1 text-xs text-slate-600">
+                <p>Ruta sugerida: <span className="text-slate-800">{connection?.management_path?.label || '-'}</span></p>
+                <p>Host: <span className="text-slate-800">{connection?.host_analysis?.label || '-'}</span></p>
+                <p>Mensaje: <span className="text-slate-800">{connection?.connection?.message || '-'}</span></p>
                 {typeof connection?.connection?.latency_ms === 'number' && (
-                  <p>Latencia: <span className="text-slate-100">{connection.connection.latency_ms} ms</span></p>
+                  <p>Latencia: <span className="text-slate-800">{connection.connection.latency_ms} ms</span></p>
                 )}
                 {!!connection?.next_step && <p>Siguiente paso: <span className="text-amber-200">{connection.next_step}</span></p>}
                 {!!connection?.connection?.error && <p className="text-rose-300">Detalle: {connection.connection.error}</p>}
@@ -1947,36 +1947,36 @@ const OltManagement: React.FC = () => {
                   ))}
                 </ul>
               )}
-              <details className="mt-3 rounded border border-white/10 bg-slate-950/60 p-2 text-xs text-slate-300">
-                <summary className="cursor-pointer font-semibold text-slate-100">Ver JSON de conexion</summary>
+              <details className="mt-3 rounded border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
+                <summary className="cursor-pointer font-semibold text-slate-800">Ver JSON de conexion</summary>
                 <pre className="mt-2 max-h-40 overflow-auto rounded p-2 text-xs">{JSON.stringify(connection, null, 2)}</pre>
               </details>
             </div>
-            <div className="rounded-lg border border-white/10 bg-slate-800/70 p-3">
-              <p className="text-xs uppercase text-slate-300">Snapshot</p>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs uppercase text-slate-500">Snapshot</p>
               {snapshotData ? (
                 <>
                   <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded border border-white/10 bg-slate-900/50 px-3 py-2">
-                      <p className="text-slate-400">ONU online</p>
+                    <div className="rounded border border-slate-200 bg-white px-3 py-2">
+                      <p className="text-slate-600">ONU online</p>
                       <p className="mt-1 text-lg font-semibold text-emerald-300">{snapshotData.onu_online ?? '-'}</p>
                     </div>
-                    <div className="rounded border border-white/10 bg-slate-900/50 px-3 py-2">
-                      <p className="text-slate-400">ONU offline</p>
+                    <div className="rounded border border-slate-200 bg-white px-3 py-2">
+                      <p className="text-slate-600">ONU offline</p>
                       <p className="mt-1 text-lg font-semibold text-rose-300">{snapshotData.onu_offline ?? '-'}</p>
                     </div>
-                    <div className="rounded border border-white/10 bg-slate-900/50 px-3 py-2">
-                      <p className="text-slate-400">PON alertas</p>
+                    <div className="rounded border border-slate-200 bg-white px-3 py-2">
+                      <p className="text-slate-600">PON alertas</p>
                       <p className="mt-1 text-lg font-semibold text-amber-300">{snapshotData.pon_alert ?? '-'}</p>
                     </div>
-                    <div className="rounded border border-white/10 bg-slate-900/50 px-3 py-2">
-                      <p className="text-slate-400">CPU / RAM</p>
+                    <div className="rounded border border-slate-200 bg-white px-3 py-2">
+                      <p className="text-slate-600">CPU / RAM</p>
                       <p className="mt-1 text-lg font-semibold text-cyan-300">
                         {snapshotData.cpu_load ?? '-'}% / {snapshotData.memory_usage ?? '-'}%
                       </p>
                     </div>
                   </div>
-                  <p className="mt-3 text-xs text-slate-400">
+                  <p className="mt-3 text-xs text-slate-600">
                     generado {formatIsoDate(snapshotData.generated_at)}
                     {snapshotData.latency_ms !== undefined && ` | latencia ${snapshotData.latency_ms} ms`}
                     {snapshotData.reachable !== undefined && ` | TCP Reachable: ${snapshotData.reachable ? 'Si' : 'No'}`}
@@ -1986,30 +1986,30 @@ const OltManagement: React.FC = () => {
               ) : (
                 <p className="mt-2 text-sm text-slate-300">Aun no hay snapshot. Ejecuta la accion para poblar telemetria operativa.</p>
               )}
-              <details className="mt-3 rounded border border-white/10 bg-slate-950/60 p-2 text-xs text-slate-300">
-                <summary className="cursor-pointer font-semibold text-slate-100">Ver JSON de snapshot</summary>
+              <details className="mt-3 rounded border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
+                <summary className="cursor-pointer font-semibold text-slate-800">Ver JSON de snapshot</summary>
                 <pre className="mt-2 max-h-40 overflow-auto rounded p-2 text-xs">{JSON.stringify(snapshot, null, 2)}</pre>
               </details>
             </div>
           </div>
-          <div className="rounded-lg border border-white/10 bg-slate-800/70 p-3">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs uppercase text-slate-300">Ultima ejecucion</p>
+              <p className="text-xs uppercase text-slate-500">Ultima ejecucion</p>
               <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${lastResponse?.success === false ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
                 {lastResponse ? (lastResponse?.success === false ? 'con error' : 'ok') : 'sin datos'}
               </span>
             </div>
-            <div className="mt-2 space-y-1 text-xs text-slate-300">
-              <p>Accion: <span className="text-slate-100">{executionSummary.action}</span></p>
-              <p>Modo: <span className="text-slate-100">{executionSummary.runMode}</span></p>
-              <p>Comandos: <span className="text-slate-100">{executionSummary.executedCommands}</span></p>
-              <p>Inicio: <span className="text-slate-100">{formatIsoDate(executionSummary.startedAt)}</span></p>
-              <p>Fin: <span className="text-slate-100">{formatIsoDate(executionSummary.finishedAt)}</span></p>
-              <p>Mensaje: <span className="text-slate-100">{executionSummary.message}</span></p>
+            <div className="mt-2 space-y-1 text-xs text-slate-600">
+              <p>Accion: <span className="text-slate-800">{executionSummary.action}</span></p>
+              <p>Modo: <span className="text-slate-800">{executionSummary.runMode}</span></p>
+              <p>Comandos: <span className="text-slate-800">{executionSummary.executedCommands}</span></p>
+              <p>Inicio: <span className="text-slate-800">{formatIsoDate(executionSummary.startedAt)}</span></p>
+              <p>Fin: <span className="text-slate-800">{formatIsoDate(executionSummary.finishedAt)}</span></p>
+              <p>Mensaje: <span className="text-slate-800">{executionSummary.message}</span></p>
             </div>
             {!!executionSummary.transcript.length && (
-              <div className="mt-3 rounded border border-white/10 bg-slate-950/60 p-3">
-                <p className="text-xs font-semibold uppercase text-slate-300">Preview transcript</p>
+              <div className="mt-3 rounded border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-semibold uppercase text-slate-700">Preview transcript</p>
                 <div className="mt-2 space-y-1 font-mono text-xs text-slate-200">
                   {executionSummary.transcript.map((line, index) => (
                     <p key={`${index}-${line}`}>{line}</p>
@@ -2017,18 +2017,18 @@ const OltManagement: React.FC = () => {
                 </div>
               </div>
             )}
-            <details className="mt-3 rounded border border-white/10 bg-slate-950/60 p-2 text-xs text-slate-300">
-              <summary className="cursor-pointer font-semibold text-slate-100">Ver respuesta completa</summary>
+            <details className="mt-3 rounded border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
+              <summary className="cursor-pointer font-semibold text-slate-800">Ver respuesta completa</summary>
               <pre className="mt-2 max-h-80 overflow-auto rounded p-2 text-xs">{JSON.stringify(lastResponse, null, 2)}</pre>
             </details>
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-slate-900/70 p-5">
-          <h3 className="mb-3 text-lg font-semibold text-white">Auditoria OLT</h3>
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="mb-3 text-lg font-semibold text-slate-800">Auditoria OLT</h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-slate-100">
-              <thead className="border-b border-white/10 text-xs text-slate-300">
+            <table className="w-full text-sm text-slate-700">
+              <thead className="border-b border-slate-200 text-xs text-slate-500">
                 <tr>
                   <th className="py-2 text-left">Dispositivo</th>
                   <th className="py-2 text-left">Modo</th>
@@ -2054,7 +2054,7 @@ const OltManagement: React.FC = () => {
               </tbody>
             </table>
           </div>
-          {!auditEntries.length && <p className="mt-3 text-sm text-slate-300">Sin registros aun.</p>}
+          {!auditEntries.length && <p className="mt-3 text-sm text-slate-600">Sin registros aun.</p>}
         </div>
       </div>
     </div>
