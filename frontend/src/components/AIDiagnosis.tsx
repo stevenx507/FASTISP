@@ -13,15 +13,15 @@ interface AIDiagnosisProps {
 const AIDiagnosis: React.FC<AIDiagnosisProps> = ({ analysis, error, isLoading }) => {
   if (isLoading) {
     return (
-      <div className="p-6 bg-gray-800 border border-gray-700 rounded-lg shadow-lg animate-pulse">
-        <div className="flex items-center text-slate-500">
-          <SparklesIcon className="h-6 w-6 mr-3 animate-spin" />
-          <h3 className="text-xl font-semibold">Generando diagnóstico con IA...</h3>
+      <div className="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm animate-pulse">
+        <div className="flex items-center text-coral-500">
+          <SparklesIcon className="h-6 w-6 mr-3 animate-bounce" />
+          <h3 className="text-xl font-black uppercase tracking-widest">Generando diagnóstico con IA...</h3>
         </div>
-        <div className="mt-4 space-y-3">
-          <div className="h-4 bg-gray-700 rounded w-3/4"></div>
-          <div className="h-4 bg-gray-700 rounded w-1/2"></div>
-          <div className="h-4 bg-gray-700 rounded w-5/6"></div>
+        <div className="mt-6 space-y-4">
+          <div className="h-3 bg-gray-50 rounded-full w-3/4"></div>
+          <div className="h-3 bg-gray-50 rounded-full w-1/2"></div>
+          <div className="h-3 bg-gray-50 rounded-full w-5/6"></div>
         </div>
       </div>
     );
@@ -29,27 +29,27 @@ const AIDiagnosis: React.FC<AIDiagnosisProps> = ({ analysis, error, isLoading })
 
   if (error) {
     return (
-      <div className="p-6 bg-red-900/20 border border-red-700 text-red-300 rounded-lg shadow-xl">
+      <div className="p-8 bg-coral-50 border border-coral-100 text-coral-800 rounded-2xl shadow-sm">
         <div className="flex items-center">
-          <ExclamationTriangleIcon className="h-6 w-6 mr-3" />
-          <h3 className="text-xl font-semibold">Error en el Diagnóstico</h3>
+          <ExclamationTriangleIcon className="h-6 w-6 mr-3 text-coral-500" />
+          <h3 className="text-xl font-black uppercase tracking-widest">Error en el Diagnóstico</h3>
         </div>
-        <p className="mt-2">{error}</p>
+        <p className="mt-3 text-sm font-medium leading-relaxed opacity-80">{error}</p>
       </div>
     );
   }
 
   if (!analysis) {
-    return null; // No mostrar nada si no hay análisis ni error
+    return null;
   }
 
   return (
-    <div className="p-6 bg-gray-800 border border-gray-700 rounded-lg shadow-xl">
-      <div className="flex items-center text-cyan-400">
+    <div className="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+      <div className="flex items-center text-coral-500 mb-6 pb-4 border-b border-gray-50">
         <SparklesIcon className="h-6 w-6 mr-3" />
-        <h3 className="text-2xl font-semibold">Análisis de Red por IA</h3>
+        <h3 className="text-xl font-black uppercase tracking-widest">Análisis de Red por IA</h3>
       </div>
-      <div className="mt-4 prose prose-invert max-w-none prose-pre:bg-gray-900 prose-pre:rounded-md prose-pre:p-4">
+      <div className="prose prose-slate max-w-none prose-headings:text-slate-800 prose-headings:font-black prose-p:text-slate-600 prose-p:leading-relaxed prose-strong:text-coral-600 prose-code:text-coral-500 prose-code:bg-coral-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-slate-900 prose-pre:text-coral-100">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {analysis}
         </ReactMarkdown>

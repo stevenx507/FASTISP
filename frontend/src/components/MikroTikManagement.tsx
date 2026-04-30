@@ -553,8 +553,10 @@ const getConnectionStatusLabel = (diagnostics?: RouterConnectionDiagnosticsPaylo
 }
 
 const getConnectionStatusTone = (diagnostics?: RouterConnectionDiagnosticsPayload | null) => {
-  if (!diagnostics) return 'bg-slate-100 text-slate-600'
-  return diagnostics.success ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+  if (!diagnostics) return 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+  return diagnostics.success 
+    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+    : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
 }
 
 const formatConnectionCheckedAt = (checkedAt?: number) => {
@@ -2688,14 +2690,14 @@ const MikroTikManagement: React.FC = () => {
               {/* ─── Tab: Script de Traffic Flow ─── */}
               {routerModalTab === 'traffic' && (
                 <div className="space-y-6">
-                  <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 shadow-sm">
+                  <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 shadow-sm">
                     <div className="flex items-start gap-3">
-                      <div className="mt-0.5 shrink-0 rounded-full bg-amber-100 p-1">
-                        <ChartBarIcon className="h-5 w-5 text-amber-600" />
+                      <div className="mt-0.5 shrink-0 rounded-full bg-amber-500/20 p-1 border border-amber-500/30">
+                        <ChartBarIcon className="h-5 w-5 text-amber-400" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-amber-900">Monitor de Tráfico Avanzado</h4>
-                        <p className="mt-1 text-xs text-amber-800/80 leading-relaxed">
+                        <h4 className="text-sm font-bold text-amber-400">Monitor de Tráfico Avanzado</h4>
+                        <p className="mt-1 text-xs text-amber-200/70 leading-relaxed">
                           Analiza el tráfico detallado de tus clientes. Guarda el router primero y luego obtén los scripts NetFlow en el panel de gestión del router.
                         </p>
                       </div>
@@ -2765,22 +2767,22 @@ const MikroTikManagement: React.FC = () => {
         </div>
       )}
 
-      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow">
-        <h3 className="mb-3 text-lg font-semibold text-white">Lista Routers</h3>
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm mb-6">
+        <h3 className="mb-4 text-sm font-black text-slate-800 uppercase tracking-widest">Lista de Routers</h3>
 
         {/* Tabla de routers */}
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="border-b border-white/10 bg-white/5 text-xs font-semibold uppercase text-slate-400">
-                <th className="px-3 py-2 text-left">Nombre</th>
-                <th className="px-3 py-2 text-left">IP</th>
-                <th className="px-3 py-2 text-left">Usuario</th>
-                <th className="px-3 py-2 text-center">API</th>
-                <th className="px-3 py-2 text-center">Puerto</th>
-                <th className="px-3 py-2 text-center">Script SSTP</th>
-                <th className="px-3 py-2 text-center">VPN IP</th>
-                <th className="px-3 py-2 text-right">Acción</th>
+              <tr className="border-b border-gray-100 bg-gray-50/50 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                <th className="px-4 py-3 text-left">Nombre</th>
+                <th className="px-4 py-3 text-left">IP de Gestión</th>
+                <th className="px-4 py-3 text-left">Usuario</th>
+                <th className="px-4 py-3 text-center">API</th>
+                <th className="px-4 py-3 text-center">Puerto</th>
+                <th className="px-4 py-3 text-center">SSTP</th>
+                <th className="px-4 py-3 text-center">VPN IP</th>
+                <th className="px-4 py-3 text-right">Gestión</th>
               </tr>
             </thead>
             <tbody>
@@ -2793,40 +2795,40 @@ const MikroTikManagement: React.FC = () => {
                   <tr
                     key={router.id}
                     onClick={() => setSelectedRouter(router)}
-                    className={`cursor-pointer border-b border-white/5 transition-colors ${
-                      isSelected ? 'bg-blue-500/10' : 'hover:bg-white/5'
+                    className={`cursor-pointer border-b border-gray-50 transition-all ${
+                      isSelected ? 'bg-coral-50/50' : 'hover:bg-gray-50'
                     }`}
                   >
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <ServerIcon className="h-4 w-4 text-green-500 shrink-0" />
-                        <span className="font-medium text-white">{router.name}</span>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${apiOk ? 'bg-emerald-50 text-emerald-600' : 'bg-coral-50 text-coral-600'}`}>
+                          <ServerIcon className="h-5 w-5" />
+                        </div>
+                        <span className="font-bold text-slate-700">{router.name}</span>
                       </div>
                     </td>
-                    <td className="px-3 py-2 font-mono text-slate-300 text-xs">{router.ip_address}</td>
-                    <td className="px-3 py-2 text-slate-400 text-xs">{router.username || '-'}</td>
-                    <td className="px-3 py-2 text-center">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                        apiOk ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-red-600'
+                    <td className="px-4 py-4 font-mono text-slate-500 text-xs">{router.ip_address}</td>
+                    <td className="px-4 py-4 text-slate-400 text-xs font-bold">{router.username || '-'}</td>
+                    <td className="px-4 py-4 text-center">
+                      <div className={`mx-auto h-2 w-2 rounded-full ${apiOk ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-coral-500 shadow-[0_0_8px_rgba(255,105,97,0.5)]'}`} />
+                    </td>
+                    <td className="px-4 py-4 text-center text-xs font-bold text-slate-400">{router.api_port || 8728}</td>
+                    <td className="px-4 py-4 text-center">
+                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-tighter ${
+                        router.sstp_active 
+                          ? 'bg-blue-50 text-blue-600 border border-blue-100' 
+                          : 'bg-gray-100 text-slate-400'
                       }`}>
-                        {apiOk ? 'True' : 'False'}
+                        {router.sstp_active ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-center text-xs text-slate-400">{router.api_port || 8728}</td>
-                    <td className="px-3 py-2 text-center">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                        router.sstp_active ? 'bg-emerald-100 text-emerald-700' : 'bg-white/10 text-slate-400'
-                      }`}>
-                        {router.sstp_active ? 'Si' : 'No'}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-center font-mono text-[10px] text-slate-400">
+                    <td className="px-4 py-4 text-center font-mono text-[10px] font-bold text-slate-500">
                       {router.vpn_ip || '-'}
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-4 py-4 text-right">
                       <button
                         onClick={(e) => { e.stopPropagation(); setSelectedRouter(router) }}
-                        className="rounded bg-emerald-600 px-2 py-1 text-[10px] font-semibold text-white hover:bg-emerald-500"
+                        className="rounded-xl bg-slate-800 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white hover:bg-slate-700 transition-all shadow-sm"
                       >
                         Gestionar
                       </button>
@@ -2837,7 +2839,7 @@ const MikroTikManagement: React.FC = () => {
             </tbody>
           </table>
         </div>
-        {!routers.length && <p className="mt-3 text-sm text-slate-400">No hay routers registrados todavia.</p>}
+        {!routers.length && <p className="mt-6 text-sm text-slate-400 text-center font-bold">No hay routers registrados todavía.</p>}
       </div>
 
       {selectedRouter && (
@@ -2847,15 +2849,19 @@ const MikroTikManagement: React.FC = () => {
           </div>
 
           {/* ── Herramientas toolbar ── */}
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-            <div className="flex items-center gap-2">
-              <ServerIcon className="h-4 w-4 text-slate-400" />
-              <span className="text-sm font-semibold text-slate-300">{selectedRouter.name}</span>
-              <span className="font-mono text-xs text-slate-400">{selectedRouter.ip_address}</span>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-100 bg-white px-6 py-4 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="h-10 w-10 rounded-xl bg-coral-50 flex items-center justify-center text-coral-500">
+                 <ServerIcon className="h-6 w-6" />
+              </div>
+              <div>
+                <span className="block text-sm font-black text-slate-800">{selectedRouter.name}</span>
+                <span className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-wider">{selectedRouter.ip_address}</span>
+              </div>
               {selectedRouter.sstp_active ? (
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">SSTP ✔</span>
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black text-blue-600 border border-blue-100">TUNNEL ACTIVO</span>
               ) : (
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">Sin SSTP</span>
+                <span className="rounded-full bg-gray-50 px-3 py-1 text-[10px] font-black text-slate-400 border border-gray-100">MODO DIRECTO</span>
               )}
             </div>
             <div className="relative flex items-center gap-2">
@@ -2869,7 +2875,7 @@ const MikroTikManagement: React.FC = () => {
                     else addToast('error', (d as {error?: string}).error || 'Error al reiniciar')
                   } catch { addToast('error', 'Error de red') }
                 })}
-                className="rounded bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-200"
+                className="rounded bg-rose-500/20 px-2 py-1 text-xs font-semibold text-rose-400 hover:bg-rose-500/30 border border-rose-500/30"
               >
                 🔄 Reiniciar
               </button>
@@ -2961,8 +2967,8 @@ const MikroTikManagement: React.FC = () => {
             </div>
           )}
 
-          <div className="border-b border-white/10">
-            <nav className="flex space-x-8">
+          <div className="mb-8 overflow-x-auto pb-2">
+            <nav className="flex space-x-2">
               {[
                 { id: 'overview', name: 'Resumen', icon: ChartBarIcon },
                 { id: 'queues', name: 'Colas', icon: UserGroupIcon },
@@ -2972,26 +2978,31 @@ const MikroTikManagement: React.FC = () => {
                 { id: 'traffic_flow', name: 'Traffic Flow', icon: ChartBarIcon },
                 { id: 'ai_diagnosis', name: 'IA Diagnosis', icon: SparklesIcon },
                 { id: 'logs', name: 'Logs', icon: DocumentTextIcon },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id as any)
-                    if (tab.id === 'logs') void loadLogs()
-                    if (tab.id === 'ai_diagnosis' && !aiAnalysis) void runAiDiagnosis()
-                  }}
-                  className={`flex items-center space-x-2 border-b-2 px-1 py-3 text-sm font-medium ${
-                    activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-300'
-                  }`}
-                >
-                  <tab.icon className="h-4 w-4" />
-                  <span>{tab.name}</span>
-                </button>
-              ))}
+              ].map((tab) => {
+                const isActive = activeTab === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id as any)
+                      if (tab.id === 'logs') void loadLogs()
+                      if (tab.id === 'ai_diagnosis' && !aiAnalysis) void runAiDiagnosis()
+                    }}
+                    className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-5 py-2.5 text-sm font-bold transition-all duration-300 ${
+                      isActive 
+                        ? 'bg-coral-500 text-white shadow-lg shadow-coral-500/30 scale-105 z-10' 
+                        : 'bg-white text-slate-500 border border-gray-100 hover:bg-gray-50'
+                    }`}
+                  >
+                    <tab.icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <span>{tab.name}</span>
+                  </button>
+                )
+              })}
             </nav>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-6 shadow">
+          <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
             {isLoading ? (
               <div className="py-12 text-center">
                 <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
@@ -3078,12 +3089,16 @@ const MikroTikManagement: React.FC = () => {
                           <p className="text-xs text-emerald-700">
                             Perfil activo: <strong>{quickConnect?.onboarding_profile?.account_label || onboardingProfile?.account_label || user?.email || 'Cuenta actual'}</strong>
                             {' '}| prefijo routers: <strong>{quickConnect?.onboarding_profile?.router_name_prefix || onboardingProfile?.router_name_prefix || '-'}</strong>
-                            {' '}| VPN: <strong>SSTP Nativo MikroTik</strong>
                           </p>
                         </div>
-                        <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
-                          tenant {quickConnect?.tenant_scope?.tenant_slug || onboardingProfile?.tenant_scope?.tenant_slug || tenantContextId || 'global'}
-                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-400 border border-emerald-500/30">
+                            {selectedRouter.status === 'reachable' ? 'En línea' : 'Desconectado'}
+                          </span>
+                          <span className="rounded-full bg-blue-500/20 px-2 py-1 text-xs font-semibold text-blue-300 border border-blue-500/30">
+                            tenant {quickConnect?.tenant_scope?.tenant_slug || onboardingProfile?.tenant_scope?.tenant_slug || tenantContextId || 'global'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div className="rounded-lg border border-white/10 bg-white/5 p-3">
@@ -3111,17 +3126,17 @@ const MikroTikManagement: React.FC = () => {
                       {quickConnect?.access_profile && (
                         <div className="mt-2 space-y-1 text-xs text-slate-300">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-slate-200 px-2 py-1 font-semibold text-slate-700">
+                            <span className="rounded-full bg-slate-500/20 px-2 py-1 font-semibold text-slate-300 border border-slate-500/30">
                               detectado: {quickConnect.access_profile.detected_scope || 'unknown'}
                             </span>
-                            <span className="rounded-full bg-blue-500/20 px-2 py-1 font-semibold text-blue-300">
+                            <span className="rounded-full bg-blue-500/20 px-2 py-1 font-semibold text-blue-300 border border-blue-500/30">
                               efectivo: {quickConnect.access_profile.effective_scope || 'unknown'}
                             </span>
-                            <span className="rounded-full bg-emerald-100 px-2 py-1 font-semibold text-emerald-700">
+                            <span className="rounded-full bg-emerald-500/20 px-2 py-1 font-semibold text-emerald-400 border border-emerald-500/30">
                               recomendado: {quickConnect.access_profile.recommended_transport || '-'}
                             </span>
                           </div>
-                          <p>{quickConnect.access_profile.reason || '-'}</p>
+                          <p className="text-slate-400">{quickConnect.access_profile.reason || '-'}</p>
                         </div>
                       )}
                     </div>
@@ -3152,14 +3167,16 @@ const MikroTikManagement: React.FC = () => {
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <span
-                              className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                                activeConnectionDiagnostics.success ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                              className={`rounded-full px-2 py-1 text-xs font-semibold border ${
+                                activeConnectionDiagnostics.success 
+                                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
+                                  : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
                               }`}
                             >
                               {activeConnectionDiagnostics.summary || 'Sin resumen'}
                             </span>
                             {activeConnectionDiagnostics.transport_hint && (
-                              <span className="rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-700">
+                              <span className="rounded-full bg-sky-500/20 px-2 py-1 text-xs font-semibold text-sky-400 border border-sky-500/30">
                                 Ruta sugerida: {activeConnectionDiagnostics.transport_hint}
                               </span>
                             )}
@@ -3174,10 +3191,10 @@ const MikroTikManagement: React.FC = () => {
                               const severity = check.severity || (check.ok ? 'ok' : 'warning')
                               const toneClass =
                                 severity === 'critical'
-                                  ? 'bg-rose-100 text-rose-700'
+                                  ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
                                   : severity === 'warning'
-                                    ? 'bg-amber-100 text-amber-700'
-                                    : 'bg-emerald-100 text-emerald-700'
+                                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                                    : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                               return (
                                 <li key={check.id} className="flex flex-wrap items-center gap-2">
                                   <span className={`rounded px-2 py-0.5 font-semibold ${toneClass}`}>{check.id}</span>
@@ -3187,9 +3204,9 @@ const MikroTikManagement: React.FC = () => {
                             })}
                           </ul>
                           {(activeConnectionDiagnostics.recommendations || []).length > 0 && (
-                            <div className="rounded border border-sky-200 bg-sky-50 p-2">
-                              <p className="text-xs font-semibold uppercase text-sky-700">Mejoras sugeridas</p>
-                              <ul className="mt-1 space-y-1 text-xs text-sky-800">
+                            <div className="rounded border border-sky-500/30 bg-sky-500/10 p-2">
+                              <p className="text-xs font-semibold uppercase text-sky-400">Mejoras sugeridas</p>
+                              <ul className="mt-1 space-y-1 text-xs text-sky-200/80">
                                 {(activeConnectionDiagnostics.recommendations || []).map((item, idx) => (
                                   <li key={`${item}-${idx}`}>- {item}</li>
                                 ))}
@@ -3209,15 +3226,19 @@ const MikroTikManagement: React.FC = () => {
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <span
-                            className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                              routerSnmpProfile?.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'
+                            className={`rounded-full px-2 py-1 text-xs font-semibold border ${
+                              routerSnmpProfile?.enabled 
+                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
+                                : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
                             }`}
                           >
                             {routerSnmpProfile?.enabled ? 'SNMP activo' : 'SNMP inactivo'}
                           </span>
                           <span
-                            className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                              routerSnmpRuntimeAvailable === false ? 'bg-amber-100 text-amber-700' : 'bg-blue-500/20 text-blue-300'
+                            className={`rounded-full px-2 py-1 text-xs font-semibold border ${
+                              routerSnmpRuntimeAvailable === false 
+                                ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' 
+                                : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
                             }`}
                           >
                             {routerSnmpRuntimeAvailable === false ? 'Backend sin runtime SNMP' : 'Backend listo'}
@@ -3484,10 +3505,10 @@ const MikroTikManagement: React.FC = () => {
                               const severity = check.severity || (check.ok ? 'ok' : 'warning')
                               const toneClass =
                                 severity === 'critical'
-                                  ? 'bg-rose-100 text-rose-700'
+                                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                                   : severity === 'warning'
-                                    ? 'bg-amber-100 text-amber-700'
-                                    : 'bg-emerald-100 text-emerald-700'
+                                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                                    : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                               return (
                                 <li key={check.id} className="flex flex-wrap items-center gap-2">
                                   <span className={`rounded px-2 py-0.5 font-semibold ${toneClass}`}>{check.id}</span>
@@ -3497,9 +3518,9 @@ const MikroTikManagement: React.FC = () => {
                             })}
                           </ul>
                           {(routerReadiness.recommendations || []).length > 0 && (
-                            <div className="rounded border border-amber-200 bg-amber-50 p-2">
-                              <p className="text-xs font-semibold uppercase text-amber-700">Recomendaciones</p>
-                              <ul className="mt-1 space-y-1 text-xs text-amber-800">
+                            <div className="rounded border border-amber-500/30 bg-amber-500/10 p-2">
+                              <p className="text-xs font-semibold uppercase text-amber-400">Recomendaciones</p>
+                              <ul className="mt-1 space-y-1 text-xs text-amber-200/80">
                                 {(routerReadiness.recommendations || []).map((item, idx) => (
                                   <li key={`${item}-${idx}`}>- {item}</li>
                                 ))}
@@ -3516,22 +3537,22 @@ const MikroTikManagement: React.FC = () => {
                     {quickConnect?.scripts && (
                       <>
                         {quickConnect.connection_plan && (
-                          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
                             <div className="flex flex-wrap items-start justify-between gap-2">
                               <div>
-                                <p className="text-sm font-semibold text-emerald-800">
+                                <p className="text-sm font-semibold text-emerald-400">
                                   {quickConnect.connection_plan.title || 'Conexion Express'}
                                 </p>
-                                <p className="text-xs text-emerald-700">
+                                <p className="text-xs text-emerald-300/80">
                                   {quickConnect.connection_plan.summary || 'Sigue los pasos recomendados.'}
                                 </p>
                               </div>
-                              <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
+                              <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-400 border border-emerald-500/30">
                                 {quickConnect.connection_plan.recommended_transport || '-'}
                               </span>
                             </div>
                             {/* ── SSTP single-panel (replaces 3-step wizard) ── */}
-                            <div className="mt-2 rounded-xl border border-emerald-200 bg-white/5 backdrop-blur-md p-4 space-y-3">
+                            <div className="mt-2 rounded-xl border border-emerald-500/30 bg-white/5 backdrop-blur-md p-4 space-y-3">
 
                               {/* Loading */}
                               {sstpLoadingForRouter === String(selectedRouter?.id) && (
@@ -3565,7 +3586,7 @@ const MikroTikManagement: React.FC = () => {
                                       <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse shadow-lg shadow-emerald-400/50" />
                                       <p className="text-sm font-bold text-emerald-700">Servidor SSTP Nativo Activo</p>
                                     </div>
-                                    <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 uppercase tracking-wide">{sstpTunnel.status}</span>
+                                    <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30 uppercase tracking-wide">{sstpTunnel.status}</span>
                                   </div>
 
                                   <div className="grid grid-cols-2 gap-2 rounded-lg bg-gradient-to-r from-emerald-50 to-slate-50 px-3 py-2.5 text-xs text-slate-700 border border-emerald-200">
@@ -3623,16 +3644,16 @@ const MikroTikManagement: React.FC = () => {
                                 {expressSteps.map((step) => {
                                   const toneClass =
                                     step.status === 'success'
-                                      ? 'bg-emerald-100 text-emerald-800'
+                                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                                       : step.status === 'failed'
-                                        ? 'bg-rose-100 text-rose-800'
+                                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                                         : step.status === 'running'
-                                          ? 'bg-blue-500/20 text-blue-300'
+                                          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
                                           : step.status === 'skipped'
-                                            ? 'bg-slate-200 text-slate-700'
-                                            : 'bg-white/5 backdrop-blur-md text-slate-700'
+                                            ? 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                                            : 'bg-white/5 backdrop-blur-md text-slate-400'
                                   return (
-                                    <div key={step.id} className={`rounded px-2 py-1 text-xs ${toneClass}`}>
+                                    <div key={step.id} className={`rounded px-2 py-1 text-xs border ${toneClass}`}>
                                       <strong>{step.label}</strong>
                                       {step.detail ? `: ${step.detail}` : ''}
                                     </div>
@@ -3664,12 +3685,12 @@ const MikroTikManagement: React.FC = () => {
                                         </div>
                                         <div className="flex items-center gap-1">
                                           {action.requires_local_access && (
-                                            <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                                              paso local
+                                            <span className="rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-400 border border-amber-500/30">
+                                              vía script local
                                             </span>
                                           )}
                                           {action.auto_available && (
-                                            <span className="rounded bg-blue-500/20 px-2 py-0.5 text-[10px] font-semibold text-blue-300">
+                                            <span className="rounded bg-blue-500/20 px-2 py-0.5 text-[10px] font-semibold text-blue-300 border border-blue-500/30">
                                               auto
                                             </span>
                                           )}
@@ -3736,7 +3757,7 @@ const MikroTikManagement: React.FC = () => {
                       <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-md p-4">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-sm font-semibold text-white">Hardening runbook</p>
-                          <span className={`rounded px-2 py-1 text-xs font-semibold ${hardeningDryRun ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                          <span className={`rounded px-2 py-1 text-xs font-semibold border ${hardeningDryRun ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'}`}>
                             {hardeningDryRun ? 'dry-run' : 'live'}
                           </span>
                         </div>
@@ -3987,11 +4008,11 @@ const MikroTikManagement: React.FC = () => {
                         ].map((item) => {
                           const script = tfScripts[item.key as keyof typeof tfScripts]
                           return (
-                            <div key={item.key} className="rounded-lg border border-slate-200 bg-slate-950 overflow-hidden">
-                              <div className="flex items-center justify-between px-4 py-2 border-b border-slate-700">
+                            <div key={item.key} className="rounded-2xl border border-gray-100 bg-slate-900 overflow-hidden shadow-sm">
+                              <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 bg-white/5">
                                 <div>
-                                  <p className="text-xs font-semibold text-slate-200">{item.label}</p>
-                                  <p className="text-[10px] text-slate-400">{item.desc}</p>
+                                  <p className="text-xs font-black text-slate-200 uppercase tracking-widest">{item.label}</p>
+                                  <p className="text-[10px] font-bold text-slate-500 mt-1">{item.desc}</p>
                                 </div>
                                 <button
                                   onClick={async () => {
@@ -3999,12 +4020,12 @@ const MikroTikManagement: React.FC = () => {
                                     setTfCopied(item.key)
                                     setTimeout(() => setTfCopied(null), 2500)
                                   }}
-                                  className="rounded-md bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-emerald-500 transition"
+                                  className="rounded-xl bg-coral-500 px-4 py-2 text-[11px] font-black text-white hover:bg-coral-600 transition-all shadow-lg shadow-coral-500/20"
                                 >
-                                  {tfCopied === item.key ? '✅ Copiado' : '📋 Copiar'}
+                                  {tfCopied === item.key ? '✅ Copiado' : '📋 Copiar Código'}
                                 </button>
                               </div>
-                              <pre className="overflow-x-auto p-4 text-[10px] leading-relaxed text-emerald-300 whitespace-pre-wrap">{script}</pre>
+                              <pre className="overflow-x-auto p-6 text-[11px] leading-relaxed text-coral-100 font-mono whitespace-pre-wrap">{script}</pre>
                             </div>
                           )
                         })}
@@ -4060,24 +4081,24 @@ const MikroTikManagement: React.FC = () => {
                         <div className="overflow-x-auto">
                           <table className="min-w-full text-xs">
                             <thead>
-                              <tr className="border-b bg-white/5 text-[10px] font-semibold uppercase text-slate-400">
-                                <th className="px-3 py-1.5 text-left">#</th>
-                                <th className="px-3 py-1.5 text-left">IP Cliente</th>
-                                <th className="px-3 py-1.5 text-right">MB Total</th>
-                                <th className="px-3 py-1.5 text-right">Bytes</th>
-                                <th className="px-3 py-1.5 text-right">Paquetes</th>
-                                <th className="px-3 py-1.5 text-left">Último flujo</th>
+                              <tr className="border-b border-gray-100 bg-gray-50/50 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                <th className="px-4 py-3 text-left">#</th>
+                                <th className="px-4 py-3 text-left">IP Cliente</th>
+                                <th className="px-4 py-3 text-right">MB Total</th>
+                                <th className="px-4 py-3 text-right">Bytes</th>
+                                <th className="px-4 py-3 text-right">Paquetes</th>
+                                <th className="px-4 py-3 text-left">Último flujo</th>
                               </tr>
                             </thead>
                             <tbody>
                               {tfStats.map((row, i) => (
-                                <tr key={row.src_ip} className="border-b hover:bg-white/5">
-                                  <td className="px-3 py-1.5 text-slate-500">{i + 1}</td>
-                                  <td className="px-3 py-1.5 font-mono font-semibold text-white">{row.src_ip}</td>
-                                  <td className="px-3 py-1.5 text-right font-semibold text-blue-300">{row.mb_total.toLocaleString()} MB</td>
-                                  <td className="px-3 py-1.5 text-right text-slate-400">{(row.bytes_total || 0).toLocaleString()}</td>
-                                  <td className="px-3 py-1.5 text-right text-slate-400">{(row.packets_total || 0).toLocaleString()}</td>
-                                  <td className="px-3 py-1.5 text-slate-500 font-mono text-[10px]">{row.last_seen ? new Date(row.last_seen).toLocaleString() : '-'}</td>
+                                <tr key={row.src_ip} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                                  <td className="px-4 py-3 text-slate-400 font-bold">{i + 1}</td>
+                                  <td className="px-4 py-3 font-mono font-bold text-slate-700">{row.src_ip}</td>
+                                  <td className="px-4 py-3 text-right font-black text-coral-500">{row.mb_total.toLocaleString()} MB</td>
+                                  <td className="px-4 py-3 text-right text-slate-500">{(row.bytes_total || 0).toLocaleString()}</td>
+                                  <td className="px-4 py-3 text-right text-slate-500">{(row.packets_total || 0).toLocaleString()}</td>
+                                  <td className="px-4 py-3 text-slate-400 font-mono text-[10px]">{row.last_seen ? new Date(row.last_seen).toLocaleString() : '-'}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -4121,17 +4142,17 @@ const MikroTikManagement: React.FC = () => {
 
       {confirmOpen && (
         <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmOpen(false)}></div>
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setConfirmOpen(false)}></div>
           <div className="absolute inset-0 flex items-center justify-center p-4">
-            <div className="w-full max-w-md rounded-lg bg-white/5 backdrop-blur-md p-6 shadow-xl">
-              <h4 className="mb-2 text-lg font-semibold text-white">Confirmar accion</h4>
-              <p className="mb-4 text-slate-300">{confirmMessage}</p>
-              <div className="flex justify-end gap-2">
-                <button className="rounded bg-slate-200 px-4 py-2 hover:bg-slate-300" onClick={() => setConfirmOpen(false)}>
+            <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl border border-gray-100">
+              <h4 className="mb-2 text-xl font-black text-slate-800">Confirmar acción</h4>
+              <p className="mb-6 text-slate-500 leading-relaxed">{confirmMessage}</p>
+              <div className="flex justify-end gap-3">
+                <button className="rounded-xl bg-gray-50 px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-gray-100 transition-colors" onClick={() => setConfirmOpen(false)}>
                   Cancelar
                 </button>
                 <button
-                  className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                  className="rounded-xl bg-coral-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-coral-600 shadow-lg shadow-coral-500/20 transition-all"
                   onClick={() => {
                     setConfirmOpen(false)
                     if (confirmActionRef.current) confirmActionRef.current()

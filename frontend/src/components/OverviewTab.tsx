@@ -44,15 +44,15 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ routerStats }) => {
             })()}
           </div>
         </div>
-        <div className="bg-purple-500/10 p-4 rounded-lg">
-          <div className="text-sm text-purple-700">Uptime</div>
-          <div className="text-2xl font-bold text-purple-900">
+        <div className="bg-purple-500/10 p-4 rounded-lg border border-purple-500/20">
+          <div className="text-sm text-purple-400">Uptime</div>
+          <div className="text-2xl font-bold text-purple-200">
             {health.router?.uptime?.split(' ')[0] || 'N/A'}
           </div>
         </div>
-        <div className="bg-amber-50 p-4 rounded-lg">
-          <div className="text-sm text-amber-700">Salud</div>
-          <div className="text-2xl font-bold text-amber-900">
+        <div className="bg-amber-500/10 p-4 rounded-lg border border-amber-500/20">
+          <div className="text-sm text-amber-400">Salud</div>
+          <div className="text-2xl font-bold text-amber-200">
             {health.health_score || 0}%
           </div>
         </div>

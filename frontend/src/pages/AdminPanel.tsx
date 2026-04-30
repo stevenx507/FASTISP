@@ -112,8 +112,8 @@ const ALL_NAV_GROUPS: NavGroup[] = [
   {
     id: 'core',
     label: 'Principal',
-    color: 'text-cyan-300',
-    bgColor: 'from-cyan-500/20 to-blue-500/10',
+    color: 'text-coral-500',
+    bgColor: 'from-coral-500/10 to-coral-500/5',
     items: [
       { id: 'dashboard',   name: 'Dashboard',        icon: HomeIcon },
       { id: 'clients',     name: 'Clientes',          icon: UserGroupIcon },
@@ -123,7 +123,6 @@ const ALL_NAV_GROUPS: NavGroup[] = [
       { id: 'maps',        name: 'Mapa de Red',       icon: MapIcon },
       { id: 'gis',         name: 'Infraestructura GIS', icon: MapIcon },
       { id: 'billing',     name: 'Facturación',       icon: CreditCardIcon },
-
       { id: 'monitoring',  name: 'Monitoreo',         icon: SignalIcon },
       { id: 'connectivity', name: 'Conectividad ISP',  icon: ServerIcon },
       { id: 'noc',         name: 'NOC',               icon: PresentationChartLineIcon },
@@ -137,8 +136,8 @@ const ALL_NAV_GROUPS: NavGroup[] = [
   {
     id: 'clientes',
     label: 'Gestión Clientes',
-    color: 'text-emerald-300',
-    bgColor: 'from-emerald-500/20 to-green-500/10',
+    color: 'text-slate-600',
+    bgColor: 'from-slate-500/10 to-slate-500/5',
     items: [
       { id: 'clients-search', name: 'Buscar Clientes',    icon: MagnifyingGlassIcon },
       { id: 'installations',  name: 'Instalaciones',      icon: WrenchScrewdriverIcon },
@@ -152,8 +151,8 @@ const ALL_NAV_GROUPS: NavGroup[] = [
   {
     id: 'finanzas',
     label: 'Finanzas',
-    color: 'text-amber-300',
-    bgColor: 'from-amber-500/20 to-orange-500/10',
+    color: 'text-slate-600',
+    bgColor: 'from-slate-500/10 to-slate-500/5',
     items: [
       { id: 'finance',           name: 'Finanzas',          icon: BanknotesIcon },
       { id: 'billing-promises',  name: 'Promesas de Pago',  icon: CalendarDaysIcon },
@@ -162,59 +161,12 @@ const ALL_NAV_GROUPS: NavGroup[] = [
   {
     id: 'sistema',
     label: 'Sistema',
-    color: 'text-violet-300',
-    bgColor: 'from-violet-500/20 to-indigo-500/10',
+    color: 'text-slate-600',
+    bgColor: 'from-slate-500/10 to-slate-500/5',
     items: [
       { id: 'system',      name: 'Sistema',     icon: CogIcon },
       { id: 'permissions', name: 'Permisos',    icon: ShieldCheckIcon },
       { id: 'audit',       name: 'Auditoría',   icon: ClipboardDocumentListIcon },
-    ],
-  },
-  {
-    id: 'nocx',
-    label: 'NOC Avanzado',
-    color: 'text-rose-300',
-    bgColor: 'from-rose-500/20 to-red-500/10',
-    items: [
-      { id: 'maintenance', name: 'Mantenimientos', icon: WrenchScrewdriverIcon },
-    ],
-  },
-  {
-    id: 'hotspot',
-    label: 'Hotspot',
-    color: 'text-pink-300',
-    bgColor: 'from-pink-500/20 to-fuchsia-500/10',
-    items: [
-      { id: 'hotspot', name: 'Fichas Hotspot', icon: FireIcon },
-    ],
-  },
-  {
-    id: 'soporte',
-    label: 'Soporte Técnico',
-    color: 'text-sky-300',
-    bgColor: 'from-sky-500/20 to-blue-500/10',
-    items: [
-      { id: 'support', name: 'Soporte Técnico', icon: WrenchScrewdriverIcon },
-    ],
-  },
-  {
-    id: 'almacen',
-    label: 'Almacén',
-    color: 'text-teal-300',
-    bgColor: 'from-teal-500/20 to-cyan-500/10',
-    items: [
-      { id: 'inventory', name: 'Inventario', icon: CubeIcon },
-      { id: 'assets',    name: 'Control Seriales', icon: QrCodeIcon },
-    ],
-
-  },
-  {
-    id: 'staff',
-    label: 'Staff',
-    color: 'text-orange-300',
-    bgColor: 'from-orange-500/20 to-amber-500/10',
-    items: [
-      { id: 'staff', name: 'Staff', icon: UsersIcon },
     ],
   },
 ]
@@ -340,23 +292,23 @@ const AdminPanel: React.FC = () => {
   const SidebarContent: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => (
     <div className="flex h-full flex-col">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
+      <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-100">
         {branding.logo_url ? (
           <img src={branding.logo_url} alt={branding.brand_name} className="h-10 w-10 object-contain rounded-lg" />
         ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 shadow-lg shadow-cyan-500/30">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-coral-500 shadow-lg shadow-coral-500/30">
             <span className="text-sm font-black text-white">{branding.brand_name?.[0] || 'I'}</span>
           </div>
         )}
         <div>
-          <p className="text-base font-black text-white leading-tight">{branding.brand_name}</p>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300">Panel Admin</p>
+          <p className="text-base font-black text-slate-800 leading-tight">{branding.brand_name}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-coral-500">Panel Admin</p>
         </div>
       </div>
 
       {/* Toggle módulos avanzados */}
-      <div className="px-4 py-3 border-b border-white/10">
-        <label className="flex cursor-pointer items-center gap-2.5 text-xs text-slate-300 hover:text-white transition-colors">
+      <div className="px-4 py-3 border-b border-gray-100">
+        <label className="flex cursor-pointer items-center gap-2.5 text-xs text-slate-500 hover:text-slate-800 transition-colors">
           <div className="relative">
             <input
               type="checkbox"
@@ -368,33 +320,33 @@ const AdminPanel: React.FC = () => {
               }}
               className="sr-only"
             />
-            <div className={`h-5 w-9 rounded-full transition-colors ${showAdvancedMenu ? 'bg-cyan-500' : 'bg-slate-600'}`} />
-            <div className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white/5 backdrop-blur-md shadow transition-transform ${showAdvancedMenu ? 'translate-x-4' : ''}`} />
+            <div className={`h-5 w-9 rounded-full transition-colors ${showAdvancedMenu ? 'bg-coral-500' : 'bg-slate-200'}`} />
+            <div className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${showAdvancedMenu ? 'translate-x-4' : ''}`} />
           </div>
           <span>Módulos avanzados</span>
         </label>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
+      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-200">
         {visibleGroups.map((group) => {
           const isOpen = openGroups[group.id] ?? false
           return (
-            <div key={group.id} className="rounded-xl overflow-hidden border border-white/8">
+            <div key={group.id} className="rounded-xl overflow-hidden border border-gray-100">
               <button
                 onClick={() => setOpenGroups((prev) => ({ ...prev, [group.id]: !isOpen }))}
-                className={`w-full flex items-center justify-between px-3 py-2.5 text-xs font-bold uppercase tracking-[0.12em] bg-gradient-to-r ${group.bgColor} hover:brightness-110 transition-all`}
+                className={`w-full flex items-center justify-between px-3 py-2.5 text-xs font-bold uppercase tracking-[0.12em] bg-gradient-to-r ${group.bgColor} hover:brightness-105 transition-all`}
               >
                 <span className={`flex items-center gap-2 ${group.color}`}>
                   <ChevronRightIcon className={`h-3.5 w-3.5 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
                   {group.label}
                 </span>
-                <span className={`text-[10px] rounded-full px-1.5 py-0.5 bg-white/10 ${group.color}`}>
+                <span className={`text-[10px] rounded-full px-1.5 py-0.5 bg-white/50 ${group.color}`}>
                   {group.items.length}
                 </span>
               </button>
               {isOpen && (
-                <div className="bg-slate-900/60 py-1">
+                <div className="bg-white py-1">
                   {group.items.map((item) => {
                     const isActive = activeView === item.id
                     return (
@@ -406,15 +358,15 @@ const AdminPanel: React.FC = () => {
                         }}
                         className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all rounded-lg mx-1 my-0.5 ${
                           isActive
-                            ? `bg-gradient-to-r ${group.bgColor} ${group.color} shadow-sm`
-                            : 'text-slate-300 hover:text-white hover:bg-white/5'
+                            ? `bg-coral-50 text-coral-500 shadow-sm border border-coral-100`
+                            : 'text-slate-500 hover:text-slate-800 hover:bg-gray-50'
                         }`}
                         style={{ width: 'calc(100% - 8px)' }}
                       >
-                        <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? group.color : 'text-slate-400'}`} />
+                        <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-coral-500' : 'text-slate-400'}`} />
                         <span className="truncate">{item.name}</span>
                         {isActive && (
-                          <span className={`ml-auto h-1.5 w-1.5 rounded-full bg-current flex-shrink-0`} />
+                          <span className={`ml-auto h-1.5 w-1.5 rounded-full bg-coral-500 flex-shrink-0`} />
                         )}
                       </button>
                     )
@@ -427,22 +379,22 @@ const AdminPanel: React.FC = () => {
       </nav>
 
       {/* User info */}
-      <div className="border-t border-white/10 px-4 py-4">
+      <div className="border-t border-gray-100 px-4 py-4 bg-gray-50/50">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 text-sm font-bold text-white shadow">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-coral-500 text-sm font-bold text-white shadow-sm">
             {(user?.name?.[0] ?? 'A').toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-white">{user?.name || 'Admin ISP'}</p>
-            <p className="truncate text-xs text-slate-400">{user?.email || 'admin@ispmax.com'}</p>
+            <p className="truncate text-sm font-bold text-slate-800">{user?.name || 'Admin ISP'}</p>
+            <p className="truncate text-xs text-slate-500">{user?.email || 'admin@ispmax.com'}</p>
             {isPlatformAdminMode && (
-              <p className="text-[10px] text-amber-300 font-semibold">Tenant: {tenantContextId}</p>
+              <p className="text-[10px] text-coral-600 font-bold">Tenant: {tenantContextId}</p>
             )}
           </div>
           <button
             onClick={logout}
             title="Cerrar sesión"
-            className="flex-shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors"
+            className="flex-shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-coral-100 hover:text-coral-600 transition-colors"
           >
             <ArrowLeftOnRectangleIcon className="h-4 w-4" />
           </button>
@@ -531,7 +483,7 @@ const AdminPanel: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-[#FDF5E6] text-slate-800">
 
       {/* ── Mobile sidebar ── */}
       <Transition.Root show={sidebarOpen} as={Fragment}>
@@ -576,7 +528,7 @@ const AdminPanel: React.FC = () => {
       </Transition.Root>
 
       {/* ── Desktop sidebar ── */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col z-30 border-r border-white/10 bg-slate-900 shadow-xl">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col z-30 border-r border-gray-100 bg-white shadow-sm">
         <SidebarContent />
       </div>
 
@@ -600,22 +552,22 @@ const AdminPanel: React.FC = () => {
         )}
 
         {/* ── Top navbar ── */}
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-white/10 bg-slate-900/80 backdrop-blur-md px-4 shadow-sm">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-gray-100 bg-white/80 backdrop-blur-md px-4 shadow-sm">
           {/* Mobile menu button */}
           <button
             onClick={() => setSidebarOpen(true)}
             title="Abrir menú"
             aria-label="Abrir menú"
-            className="lg:hidden rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+            className="lg:hidden rounded-lg p-2 text-slate-500 hover:bg-gray-100 transition-colors"
           >
             <Bars3Icon className="h-5 w-5" />
           </button>
 
           {/* Breadcrumb / title */}
           <div className="flex-1 flex items-center gap-2 min-w-0">
-            <span className="text-xs text-slate-500 hidden sm:block">{branding.brand_name}</span>
-            <ChevronRightIcon className="h-3 w-3 text-slate-600 hidden sm:block" />
-            <h2 className="text-sm font-bold text-white truncate">{activeLabel}</h2>
+            <span className="text-xs text-slate-400 hidden sm:block">{branding.brand_name}</span>
+            <ChevronRightIcon className="h-3 w-3 text-slate-300 hidden sm:block" />
+            <h2 className="text-sm font-bold text-slate-800 truncate">{activeLabel}</h2>
           </div>
 
           {/* Right actions */}
@@ -623,10 +575,10 @@ const AdminPanel: React.FC = () => {
 
             {/* Notifications */}
             <Menu as="div" className="relative">
-              <Menu.Button className="relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-colors">
+              <Menu.Button className="relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-gray-100 transition-colors">
                 <BellAlertIcon className="h-5 w-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow">
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-coral-500 text-[10px] font-bold text-white shadow-sm">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -753,7 +705,7 @@ const AdminPanel: React.FC = () => {
         </header>
 
         {/* ── Main area ── */}
-        <main className="flex-1 bg-slate-950">
+        <main className="flex-1 bg-[#FDF5E6]">
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
             {viewComponents[activeView] ?? (
               <div className="flex items-center justify-center py-20 text-slate-500">

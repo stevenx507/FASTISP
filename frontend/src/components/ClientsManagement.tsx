@@ -70,10 +70,10 @@ interface Router {
 }
 
 const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
-  active: { bg: 'bg-emerald-100', text: 'text-emerald-800', label: 'Activo' },
+  active: { bg: 'bg-emerald-500/20', text: 'text-emerald-400 border border-emerald-500/30', label: 'Activo' },
   inactive: { bg: 'bg-white/10', text: 'text-slate-200', label: 'Inactivo' },
-  suspended: { bg: 'bg-rose-100', text: 'text-rose-800', label: 'Suspendido' },
-  past_due: { bg: 'bg-amber-100', text: 'text-amber-800', label: 'Mora' },
+  suspended: { bg: 'bg-rose-500/20', text: 'text-rose-400 border border-rose-500/30', label: 'Suspendido' },
+  past_due: { bg: 'bg-amber-500/20', text: 'text-amber-400 border border-amber-500/30', label: 'Mora' },
   trial: { bg: 'bg-blue-500/20', text: 'text-blue-300', label: 'Trial' },
 }
 

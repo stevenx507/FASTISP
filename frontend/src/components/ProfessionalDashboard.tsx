@@ -199,12 +199,12 @@ const ProfessionalDashboard: React.FC = () => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Clientes Activos"
           value={(dashboard?.clients ?? 0).toLocaleString()}
           trend={8}
-          color="blue"
+          color="coral"
           icon={<UserGroupIcon />}
           subtitle={`${nocSummary?.tickets_open ?? 0} tickets abiertos`}
         />
@@ -212,7 +212,7 @@ const ProfessionalDashboard: React.FC = () => {
           title="Ingresos del Mes"
           value={`$${paidThisMonth.toLocaleString()}`}
           trend={6}
-          color="green"
+          color="coral"
           icon={<CurrencyDollarIcon />}
           subtitle={`MRR estimado: $${mrr.toLocaleString()}`}
         />
@@ -220,14 +220,14 @@ const ProfessionalDashboard: React.FC = () => {
           title="Routers Activos"
           value={dashboard?.routers?.ok ?? 0}
           trend={0}
-          color="purple"
+          color="coral"
           icon={<ServerIcon />}
           subtitle={`${dashboard?.routers?.down ?? 0} caidos`}
         />
         <StatsCard
           title="Uptime"
           value={`${uptimeValue.toFixed(2)}%`}
-          color="emerald"
+          color="coral"
           icon={<SparklesIcon />}
           subtitle={`${nocSummary?.active_alerts ?? 0} alertas activas`}
         />
@@ -238,58 +238,72 @@ const ProfessionalDashboard: React.FC = () => {
         <BarChart data={utilizationData} title="Utilizacion de Routers (top)" showValues={true} />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-lg border border-cyan-200 bg-gradient-to-br from-cyan-50 to-blue-50 p-4">
-          <p className="text-sm font-medium text-cyan-700">Ancho de Banda Promedio</p>
-          <p className="mt-2 text-2xl font-bold text-cyan-900">{avgBandwidth.toFixed(1)} Mbps</p>
-          <p className="mt-1 text-xs text-cyan-600">Promedio sobre routers monitoreados</p>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Ancho de Banda Promedio</p>
+          <p className="mt-3 text-3xl font-black text-slate-800">{avgBandwidth.toFixed(1)} <span className="text-lg font-bold text-slate-400">Mbps</span></p>
+          <div className="mt-4 h-1 w-full bg-gray-50 rounded-full overflow-hidden">
+             <div className="h-full bg-coral-400" style={{ width: '65%' }} />
+          </div>
         </div>
-        <div className="rounded-lg border border-orange-200 bg-gradient-to-br from-orange-50 to-yellow-50 p-4">
-          <p className="text-sm font-medium text-orange-700">Throughput Total</p>
-          <p className="mt-2 text-2xl font-bold text-orange-900">{totalThroughput.toFixed(1)} Mbps</p>
-          <p className="mt-1 text-xs text-orange-600">RX + TX agregado de la red</p>
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Throughput Total</p>
+          <p className="mt-3 text-3xl font-black text-slate-800">{totalThroughput.toFixed(1)} <span className="text-lg font-bold text-slate-400">Mbps</span></p>
+          <div className="mt-4 h-1 w-full bg-gray-50 rounded-full overflow-hidden">
+             <div className="h-full bg-blue-400" style={{ width: '45%' }} />
+          </div>
         </div>
-        <div className="rounded-lg border border-emerald-500/30 bg-gradient-to-br from-green-50 to-emerald-50 p-4">
-          <p className="text-sm font-medium text-emerald-400">Collection Rate</p>
-          <p className="mt-2 text-2xl font-bold text-emerald-300">
-            {(financeSummary?.summary?.collection_rate ?? 0).toFixed(1)}%
+        <div className="rounded-2xl border border-coral-100 bg-white p-6 shadow-sm ring-1 ring-coral-50">
+          <p className="text-xs font-bold uppercase tracking-wider text-coral-500">Collection Rate</p>
+          <p className="mt-3 text-3xl font-black text-slate-800">
+            {(financeSummary?.summary?.collection_rate ?? 0).toFixed(1)}<span className="text-lg font-bold text-slate-400">%</span>
           </p>
-          <p className="mt-1 text-xs text-green-600">Cartera cobrada del mes actual</p>
+          <div className="mt-4 h-1 w-full bg-gray-50 rounded-full overflow-hidden">
+             <div className="h-full bg-coral-500" style={{ width: `${financeSummary?.summary?.collection_rate ?? 0}%` }} />
+          </div>
         </div>
       </div>
 
-      <div className="rounded-lg bg-white/5 backdrop-blur-md p-6 shadow">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-white">Actividad Reciente</h3>
+      <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-black text-slate-800">Actividad Reciente</h3>
+            <p className="text-sm text-slate-500">Monitoreo en tiempo real de eventos del sistema</p>
+          </div>
           <button
             onClick={load}
             disabled={loading}
-            className="rounded-lg border border-white/20 px-3 py-1 text-xs font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60"
+            className="rounded-xl border border-gray-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-gray-50 disabled:opacity-60 transition-all"
           >
             {loading ? 'Actualizando...' : 'Refrescar'}
           </button>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-1">
           {activityFeed.map((item) => (
-            <div key={item.id} className="flex items-center justify-between border-b py-2 last:border-b-0">
-              <div>
-                <p className="text-sm font-medium text-white">{item.action}</p>
-                <p className="text-xs text-slate-400">{item.time}</p>
+            <div key={item.id} className="flex items-center justify-between py-4 border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 px-2 rounded-xl transition-colors">
+              <div className="flex items-center gap-4">
+                <div className={`h-2.5 w-2.5 rounded-full ${
+                  item.status === 'success' ? 'bg-emerald-400' : item.status === 'warning' ? 'bg-coral-400' : 'bg-blue-400'
+                }`} />
+                <div>
+                  <p className="text-sm font-bold text-slate-700">{item.action}</p>
+                  <p className="text-xs font-medium text-slate-400">{item.time}</p>
+                </div>
               </div>
               <span
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider ${
                   item.status === 'success'
-                    ? 'bg-emerald-500/20 text-emerald-300'
+                    ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
                     : item.status === 'warning'
-                      ? 'bg-amber-500/20 text-amber-300'
-                      : 'bg-blue-500/20 text-blue-300'
+                      ? 'bg-coral-50 text-coral-600 border border-coral-100'
+                      : 'bg-blue-50 text-blue-600 border border-blue-100'
                 }`}
               >
                 {item.status}
               </span>
             </div>
           ))}
-          {!activityFeed.length && <p className="text-sm text-slate-400">Sin actividad reciente.</p>}
+          {!activityFeed.length && <p className="text-sm text-slate-400 text-center py-10">Sin actividad reciente.</p>}
         </div>
       </div>
     </motion.div>
