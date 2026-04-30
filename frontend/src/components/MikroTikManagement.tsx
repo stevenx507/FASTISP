@@ -3160,6 +3160,24 @@ const MikroTikManagement: React.FC = () => {
                           </span>
                         )}
                       </div>
+
+                      {/* NAT Warning */}
+                      {quickConnect?.access_profile?.effective_scope === 'private' && (
+                        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                          <div className="flex gap-2">
+                            <span className="text-amber-500 font-bold">⚠️ NAT detectado:</span>
+                            <div className="text-xs text-amber-800 space-y-1">
+                              <p>El router tiene una IP privada o está tras CGNAT. El acceso directo por puerto 8728 fallará.</p>
+                              <p className="font-semibold">Solución recomendada:</p>
+                              <ul className="list-disc list-inside">
+                                <li>Usa <strong>SSTP Nativo</strong> (más fácil) o <strong>WireGuard</strong>.</li>
+                                <li>Si el router soporta <strong>Back To Home (BTH)</strong>, es la opción más robusta.</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {!activeConnectionDiagnostics && (
                         <p className="text-xs text-slate-600">Todavia no hay un diagnostico guardado para este router. Usa "Probar conexion" o la validacion del wizard.</p>
                       )}

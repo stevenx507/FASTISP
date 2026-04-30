@@ -469,6 +469,10 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
     if vps_ip:
         api_addresses = f"{SSTP_API_ALLOWED_SUBNET},{vps_ip}/32"
     else:
+        vps_ip = FASTISP_VPS_IP.strip()
+    if vps_ip:
+        api_addresses = f"{SSTP_API_ALLOWED_SUBNET},{vps_ip}/32"
+    else:
         api_addresses = SSTP_API_ALLOWED_SUBNET
 
     # Firewall rules: RouterOS src-address NO acepta listas separadas por coma,
@@ -520,7 +524,7 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
 /ppp secret add name={_routeros_quote(username)} password={_routeros_quote(password)} service=sstp profile={_routeros_quote(SSTP_PROFILE_NAME)} remote-address={first_client_ip} comment="FastISP Management"
 
 # --- 6. Usuario API FastISP ---
-/user group add name={SSTP_API_GROUP_NAME} policy="local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive"
+:do {{ /user group add name={SSTP_API_GROUP_NAME} policy="local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive" }} on-error={{}}
 /user add name={_routeros_quote(username)} password={_routeros_quote(password)} group={SSTP_API_GROUP_NAME} comment="FastISP API user"
 
 # --- 7. API habilitada (VPS + pool SSTP) ---

@@ -144,6 +144,7 @@ class Config:
     MIKROTIK_WG_VPS_SSH_TIMEOUT_SECONDS = os.environ.get('MIKROTIK_WG_VPS_SSH_TIMEOUT_SECONDS', '8')
     MIKROTIK_WG_VPS_SSH_USE_SUDO = _as_bool(os.environ.get('MIKROTIK_WG_VPS_SSH_USE_SUDO'), default=True)
     MIKROTIK_MANAGEMENT_ALLOWED_CIDR = os.environ.get('MIKROTIK_MANAGEMENT_ALLOWED_CIDR', 'YOUR_PUBLIC_IP/32')
+    FASTISP_VPS_IP = os.environ.get('FASTISP_VPS_IP', '')
     VPS_PUBLIC_HOST = os.environ.get('VPS_PUBLIC_HOST', '')
     VPS_PUBLIC_SSH_USER = os.environ.get('VPS_PUBLIC_SSH_USER', 'noc')
     VPS_PUBLIC_SSH_PORT = int(os.environ.get('VPS_PUBLIC_SSH_PORT', '22') or 22)

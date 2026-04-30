@@ -5988,10 +5988,12 @@ def router_remote_script(router_id):
     api_pass = f"{router.password or 'CambiarEstaClave'}"
     api_port = 8728
     ssh_port = 22
+    vps_ip = current_app.config.get('FASTISP_VPS_IP') or 'YOUR_PUBLIC_IP'
+    allowed_mgmt = f"{vps_ip}/32"
     script = f"""/ip service set api disabled=no port={api_port}
 /ip service set ssh disabled=no port={ssh_port}
 /user add name="{api_user}" password="{api_pass}" group=full comment="Acceso remoto FastISP" disabled=no
-/ip firewall address-list add list=fastisp-remote address=YOUR_PUBLIC_IP/32 comment="Autorizar IP de gestión"
+/ip firewall address-list add list=fastisp-remote address={allowed_mgmt} comment="Autorizar IP de gestión"
 /ip firewall filter add chain=input action=accept protocol=tcp dst-port={api_port} src-address-list=fastisp-remote comment="API FastISP"
 /ip firewall filter add chain=input action=accept protocol=tcp dst-port={ssh_port} src-address-list=fastisp-remote comment="SSH FastISP"
 """

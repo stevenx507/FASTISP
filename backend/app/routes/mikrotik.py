@@ -3271,10 +3271,14 @@ def router_quick_connect(router_id):
         bth_user = str(bth_identity.get('user_name') or bth_user).strip() or bth_user
     access_profile = _build_access_profile(router.ip_address, ip_scope)
 
-    wg_endpoint_host = str(wireguard_profile.get('endpoint_host') or '')
+    wg_endpoint_host = str(wireguard_profile.get('endpoint_host') or '').strip() or 'vpn.fastisp.cloud'
     wg_endpoint_port = int(wireguard_profile.get('endpoint_port') or 51820)
     account_label = str(onboarding_profile.get('account_label') or 'Cuenta ISP').strip() or 'Cuenta ISP'
     comment_prefix = str(onboarding_profile.get('comment_prefix') or account_label).strip() or account_label
+
+    vps_ip = str(current_app.config.get('FASTISP_VPS_IP') or '').strip()
+    if 'YOUR_PUBLIC_IP' in allowed_mgmt and vps_ip:
+        allowed_mgmt = allowed_mgmt.replace('YOUR_PUBLIC_IP', vps_ip)
 
     router_peer_ip = f'10.250.{int(router.id) % 250}.2/32'
     public_reachable = bool(access_profile.get('allows_direct_inbound'))
@@ -3293,8 +3297,8 @@ def router_quick_connect(router_id):
             direct_script_title
             + f"/ip service set api disabled=no port={router.api_port}\n"
             + "/ip service set ssh disabled=no port=22\n"
-            + f"/ip firewall address-list add list=fastisp-management address={allowed_mgmt} comment=\"{_script_escape(account_label)} NOC\"\n"
-            + f"/ip firewall filter add chain=input action=accept protocol=tcp dst-port={router.api_port},22 src-address-list=fastisp-management comment=\"{_script_escape(account_label)} remote access\"\n"
+            + f":do {{ /ip firewall address-list add list=fastisp-management address={allowed_mgmt} comment=\"{_script_escape(account_label)} NOC\" }} on-error={{}}\n"
+            + f":do {{ /ip firewall filter add chain=input action=accept protocol=tcp dst-port={router.api_port},22 src-address-list=fastisp-management comment=\"{_script_escape(account_label)} remote access\" place-before=0 }} on-error={{}}\n"
             + "/ip firewall filter add chain=input action=drop protocol=tcp dst-port=22,8728,8729 in-interface-list=WAN comment=\"Drop unmanaged remote\"\n"
         ),
         'wireguard_site_to_vps_script': (
