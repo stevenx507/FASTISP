@@ -1625,30 +1625,6 @@ class FiberLine(db.Model):
             'tenant_id': self.tenant_id,
         }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Módulo de Consulta de Deuda Pública (sin login)
-# ─────────────────────────────────────────────────────────────────────────────
-
-class ClientDebtQuery(db.Model):
-    """Registro de consultas de deuda realizadas por clientes (auditoría)."""
-    __tablename__ = 'client_debt_queries'
-
-    id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
-    document_number = db.Column(db.String(30), nullable=False, index=True)
-    ip_address = db.Column(db.String(64), nullable=True)
-    result_found = db.Column(db.Boolean, nullable=False, default=False)
-    queried_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'tenant_id': self.tenant_id,
-            'document_number': self.document_number,
-            'ip_address': self.ip_address,
-            'result_found': bool(self.result_found),
-            'queried_at': _iso_datetime(self.queried_at),
-        }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
