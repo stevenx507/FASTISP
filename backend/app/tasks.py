@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import hashlib
 import json
 from typing import Any, Dict, List, Optional, Tuple
@@ -192,6 +192,18 @@ def poll_mikrotik_metrics(self):
                 }
                 snapshots.append(snapshot)
 
+                # Persistir snapshot en Redis para que scheduled_ai_diagnostic pueda leerlo
+                try:
+                    redis_client = _get_redis_client()
+                    if redis_client:
+                        redis_client.set(
+                            f"router:snapshot:{router.id}",
+                            json.dumps(snapshot, ensure_ascii=True),
+                            ex=300,  # TTL 5 minutos
+                        )
+                except Exception as redis_err:
+                    current_app.logger.warning('Failed to persist snapshot to Redis for router %s: %s', router.name, redis_err)
+
                 if alert_result.get('alert_count', 0) > 0:
                     current_app.logger.warning(
                         'NOC alerts triggered for router %s: %s',
@@ -225,6 +237,7 @@ def poll_mikrotik_metrics(self):
         current_app.logger.info('Finished metrics poll.')
     finally:
         _release_lock(lock_client, lock_key, lock_token)
+
 
 
 @celery.task(name='app.tasks.evaluate_noc_alerts')
@@ -672,35 +685,84 @@ def generate_monthly_invoices_task():
 def enforce_tenant_billing() -> Dict[str, Any]:
     """
     Verifica el estado de facturación de los ISPs (Tenants).
-    Si el trial expira, cambia el status a 'past_due'.
+    - Si el trial expira → past_due
+    - Si lleva más de 7 días past_due sin pagar → suspende acceso (is_active=False)
+    - Si el tenant vuelve a 'active' con is_active=False → reactiva automáticamente
     """
     from app.models import Tenant
+    GRACE_DAYS = 7
     today = datetime.utcnow()
-    updated_tenants = []
+    updated_tenants: List[Dict[str, Any]] = []
+    reactivated_tenants: List[Dict[str, Any]] = []
 
-    tenants = Tenant.query.filter(
+    # 1. Pasar de trial → past_due si el trial expiró
+    trial_candidates = Tenant.query.filter(
         Tenant.billing_status.in_(['trial', 'active']),
-        Tenant.trial_ends_at.isnot(None)
+        Tenant.trial_ends_at.isnot(None),
+        Tenant.trial_ends_at < today,
     ).all()
 
-    for tenant in tenants:
-        if tenant.trial_ends_at < today:
-            old_status = tenant.billing_status
-            tenant.billing_status = 'past_due'
-            db.session.add(tenant)
-            updated_tenants.append({
-                'id': tenant.id,
-                'name': tenant.name,
-                'old_status': old_status,
-                'new_status': 'past_due'
-            })
+    for tenant in trial_candidates:
+        old_status = tenant.billing_status
+        tenant.billing_status = 'past_due'
+        db.session.add(tenant)
+        updated_tenants.append({
+            'id': tenant.id,
+            'name': tenant.name,
+            'old_status': old_status,
+            'new_status': 'past_due',
+            'action': 'marked_past_due',
+        })
+        current_app.logger.info(
+            'Tenant %s (%s) trial expired — marked past_due.', tenant.id, tenant.name
+        )
 
-    if updated_tenants:
+    # 2. Suspender acceso si llevan > GRACE_DAYS en past_due
+    grace_cutoff = today - timedelta(days=GRACE_DAYS)
+    overdue_candidates = Tenant.query.filter(
+        Tenant.billing_status == 'past_due',
+        Tenant.is_active == True,  # noqa: E712
+        Tenant.trial_ends_at.isnot(None),
+        Tenant.trial_ends_at < grace_cutoff,
+    ).all()
+
+    for tenant in overdue_candidates:
+        tenant.is_active = False
+        db.session.add(tenant)
+        updated_tenants.append({
+            'id': tenant.id,
+            'name': tenant.name,
+            'old_status': 'past_due',
+            'new_status': 'past_due',
+            'action': 'access_suspended',
+        })
+        current_app.logger.warning(
+            'Tenant %s (%s) exceeded grace period — access suspended (is_active=False).',
+            tenant.id, tenant.name
+        )
+
+    # 3. Reactivar si el status volvió a 'active' pero is_active sigue en False
+    reactivate_candidates = Tenant.query.filter(
+        Tenant.billing_status == 'active',
+        Tenant.is_active == False,  # noqa: E712
+    ).all()
+
+    for tenant in reactivate_candidates:
+        tenant.is_active = True
+        db.session.add(tenant)
+        reactivated_tenants.append({'id': tenant.id, 'name': tenant.name})
+        current_app.logger.info(
+            'Tenant %s (%s) billing active again — access restored (is_active=True).',
+            tenant.id, tenant.name
+        )
+
+    if updated_tenants or reactivated_tenants:
         db.session.commit()
-    
+
     return {
         'count': len(updated_tenants),
         'updated': updated_tenants,
-        'timestamp': today.isoformat()
+        'reactivated': reactivated_tenants,
+        'timestamp': today.isoformat(),
     }
 

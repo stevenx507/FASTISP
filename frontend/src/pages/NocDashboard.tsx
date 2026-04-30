@@ -21,6 +21,7 @@ interface NocSummary {
   active_alerts: number
   tickets_open: number
   total_bw_mbps?: number
+  avg_cpu_pct?: number
 }
 
 const PremiumStatCard: React.FC<{ 
@@ -231,7 +232,7 @@ const NocDashboard: React.FC = () => {
             />
             <PremiumStatCard 
               label="Recursos CPU Avg" 
-              value="24%" 
+              value={summary?.avg_cpu_pct != null ? `${summary.avg_cpu_pct}%` : '--'} 
               icon={CpuChipIcon} 
               colorClass="bg-amber-500" 
             />

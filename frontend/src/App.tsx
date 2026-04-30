@@ -18,6 +18,8 @@ import AssetTracking from './pages/AssetTracking'
 import BIDashboard from './pages/BIDashboard'
 import LandingPage from './pages/LandingPage'
 import PartnerPortal from './pages/PartnerPortal'
+import NocDashboard from './pages/NocDashboard'
+import ClientDashboardWeb from './pages/ClientDashboardweb'
 
 import { useAuthStore } from './store/authStore'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -37,6 +39,7 @@ function App() {
             <Route path="/login" element={isAuthenticated ? <Navigate to={authHome} /> : <Login />} />
 
             <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['client']}><ClientDashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/web" element={<ProtectedRoute allowedRoles={['client']}><ClientDashboardWeb /></ProtectedRoute>} />
             <Route path="/dashboard/billing" element={<ProtectedRoute allowedRoles={['client']}><BillingPortal /></ProtectedRoute>} />
             <Route path="/dashboard/usage" element={<ProtectedRoute allowedRoles={['client']}><ClientUsage /></ProtectedRoute>} />
             <Route path="/dashboard/wifi" element={<ProtectedRoute allowedRoles={['client']}><ClientWiFi /></ProtectedRoute>} />
@@ -49,6 +52,7 @@ function App() {
             <Route path="/admin/assets" element={<ProtectedRoute allowedRoles={['admin', 'platform_admin', 'tech', 'noc', 'operator']}><AssetTracking /></ProtectedRoute>} />
             <Route path="/admin/bi" element={<ProtectedRoute allowedRoles={['admin', 'platform_admin', 'billing', 'noc']}><BIDashboard /></ProtectedRoute>} />
             <Route path="/partner" element={<ProtectedRoute allowedRoles={['partner', 'admin']}><PartnerPortal /></ProtectedRoute>} />
+            <Route path="/admin/noc" element={<ProtectedRoute allowedRoles={['admin', 'platform_admin', 'noc', 'operator']}><NocDashboard /></ProtectedRoute>} />
             <Route path="/platform" element={<ProtectedRoute allowedRoles={['platform_admin']}><PlatformAdmin /></ProtectedRoute>} />
 
             <Route path="/platform/bootstrap" element={isAuthenticated ? <Navigate to={authHome} /> : <PlatformBootstrap />} />

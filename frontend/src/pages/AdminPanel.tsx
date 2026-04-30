@@ -38,6 +38,7 @@ import {
   TicketIcon,
   CircleStackIcon,
   BuildingStorefrontIcon,
+  QrCodeIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../store/authStore'
 import { safeStorage } from '../lib/storage'

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import stripe
 from flask import current_app
 from app import db
@@ -160,7 +160,7 @@ class BillingService:
                     number=f"INV-{today.strftime('%Y%m')}-{client.id}",
                     total_amount=client.plan.price,
                     status='pending',
-                    due_date=today + datetime.timedelta(days=5),
+                    due_date=today + timedelta(days=5),
                     currency='USD',
                     created_at=datetime.utcnow()
                 )

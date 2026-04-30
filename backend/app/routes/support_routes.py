@@ -472,7 +472,7 @@ TENANT_BILLING_ALLOWED_STATUS = {"trial", "active", "past_due", "suspended", "ca
 TENANT_BILLING_ALLOWED_CYCLES = {"monthly", "quarterly", "yearly"}
 TENANT_PLAN_TEMPLATES = {
     "starter": {
-        "monthly_price": 39.0,
+        "monthly_price": 8.0,
         "max_admins": 2,
         "max_routers": 5,
         "max_clients": 400,
