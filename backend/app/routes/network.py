@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import ipaddress
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Any, Dict, List, Optional
 
 from flask import Blueprint, jsonify, request, current_app

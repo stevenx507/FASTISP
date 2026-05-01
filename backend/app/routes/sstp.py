@@ -16,7 +16,7 @@ Routes:
 
 from flask import Blueprint, request, jsonify, Response
 from flask_jwt_extended import get_jwt_identity
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 from app import db

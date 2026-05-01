@@ -5,7 +5,7 @@ Handles all MikroTik router operations for ISPMAX
 from routeros_api.exceptions import RouterOsApiError
 from typing import Dict, List, Optional, Tuple
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import or_
 from app.models import Client, Plan, MikroTikRouter, Invoice, Subscription, AuditLog, Ticket
 from app import db, cache

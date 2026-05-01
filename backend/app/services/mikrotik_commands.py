@@ -12,7 +12,7 @@ o un router_id para conectarse internamente.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 logger = logging.getLogger(__name__)

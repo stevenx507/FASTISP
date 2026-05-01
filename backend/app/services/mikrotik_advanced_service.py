@@ -4,7 +4,7 @@ Advanced MikroTik Service with v6/v7 support
 from typing import Any, Dict
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from routeros_api.exceptions import RouterOsApiError
 
 from app.models import Client, Plan, MikroTikRouter

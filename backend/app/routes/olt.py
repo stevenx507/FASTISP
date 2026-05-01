@@ -3,7 +3,7 @@ OLT enterprise API endpoints (ZTE, Huawei, VSOL).
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 import ipaddress
 import socket
 import ssl

@@ -1,6 +1,6 @@
 import base64
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 
 from cryptography.fernet import Fernet
 from flask import current_app

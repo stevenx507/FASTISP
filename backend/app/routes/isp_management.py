@@ -9,7 +9,7 @@ Endpoints REST para:
 """
 
 from flask import Blueprint, request, jsonify, current_app
-from datetime import datetime
+from datetime import datetime, timezone
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 bp = Blueprint('isp_management', __name__, url_prefix='/api')
