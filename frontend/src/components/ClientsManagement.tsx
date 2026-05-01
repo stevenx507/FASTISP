@@ -670,7 +670,7 @@ const ClientsManagement: React.FC = () => {
 
         <span className="ml-2 text-xs font-semibold text-slate-500">Botonas de AcciÃ³n:</span>
 
-        <ActionBtn color="bg-green-500" tip="Generar Factura" onClick={() => { if(selectedIds.size===0){toast('Selecciona clientes');return}; toast('Generar factura â€” prÃ³ximamente') }}>$</ActionBtn>
+        <ActionBtn color="bg-green-500" tip="Generar Factura" onClick={() => { if(selectedIds.size===0){toast('Selecciona clientes');return} toast('Generar factura â€” prÃ³ximamente') }}>$</ActionBtn>
         <ActionBtn color="bg-green-600" tip="Activar Cliente" onClick={() => { selectedIds.forEach((id)=>void activate(id)); toast.success('Activandoâ€¦') }}>â–¶</ActionBtn>
         <ActionBtn color="bg-orange-500" tip="Desactivar Cliente" onClick={() => { selectedIds.forEach((id)=>void suspend(id)); toast.success('Desactivandoâ€¦') }}>â¸</ActionBtn>
         <ActionBtn color="bg-yellow-500" tip="Agregar Ticket" onClick={() => toast('Agregar Ticket â€” prÃ³ximamente')}>ðŸŽ«</ActionBtn>

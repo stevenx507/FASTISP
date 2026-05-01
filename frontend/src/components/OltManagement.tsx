@@ -890,6 +890,7 @@ const OltManagement: React.FC = () => {
       return
     }
     void loadProvisioningLookup({ clientId: selectedProvisionClientId, silent: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProvisionClientId])
 
   useEffect(() => {

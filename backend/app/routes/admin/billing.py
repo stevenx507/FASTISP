@@ -288,5 +288,29 @@ def admin_payments_review(payment_id):
     _audit("payment_review", entity_type="payment", entity_id=payment.id, metadata={"status": status, "invoice_id": invoice.id})
     return jsonify({"success": True, **payload}), 200
 
+@admin_bp.route('/admin/billing/generate-batch', methods=['POST'])
+@jwt_required()
+def admin_billing_generate_batch():
+    """Triggers the monthly invoice generation batch job via Celery."""
+    user_id = _current_user_id()
+    user = db.session.get(User, user_id)
+    if not user or user.role not in ('admin', 'platform_admin', 'billing'):
+        return jsonify({"error": "No tienes permisos para generar facturas masivas"}), 403
 
-
+    tenant_id = current_tenant_id()
+    
+    # Try to trigger via Celery if available
+    try:
+        from app.tasks import generate_monthly_invoices_task
+        task = generate_monthly_invoices_task.delay(tenant_id=tenant_id)
+        
+        _audit("generate_batch_started", entity_type="billing", metadata={"task_id": task.id})
+        return jsonify({
+            "success": True, 
+            "message": "Generacion masiva iniciada en segundo plano",
+            "task_id": task.id,
+            "generated_count": 0 # The frontend expects a generated_count, we return 0 for async
+        }), 202
+    except Exception as e:
+        current_app.logger.error(f"Failed to trigger generate_monthly_invoices_task: {e}")
+        return jsonify({"error": f"Error al iniciar generacion masiva: {str(e)}"}), 500

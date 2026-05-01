@@ -474,7 +474,11 @@ const AdminPanel: React.FC = () => {
               if (!window.confirm('¿Generar facturas masivas para este mes?')) return
               try {
                 const res = await apiClient.post('/admin/billing/generate-batch')
-                alert(`Éxito: Se generaron ${res.generated_count} facturas.`)
+                if (res.task_id) {
+                  alert('Éxito: El proceso de facturación masiva se inició en segundo plano. Esto puede tardar unos minutos.')
+                } else {
+                  alert(`Éxito: Se generaron ${res.generated_count || 0} facturas.`)
+                }
               } catch (err) {
                 alert('Error al generar facturas masivas.')
               }
