@@ -2357,7 +2357,7 @@ const MikroTikManagement: React.FC = () => {
             value={changeTicket}
             onChange={(e) => setChangeTicket(e.target.value)}
             placeholder="Ticket de cambio (ej: CHG-2026-0001)"
-            className="w-full rounded-lg border border-amber-300 bg-white/5 backdrop-blur-md px-3 py-2 text-sm text-white md:max-w-md"
+            className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-amber-500/50 md:max-w-md"
           />
           <p className="text-xs text-amber-800">
             Se usa para acciones live (reinicio, scripts y hardening).
@@ -2421,31 +2421,31 @@ const MikroTikManagement: React.FC = () => {
                 value={onboardingProfile.account_label || ''}
                 onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), account_label: e.target.value }))}
                 placeholder="Nombre de cuenta ISP"
-                className="rounded border border-emerald-300 bg-white/5 backdrop-blur-md px-3 py-2 text-xs text-white"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-emerald-500/50"
               />
               <input
                 value={onboardingProfile.router_name_prefix || ''}
                 onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), router_name_prefix: e.target.value }))}
                 placeholder="Prefijo de routers"
-                className="rounded border border-emerald-300 bg-white/5 backdrop-blur-md px-3 py-2 text-xs text-white"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-emerald-500/50"
               />
               <input
                 value={onboardingProfile.comment_prefix || ''}
                 onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), comment_prefix: e.target.value }))}
                 placeholder="Prefijo de comentarios"
-                className="rounded border border-emerald-300 bg-white/5 backdrop-blur-md px-3 py-2 text-xs text-white"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-emerald-500/50"
               />
               <input
                 value={onboardingProfile.default_username || ''}
                 onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), default_username: e.target.value }))}
                 placeholder="Usuario API por defecto"
-                className="rounded border border-emerald-300 bg-white/5 backdrop-blur-md px-3 py-2 text-xs text-white"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-emerald-500/50"
               />
               <input
                 value={String(onboardingProfile.default_api_port || '')}
                 onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), default_api_port: Number(e.target.value || '8728') }))}
                 placeholder="Puerto API por defecto"
-                className="rounded border border-emerald-300 bg-white/5 backdrop-blur-md px-3 py-2 text-xs text-white"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-emerald-500/50"
               />
             </div>
           )}
@@ -2807,12 +2807,12 @@ const MikroTikManagement: React.FC = () => {
                         <span className="font-bold text-slate-700">{router.name}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-4 font-mono text-slate-500 text-xs">{router.ip_address}</td>
-                    <td className="px-4 py-4 text-slate-400 text-xs font-bold">{router.username || '-'}</td>
+                    <td className="px-4 py-4 font-mono text-slate-700 text-xs">{router.ip_address}</td>
+                    <td className="px-4 py-4 text-slate-700 text-xs font-bold">{router.username || '-'}</td>
                     <td className="px-4 py-4 text-center">
                       <div className={`mx-auto h-2 w-2 rounded-full ${apiOk ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-coral-500 shadow-[0_0_8px_rgba(255,105,97,0.5)]'}`} />
                     </td>
-                    <td className="px-4 py-4 text-center text-xs font-bold text-slate-400">{router.api_port || 8728}</td>
+                    <td className="px-4 py-4 text-center text-xs font-bold text-slate-700">{router.api_port || 8728}</td>
                     <td className="px-4 py-4 text-center">
                       <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-tighter ${
                         router.sstp_active 
@@ -2822,7 +2822,7 @@ const MikroTikManagement: React.FC = () => {
                         {router.sstp_active ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-center font-mono text-[10px] font-bold text-slate-500">
+                    <td className="px-4 py-4 text-center font-mono text-[10px] font-bold text-slate-700">
                       {router.vpn_ip || '-'}
                     </td>
                     <td className="px-4 py-4 text-right">
