@@ -301,7 +301,7 @@ class Client(db.Model):
             'username': self.pppoe_username,
             'connection_type': self.connection_type,
             'pppoe_username': self.pppoe_username,
-            'pppoe_password': self.pppoe_password,
+            'pppoe_password': '••••••••' if self.pppoe_password else None,
             'remote_address_pppoe': self.remote_address_pppoe,
             'local_address_pppoe': self.local_address_pppoe,
             'latitude': self.latitude,
@@ -346,11 +346,23 @@ class Client(db.Model):
             'router_id': self.router_id,
             'router_name': self.router.name if self.router else None,
             'tenant_id': self.tenant_id,
-            'status': getattr(self, '_status', 'active'),
+            'status': self._derive_status(),
             'portal_access': self.user_id is not None,
             'email': self.user.email if self.user else None,
             'lan_interface': self.remote_address_pppoe,
         }
+
+    def _derive_status(self) -> str:
+        """Derive client status from associated subscriptions."""
+        if hasattr(self, '_status') and self._status:
+            return self._status
+        if self.subscriptions:
+            latest = max(self.subscriptions, key=lambda s: s.updated_at or s.created_at or datetime.min)
+            if latest.status in ('suspended', 'cancelled'):
+                return latest.status
+            if latest.status == 'past_due':
+                return 'past_due'
+        return 'active'
 
 
 class Plan(db.Model):
@@ -1412,14 +1424,12 @@ class PlanDiscount(db.Model):
         }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Agregar relaciones nuevas a modelos existentes
-# ─────────────────────────────────────────────────────────────────────────────
-
-Tenant.network_nodes = db.relationship('NetworkNode', back_populates='tenant')
-Plan.bandwidth_reuse = db.relationship('PlanBandwidthReuse', back_populates='plan', uselist=False)
-Plan.discounts = db.relationship('PlanDiscount', back_populates='plan')
-Client.network_profile = db.relationship('ClientNetworkProfile', back_populates='client', uselist=False, cascade='all, delete-orphan')
+# NOTE: All model relationships are now defined inside their respective classes.
+# The following legacy re-declarations have been removed to avoid confusion:
+#   - Tenant.network_nodes (defined in class Tenant, L75)
+#   - Plan.bandwidth_reuse (defined in class Plan, L372)
+#   - Plan.discounts (defined in class Plan, L373)
+#   - Client.network_profile (defined in class Client, L288)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -184,8 +184,10 @@ class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
     # Use environment variables in production
-    # Tokens más longevos para evitar expiraciones frecuentes en portal admin
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=7)
+    # Tokens con expiración razonable para producción:
+    # Access token: 4 horas (balance entre seguridad y usabilidad)
+    # Refresh token: 30 días (para re-autenticación automática)
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=4)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
 
     # Environment-provided production values (validated at runtime)

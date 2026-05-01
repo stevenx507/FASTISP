@@ -288,16 +288,18 @@ class MikroTikService:
                 return True
             
             # Configure burst if available
-            if plan.burst_download and plan.burst_upload:
+            burst_download = getattr(plan, 'burst_download', None)
+            burst_upload = getattr(plan, 'burst_upload', None)
+            if burst_download and burst_upload:
                 queue_api.add(
                     name=f"client_{client.id}",
                     target=target,
-                    max_limit=f"{plan.download_speed}M/{plan.upload_speed}M",
+                    max_limit=f"{plan.upload_speed}M/{plan.download_speed}M",
                     comment=f"Cliente: {client.full_name} - Plan: {plan.name}"
                 )
                 queue_api.set(
-                    **{"burst-limit": f"{plan.burst_download}M/{plan.burst_upload}M",
-                       "burst-threshold": f"{plan.download_speed * 0.8}M/{plan.upload_speed * 0.8}M",
+                    **{"burst-limit": f"{burst_upload}M/{burst_download}M",
+                       "burst-threshold": f"{int(plan.upload_speed * 0.8)}M/{int(plan.download_speed * 0.8)}M",
                        "burst-time": "30s"},
                     name=f"client_{client.id}"
                 )
@@ -305,7 +307,7 @@ class MikroTikService:
                 queue_api.add(
                     name=f"client_{client.id}",
                     target=target,
-                    max_limit=f"{plan.download_speed}M/{plan.upload_speed}M",
+                    max_limit=f"{plan.upload_speed}M/{plan.download_speed}M",
                     comment=f"Cliente: {client.full_name} - Plan: {plan.name}"
                 )
             
@@ -563,6 +565,31 @@ class MikroTikService:
         except Exception as e:
             logger.error(f"Unexpected error configuring gaming optimization: {e}")
             return False
+
+    def _configure_voip_optimization(self, client: Client) -> bool:
+        """Configure VoIP traffic optimization (QoS priority for SIP/RTP)."""
+        try:
+            mangle_api = self.api.get_resource('/ip/firewall/mangle')
+
+            # Mark SIP signaling traffic
+            mangle_api.add(
+                chain="prerouting",
+                src_address=client.ip_address,
+                protocol="udp",
+                dst_port="5060-5061,10000-20000",
+                action="mark-packet",
+                new_packet_mark="voip_traffic",
+                passthrough="yes",
+                comment=f"VoIP optimization: {client.full_name}"
+            )
+
+            return True
+        except RouterOsApiError as e:
+            logger.error(f"MikroTik API error configuring VoIP optimization: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error configuring VoIP optimization: {e}")
+            return False
     
     # ==================== CLIENT MANAGEMENT ====================
     
@@ -742,7 +769,7 @@ class MikroTikService:
             if queue_api.get(name=name):
                 return {'success': False, 'error': f"Queue with name '{name}' already exists."}
 
-            max_limit = f"{upload_speed}M/{download_speed}M"
+            max_limit = f"{upload_speed}M/{download_speed}M"  # RouterOS format: upload/download
             
             # The 'add' command returns a dict with the new item's ID, e.g., {'id': '*C'}
             new_queue_ref = queue_api.add(
