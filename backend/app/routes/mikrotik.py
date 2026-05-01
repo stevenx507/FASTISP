@@ -13,7 +13,7 @@ from app.services.monitoring_service import monitoring_service
 from app.services.snmp_service import SNMPRuntimeUnavailable, snmp_service
 from app.tenancy import current_tenant_id, tenant_access_allowed
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 import ipaddress
 import io
