@@ -113,7 +113,7 @@ try:
         "server_ip": SSTP_LOCAL_ADDRESS,
         "client_ip": SSTP_POOL_START,
         "router_name": "test-router-diag",
-        "provisioned_at": datetime.utcnow().isoformat(),
+        "provisioned_at": datetime.now(timezone.utc).isoformat(),
     }
     script = generate_mikrotik_sstp_script(fake_prov)
 

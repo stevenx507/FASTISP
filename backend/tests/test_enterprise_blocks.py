@@ -173,7 +173,7 @@ def test_maintenance_windows_can_silence_router_alerts(client, app):
     baseline_payload = baseline.get_json()
     assert any(alert['severity'] == 'critical' for alert in baseline_payload['alerts'])
 
-    now = datetime.utcnow().replace(microsecond=0)
+    now = datetime.now(timezone.utc).replace(microsecond=0)
     create_window = client.post(
         '/api/admin/network/maintenance',
         json={

@@ -199,7 +199,7 @@ class SNMPService:
             "profile": self.sanitize_profile(normalized),
             "health_metrics": health_metrics,
             "interfaces": interfaces,
-            "polled_at": datetime.utcnow().isoformat() + "Z",
+            "polled_at": datetime.now(timezone.utc).isoformat() + "Z",
             "source": "snmp",
             "runtime_available": True,
         }
@@ -308,7 +308,7 @@ class SNMPService:
             "message": str(payload.get("message") or "SNMP trap recibido").strip() or "SNMP trap recibido",
             "trap_oid": _normalize_oid(payload.get("trap_oid")),
             "device_id": str(payload.get("device_id") or "").strip(),
-            "received_at": str(payload.get("received_at") or datetime.utcnow().isoformat() + "Z").strip(),
+            "received_at": str(payload.get("received_at") or datetime.now(timezone.utc).isoformat() + "Z").strip(),
             "raw": payload.get("raw"),
         }
         return event

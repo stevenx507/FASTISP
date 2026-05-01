@@ -52,7 +52,7 @@ class Tenant(db.Model):
     max_routers = db.Column(db.Integer, nullable=False, default=3)
     max_clients = db.Column(db.Integer, nullable=False, default=300)
     trial_ends_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     # --- SaaS Branding (Marca Blanca) ---
     brand_name = db.Column(db.String(120), nullable=True)
@@ -105,7 +105,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='client')  # 'client' or 'admin'
     name = db.Column(db.String(120), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True)
     mfa_enabled = db.Column(db.Boolean, default=False, nullable=False)
     mfa_secret = db.Column(db.String(128))
@@ -159,8 +159,8 @@ class Subscription(db.Model):
     method = db.Column(db.String(30), nullable=False, default='manual')
     client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), index=True)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     client = db.relationship('Client', back_populates='subscriptions')
     invoices = db.relationship('Invoice', back_populates='subscription', cascade="all, delete-orphan")
 
@@ -189,7 +189,7 @@ class TrafficHistory(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), index=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     download_bytes = db.Column(db.BigInteger, default=0)
     upload_bytes = db.Column(db.BigInteger, default=0)
     download_speed = db.Column(db.Float, default=0) # Mbps
@@ -226,6 +226,9 @@ class Client(db.Model):
     remote_address_pppoe  = db.Column(db.String(45),  nullable=True)
     local_address_pppoe   = db.Column(db.String(45),  nullable=True)
     sectorial_nap         = db.Column(db.String(80),  nullable=True)
+    
+    # ── Datos de Estado ─────────────────────────────────────────────────────
+    status = db.Column(db.String(20), default='active', nullable=False) # active, suspended, cancelled
 
     # ── Datos del Cliente ───────────────────────────────────────────────────
     apellido              = db.Column(db.String(80),  nullable=True)
@@ -354,8 +357,8 @@ class Client(db.Model):
 
     def _derive_status(self) -> str:
         """Derive client status from associated subscriptions."""
-        if hasattr(self, '_status') and self._status:
-            return self._status
+        if self.status and self.status != 'active':
+            return self.status
         if self.subscriptions:
             latest = max(self.subscriptions, key=lambda s: s.updated_at or s.created_at or datetime.min)
             if latest.status in ('suspended', 'cancelled'):
@@ -502,7 +505,7 @@ class AuditLog(db.Model):
     # "metadata" is reserved in SQLAlchemy Declarative; keep column name but expose as meta
     meta = db.Column('metadata', db.JSON, nullable=True)
     ip_address = db.Column(db.String(64), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     user = db.relationship('User')
     tenant = db.relationship('Tenant')
@@ -534,8 +537,8 @@ class Ticket(db.Model):
     priority = db.Column(db.String(20), default='medium', nullable=False)  # low, medium, high, urgent
     assigned_to = db.Column(db.String(120), nullable=True)
     sla_due_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     tenant = db.relationship('Tenant', back_populates='tickets')
     user = db.relationship('User', back_populates='tickets')
@@ -565,7 +568,7 @@ class TicketComment(db.Model):
     ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id'), index=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     comment = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     ticket = db.relationship('Ticket', back_populates='comments')
     user = db.relationship('User')
@@ -593,8 +596,8 @@ class Invoice(db.Model):
     status = db.Column(db.String(20), nullable=False, default='pending')  # pending, paid, cancelled
     due_date = db.Column(db.Date, nullable=False)
     country = db.Column(db.String(4), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     subscription = db.relationship('Subscription', back_populates='invoices')
     payments = db.relationship('PaymentRecord', back_populates='invoice', cascade="all, delete-orphan")
@@ -626,7 +629,7 @@ class PaymentRecord(db.Model):
     currency = db.Column(db.String(8), nullable=False, default='USD')
     status = db.Column(db.String(20), nullable=False, default='pending')  # pending, paid, failed
     meta = db.Column('metadata', db.JSON, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     invoice = db.relationship('Invoice', back_populates='payments')
 
@@ -673,8 +676,8 @@ class AdminInstallation(db.Model):
     updated_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     updated_by_name = db.Column(db.String(160), nullable=True)
     updated_by_email = db.Column(db.String(160), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     def to_dict(self):
         return {
@@ -725,8 +728,8 @@ class AdminScreenAlert(db.Model):
     updated_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     updated_by_name = db.Column(db.String(160), nullable=True)
     updated_by_email = db.Column(db.String(160), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     def to_dict(self):
         return {
@@ -770,8 +773,8 @@ class AdminExtraService(db.Model):
     updated_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     updated_by_name = db.Column(db.String(160), nullable=True)
     updated_by_email = db.Column(db.String(160), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     def to_dict(self):
         return {
@@ -815,8 +818,8 @@ class AdminHotspotVoucher(db.Model):
     updated_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     updated_by_name = db.Column(db.String(160), nullable=True)
     updated_by_email = db.Column(db.String(160), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     __table_args__ = (
         db.UniqueConstraint('tenant_id', 'code', name='uq_hotspot_voucher_tenant_code'),
@@ -854,7 +857,7 @@ class AdminSystemSetting(db.Model):
     key = db.Column(db.String(120), nullable=False)
     value = db.Column(db.JSON, nullable=True)
     updated_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     __table_args__ = (
         db.UniqueConstraint('tenant_id', 'key', name='uq_admin_system_settings_tenant_key'),
@@ -905,7 +908,7 @@ class RolePermission(db.Model):
     permission = db.Column(db.String(120), nullable=False, index=True)
     allowed = db.Column(db.Boolean, nullable=False, default=True)
     updated_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     __table_args__ = (
         db.UniqueConstraint('tenant_id', 'role', 'permission', name='uq_role_permissions_tenant_role_perm'),
@@ -935,7 +938,7 @@ class BillingPromise(db.Model):
     notes = db.Column(db.Text, nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     resolved_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     resolved_at = db.Column(db.DateTime, nullable=True)
 
     subscription = db.relationship('Subscription')
@@ -968,7 +971,7 @@ class NocMaintenanceWindow(db.Model):
     mute_alerts = db.Column(db.Boolean, nullable=False, default=True)
     note = db.Column(db.Text, nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     def to_dict(self):
         return {
@@ -1085,7 +1088,7 @@ class InventoryMovement(db.Model):
     notes = db.Column(db.Text, nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     product = db.relationship('Product', back_populates='inventory_movements')
     user = db.relationship('User')
@@ -1136,8 +1139,8 @@ class NetworkNode(db.Model):
     notes = db.Column(db.Text, nullable=True)
     installed_at = db.Column(db.DateTime, nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     tenant = db.relationship('Tenant', back_populates='network_nodes')
     parent = db.relationship('NetworkNode', remote_side=[id], backref='children')
@@ -1192,8 +1195,8 @@ class PlanBandwidthReuse(db.Model):
     last_active_clients = db.Column(db.Integer, nullable=True)
     last_effective_down = db.Column(db.Integer, nullable=True)  # Mbps efectivos tras reuso
     last_effective_up = db.Column(db.Integer, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     plan = db.relationship('Plan', back_populates='bandwidth_reuse')
 
@@ -1233,7 +1236,7 @@ class ClientDebtQuery(db.Model):
     document_number = db.Column(db.String(30), nullable=False, index=True)
     ip_address = db.Column(db.String(64), nullable=True)
     result_found = db.Column(db.Boolean, nullable=False, default=False)
-    queried_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    queried_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     def to_dict(self):
         return {
@@ -1297,8 +1300,8 @@ class ClientNetworkProfile(db.Model):
     technical_notes = db.Column(db.Text, nullable=True)
     internal_emails = db.Column(db.JSON, nullable=True)  # lista de correos internos
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     client = db.relationship('Client', back_populates='network_profile')
     splitter = db.relationship('NetworkNode', foreign_keys=[splitter_id])
@@ -1360,8 +1363,8 @@ class RemoteNatRule(db.Model):
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     mikrotik_rule_id = db.Column(db.String(20), nullable=True)  # ID de la regla en RouterOS
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     router = db.relationship('MikroTikRouter')
 
@@ -1404,7 +1407,7 @@ class PlanDiscount(db.Model):
     valid_from = db.Column(db.Date, nullable=True)
     valid_until = db.Column(db.Date, nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     plan = db.relationship('Plan', back_populates='discounts')
 
@@ -1453,7 +1456,7 @@ class SstpTunnel(db.Model):
     server_port = db.Column(db.Integer, nullable=False, default=443)
     status = db.Column(db.String(20), nullable=False, default='active')
     last_seen = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     revoked_at = db.Column(db.DateTime, nullable=True)
     notes = db.Column(db.Text, nullable=True)
 
@@ -1518,7 +1521,7 @@ class TrafficFlowStats(db.Model):
     bytes_total   = db.Column(db.BigInteger, nullable=False, default=0)
     packets_total = db.Column(db.BigInteger, nullable=False, default=0)
     bucket        = db.Column(db.DateTime, nullable=False)
-    created_at    = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     router = db.relationship('MikroTikRouter')
     tenant = db.relationship('Tenant')
@@ -1556,7 +1559,7 @@ class ProductUnit(db.Model):
     notes = db.Column(db.Text, nullable=True)
 
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     product = db.relationship('Product', back_populates='units')
     tenant = db.relationship('Tenant', back_populates='product_units')
@@ -1591,7 +1594,7 @@ class NapBox(db.Model):
     status = db.Column(db.String(20), default='active', nullable=False)
     notes = db.Column(db.Text, nullable=True)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     tenant = db.relationship('Tenant', back_populates='nap_boxes')
 
@@ -1620,7 +1623,7 @@ class FiberLine(db.Model):
     fiber_type = db.Column(db.String(50), nullable=True)
     status = db.Column(db.String(20), default='active', nullable=False)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     tenant = db.relationship('Tenant', back_populates='fiber_lines')
 
@@ -1647,7 +1650,7 @@ class Partner(db.Model):
     contact_phone = db.Column(db.String(30))
     commission_percentage = db.Column(db.Float, default=10.0)
     status = db.Column(db.String(20), default='active')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = db.relationship('User', backref=db.backref('partner_profile', uselist=False))
     tenant = db.relationship('Tenant', backref='partners')
@@ -1671,7 +1674,7 @@ class PartnerCommission(db.Model):
     invoice_id = db.Column(db.Integer, db.ForeignKey('invoices.id'))
     amount = db.Column(db.Numeric(10, 2))
     status = db.Column(db.String(20), default='pending') # pending, paid
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     partner = db.relationship('Partner', backref='commissions')
     client = db.relationship('Client')

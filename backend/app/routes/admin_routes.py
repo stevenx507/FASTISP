@@ -133,7 +133,7 @@ def _tenant_default_trial_days() -> int:
 
 
 def _tenant_default_trial_ends_at() -> datetime:
-    return datetime.utcnow() + timedelta(days=_tenant_default_trial_days())
+    return datetime.now(timezone.utc) + timedelta(days=_tenant_default_trial_days())
 
 
 def _password_reset_token_ttl_seconds() -> int:
@@ -301,7 +301,7 @@ def _prune_backup_directory(retention_days: int, base: Path | None = None) -> di
     if not backup_dir.exists():
         return {
             "retention_days": safe_days,
-            "cutoff": (datetime.utcnow() - timedelta(days=safe_days)).isoformat(),
+            "cutoff": (datetime.now(timezone.utc) - timedelta(days=safe_days)).isoformat(),
             "scanned": 0,
             "removed": 0,
             "failed": 0,
@@ -309,7 +309,7 @@ def _prune_backup_directory(retention_days: int, base: Path | None = None) -> di
             "errors": [],
         }
 
-    cutoff = datetime.utcnow() - timedelta(days=safe_days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=safe_days)
     scanned = 0
     removed = 0
     failed = 0
@@ -719,12 +719,12 @@ def _save_system_settings_overrides_db(tenant_id, overrides: dict, updated_by=No
                 key=key_name,
                 value=value,
                 updated_by=updated_by,
-                updated_at=datetime.utcnow(),
+                updated_at=datetime.now(timezone.utc),
             )
         else:
             row.value = value
             row.updated_by = updated_by
-            row.updated_at = datetime.utcnow()
+            row.updated_at = datetime.now(timezone.utc)
         db.session.add(row)
     db.session.commit()
 
@@ -747,12 +747,12 @@ def _upsert_system_setting_value(tenant_id, key_name: str, value, updated_by=Non
             key=key_name,
             value=value,
             updated_by=updated_by,
-            updated_at=datetime.utcnow(),
+            updated_at=datetime.now(timezone.utc),
         )
     else:
         row.value = value
         row.updated_by = updated_by
-        row.updated_at = datetime.utcnow()
+        row.updated_at = datetime.now(timezone.utc)
     db.session.add(row)
     db.session.commit()
 
@@ -875,7 +875,7 @@ def _is_permission_allowed(user: User | None, permission: str, tenant_id) -> boo
 
 
 def _iso_utc_now() -> str:
-    return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat() + "Z"
 
 
 def _actor_default_name(actor_id) -> str:
@@ -1368,7 +1368,7 @@ def _build_network_alert_items(tenant_id) -> list[dict]:
             }
         )
 
-    now_dt = datetime.utcnow()
+    now_dt = datetime.now(timezone.utc)
     active_windows = (
         _tenant_scoped_query(NocMaintenanceWindow, tenant_id)
         .filter(
@@ -1419,7 +1419,7 @@ def _build_network_health_payload(tenant_id) -> dict:
         "olt_alert": 1,
         "latency_ms": 12 + routers_down,
         "packet_loss": round(0.2 + routers_down * 0.3, 2),
-        "last_updated": datetime.utcnow().isoformat(),
+        "last_updated": datetime.now(timezone.utc).isoformat(),
         "source": "fallback",
     }
 
@@ -1485,7 +1485,7 @@ def _build_client_notifications(user: User, tenant_id) -> list[dict]:
             }
         )
 
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     invoices = _get_user_invoice_items(user, tenant_id)
     overdue = 0
     pending = 0
@@ -2029,7 +2029,7 @@ def _apply_network_action_to_client(client: Client, action: str) -> tuple[bool, 
 def _installation_model_from_entry(entry: dict, tenant_id) -> AdminInstallation:
     scheduled_for = _parse_iso_datetime(entry.get("scheduled_for"))
     completed_at = _parse_iso_datetime(entry.get("completed_at"))
-    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.utcnow()
+    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
     updated_at = _parse_iso_datetime(entry.get("updated_at")) or created_at
     return AdminInstallation(
         id=str(entry.get("id") or secrets.token_hex(8)),
@@ -2062,7 +2062,7 @@ def _installation_model_from_entry(entry: dict, tenant_id) -> AdminInstallation:
 def _screen_alert_model_from_entry(entry: dict, tenant_id) -> AdminScreenAlert:
     starts_at = _parse_iso_datetime(entry.get("starts_at"))
     ends_at = _parse_iso_datetime(entry.get("ends_at"))
-    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.utcnow()
+    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
     updated_at = _parse_iso_datetime(entry.get("updated_at")) or created_at
     return AdminScreenAlert(
         id=str(entry.get("id") or secrets.token_hex(8)),
@@ -2088,7 +2088,7 @@ def _screen_alert_model_from_entry(entry: dict, tenant_id) -> AdminScreenAlert:
 
 
 def _extra_service_model_from_entry(entry: dict, tenant_id) -> AdminExtraService:
-    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.utcnow()
+    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
     updated_at = _parse_iso_datetime(entry.get("updated_at")) or created_at
     return AdminExtraService(
         id=str(entry.get("id") or secrets.token_hex(8)),
@@ -2114,7 +2114,7 @@ def _extra_service_model_from_entry(entry: dict, tenant_id) -> AdminExtraService
 def _hotspot_voucher_model_from_entry(entry: dict, tenant_id) -> AdminHotspotVoucher:
     expires_at = _parse_iso_datetime(entry.get("expires_at"))
     used_at = _parse_iso_datetime(entry.get("used_at"))
-    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.utcnow()
+    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
     updated_at = _parse_iso_datetime(entry.get("updated_at")) or created_at
     return AdminHotspotVoucher(
         id=str(entry.get("id") or secrets.token_hex(8)),
@@ -2153,7 +2153,7 @@ def _default_installations(tenant_id) -> list[dict]:
         technicians = ["pendiente@ispfast.local"]
 
     statuses = ["pending", "scheduled", "in_progress", "completed"]
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     system_actor = {"id": None, "name": "system", "email": None}
     items: list[dict] = []
     for index, client in enumerate(clients, start=1):
@@ -2376,7 +2376,7 @@ def _cleanup_leases_for_tenant(tenant_id) -> dict:
         )
         for promise in expired_promises:
             promise.status = 'broken'
-            promise.resolved_at = datetime.utcnow()
+            promise.resolved_at = datetime.now(timezone.utc)
             db.session.add(promise)
             promises_marked_broken += 1
 
@@ -2407,7 +2407,7 @@ def _cleanup_leases_for_tenant(tenant_id) -> dict:
             ).all()
             for promise in kept_promises:
                 promise.status = 'kept'
-                promise.resolved_at = datetime.utcnow()
+                promise.resolved_at = datetime.now(timezone.utc)
                 db.session.add(promise)
                 promises_marked_kept += 1
 
@@ -2936,7 +2936,7 @@ def _execute_system_job(job: str, tenant_id) -> tuple[str, dict]:
 
 
 def _run_system_job_request(job: str, tenant_id, requested_by) -> tuple[dict, int]:
-    started_at = datetime.utcnow().replace(microsecond=0)
+    started_at = datetime.now(timezone.utc).replace(microsecond=0)
     entry = {
         "id": secrets.token_hex(8),
         "job": job,
@@ -2946,7 +2946,7 @@ def _run_system_job_request(job: str, tenant_id, requested_by) -> tuple[dict, in
     }
 
     status, result = _execute_system_job(job, tenant_id)
-    finished_at = datetime.utcnow().replace(microsecond=0)
+    finished_at = datetime.now(timezone.utc).replace(microsecond=0)
     entry["status"] = status
     entry["finished_at"] = finished_at.isoformat()
     entry["result"] = result
@@ -2996,7 +2996,7 @@ def _ops_score_from_checks(checks: list[dict]) -> int:
 
 
 def _sla_due(priority: str) -> datetime:
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if priority == 'urgent':
         return now + timedelta(hours=2)
     if priority == 'high':
@@ -3770,7 +3770,7 @@ def backup_db():
     """Ejecuta pg_dump y guarda en el directorio configurado."""
     tenant_id = current_tenant_id()
     base = _ensure_backup_dir()
-    ts = datetime.utcnow().strftime('%Y%m%d-%H%M%S')
+    ts = datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')
     backup_name = f"db-backup-{ts}.sql"
     file_path = base / backup_name
     database_url = (
@@ -4341,7 +4341,7 @@ def admin_permissions_upsert():
         )
     row.allowed = bool(allowed)
     row.updated_by = actor_id
-    row.updated_at = datetime.utcnow()
+    row.updated_at = datetime.now(timezone.utc)
     db.session.add(row)
     db.session.commit()
 
@@ -4436,7 +4436,7 @@ def admin_notifications_send():
 @permission_required('billing.read')
 def admin_finance_summary():
     tenant_id = current_tenant_id()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     today = now.date()
 
     subscriptions_query = Subscription.query
@@ -4654,7 +4654,7 @@ def admin_payments_review(payment_id):
 def admin_network_maintenance_list():
     tenant_id = current_tenant_id()
     status_filter = str(request.args.get('status') or '').strip().lower()
-    now_dt = datetime.utcnow()
+    now_dt = datetime.now(timezone.utc)
     query = _tenant_scoped_query(NocMaintenanceWindow, tenant_id)
     rows = query.order_by(NocMaintenanceWindow.starts_at.desc()).limit(200).all()
     items = []
@@ -4826,7 +4826,7 @@ def admin_installations_create():
         except Exception:
             return jsonify({"error": "scheduled_for debe ser ISO date-time"}), 400
     else:
-        scheduled_for = datetime.utcnow().replace(microsecond=0) + timedelta(days=1)
+        scheduled_for = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=1)
 
     entry = {
         "id": secrets.token_hex(8),
@@ -4926,7 +4926,7 @@ def admin_installations_update(installation_id):
     record.updated_by_name = entry.get('updated_by_name')
     record.updated_by_email = entry.get('updated_by_email')
     record.created_at = _parse_iso_datetime(entry.get('created_at')) or record.created_at
-    record.updated_at = _parse_iso_datetime(entry.get('updated_at')) or datetime.utcnow()
+    record.updated_at = _parse_iso_datetime(entry.get('updated_at')) or datetime.now(timezone.utc)
     db.session.add(record)
     db.session.commit()
     _save_cached_list(_installations_key(tenant_id), [record.to_dict()], max_items=400)
@@ -5072,7 +5072,7 @@ def admin_screen_alerts_update(alert_id):
     record.updated_by_name = entry.get('updated_by_name')
     record.updated_by_email = entry.get('updated_by_email')
     record.created_at = _parse_iso_datetime(entry.get('created_at')) or record.created_at
-    record.updated_at = _parse_iso_datetime(entry.get('updated_at')) or datetime.utcnow()
+    record.updated_at = _parse_iso_datetime(entry.get('updated_at')) or datetime.now(timezone.utc)
     db.session.add(record)
     db.session.commit()
     _save_cached_list(_screen_alerts_key(tenant_id), [record.to_dict()], max_items=400)
@@ -5195,7 +5195,7 @@ def admin_extra_services_update(service_id):
     record.updated_by_name = entry.get('updated_by_name')
     record.updated_by_email = entry.get('updated_by_email')
     record.created_at = _parse_iso_datetime(entry.get('created_at')) or record.created_at
-    record.updated_at = _parse_iso_datetime(entry.get('updated_at')) or datetime.utcnow()
+    record.updated_at = _parse_iso_datetime(entry.get('updated_at')) or datetime.now(timezone.utc)
     db.session.add(record)
     db.session.commit()
     _save_cached_list(_extra_services_key(tenant_id), [record.to_dict()], max_items=300)
@@ -5259,7 +5259,7 @@ def admin_hotspot_vouchers_create():
     data_limit_mb = max(0, int(data.get('data_limit_mb') or 0))
     price = round(float(data.get('price') or 0), 2)
     expires_days = max(1, int(data.get('expires_days') or 7))
-    now = datetime.utcnow().replace(microsecond=0)
+    now = datetime.now(timezone.utc).replace(microsecond=0)
 
     key = _hotspot_vouchers_key(tenant_id)
     items = []
@@ -5338,7 +5338,7 @@ def admin_hotspot_vouchers_update(voucher_id):
     record.updated_by_name = entry.get('updated_by_name')
     record.updated_by_email = entry.get('updated_by_email')
     record.created_at = _parse_iso_datetime(entry.get('created_at')) or record.created_at
-    record.updated_at = _parse_iso_datetime(entry.get('updated_at')) or datetime.utcnow()
+    record.updated_at = _parse_iso_datetime(entry.get('updated_at')) or datetime.now(timezone.utc)
     db.session.add(record)
     db.session.commit()
     _save_cached_list(_hotspot_vouchers_key(tenant_id), [record.to_dict()], max_items=1000)
@@ -5824,7 +5824,7 @@ def admin_ops_slo_summary():
     except (TypeError, ValueError):
         days = 7
     days = max(1, min(days, 30))
-    since = datetime.utcnow() - timedelta(days=days)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
 
     routers_q = MikroTikRouter.query
     if tenant_id is not None:
@@ -5950,7 +5950,7 @@ def admin_ops_collections_summary():
 @permission_required('tickets.read')
 def admin_ops_support_sla_summary():
     tenant_id = current_tenant_id()
-    now_dt = datetime.utcnow()
+    now_dt = datetime.now(timezone.utc)
     tickets_q = Ticket.query
     if tenant_id is not None:
         tickets_q = tickets_q.filter_by(tenant_id=tenant_id)
@@ -6563,9 +6563,9 @@ def admin_inventory_reports_movements_summary():
     end_date = _parse_iso_datetime(request.args.get('end_date'))
 
     if not start_date:
-        start_date = datetime.utcnow().replace(day=1)  # First day of current month
+        start_date = datetime.now(timezone.utc).replace(day=1)  # First day of current month
     if not end_date:
-        end_date = datetime.utcnow()
+        end_date = datetime.now(timezone.utc)
 
     query = _tenant_scoped_query(InventoryMovement, tenant_id)
     query = query.filter(InventoryMovement.created_at >= start_date, InventoryMovement.created_at <= end_date)

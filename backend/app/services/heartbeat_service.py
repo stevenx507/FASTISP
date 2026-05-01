@@ -109,7 +109,7 @@ def check_router_connectivity(router) -> dict:
         method = "no_ip_configured"
 
     # Actualizar last_seen en BD si está online
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if status == "online":
         try:
             router.last_seen = now
@@ -182,7 +182,7 @@ def run_heartbeat_check() -> dict:
         "online": online,
         "offline": offline,
         "unknown": unknown,
-        "checked_at": datetime.utcnow().isoformat(),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
     }
     logger.info(f"Heartbeat check: {summary}")
     return summary
@@ -223,7 +223,7 @@ def _trigger_offline_alert(router, check_result: dict) -> None:
             severity='critical',
             audience='admin',
             status='active',
-            starts_at=datetime.utcnow(),
+            starts_at=datetime.now(timezone.utc),
         )
         db.session.add(alert)
         db.session.commit()
@@ -256,7 +256,7 @@ def get_connectivity_dashboard() -> dict:
     from app.models import MikroTikRouter
 
     routers = MikroTikRouter.query.all()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     dashboard = []
 
     for router in routers:
@@ -318,7 +318,7 @@ def record_heartbeat_from_mikrotik(router_id: int, vpn_ip: str = None) -> dict:
     if not router:
         return {"success": False, "error": "Router no encontrado"}
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     router.last_seen = now
     router.is_active = True
 

@@ -111,7 +111,7 @@ class BandwidthReuseService:
         config.queue_algorithm = queue_algorithm
         config.parent_queue_name = parent_queue_name
         config.auto_adjust = auto_adjust
-        config.updated_at = datetime.utcnow()
+        config.updated_at = datetime.now(timezone.utc)
         db.session.commit()
         return {"success": True, "config": config.to_dict()}
 
@@ -211,7 +211,7 @@ class BandwidthReuseService:
         config.last_active_clients = active_clients
         config.last_effective_down = eff_down
         config.last_effective_up = eff_up
-        config.last_adjusted_at = datetime.utcnow()
+        config.last_adjusted_at = datetime.now(timezone.utc)
         db.session.commit()
 
         result["success"] = len(result["errors"]) == 0

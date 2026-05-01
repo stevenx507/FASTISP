@@ -10,7 +10,9 @@ def _as_bool(raw_value: str | None, default: bool = False) -> bool:
         return default
     return raw_value.strip().lower() in {'1', 'true', 'yes', 'y', 'on'}
 
-DEV_ENCRYPTION_KEY = "itTQ-n1WYoDTC_iw8glZpwkfxAknjNtz85t-6xeUkso="
+import secrets
+
+DEV_ENCRYPTION_KEY = secrets.token_urlsafe(32)
 
 
 def _split_csv(raw_value: str) -> list[str]:

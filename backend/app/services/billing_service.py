@@ -104,12 +104,12 @@ class BillingService:
             method='stripe',
             transaction_id=session.get('id'),
             tenant_id=invoice.tenant_id,
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
         db.session.add(payment)
         
         invoice.status = 'paid'
-        invoice.paid_at = datetime.utcnow()
+        invoice.paid_at = datetime.now(timezone.utc)
         
         # Verificar si el cliente tiene otras deudas
         client = invoice.client
@@ -162,7 +162,7 @@ class BillingService:
                     status='pending',
                     due_date=today + timedelta(days=5),
                     currency='USD',
-                    created_at=datetime.utcnow()
+                    created_at=datetime.now(timezone.utc)
                 )
                 db.session.add(invoice)
                 count += 1

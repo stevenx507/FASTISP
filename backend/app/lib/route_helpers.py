@@ -223,7 +223,7 @@ def tenant_default_trial_days() -> int:
 
 
 def tenant_default_trial_ends_at() -> datetime:
-    return datetime.utcnow() + timedelta(days=tenant_default_trial_days())
+    return datetime.now(timezone.utc) + timedelta(days=tenant_default_trial_days())
 
 
 def password_reset_token_ttl_seconds() -> int:

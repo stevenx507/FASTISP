@@ -228,7 +228,7 @@ class OLTScriptService:
         return next((item for item in self.devices if item.get("id") == device_id), None)
 
     def _utcnow_iso(self) -> str:
-        return datetime.utcnow().isoformat() + "Z"
+        return datetime.now(timezone.utc).isoformat() + "Z"
 
     def _to_bool(self, value: Any, default: bool = False) -> bool:
         if isinstance(value, bool):
@@ -629,7 +629,7 @@ class OLTScriptService:
             "success": True,
             "snapshot": {
                 "device_id": device_id,
-                "generated_at": datetime.utcnow().isoformat() + "Z",
+                "generated_at": datetime.now(timezone.utc).isoformat() + "Z",
                 "pon_total": None,
                 "pon_alert": None,
                 "onu_online": None,

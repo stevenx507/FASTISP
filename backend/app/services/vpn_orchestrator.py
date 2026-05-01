@@ -142,7 +142,7 @@ def on_router_created(router, mode: str = "native") -> dict:
         router.vpn_username = provisioning["username"]
         router.vpn_ip_address = provisioning["server_ip"]
         router.vpn_password_encrypted = _get_fernet().encrypt(provisioning["password"].encode("utf-8"))
-        router.vpn_provisioned_at = datetime.utcnow()
+        router.vpn_provisioned_at = datetime.now(timezone.utc)
         db.session.add(router)
         db.session.commit()
 
@@ -153,7 +153,7 @@ def on_router_created(router, mode: str = "native") -> dict:
             "vpn_password": provisioning["password"],
             "vpn_ip": provisioning["server_ip"],
             "sstp_url": f"sstp://{provisioning['server_host']}:{provisioning['server_port']}",
-            "provisioned_at": datetime.utcnow().isoformat(),
+            "provisioned_at": datetime.now(timezone.utc).isoformat(),
         }
 
     else:
@@ -169,7 +169,7 @@ def on_router_created(router, mode: str = "native") -> dict:
         router.vpn_username = vpn_username
         router.vpn_ip_address = vpn_ip
         router.vpn_password_encrypted = _get_fernet().encrypt(vpn_password.encode("utf-8"))
-        router.vpn_provisioned_at = datetime.utcnow()
+        router.vpn_provisioned_at = datetime.now(timezone.utc)
         db.session.add(router)
         db.session.commit()
 
@@ -182,7 +182,7 @@ def on_router_created(router, mode: str = "native") -> dict:
             "server_host": SSTP_SERVER_HOST,
             "server_port": SSTP_SERVER_PORT,
             "sstp_url": f"sstp://{SSTP_SERVER_HOST}:{SSTP_SERVER_PORT}",
-            "provisioned_at": datetime.utcnow().isoformat(),
+            "provisioned_at": datetime.now(timezone.utc).isoformat(),
         }
 
 
@@ -195,7 +195,7 @@ def on_router_deleted(router) -> bool:
     tunnel = SstpTunnel.query.filter_by(router_id=router.id, status='active').first()
     if tunnel:
         tunnel.status = 'revoked'
-        tunnel.revoked_at = datetime.utcnow()
+        tunnel.revoked_at = datetime.now(timezone.utc)
         db.session.add(tunnel)
 
     # Limpieza modo Hub

@@ -1943,11 +1943,11 @@ def _tenant_setting_upsert(key_name: str, value: Any, tenant_id: Any = _TENANT_S
             key=key_name,
             value=value,
             updated_by=None,
-            updated_at=datetime.utcnow(),
+            updated_at=datetime.now(timezone.utc),
         )
     else:
         row.value = value
-        row.updated_at = datetime.utcnow()
+        row.updated_at = datetime.now(timezone.utc)
     db.session.add(row)
     db.session.commit()
     return row
@@ -2207,8 +2207,8 @@ def _get_or_create_managed_bth_identity(
             'user_name': effective_user_name,
             'public_key': public_key,
             'private_key_encrypted': _encrypt_secret_value(private_key),
-            'created_at': str(raw_value.get('created_at') or datetime.utcnow().isoformat() + 'Z'),
-            'updated_at': datetime.utcnow().isoformat() + 'Z',
+            'created_at': str(raw_value.get('created_at') or datetime.now(timezone.utc).isoformat() + 'Z'),
+            'updated_at': datetime.now(timezone.utc).isoformat() + 'Z',
         }
         _tenant_setting_upsert(BTH_MANAGED_IDENTITY_SETTING_KEY, payload, tenant_id=tenant_id)
 
@@ -2433,11 +2433,11 @@ def _register_change(
     status: str,
     metadata: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
-    change_id = f"CHG-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6].upper()}"
+    change_id = f"CHG-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6].upper()}"
     entry = {
         'change_id': change_id,
         'router_id': str(router_id),
-        'created_at': datetime.utcnow().isoformat() + 'Z',
+        'created_at': datetime.now(timezone.utc).isoformat() + 'Z',
         'actor': actor,
         'category': category,
         'profile': profile,
@@ -4826,7 +4826,7 @@ def get_enterprise_snapshot(router_id):
         ]
 
         snapshot = {
-            'generated_at': datetime.utcnow().isoformat() + 'Z',
+            'generated_at': datetime.now(timezone.utc).isoformat() + 'Z',
             'router': router_info,
             'health_score': health_score,
             'issues': (health or {}).get('issues', []),
@@ -5014,7 +5014,7 @@ def rollback_enterprise_change(router_id, change_id):
 
         ok = bool(result.get('success'))
         entry['status'] = 'rolled-back' if ok else 'rollback-failed'
-        entry['rolled_back_at'] = datetime.utcnow().isoformat() + 'Z'
+        entry['rolled_back_at'] = datetime.now(timezone.utc).isoformat() + 'Z'
         entry['rolled_back_by'] = _resolve_actor_identity()
         entry['metadata'] = entry.get('metadata', {})
         entry['metadata']['manual_rollback_result'] = result
@@ -5111,7 +5111,7 @@ def run_enterprise_failover_test(router_id):
         return jsonify({
             'success': True,
             'report': {
-                'generated_at': datetime.utcnow().isoformat() + 'Z',
+                'generated_at': datetime.now(timezone.utc).isoformat() + 'Z',
                 'overall_status': overall_status,
                 'targets': probe_results
             }
@@ -5365,7 +5365,7 @@ def get_traffic_flow_stats():
         hours     = request.args.get('hours', 24, type=int)
         limit     = min(request.args.get('limit', 50, type=int), 200)
 
-        since = datetime.utcnow() - timedelta(hours=hours)
+        since = datetime.now(timezone.utc) - timedelta(hours=hours)
 
         q = TrafficFlowStats.query.filter(
             TrafficFlowStats.tenant_id == tid,
@@ -5428,7 +5428,7 @@ def get_router_traffic_flow_stats(router_id):
 
         hours = request.args.get('hours', 24, type=int)
         limit = min(request.args.get('limit', 50, type=int), 200)
-        since = datetime.utcnow() - timedelta(hours=hours)
+        since = datetime.now(timezone.utc) - timedelta(hours=hours)
 
         router = db.session.get(MikroTikRouter, router_id)
         if not router:

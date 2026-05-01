@@ -62,7 +62,7 @@ def suspend_client_by_ip(router_id: int, client_ip: str, client_name: str = "") 
         existing.add(
             list=DELINQUENT_LIST,
             address=client_ip,
-            comment=f"FASTISP-MOROSO: {client_name} - {datetime.utcnow().strftime('%Y-%m-%d')}",
+            comment=f"FASTISP-MOROSO: {client_name} - {datetime.now(timezone.utc).strftime('%Y-%m-%d')}",
             timeout=""  # Sin expiración automática
         )
 
@@ -481,7 +481,7 @@ def generate_onboarding_script(router_id: int, vpn_username: str, vpn_password: 
     return f"""# ============================================================
 # FASTISP — Script de Onboarding Completo
 # Router: {router_name}
-# Generado: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
+# Generado: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}
 # ============================================================
 
 # ── 1. Túnel SSTP hacia FASTISP ──────────────────────────

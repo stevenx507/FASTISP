@@ -209,7 +209,7 @@ def revoke_tunnel(tunnel_id):
     try:
         revoke_sstp_tunnel(tunnel.username)
         tunnel.status = 'revoked'
-        tunnel.revoked_at = datetime.utcnow()
+        tunnel.revoked_at = datetime.now(timezone.utc)
         db.session.commit()
         return jsonify({'message': f'Tunel {tunnel.username} revocado exitosamente'})
     except Exception as e:
@@ -251,7 +251,7 @@ def regenerate_tunnel(tunnel_id):
             'client_ip': tunnel.client_ip,
             'fingerprint': get_certificate_fingerprint(),
             'router_name': tunnel.router.name if tunnel.router else 'mikrotik',
-            'provisioned_at': datetime.utcnow().isoformat(),
+            'provisioned_at': datetime.now(timezone.utc).isoformat(),
         }
         try:
             api_result = provision_sstp_tunnel_api(tunnel.router or tunnel, provisioning=prov)

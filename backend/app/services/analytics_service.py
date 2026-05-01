@@ -12,7 +12,7 @@ class AnalyticsService:
     def build_daily_network_kpis(router_snapshots: List[Dict[str, Any]]) -> Dict[str, Any]:
         if not router_snapshots:
             return {
-                'generated_at': datetime.utcnow().isoformat() + 'Z',
+                'generated_at': datetime.now(timezone.utc).isoformat() + 'Z',
                 'routers_total': 0,
                 'routers_healthy': 0,
                 'avg_health_score': 0.0,
@@ -43,7 +43,7 @@ class AnalyticsService:
                     critical_alerts += 1
 
         return {
-            'generated_at': datetime.utcnow().isoformat() + 'Z',
+            'generated_at': datetime.now(timezone.utc).isoformat() + 'Z',
             'routers_total': len(router_snapshots),
             'routers_healthy': routers_healthy,
             'avg_health_score': round(mean(health_scores), 2),
@@ -68,7 +68,7 @@ class AnalyticsService:
         arpu = mrr / active_clients_count if active_clients_count > 0 else 0
 
         # Churn Rate (simplificado: clientes que pasaron a suspended en los últimos 30 días)
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
         churned_query = Subscription.query.filter(Subscription.status == 'suspended', Subscription.updated_at >= thirty_days_ago)
         if tenant_id:
             churned_query = churned_query.filter(Subscription.tenant_id == tenant_id)
@@ -84,7 +84,7 @@ class AnalyticsService:
             "churn_rate": round(churn_rate, 2),
             "ltv": round(ltv, 2),
             "active_clients": active_clients_count,
-            "timestamp": datetime.utcnow().isoformat() + "Z"
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z"
         }
 
 

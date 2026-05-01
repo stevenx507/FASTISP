@@ -38,7 +38,7 @@ def _try_acquire_lock(lock_key: str, ttl_seconds: int) -> Tuple[Optional[redis.R
     if client is None:
         return None, None, True
 
-    token = hashlib.sha256(f"{lock_key}:{datetime.utcnow().isoformat()}".encode('utf-8')).hexdigest()
+    token = hashlib.sha256(f"{lock_key}:{datetime.now(timezone.utc).isoformat()}".encode('utf-8')).hexdigest()
     try:
         acquired = bool(client.set(lock_key, token, nx=True, ex=ttl_seconds))
         return client, token, acquired
@@ -93,7 +93,7 @@ def _send_billing_notification(sub: Subscription, message: str) -> None:
 )
 def poll_mikrotik_metrics(self):
     """Poll active routers, persist metrics and evaluate alert rules."""
-    lock_key = f"tasks:poll_mikrotik_metrics:{datetime.utcnow().strftime('%Y%m%d%H%M')}"
+    lock_key = f"tasks:poll_mikrotik_metrics:{datetime.now(timezone.utc).strftime('%Y%m%d%H%M')}"
     lock_client, lock_token, acquired = _try_acquire_lock(lock_key, ttl_seconds=55)
     if not acquired:
         current_app.logger.info('Skipping poll_mikrotik_metrics because lock is already held.')
@@ -229,7 +229,7 @@ def poll_mikrotik_metrics(self):
         try:
             socketio.emit('health_update', {
                 'routers': snapshots,
-                'timestamp': datetime.utcnow().isoformat() + 'Z'
+                'timestamp': datetime.now(timezone.utc).isoformat() + 'Z'
             }, namespace='/')
         except Exception as e:
             current_app.logger.warning('Failed to emit health_update via socket: %s', e)
@@ -259,7 +259,7 @@ def evaluate_noc_alerts() -> Dict[str, Any]:
     summary = {
         'evaluated_routers': evaluated,
         'total_alerts': total_alerts,
-        'timestamp': datetime.utcnow().isoformat() + 'Z',
+        'timestamp': datetime.now(timezone.utc).isoformat() + 'Z',
     }
     current_app.logger.info('NOC evaluation summary: %s', json.dumps(summary, ensure_ascii=True))
     return summary
@@ -332,7 +332,7 @@ def enforce_billing_status() -> Dict[str, Any]:
     """
     from sqlalchemy.orm import joinedload
 
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     updated: List[Dict[str, Any]] = []
     errors: List[Dict[str, Any]] = []
     grace_period_days = 3
@@ -451,7 +451,7 @@ def enforce_billing_status() -> Dict[str, Any]:
             )
 
     summary = {
-        'timestamp': datetime.utcnow().isoformat() + 'Z',
+        'timestamp': datetime.now(timezone.utc).isoformat() + 'Z',
         'evaluated': len(candidate_subs),
         'updated': updated,
         'count': len(updated),
@@ -493,7 +493,7 @@ def heartbeat_check(self) -> Dict[str, Any]:
     Ejecutado cada minuto por Celery Beat.
     Genera alertas si un router se detecta offline.
     """
-    lock_key = f"tasks:heartbeat_check:{datetime.utcnow().strftime('%Y%m%d%H%M')}"
+    lock_key = f"tasks:heartbeat_check:{datetime.now(timezone.utc).strftime('%Y%m%d%H%M')}"
     lock_client, lock_token, acquired = _try_acquire_lock(lock_key, ttl_seconds=55)
     if not acquired:
         current_app.logger.info('Skipping heartbeat_check: lock already held.')
@@ -667,7 +667,7 @@ def scheduled_ai_diagnostic() -> Dict[str, Any]:
     summary = {
         'diagnostics_run': diagnostics_run,
         'alerts_emitted': alerts_emitted,
-        'timestamp': datetime.utcnow().isoformat() + 'Z'
+        'timestamp': datetime.now(timezone.utc).isoformat() + 'Z'
     }
     current_app.logger.info(f"AI diagnostic scan finished: {summary}")
     return summary
@@ -691,7 +691,7 @@ def enforce_tenant_billing() -> Dict[str, Any]:
     """
     from app.models import Tenant
     GRACE_DAYS = 7
-    today = datetime.utcnow()
+    today = datetime.now(timezone.utc)
     updated_tenants: List[Dict[str, Any]] = []
     reactivated_tenants: List[Dict[str, Any]] = []
 

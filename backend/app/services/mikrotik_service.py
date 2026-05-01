@@ -85,7 +85,7 @@ class MikroTikService:
 
             # Update last seen
             if self.router:
-                self.router.last_seen = datetime.utcnow()
+                self.router.last_seen = datetime.now(timezone.utc)
                 db.session.commit()
 
             return True
@@ -850,7 +850,7 @@ class MikroTikService:
                 'free_memory': info.get('free-memory', 'Unknown'),
                 'total_memory': info.get('total-memory', 'Unknown'),
                 'board_name': info.get('board-name', 'Unknown'),
-                'updated_at': datetime.utcnow().isoformat()
+                'updated_at': datetime.now(timezone.utc).isoformat()
             }
             
             # Update the snapshot in cache
@@ -1166,7 +1166,7 @@ class MikroTikService:
                 currency = next_invoice.currency or 'USD'
                 next_bill_amount = f"{float(next_invoice.total_amount):.2f} {currency}"
                 if next_invoice.due_date:
-                    delta_days = (next_invoice.due_date - datetime.utcnow().date()).days
+                    delta_days = (next_invoice.due_date - datetime.now(timezone.utc).date()).days
                     if delta_days > 1:
                         next_bill_due = f"Vence en {delta_days} dias"
                     elif delta_days == 1:
@@ -1206,7 +1206,7 @@ class MikroTikService:
         if not client:
             return []
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         events: List[Dict] = []
 
         if client.router:
@@ -1580,7 +1580,7 @@ class MikroTikService:
                 return {'error': 'No active router connection.'}
 
             health = {
-                'timestamp': datetime.utcnow().isoformat() + "Z",
+                'timestamp': datetime.now(timezone.utc).isoformat() + "Z",
                 'router': self.get_router_info(),
                 'interfaces': self.get_interface_stats(),
                 'queues': len(self.get_queue_stats()),
@@ -1729,7 +1729,7 @@ class MikroTikService:
             return None
         try:
             if not name:
-                name = f"ispmax-backup-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
+                name = f"ispmax-backup-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
             system = self.api.get_resource('/system/backup')
             system.call('save', {'name': name, 'dont-encrypt': 'yes'})
             return f"{name}.backup"

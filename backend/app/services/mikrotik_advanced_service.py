@@ -58,7 +58,7 @@ class MikroTikAdvancedService:
 
             # Update last seen
             if self.router:
-                self.router.last_seen = datetime.utcnow()
+                self.router.last_seen = datetime.now(timezone.utc)
                 db.session.commit()
             
             return True

@@ -955,7 +955,7 @@ def tickets_dashboard():
     """
     from app.models import Ticket
     tenant_id = current_tenant_id()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
     base = Ticket.query
@@ -1025,7 +1025,7 @@ def network_alerts():
     """
     from datetime import timedelta
     tenant_id = current_tenant_id()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     alerts: List[Dict[str, Any]] = []
 
     # --- 1. Routers offline (sin heartbeat en últimos 10 min) ---

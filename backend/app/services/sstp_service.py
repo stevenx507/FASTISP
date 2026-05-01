@@ -140,7 +140,7 @@ def _active_tunnel_payload(router) -> dict | None:
         "api_port": getattr(router, "api_port", 8728) or 8728,
         "fingerprint": get_certificate_fingerprint(),
         "router_name": getattr(router, "name", "mikrotik"),
-        "provisioned_at": tunnel.created_at.isoformat() if tunnel.created_at else datetime.utcnow().isoformat(),
+        "provisioned_at": tunnel.created_at.isoformat() if tunnel.created_at else datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -172,7 +172,7 @@ def provision_sstp_tunnel(router) -> dict:
         "api_port": router.api_port or 8728,
         "fingerprint": "MIKROTIK-NATIVE-CERT",
         "router_name": router.name,
-        "provisioned_at": datetime.utcnow().isoformat(),
+        "provisioned_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -327,7 +327,7 @@ def generate_mikrotik_sstp_script(prov: dict) -> str:
     api_port = prov.get("api_port") or 8728
     router_name = prov.get("router_name", "mikrotik")
     router_address = prov.get("server_host", "0.0.0.0")
-    provisioned_at = prov.get("provisioned_at", datetime.utcnow().isoformat())
+    provisioned_at = prov.get("provisioned_at", datetime.now(timezone.utc).isoformat())
     first_client_ip = prov.get("client_ip") or SSTP_POOL_START
     pool_range = f"{SSTP_POOL_START}-{SSTP_POOL_END}"
 

@@ -354,7 +354,7 @@ def onboarding_script(router_id):
             "client_ip": tunnel.client_ip,
             "fingerprint": get_certificate_fingerprint(),
             "router_name": router.name,
-            "provisioned_at": tunnel.created_at.isoformat() if tunnel.created_at else datetime.utcnow().isoformat(),
+            "provisioned_at": tunnel.created_at.isoformat() if tunnel.created_at else datetime.now(timezone.utc).isoformat(),
         })
 
         return jsonify({
@@ -366,7 +366,7 @@ def onboarding_script(router_id):
             "server_port": tunnel.server_port,
             "architecture": "mikrotik-native-sstp",
             "script": script,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
         }), 200
 
     except Exception as e:

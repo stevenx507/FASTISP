@@ -220,7 +220,7 @@ class NetFlowCollector:
             router_id  = router.id        if router else None
             tenant_id  = router.tenant_id if router else None
 
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             bucket = now.replace(minute=0, second=0, microsecond=0)  # por hora
 
             # Agrupar records por src_ip

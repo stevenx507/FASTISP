@@ -1594,7 +1594,7 @@ def zero_touch_provision(device_id):
             installation.notes = _append_note_line(installation.notes, preview.get("note_line"))
             if mark_installation_completed:
                 installation.status = "completed"
-                installation.completed_at = installation.completed_at or datetime.utcnow()
+                installation.completed_at = installation.completed_at or datetime.now(timezone.utc)
                 installation.completed_by = actor_user.id if actor_user else actor_id
                 installation.completed_by_name = actor_user.name if actor_user else _resolve_actor_identity()
             elif str(installation.status or "").lower() in {"pending", "scheduled"}:

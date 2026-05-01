@@ -133,7 +133,7 @@ def _tenant_default_trial_days() -> int:
 
 
 def _tenant_default_trial_ends_at() -> datetime:
-    return datetime.utcnow() + timedelta(days=_tenant_default_trial_days())
+    return datetime.now(timezone.utc) + timedelta(days=_tenant_default_trial_days())
 
 
 def _password_reset_token_ttl_seconds() -> int:
@@ -301,7 +301,7 @@ def _prune_backup_directory(retention_days: int, base: Path | None = None) -> di
     if not backup_dir.exists():
         return {
             "retention_days": safe_days,
-            "cutoff": (datetime.utcnow() - timedelta(days=safe_days)).isoformat(),
+            "cutoff": (datetime.now(timezone.utc) - timedelta(days=safe_days)).isoformat(),
             "scanned": 0,
             "removed": 0,
             "failed": 0,
@@ -309,7 +309,7 @@ def _prune_backup_directory(retention_days: int, base: Path | None = None) -> di
             "errors": [],
         }
 
-    cutoff = datetime.utcnow() - timedelta(days=safe_days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=safe_days)
     scanned = 0
     removed = 0
     failed = 0
@@ -719,12 +719,12 @@ def _save_system_settings_overrides_db(tenant_id, overrides: dict, updated_by=No
                 key=key_name,
                 value=value,
                 updated_by=updated_by,
-                updated_at=datetime.utcnow(),
+                updated_at=datetime.now(timezone.utc),
             )
         else:
             row.value = value
             row.updated_by = updated_by
-            row.updated_at = datetime.utcnow()
+            row.updated_at = datetime.now(timezone.utc)
         db.session.add(row)
     db.session.commit()
 
@@ -747,12 +747,12 @@ def _upsert_system_setting_value(tenant_id, key_name: str, value, updated_by=Non
             key=key_name,
             value=value,
             updated_by=updated_by,
-            updated_at=datetime.utcnow(),
+            updated_at=datetime.now(timezone.utc),
         )
     else:
         row.value = value
         row.updated_by = updated_by
-        row.updated_at = datetime.utcnow()
+        row.updated_at = datetime.now(timezone.utc)
     db.session.add(row)
     db.session.commit()
 
@@ -875,7 +875,7 @@ def _is_permission_allowed(user: User | None, permission: str, tenant_id) -> boo
 
 
 def _iso_utc_now() -> str:
-    return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat() + "Z"
 
 
 def _actor_default_name(actor_id) -> str:
@@ -1368,7 +1368,7 @@ def _build_network_alert_items(tenant_id) -> list[dict]:
             }
         )
 
-    now_dt = datetime.utcnow()
+    now_dt = datetime.now(timezone.utc)
     active_windows = (
         _tenant_scoped_query(NocMaintenanceWindow, tenant_id)
         .filter(
@@ -1419,7 +1419,7 @@ def _build_network_health_payload(tenant_id) -> dict:
         "olt_alert": 1,
         "latency_ms": 12 + routers_down,
         "packet_loss": round(0.2 + routers_down * 0.3, 2),
-        "last_updated": datetime.utcnow().isoformat(),
+        "last_updated": datetime.now(timezone.utc).isoformat(),
         "source": "fallback",
     }
 
@@ -1485,7 +1485,7 @@ def _build_client_notifications(user: User, tenant_id) -> list[dict]:
             }
         )
 
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     invoices = _get_user_invoice_items(user, tenant_id)
     overdue = 0
     pending = 0
@@ -2029,7 +2029,7 @@ def _apply_network_action_to_client(client: Client, action: str) -> tuple[bool, 
 def _installation_model_from_entry(entry: dict, tenant_id) -> AdminInstallation:
     scheduled_for = _parse_iso_datetime(entry.get("scheduled_for"))
     completed_at = _parse_iso_datetime(entry.get("completed_at"))
-    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.utcnow()
+    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
     updated_at = _parse_iso_datetime(entry.get("updated_at")) or created_at
     return AdminInstallation(
         id=str(entry.get("id") or secrets.token_hex(8)),
@@ -2062,7 +2062,7 @@ def _installation_model_from_entry(entry: dict, tenant_id) -> AdminInstallation:
 def _screen_alert_model_from_entry(entry: dict, tenant_id) -> AdminScreenAlert:
     starts_at = _parse_iso_datetime(entry.get("starts_at"))
     ends_at = _parse_iso_datetime(entry.get("ends_at"))
-    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.utcnow()
+    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
     updated_at = _parse_iso_datetime(entry.get("updated_at")) or created_at
     return AdminScreenAlert(
         id=str(entry.get("id") or secrets.token_hex(8)),
@@ -2088,7 +2088,7 @@ def _screen_alert_model_from_entry(entry: dict, tenant_id) -> AdminScreenAlert:
 
 
 def _extra_service_model_from_entry(entry: dict, tenant_id) -> AdminExtraService:
-    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.utcnow()
+    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
     updated_at = _parse_iso_datetime(entry.get("updated_at")) or created_at
     return AdminExtraService(
         id=str(entry.get("id") or secrets.token_hex(8)),
@@ -2114,7 +2114,7 @@ def _extra_service_model_from_entry(entry: dict, tenant_id) -> AdminExtraService
 def _hotspot_voucher_model_from_entry(entry: dict, tenant_id) -> AdminHotspotVoucher:
     expires_at = _parse_iso_datetime(entry.get("expires_at"))
     used_at = _parse_iso_datetime(entry.get("used_at"))
-    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.utcnow()
+    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
     updated_at = _parse_iso_datetime(entry.get("updated_at")) or created_at
     return AdminHotspotVoucher(
         id=str(entry.get("id") or secrets.token_hex(8)),
@@ -2153,7 +2153,7 @@ def _default_installations(tenant_id) -> list[dict]:
         technicians = ["pendiente@ispfast.local"]
 
     statuses = ["pending", "scheduled", "in_progress", "completed"]
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     system_actor = {"id": None, "name": "system", "email": None}
     items: list[dict] = []
     for index, client in enumerate(clients, start=1):
@@ -2376,7 +2376,7 @@ def _cleanup_leases_for_tenant(tenant_id) -> dict:
         )
         for promise in expired_promises:
             promise.status = 'broken'
-            promise.resolved_at = datetime.utcnow()
+            promise.resolved_at = datetime.now(timezone.utc)
             db.session.add(promise)
             promises_marked_broken += 1
 
@@ -2407,7 +2407,7 @@ def _cleanup_leases_for_tenant(tenant_id) -> dict:
             ).all()
             for promise in kept_promises:
                 promise.status = 'kept'
-                promise.resolved_at = datetime.utcnow()
+                promise.resolved_at = datetime.now(timezone.utc)
                 db.session.add(promise)
                 promises_marked_kept += 1
 
@@ -2936,7 +2936,7 @@ def _execute_system_job(job: str, tenant_id) -> tuple[str, dict]:
 
 
 def _run_system_job_request(job: str, tenant_id, requested_by) -> tuple[dict, int]:
-    started_at = datetime.utcnow().replace(microsecond=0)
+    started_at = datetime.now(timezone.utc).replace(microsecond=0)
     entry = {
         "id": secrets.token_hex(8),
         "job": job,
@@ -2946,7 +2946,7 @@ def _run_system_job_request(job: str, tenant_id, requested_by) -> tuple[dict, in
     }
 
     status, result = _execute_system_job(job, tenant_id)
-    finished_at = datetime.utcnow().replace(microsecond=0)
+    finished_at = datetime.now(timezone.utc).replace(microsecond=0)
     entry["status"] = status
     entry["finished_at"] = finished_at.isoformat()
     entry["result"] = result
@@ -2996,7 +2996,7 @@ def _ops_score_from_checks(checks: list[dict]) -> int:
 
 
 def _sla_due(priority: str) -> datetime:
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if priority == 'urgent':
         return now + timedelta(hours=2)
     if priority == 'high':
