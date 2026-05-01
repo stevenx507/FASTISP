@@ -671,8 +671,8 @@ const ClientsManagement: React.FC = () => {
         <span className="ml-2 text-xs font-semibold text-slate-500">Botonas de Acción:</span>
 
         <ActionBtn color="bg-green-500" tip="Generar Factura" onClick={() => { if(selectedIds.size===0){toast('Selecciona clientes');return} toast('Generar factura â€” próximamente') }}>$</ActionBtn>
-        <ActionBtn color="bg-green-600" tip="Activar Cliente" onClick={() => { selectedIds.forEach((id)=>void activate(id)); toast.success('Activandoâ€¦') }}>▶</ActionBtn>
-        <ActionBtn color="bg-orange-500" tip="Desactivar Cliente" onClick={() => { selectedIds.forEach((id)=>void suspend(id)); toast.success('Desactivandoâ€¦') }}>â¸</ActionBtn>
+        <ActionBtn color="bg-green-600" tip="Activar Cliente" onClick={() => { selectedIds.forEach((id)=>void activate(id)); toast.success('Activando…') }}>▶</ActionBtn>
+        <ActionBtn color="bg-orange-500" tip="Desactivar Cliente" onClick={() => { selectedIds.forEach((id)=>void suspend(id)); toast.success('Desactivando…') }}>â¸</ActionBtn>
         <ActionBtn color="bg-yellow-500" tip="Agregar Ticket" onClick={() => toast('Agregar Ticket â€” próximamente')}>🎟️</ActionBtn>
         <ActionBtn color="bg-blue-500" tip="Ver TrÃ¡fico" onClick={() => toast('Ver TrÃ¡fico â€” próximamente')}>📊</ActionBtn>
         <ActionBtn color="bg-violet-600" tip="Ver ONU" onClick={() => { const id = Array.from(selectedIds)[0]; if(id){const c=clients.find(x=>x.id===id); if(c) openGponModal(c)} else toast('Selecciona un cliente') }}>📡</ActionBtn>
@@ -684,12 +684,11 @@ const ClientsManagement: React.FC = () => {
             onClick={() => setHerramientasId(herramientasId === -1 ? null : -1)}
             className="flex items-center gap-1 rounded border border-white/20 bg-white backdrop-blur-md px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white/10"
           >
-            ðŸ”§ Herramientas <ChevronDownIcon className="h-3 w-3" />
+            🔧 Herramientas <ChevronDownIcon className="h-3 w-3" />
           </button>
           {herramientasId === -1 && (
             <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-2xl py-1">
               {[
-                { label: 'âš¡ Torch al Cliente', key: 'torch' },
                 { label: 'ðŸ” Actualizar Password', key: 'password' },
                 { label: 'ðŸ‘ Auto-Login Portal del Cliente', key: 'portal_login' },
                 { label: 'ðŸ’³ Ver Historial de Pagos', key: 'pagos' },
@@ -730,7 +729,7 @@ const ClientsManagement: React.FC = () => {
       {lastPortalCredentials && (
         <div className="mx-5 mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm">
           <p className="font-semibold text-emerald-700">Credenciales portal generadas â€” {lastPortalCredentials.clientName}</p>
-          <p className="text-emerald-900">Email: <strong>{lastPortalCredentials.email}</strong> Â· Password: <strong>{lastPortalCredentials.password}</strong></p>
+          <p className="text-emerald-900">Email: <strong>{lastPortalCredentials.email}</strong> · Password: <strong>{lastPortalCredentials.password}</strong></p>
           <button onClick={() => setLastPortalCredentials(null)} className="mt-1 text-xs text-emerald-600 underline">Cerrar</button>
         </div>
       )}
