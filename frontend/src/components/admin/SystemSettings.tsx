@@ -20,6 +20,10 @@ interface SystemSettingsPayload {
   slo_router_availability_target: number
   slo_ticket_sla_target: number
   slo_provision_success_target: number
+  whatsapp_token?: string
+  whatsapp_instance_id?: string
+  telegram_bot_token?: string
+  telegram_noc_chat_id?: string
 }
 
 interface SystemHealth {
@@ -869,6 +873,68 @@ const SystemSettings: React.FC = () => {
                     className="mt-1 w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   />
                 </label>
+              </div>
+
+              <div className="mt-6 rounded-lg border border-gray-200 p-4">
+                <h4 className="mb-3 font-semibold text-slate-700">Mensajeria y Alertas (Automations)</h4>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="text-sm text-slate-600">
+                    WhatsApp Token (UltraMsg)
+                    <input
+                      type="password"
+                      value={settings.whatsapp_token || ''}
+                      onChange={(e) =>
+                        setSettings((prev) =>
+                          prev ? { ...prev, whatsapp_token: e.target.value } : prev
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-slate-800"
+                      placeholder="Token"
+                    />
+                  </label>
+                  <label className="text-sm text-slate-600">
+                    WhatsApp Instance ID
+                    <input
+                      type="text"
+                      value={settings.whatsapp_instance_id || ''}
+                      onChange={(e) =>
+                        setSettings((prev) =>
+                          prev ? { ...prev, whatsapp_instance_id: e.target.value } : prev
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-slate-800"
+                      placeholder="instance12345"
+                    />
+                  </label>
+                  <label className="text-sm text-slate-600">
+                    Telegram Bot Token
+                    <input
+                      type="password"
+                      value={settings.telegram_bot_token || ''}
+                      onChange={(e) =>
+                        setSettings((prev) =>
+                          prev ? { ...prev, telegram_bot_token: e.target.value } : prev
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-slate-800"
+                      placeholder="bot123456:ABC-DEF1234ghIkl..."
+                    />
+                  </label>
+                  <label className="text-sm text-slate-600">
+                    Telegram NOC Chat ID
+                    <input
+                      type="text"
+                      value={settings.telegram_noc_chat_id || ''}
+                      onChange={(e) =>
+                        setSettings((prev) =>
+                          prev ? { ...prev, telegram_noc_chat_id: e.target.value } : prev
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-slate-800"
+                      placeholder="-1001234567890"
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           ) : (

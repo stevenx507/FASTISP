@@ -42,7 +42,10 @@ def manual_payment():
 
     # Phase 5: Automated WhatsApp Notification
     try:
-        MessagingManager.notify_payment_confirmed(payment)
+        if invoice.subscription and invoice.subscription.client and invoice.subscription.client.phone:
+            client_name = invoice.subscription.client.name
+            phone = invoice.subscription.client.phone
+            MessagingManager.notify_payment_confirmed(tenant_id, client_name, phone, float(amount))
     except Exception as e:
         current_app.logger.error(f"Failed to send WhatsApp notification for payment {payment.id}: {e}")
 

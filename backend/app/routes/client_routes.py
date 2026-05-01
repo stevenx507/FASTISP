@@ -3135,7 +3135,9 @@ def change_plan(client_id):
 
     # Phase 5: Automated WhatsApp Notification
     try:
-        MessagingManager.notify_invoice_created(invoice)
+        if client and client.phone:
+            due_date_str = invoice.due_date.strftime('%Y-%m-%d') if invoice.due_date else 'N/A'
+            MessagingManager.notify_invoice_created(tenant_id, client.full_name, client.phone, float(invoice_total), due_date_str)
     except Exception as e:
         current_app.logger.error(f"Failed to send WhatsApp notification for invoice {invoice.id}: {e}")
 

@@ -3152,7 +3152,11 @@ def tickets_admin_update(ticket_id):
     # Phase 5: Automated WhatsApp Notification
     if assigned_to and assigned_to != ticket.assigned_to:
         try:
-            MessagingManager.notify_tech_assigned(ticket, assigned_to)
+            if ticket.client and ticket.client.phone:
+                client_name = ticket.client.full_name
+                phone = ticket.client.phone
+                from app.lib.messaging import MessagingManager
+                MessagingManager.notify_tech_on_route(tenant_id, client_name, phone, assigned_to)
         except Exception as e:
             current_app.logger.error(f"Failed to send WhatsApp notification for ticket assignment {ticket.id}: {e}")
 
@@ -3248,6 +3252,14 @@ def create_ticket():
     )
     db.session.add(ticket)
     db.session.commit()
+    
+    try:
+        from app.lib.messaging import MessagingManager
+        client_name = user.client.full_name if user.client else user.name
+        MessagingManager.notify_new_ticket(tenant_id, ticket.id, client_name, priority, subject)
+    except Exception as e:
+        current_app.logger.error(f"Failed to send Telegram notification for new ticket {ticket.id}: {e}")
+
     _notify_incident(f"Nuevo ticket: {subject}", severity="warning")
     return jsonify({"ticket": ticket.to_dict()}), 201
 
