@@ -40,6 +40,7 @@ import {
   CircleStackIcon,
   BuildingStorefrontIcon,
   QrCodeIcon,
+  BuildingOffice2Icon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../store/authStore'
 import { safeStorage } from '../lib/storage'
@@ -570,14 +571,21 @@ const AdminPanel: React.FC = () => {
 
         {/* Platform admin banner */}
         {isPlatformAdminMode && (
-          <div className="mx-4 mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs text-amber-800 flex items-center justify-between">
-            <span>
-              <span className="font-bold text-amber-700">Modo Admin ISP</span> — Tenant activo:{' '}
-              <span className="font-mono font-bold text-amber-900">{tenantContextName || tenantContextId || 'Ninguno (Error)'}</span>
-            </span>
+          <div className="mx-4 mt-4 rounded-xl border border-coral-200 bg-coral-50/50 px-4 py-3 text-xs flex items-center justify-between shadow-sm backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-coral-500 text-white shadow-sm">
+                <BuildingOffice2Icon className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-coral-900 text-[10px] uppercase tracking-wider opacity-70">Gestionando Entorno de:</span>
+                <span className="font-bold text-slate-800 text-sm">
+                  {tenantContextName || `ISP #${tenantContextId}` || 'Ninguno (Error)'}
+                </span>
+              </div>
+            </div>
             <button
               onClick={handleExitTenantMode}
-              className="ml-4 rounded-lg border border-amber-400 bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-800 hover:bg-amber-200 transition-colors"
+              className="ml-4 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm active:scale-95"
             >
               ← Volver a Admin Total
             </button>
