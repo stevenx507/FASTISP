@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline"
 import { apiClient } from "../../lib/apiClient"
+import { useDebounce } from "../../hooks/useDebounce"
 
 interface ClientRow {
   id: number
@@ -129,6 +130,7 @@ const parseCsvObjects = (content: string): Record<string, unknown>[] => {
 
 const SearchClients: React.FC = () => {
   const [query, setQuery] = useState("")
+  const debouncedQuery = useDebounce(query, 500)
   const [statusFilter, setStatusFilter] = useState("")
   const [rows, setRows] = useState<ClientRow[]>([])
   const [loading, setLoading] = useState(false)
@@ -171,7 +173,7 @@ const SearchClients: React.FC = () => {
   const filtered = useMemo(
     () =>
       rows.filter((clientRow) => {
-        const token = query.toLowerCase().trim()
+        const token = debouncedQuery.toLowerCase().trim()
         if (!token) return true
         return (
           (clientRow.name || "").toLowerCase().includes(token) ||
@@ -180,7 +182,7 @@ const SearchClients: React.FC = () => {
           (clientRow.email || "").toLowerCase().includes(token)
         )
       }),
-    [rows, query]
+    [rows, debouncedQuery]
   )
 
   const allFilteredSelected = filtered.length > 0 && filtered.every((row) => selectedIds.includes(row.id))

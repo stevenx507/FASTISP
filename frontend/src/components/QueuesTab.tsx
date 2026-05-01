@@ -8,6 +8,7 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { QueueItem, RouterStats, Toast, RouterItem } from './types';
+import { useDebounce } from '../hooks/useDebounce';
 
 interface QueuesTabProps {
   routerStats: RouterStats | null;
@@ -30,6 +31,7 @@ const QueuesTab: React.FC<QueuesTabProps> = ({
   const [queuesCurrentPage, setQueuesCurrentPage] = useState(1);
   const queuesItemsPerPage = 10;
   const [queueSearchTerm, setQueueSearchTerm] = useState('');
+  const debouncedQueueSearch = useDebounce(queueSearchTerm, 300);
   const [togglingQueueId, setTogglingQueueId] = useState<string | null>(null);
 
   const [editingQueue, setEditingQueue] = useState<QueueItem | null>(null);
@@ -260,8 +262,8 @@ const QueuesTab: React.FC<QueuesTabProps> = ({
   const filteredQueues =
     routerStats?.queues.filter(
       (queue) =>
-        queue.name.toLowerCase().includes(queueSearchTerm.toLowerCase()) ||
-        queue.target?.toLowerCase().includes(queueSearchTerm.toLowerCase())
+        queue.name.toLowerCase().includes(debouncedQueueSearch.toLowerCase()) ||
+        queue.target?.toLowerCase().includes(debouncedQueueSearch.toLowerCase())
     ) || [];
 
   const indexOfLastQueue = queuesCurrentPage * queuesItemsPerPage;

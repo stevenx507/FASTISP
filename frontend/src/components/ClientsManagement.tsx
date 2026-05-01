@@ -17,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { apiClient } from '../lib/apiClient'
+import { useDebounce } from '../hooks/useDebounce'
 
 type ClientStatus = 'active' | 'inactive' | 'suspended' | 'past_due' | 'trial' | string
 
@@ -141,6 +142,7 @@ const ClientsManagement: React.FC = () => {
   const [plans, setPlans] = useState<Plan[]>([])
   const [routers, setRouters] = useState<Router[]>([])
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 500)
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'name' | 'plan'>('name')
   const [loading, setLoading] = useState(false)
@@ -261,9 +263,9 @@ const ClientsManagement: React.FC = () => {
   }
 
   const { data: initData, isLoading: queryLoading, refetch } = useQuery({
-    queryKey: ['clients_init', page, pageSize, searchTerm, filterStatus],
+    queryKey: ['clients_init', page, pageSize, debouncedSearchTerm, filterStatus],
     queryFn: async () => {
-      const q = searchTerm ? `&q=${encodeURIComponent(searchTerm)}` : ''
+      const q = debouncedSearchTerm ? `&q=${encodeURIComponent(debouncedSearchTerm)}` : ''
       const status = filterStatus !== 'all' ? `&status=${filterStatus}` : ''
       const url = `/admin/clients?page=${page}&per_page=${pageSize}${q}${status}`
       

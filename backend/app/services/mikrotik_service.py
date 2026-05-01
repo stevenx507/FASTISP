@@ -66,12 +66,18 @@ class MikroTikService:
             return False
 
         try:
+            from app.tenancy import current_tenant_id
             self.router_id = normalized_router_id
-            self.router = db.session.get(MikroTikRouter, normalized_router_id)
+            # Enforce tenancy: only allow connecting to routers belonging to the current tenant
+            self.router = db.session.query(MikroTikRouter).filter(
+                MikroTikRouter.id == normalized_router_id,
+                MikroTikRouter.tenant_id == current_tenant_id()
+            ).first()
+            
             if not self.router:
                 self._set_connection_error(
                     stage='lookup',
-                    error=f"Router {normalized_router_id} not found in database.",
+                    error=f"Router {normalized_router_id} not found or access denied for this tenant.",
                     code='router_not_found',
                 )
                 logger.error(self.last_connection_error)
@@ -747,8 +753,9 @@ class MikroTikService:
                 logger.warning(f"Queue with ID '{queue_id}' not found for updating limit.")
                 return False
             
-            # FIX: RouterOS espera download/upload (no upload/download)
-            new_limit = f"{download_speed}M/{upload_speed}M"
+            # RouterOS expects upload/download (NOT download/upload)
+            # Standardizing to upload/download to fix the speed inversion bug
+            new_limit = f"{upload_speed}M/{download_speed}M"
             queue_api.set(id=queue_id, max_limit=new_limit)
             logger.info(f"Queue '{queue_id}' max-limit updated to {new_limit}.")
             return True
