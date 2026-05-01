@@ -12,6 +12,7 @@ interface User {
   plan?: string
   client_id?: number
   mfa_enabled?: boolean
+  tenant_id?: number | null
 }
 
 interface AuthState {
@@ -71,7 +72,12 @@ export const useAuthStore = create<AuthState>()(
           role: normalizeRole(user.role),
         }
 
-        set({ user: normalizedUser, token, isAuthenticated: true, tenantContextId: null })
+        set({
+          user: normalizedUser,
+          token,
+          isAuthenticated: true,
+          tenantContextId: normalizedUser.tenant_id ?? null,
+        })
       },
       logout: () => {
         set({ user: null, token: null, isAuthenticated: false, tenantContextId: null })

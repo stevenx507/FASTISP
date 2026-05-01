@@ -13,6 +13,8 @@ from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from app import db
 from app.models import Tenant, User
 
+PLATFORM_ADMIN_ROLE = "platform_admin"
+STAFF_ALLOWED_ROLES = {"admin", "tech", "support", "billing", "noc", "operator"}
 
 class TenantResolutionError(ValueError):
     """Raised when tenant information is malformed or inconsistent."""
@@ -147,9 +149,8 @@ def tenant_access_allowed(resource_tenant_id: Optional[int]) -> bool:
     return tenant_id == int(resource_tenant_id)
 
 
-def tenant_admin_required():
-    """JWT + admin role + tenant scoped access."""
-
+def admin_required():
+    """JWT + admin/platform_admin role + tenant scoped access."""
     def wrapper(fn):
         @jwt_required()
         @wraps(fn)
@@ -160,16 +161,148 @@ def tenant_admin_required():
                 return jsonify({'error': 'Token de usuario invalido.'}), 401
             if user_id is None:
                 return jsonify({'error': 'Token de usuario invalido.'}), 401
+            
             user = db.session.get(User, user_id)
-            if not user or user.role not in ('admin', 'platform_admin'):
-                return jsonify({'error': 'Acceso denegado. Se requiere rol de administrador.'}), 403
+            if not user:
+                return jsonify({'error': 'Usuario no encontrado.'}), 401
 
             tenant_id = current_tenant_id()
-            if tenant_id is not None and user.tenant_id not in (None, tenant_id):
-                return jsonify({'error': 'Acceso denegado para este tenant.'}), 403
+            is_platform_admin = (user.role == PLATFORM_ADMIN_ROLE)
+
+            # 1. Basic role check
+            if user.role != 'admin' and not is_platform_admin:
+                return jsonify({'error': 'Acceso denegado. Se requiere rol de administrador.'}), 403
+
+            # 2. Platform Admin context check
+            if is_platform_admin:
+                if tenant_id is None:
+                    return jsonify({'error': 'Platform admin debe seleccionar un tenant para esta operacion.'}), 403
+                return fn(*args, **kwargs)
+
+            # 3. ISP Admin context check
+            if tenant_id is not None:
+                if user.tenant_id is not None and user.tenant_id != tenant_id:
+                    return jsonify({'error': 'Acceso denegado para este tenant.'}), 403
+            else:
+                if user.tenant_id is not None:
+                    return jsonify({'error': 'Admin ISP requiere contexto tenant valido (X-Tenant-ID header).'}), 403
 
             return fn(*args, **kwargs)
 
         return decorator
+    return wrapper
 
+def staff_required():
+    """JWT + staff roles + tenant scoped access."""
+    def wrapper(fn):
+        @jwt_required()
+        @wraps(fn)
+        def decorator(*args, **kwargs):
+            try:
+                user_id = _current_user_id()
+            except TenantResolutionError:
+                return jsonify({'error': 'Token de usuario invalido.'}), 401
+            if user_id is None:
+                return jsonify({'error': 'Token de usuario invalido.'}), 401
+            
+            user = db.session.get(User, user_id)
+            if not user:
+                return jsonify({'error': 'Usuario no encontrado.'}), 401
+
+            tenant_id = current_tenant_id()
+            is_platform_admin = (user.role == PLATFORM_ADMIN_ROLE)
+
+            # 1. Basic role check
+            if user.role not in STAFF_ALLOWED_ROLES and not is_platform_admin:
+                return jsonify({'error': 'Acceso denegado. Se requiere rol operativo.'}), 403
+
+            # 2. Platform Admin context check
+            if is_platform_admin:
+                if tenant_id is None:
+                    return jsonify({'error': 'Platform admin debe seleccionar un tenant para esta operacion.'}), 403
+                return fn(*args, **kwargs)
+
+            # 3. ISP Staff context check
+            if tenant_id is not None:
+                if user.tenant_id is not None and user.tenant_id != tenant_id:
+                    return jsonify({'error': 'Acceso denegado para este tenant.'}), 403
+            else:
+                if user.tenant_id is not None:
+                    return jsonify({'error': 'Rol operativo requiere contexto tenant valido (X-Tenant-ID header).'}), 403
+
+            return fn(*args, **kwargs)
+
+        return decorator
+    return wrapper
+
+def platform_admin_required():
+    """JWT + platform_admin role + GLOBAL context (no tenant)."""
+    def wrapper(fn):
+        @jwt_required()
+        @wraps(fn)
+        def decorator(*args, **kwargs):
+            try:
+                user_id = _current_user_id()
+            except TenantResolutionError:
+                return jsonify({'error': 'Token de usuario invalido.'}), 401
+            if user_id is None:
+                return jsonify({'error': 'Token de usuario invalido.'}), 401
+            
+            user = db.session.get(User, user_id)
+            if not user or user.role != PLATFORM_ADMIN_ROLE:
+                return jsonify({'error': 'Acceso denegado. Se requiere rol platform_admin.'}), 403
+
+            tenant_id = current_tenant_id()
+            if tenant_id is not None:
+                return jsonify({'error': 'Esta operacion solo esta disponible en el contexto global (Master Panel).'}), 403
+
+            return fn(*args, **kwargs)
+
+        return decorator
+    return wrapper
+
+def permission_required(permission: str):
+    """JWT + dynamic permission check + tenant scoped access."""
+    def wrapper(fn):
+        @jwt_required()
+        @wraps(fn)
+        def decorator(*args, **kwargs):
+            from app.models import RolePermission
+            try:
+                user_id = _current_user_id()
+            except TenantResolutionError:
+                return jsonify({'error': 'Token de usuario invalido.'}), 401
+            if user_id is None:
+                return jsonify({'error': 'Token de usuario invalido.'}), 401
+            
+            user = db.session.get(User, user_id)
+            if not user:
+                return jsonify({'error': 'Usuario no encontrado.'}), 401
+
+            tenant_id = current_tenant_id()
+            is_platform_admin = (user.role == PLATFORM_ADMIN_ROLE)
+
+            if is_platform_admin:
+                if tenant_id is None:
+                    return jsonify({'error': 'Platform admin requiere contexto tenant.'}), 403
+                return fn(*args, **kwargs)
+
+            has_perm = RolePermission.query.filter_by(
+                role=user.role, 
+                permission=permission
+            ).first() is not None or user.role == 'admin'
+
+            if not has_perm:
+                return jsonify({'error': f'Permiso insuficiente: {permission}'}), 403
+
+            if tenant_id is not None:
+                if user.tenant_id is not None and user.tenant_id != tenant_id:
+                    return jsonify({'error': 'Acceso denegado para este tenant.'}), 403
+            else:
+                if user.tenant_id is not None:
+                    return jsonify({'error': 'Contexto tenant requerido.'}), 403
+
+            return fn(*args, **kwargs)
+
+        return decorator
     return wrapper

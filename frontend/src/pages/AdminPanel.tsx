@@ -277,10 +277,14 @@ const AdminPanel: React.FC = () => {
   }, [])
 
   useEffect(() => {
+    if (isPlatformAdminMode && !tenantContextId) {
+      navigate('/platform')
+      return
+    }
     loadNotifications()
     const timer = setInterval(loadNotifications, 30000)
     return () => clearInterval(timer)
-  }, [loadNotifications])
+  }, [loadNotifications, isPlatformAdminMode, tenantContextId, navigate])
 
   const unreadCount = notifications.filter((n) => !n.read).length
   const isPlatformAdminMode = normalizeRole(user?.role) === 'platform_admin'
@@ -569,7 +573,7 @@ const AdminPanel: React.FC = () => {
           <div className="mx-4 mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs text-amber-800 flex items-center justify-between">
             <span>
               <span className="font-bold text-amber-700">Modo Admin ISP</span> — Tenant activo:{' '}
-              <span className="font-mono font-bold text-amber-900">{tenantContextId}</span>
+              <span className="font-mono font-bold text-amber-900">{tenantContextId || 'Ninguno (Error)'}</span>
             </span>
             <button
               onClick={handleExitTenantMode}

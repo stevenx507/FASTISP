@@ -254,8 +254,14 @@ def get_connectivity_dashboard() -> dict:
     Incluye: status, last_seen, vpn_ip, latency.
     """
     from app.models import MikroTikRouter
+    from app.tenancy import current_tenant_id
 
-    routers = MikroTikRouter.query.all()
+    tenant_id = current_tenant_id()
+    query = MikroTikRouter.query
+    if tenant_id is not None:
+        query = query.filter_by(tenant_id=tenant_id)
+    
+    routers = query.all()
     now = datetime.now(timezone.utc)
     dashboard = []
 

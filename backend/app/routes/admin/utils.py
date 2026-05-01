@@ -1071,106 +1071,15 @@ def _notify_incident(message: str, severity: str = "info"):
         except Exception:
             current_app.logger.warning("WonderPush notify failed")
 
-# Helper para verificar rol de admin
-def admin_required():
-    def wrapper(fn):
-        @jwt_required()
-        @wraps(fn)
-        def decorator(*args, **kwargs):
-            current_user_id = _current_user_id()
-            if current_user_id is None:
-                return jsonify({"error": "Token de usuario invalido."}), 401
-            user = db.session.get(User, current_user_id)
-            tenant_id = current_tenant_id()
-            is_platform_admin = bool(user and user.role == PLATFORM_ADMIN_ROLE)
-            if not user or (user.role != 'admin' and not is_platform_admin):
-                return jsonify({"error": "Acceso denegado. Se requiere rol de administrador."}), 403
-            if is_platform_admin and tenant_id is None:
-                return jsonify({"error": "Platform admin debe seleccionar un tenant para entrar al panel ISP."}), 403
-            if not is_platform_admin and tenant_id is not None and user.tenant_id not in (None, tenant_id):
-                return jsonify({"error": "Acceso denegado para este tenant."}), 403
-            if not is_platform_admin and tenant_id is None and user.tenant_id is not None:
-                return jsonify({"error": "Admin ISP requiere contexto tenant valido."}), 403
-            return fn(*args, **kwargs)
-
-        return decorator
-
-    return wrapper
-
-
-def platform_admin_required():
-    def wrapper(fn):
-        @jwt_required()
-        @wraps(fn)
-        def decorator(*args, **kwargs):
-            current_user_id = _current_user_id()
-            if current_user_id is None:
-                return jsonify({"error": "Token de usuario invalido."}), 401
-            user = db.session.get(User, current_user_id)
-            if not user or user.role != PLATFORM_ADMIN_ROLE:
-                return jsonify({"error": "Acceso denegado. Se requiere rol platform_admin."}), 403
-            tenant_id = current_tenant_id()
-            if tenant_id is not None:
-                return jsonify({"error": "Admin total solo disponible en host master/global."}), 403
-            return fn(*args, **kwargs)
-
-        return decorator
-
-    return wrapper
-
-
-def staff_required():
-    def wrapper(fn):
-        @jwt_required()
-        @wraps(fn)
-        def decorator(*args, **kwargs):
-            current_user_id = _current_user_id()
-            if current_user_id is None:
-                return jsonify({"error": "Token de usuario invalido."}), 401
-            user = db.session.get(User, current_user_id)
-            tenant_id = current_tenant_id()
-            is_platform_admin = bool(user and user.role == PLATFORM_ADMIN_ROLE)
-            if not user or (user.role not in STAFF_ALLOWED_ROLES and not is_platform_admin):
-                return jsonify({"error": "Acceso denegado. Se requiere rol operativo."}), 403
-            if is_platform_admin and tenant_id is None:
-                return jsonify({"error": "Platform admin debe seleccionar un tenant para operar modulos ISP."}), 403
-            if not is_platform_admin and tenant_id is not None and user.tenant_id not in (None, tenant_id):
-                return jsonify({"error": "Acceso denegado para este tenant."}), 403
-            if not is_platform_admin and tenant_id is None and user.tenant_id is not None:
-                return jsonify({"error": "Rol operativo requiere contexto tenant valido."}), 403
-            return fn(*args, **kwargs)
-
-        return decorator
-
-    return wrapper
-
-
-def permission_required(permission: str):
-    def wrapper(fn):
-        @jwt_required()
-        @wraps(fn)
-        def decorator(*args, **kwargs):
-            current_user_id = _current_user_id()
-            if current_user_id is None:
-                return jsonify({"error": "Token de usuario invalido."}), 401
-            user = db.session.get(User, current_user_id)
-            tenant_id = current_tenant_id()
-            is_platform_admin = bool(user and user.role == PLATFORM_ADMIN_ROLE)
-            if not user or (user.role not in STAFF_ALLOWED_ROLES and not is_platform_admin):
-                return jsonify({"error": "Acceso denegado. Se requiere rol operativo."}), 403
-            if is_platform_admin and tenant_id is None:
-                return jsonify({"error": "Platform admin debe seleccionar un tenant para operar modulos ISP."}), 403
-            if not is_platform_admin and tenant_id is not None and user.tenant_id not in (None, tenant_id):
-                return jsonify({"error": "Acceso denegado para este tenant."}), 403
-            if not is_platform_admin and tenant_id is None and user.tenant_id is not None:
-                return jsonify({"error": "Rol operativo requiere contexto tenant valido."}), 403
-            if not _is_permission_allowed(user, permission, tenant_id):
-                return jsonify({"error": f"Permiso insuficiente: {permission}"}), 403
-            return fn(*args, **kwargs)
-
-        return decorator
-
-    return wrapper
+# Decorators are now imported from app.tenancy
+from app.tenancy import (
+    admin_required, 
+    platform_admin_required, 
+    staff_required, 
+    permission_required,
+    PLATFORM_ADMIN_ROLE,
+    STAFF_ALLOWED_ROLES
+)
 
 
 def _serialize_tenant_platform_item(tenant: Tenant) -> dict:
