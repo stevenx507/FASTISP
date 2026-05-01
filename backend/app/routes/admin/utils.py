@@ -3040,3 +3040,7 @@ def _notify_client(client: Client, subject: str, body: str):
 
 # --- ROUTES ---
 
+
+
+# Export all symbols including private ones to fix wildcard imports in blueprints
+__all__ = [name for name in dir() if name not in ('sys', 'os', 'types')]
