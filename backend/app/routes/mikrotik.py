@@ -5175,6 +5175,48 @@ def get_sstp_status(router_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@mikrotik_bp.route('/routers/<int:router_id>/vpn-hub/provision', methods=['POST'])
+@jwt_required()
+@admin_required()
+def provision_hub_for_router(router_id):
+    """Provision a VPN Hub (SoftEther) client session for this router."""
+    try:
+        from app.services.vpn_orchestrator import on_router_created
+        from app.services.sstp_service import generate_mikrotik_hub_client_script
+        from app.tenancy import current_tenant_id
+        from flask_jwt_extended import get_jwt_identity
+
+        tid = current_tenant_id()
+        uid = get_jwt_identity()
+        from app.models import User
+        user = db.session.get(User, int(uid))
+
+        router = db.session.get(MikroTikRouter, router_id)
+        if not router:
+            return jsonify({'success': False, 'error': 'Router no encontrado'}), 404
+        if user and user.role != 'platform_admin' and router.tenant_id != tid:
+            return jsonify({'success': False, 'error': 'Acceso denegado'}), 403
+
+        # Provisionar en modo HUB (SoftEther)
+        res = on_router_created(router, mode="hub")
+        
+        # Generar script de cliente
+        prov_data = {
+            'username': res['vpn_username'],
+            'password': res['vpn_password'],
+            'server_host': res['server_host'],
+            'server_port': res['server_port'],
+            'api_port': router.api_port or 8728,
+            'vpn_ip': res['vpn_ip']
+        }
+        res['script'] = generate_mikrotik_hub_client_script(prov_data)
+        
+        return jsonify(res), 200
+    except Exception as e:
+        logger.error(f"Error provisioning VPN Hub for router {router_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @mikrotik_bp.route('/routers/<int:router_id>/sstp/provision', methods=['POST'])
 @jwt_required()
 @admin_required()

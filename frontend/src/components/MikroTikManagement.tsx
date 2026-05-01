@@ -851,6 +851,10 @@ const MikroTikManagement: React.FC = () => {
   const [sstpProvisioning, setSstpProvisioning] = useState(false)
   const [sstpScriptCopied, setSstpScriptCopied] = useState(false)
   const [sstpLoadingForRouter, setSstpLoadingForRouter] = useState<string | null>(null)
+  const [vpnMode, setVpnMode] = useState<'native' | 'hub'>('hub')
+  const [hubProvisioning, setHubProvisioning] = useState(false)
+  const [hubScript, setHubScript] = useState('')
+  const [hubData, setHubData] = useState<any>(null)
   const [routerSnmpProfile, setRouterSnmpProfile] = useState<RouterSnmpProfilePayload | null>(null)
   const [routerSnmpForm, setRouterSnmpForm] = useState<RouterSnmpFormState>(() => buildSnmpFormFromProfile(null))
   const [routerSnmpPollResult, setRouterSnmpPollResult] = useState<RouterSnmpPollResponse | null>(null)
@@ -1080,6 +1084,30 @@ const MikroTikManagement: React.FC = () => {
       addToast('error', normalizeUiError(error, 'Error al provisionar SSTP'))
     } finally {
       setSstpProvisioning(false)
+    }
+  }, [addToast, apiFetch, safeJson, selectedRouter])
+
+  const provisionHubForRouter = useCallback(async () => {
+    if (!selectedRouter) return
+    setHubProvisioning(true)
+    try {
+      const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/vpn-hub/provision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const payload = (await safeJson(response)) as any
+      if (!response.ok || payload?.error || !payload?.success) {
+        addToast('error', payload?.error || `Error ${response.status} al provisionar Túnel Hub`)
+        return
+      }
+      setHubData(payload)
+      setHubScript(payload?.script || '')
+      addToast('success', 'Túnel Hub (Estilo WispHub) listo. Copia el script y pégalo en tu MikroTik.')
+    } catch (error: unknown) {
+      addToast('error', normalizeUiError(error, 'Error al provisionar Túnel Hub'))
+    } finally {
+      setHubProvisioning(false)
     }
   }, [addToast, apiFetch, safeJson, selectedRouter])
 
@@ -3569,91 +3597,204 @@ const MikroTikManagement: React.FC = () => {
                                 {quickConnect.connection_plan.recommended_transport || '-'}
                               </span>
                             </div>
-                            {/* ── SSTP single-panel (replaces 3-step wizard) ── */}
-                            <div className="mt-2 rounded-xl border border-emerald-500/30 bg-white/5 backdrop-blur-md p-4 space-y-3">
+                            {/* ── VPN Connection Mode Selector ── */}
+                            <div className="mt-2 space-y-4">
+                              <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
+                                <button
+                                  onClick={() => setVpnMode('hub')}
+                                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                                    vpnMode === 'hub'
+                                      ? 'bg-white text-emerald-600 shadow-sm border border-emerald-100'
+                                      : 'text-slate-500 hover:bg-white/50'
+                                  }`}
+                                >
+                                  Túnel Hub (Estilo WispHub)
+                                </button>
+                                <button
+                                  onClick={() => setVpnMode('native')}
+                                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                                    vpnMode === 'native'
+                                      ? 'bg-white text-blue-600 shadow-sm border border-blue-100'
+                                      : 'text-slate-500 hover:bg-white/50'
+                                  }`}
+                                >
+                                  Servidor Nativo (Router con IP)
+                                </button>
+                              </div>
 
-                              {/* Loading */}
+                              {/* Loading Common */}
                               {sstpLoadingForRouter === String(selectedRouter?.id) && (
-                                <p className="text-xs text-emerald-600 animate-pulse">Verificando túnel SSTP...</p>
-                              )}
-
-                              {/* No tunnel */}
-                              {!sstpLoadingForRouter && !sstpTunnel && (
-                                <div className="text-center py-2">
-                                  <p className="text-sm font-semibold text-slate-700">Sin túnel SSTP activo</p>
-                                  <p className="mt-1 text-xs text-slate-500">Crea el túnel para que el MikroTik se conecte al servidor VPN y el panel pueda gestionarlo remotamente.</p>
-                                  <button
-                                    onClick={() => void provisionSstpForRouter()}
-                                    disabled={sstpProvisioning}
-                                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-emerald-500 disabled:opacity-60 transition"
-                                  >
-                                    {sstpProvisioning ? (
-                                      <><svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Provisionando...</>
-                                    ) : (
-                                      <>⚡ Provisionar SSTP</>
-                                    )}
-                                  </button>
+                                <div className="py-8 text-center">
+                                  <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-emerald-600"></div>
+                                  <p className="mt-2 text-xs text-slate-500">Verificando estado del túnel...</p>
                                 </div>
                               )}
 
-                              {/* Tunnel active */}
-                              {!sstpLoadingForRouter && sstpTunnel && (
-                                <div className="space-y-3">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse shadow-lg shadow-emerald-400/50" />
-                                      <p className="text-sm font-bold text-emerald-700">Servidor SSTP Nativo Activo</p>
-                                    </div>
-                                    <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30 uppercase tracking-wide">{sstpTunnel.status}</span>
-                                  </div>
-
-                                  <div className="grid grid-cols-2 gap-2 rounded-lg bg-gradient-to-r from-emerald-50 to-slate-50 px-3 py-2.5 text-xs text-slate-700 border border-emerald-200">
-                                    <div><span className="text-slate-500">Usuario PPP:</span> <strong className="font-mono text-emerald-800">{sstpTunnel.username}</strong></div>
-                                    <div><span className="text-slate-500">Servidor:</span> <strong className="font-mono text-emerald-800">{sstpTunnel.server_host}:{sstpTunnel.server_port}</strong></div>
-                                    {sstpTunnel.password && (
-                                      <div className="col-span-2"><span className="text-slate-500">Password:</span> <strong className="font-mono text-emerald-900">{sstpTunnel.password}</strong></div>
-                                    )}
-                                  </div>
-
-                                  {sstpScript && (
-                                    <div className="rounded-xl border border-slate-200 bg-slate-950 overflow-hidden shadow-sm">
-                                      <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-700 bg-slate-900">
-                                        <div className="flex items-center gap-2">
-                                          <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                                          <p className="text-[11px] font-semibold text-slate-300">Script RouterOS - Winbox New Terminal - pegar - Enter</p>
+                              {!sstpLoadingForRouter && (
+                                <>
+                                  {/* MODE: HUB (WispHub Style) */}
+                                  {vpnMode === 'hub' && (
+                                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                      {!hubScript ? (
+                                        <div className="text-center py-6 px-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+                                          <div className="mx-auto w-14 h-14 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-emerald-100">
+                                            <ServerIcon className="w-7 h-7 text-emerald-500" />
+                                          </div>
+                                          <p className="text-sm font-bold text-slate-800">Túnel Centralizado (Recomendado)</p>
+                                          <p className="text-xs text-slate-500 mt-2 max-w-xs mx-auto leading-relaxed">
+                                            Ideal para routers con <strong>NAT</strong> o sin IP pública. 
+                                            El MikroTik se conecta a tu VPS automáticamente.
+                                          </p>
+                                          <button
+                                            onClick={() => void provisionHubForRouter()}
+                                            disabled={hubProvisioning}
+                                            className="mt-6 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-8 py-3 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-60 transition shadow-lg shadow-emerald-600/20"
+                                          >
+                                            {hubProvisioning ? (
+                                              <><svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Generando...</>
+                                            ) : (
+                                              <>⚡ Generar Script de Conexión</>
+                                            )}
+                                          </button>
                                         </div>
-                                        <button
-                                          onClick={async () => {
-                                            await copyToClipboard(sstpScript)
-                                            setSstpScriptCopied(true)
-                                            setTimeout(() => setSstpScriptCopied(false), 2500)
-                                          }}
-                                          className="rounded-md bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-emerald-500 transition shadow-sm"
-                                        >
-                                          {sstpScriptCopied ? 'Copiado!' : 'Copiar script'}
-                                        </button>
-                                      </div>
-                                      <pre className="max-h-52 overflow-y-auto p-3 text-[10px] leading-relaxed text-emerald-300 whitespace-pre-wrap">{sstpScript}</pre>
+                                      ) : (
+                                        <div className="space-y-4">
+                                          <div className="flex items-center justify-between px-1">
+                                            <div className="flex items-center gap-2">
+                                              <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                              <p className="text-sm font-bold text-emerald-800 uppercase tracking-tight">Túnel Hub Configurado</p>
+                                            </div>
+                                            <button 
+                                              onClick={() => void provisionHubForRouter()}
+                                              className="text-[10px] text-slate-500 font-bold hover:text-emerald-600 transition"
+                                            >
+                                              Regenerar
+                                            </button>
+                                          </div>
+                                          
+                                          <div className="grid grid-cols-2 gap-3 p-4 bg-white border border-emerald-100 rounded-2xl shadow-sm text-xs">
+                                             <div className="flex flex-col gap-0.5">
+                                               <span className="text-slate-400 font-medium">VPN Management IP</span>
+                                               <strong className="text-emerald-700 font-mono text-sm">{hubData?.vpn_ip || 'Pendiente'}</strong>
+                                             </div>
+                                             <div className="flex flex-col gap-0.5">
+                                               <span className="text-slate-400 font-medium">PPP User</span>
+                                               <strong className="text-emerald-700 font-mono text-sm">{hubData?.vpn_username || 'admin'}</strong>
+                                             </div>
+                                          </div>
+
+                                          <div className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-xl ring-1 ring-white/5">
+                                            <div className="flex items-center justify-between px-4 py-3 bg-slate-900/50 border-b border-slate-800">
+                                              <div className="flex items-center gap-2">
+                                                <div className="flex gap-1">
+                                                  <div className="w-2.5 h-2.5 rounded-full bg-rose-500/20 border border-rose-500/40" />
+                                                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20 border border-amber-500/40" />
+                                                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500/40" />
+                                                </div>
+                                                <span className="text-[10px] font-bold text-slate-400 ml-2 uppercase tracking-widest">RouterOS Terminal</span>
+                                              </div>
+                                              <button
+                                                onClick={async () => {
+                                                  await copyToClipboard(hubScript)
+                                                  addToast('success', 'Script copiado al portapapeles!')
+                                                }}
+                                                className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg text-[11px] font-bold transition shadow-sm"
+                                              >
+                                                Copiar Script
+                                              </button>
+                                            </div>
+                                            <div className="p-5 font-mono text-[11px] leading-relaxed overflow-x-auto">
+                                              <pre className="text-emerald-400/90 whitespace-pre scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent max-h-[300px]">
+                                                {hubScript}
+                                              </pre>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="flex gap-2">
+                                            <button
+                                              onClick={() => void runWizardValidation()}
+                                              className="flex-1 rounded-xl bg-slate-800 py-2.5 text-xs font-bold text-white hover:bg-slate-700 transition shadow-sm"
+                                            >
+                                              Validar Conexión
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
                                   )}
 
-                                  <div className="flex flex-wrap gap-2 pt-1">
-                                    <button
-                                      onClick={() => void runWizardValidation()}
-                                      disabled={wizardValidating || readinessLoading}
-                                      className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-60 transition shadow-sm"
-                                    >
-                                      {wizardValidating ? 'Validando...' : 'Validar conexion'}
-                                    </button>
-                                    <button
-                                      onClick={() => void provisionSstpForRouter()}
-                                      disabled={sstpProvisioning}
-                                      className="rounded-lg border border-emerald-300 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-60 transition"
-                                    >
-                                      Regenerar credenciales
-                                    </button>
-                                  </div>
-                                </div>
+                                  {/* MODE: NATIVE (Router as Server) */}
+                                  {vpnMode === 'native' && (
+                                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                      {!sstpTunnel ? (
+                                        <div className="text-center py-6 px-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+                                          <div className="mx-auto w-14 h-14 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-blue-100">
+                                            <CogIcon className="w-7 h-7 text-blue-500" />
+                                          </div>
+                                          <p className="text-sm font-bold text-slate-800">Servidor SSTP en MikroTik</p>
+                                          <p className="text-xs text-slate-500 mt-2 max-w-xs mx-auto leading-relaxed">
+                                            El MikroTik actúa como servidor. Requiere <strong>IP Pública</strong> y puerto 443/8443 abierto.
+                                          </p>
+                                          <button
+                                            onClick={() => void provisionSstpForRouter()}
+                                            disabled={sstpProvisioning}
+                                            className="mt-6 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-60 transition shadow-lg shadow-blue-600/20"
+                                          >
+                                            {sstpProvisioning ? 'Provisionando...' : '⚡ Configurar Servidor'}
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <div className="space-y-4">
+                                          <div className="flex items-center justify-between px-1">
+                                            <div className="flex items-center gap-2">
+                                              <span className="inline-block h-2.5 w-2.5 rounded-full bg-blue-400 animate-pulse shadow-lg shadow-blue-400/50" />
+                                              <p className="text-sm font-bold text-blue-800 uppercase tracking-tight">Servidor Nativo Activo</p>
+                                            </div>
+                                            <button 
+                                              onClick={() => void provisionSstpForRouter()}
+                                              className="text-[10px] text-slate-500 font-bold hover:text-blue-600 transition"
+                                            >
+                                              Regenerar
+                                            </button>
+                                          </div>
+
+                                          <div className="grid grid-cols-2 gap-3 p-4 bg-white border border-blue-100 rounded-2xl shadow-sm text-xs">
+                                             <div className="flex flex-col gap-0.5">
+                                               <span className="text-slate-400 font-medium">User</span>
+                                               <strong className="text-blue-700 font-mono text-sm">{sstpTunnel.username}</strong>
+                                             </div>
+                                             <div className="flex flex-col gap-0.5">
+                                               <span className="text-slate-400 font-medium">Server Host</span>
+                                               <strong className="text-blue-700 font-mono text-sm">{sstpTunnel.server_host}</strong>
+                                             </div>
+                                          </div>
+
+                                          {sstpScript && (
+                                            <div className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-xl ring-1 ring-white/5">
+                                              <div className="flex items-center justify-between px-4 py-3 bg-slate-900/50 border-b border-slate-800">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">RouterOS Terminal</span>
+                                                <button
+                                                  onClick={async () => {
+                                                    await copyToClipboard(sstpScript)
+                                                    addToast('success', 'Script copiado!')
+                                                  }}
+                                                  className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-[11px] font-bold transition shadow-sm"
+                                                >
+                                                  Copiar Script
+                                                </button>
+                                              </div>
+                                              <div className="p-5 font-mono text-[11px] leading-relaxed overflow-x-auto">
+                                                <pre className="text-blue-400/90 whitespace-pre scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent max-h-[300px]">
+                                                  {sstpScript}
+                                                </pre>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </div>
 

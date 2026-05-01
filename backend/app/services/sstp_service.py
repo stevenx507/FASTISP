@@ -25,7 +25,7 @@ from app import db
 logger = logging.getLogger(__name__)
 
 # ── Configuración ──────────────────────────────────────────────────────────────
-SSTP_SERVER_PORT = int(os.environ.get("SSTP_SERVER_PORT", "443"))
+SSTP_SERVER_PORT = int(os.environ.get("SSTP_SERVER_PORT", "8443"))
 SSTP_POOL_START = os.environ.get("SSTP_POOL_START", "10.10.0.2")
 SSTP_POOL_END = os.environ.get("SSTP_POOL_END", "10.10.0.254")
 SSTP_LOCAL_ADDRESS = os.environ.get("SSTP_LOCAL_ADDRESS", "10.10.0.1")
@@ -558,6 +558,62 @@ def generate_ppp_secret_script(
     if is_public:
         script += f'\n/interface set [find where name={_routeros_quote(lan_interface)}] arp=proxy-arp'
         script += f'\n:log info "FastISP: Proxy-ARP activado en {lan_interface} para IP publica {remote_address}"'
+    return script
+
+
+def generate_mikrotik_hub_client_script(provisioning: dict) -> str:
+    """
+    Genera un script RouterOS para conectar un MikroTik como CLIENTE SSTP al VPS (Modo Hub).
+    Estilo WispHub.
+    """
+    username = provisioning.get("username", "admin")
+    password = provisioning.get("password", "")
+    server_host = provisioning.get("server_host", "fastisp.cloud")
+    server_port = provisioning.get("server_port", 443)
+    api_port = provisioning.get("api_port", 8728)
+
+    script = f"""# ========================================================
+# ISPFAST: Script de Conexion via Tunel (Modo Hub)
+# ========================================================
+# Este script conecta su MikroTik al VPS central.
+# No requiere apertura de puertos ni IP publica.
+
+:log info "ISPFAST: Iniciando configuracion de Tunel Hub..."
+
+# 1. Limpieza de conexiones previas de ISPFAST
+:do {{ /interface sstp-client remove [find where comment~"ISPFAST"] }} on-error={{}}
+:do {{ /ppp profile remove [find where name="ispfast-hub"] }} on-error={{}}
+
+# 2. Perfil PPP para el cliente
+/ppp profile add name="ispfast-hub" comment="ISPFAST Hub Profile" use-encryption=yes
+
+# 3. Configuracion del cliente SSTP
+/interface sstp-client add name="ispfast-hub-vpn" \\
+    connect-to={_routeros_quote(server_host)} \\
+    port={server_port} \\
+    user={_routeros_quote(username)} \\
+    password={_routeros_quote(password)} \\
+    profile="ispfast-hub" \\
+    certificate=none \\
+    verify-server-certificate=no \\
+    disabled=no \\
+    comment="ISPFAST Hub Connection"
+
+# 4. Usuario API local para el panel
+:do {{ /user group add name="ispfast" policy="local,ftp,reboot,read,write,policy,test,password,sniff,api,romon,sensitive" }} on-error={{}}
+:do {{ /user remove [find name={_routeros_quote(username)}] }} on-error={{}}
+/user add name={_routeros_quote(username)} password={_routeros_quote(password)} group="ispfast" comment="ISPFAST API User"
+
+# 5. Habilitar API en el puerto correcto (permitiendo el rango del tunel)
+/ip service set api port={api_port} disabled=no address="10.100.0.0/16"
+
+# 6. Programador para asegurar que la conexion se reinicie si falla
+:do {{ /system scheduler remove [find name="ISPFAST-KeepAlive"] }} on-error={{}}
+/system scheduler add name="ISPFAST-KeepAlive" interval=10m start-time=startup \\
+    on-event="/interface sstp-client {{ :if ([get [find name=\\\"ispfast-hub-vpn\\\"] running] = false) do={{ disable [find name=\\\"ispfast-hub-vpn\\\"]; :delay 5s; enable [find name=\\\"ispfast-hub-vpn\\\"]; :log info \\\"ISPFAST: Reiniciando tunel caido\\\" }} }}"
+
+:log info "ISPFAST: Configuracion completada con exito."
+"""
     return script
 
 

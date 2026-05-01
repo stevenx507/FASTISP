@@ -3,14 +3,6 @@ vpn_orchestrator.py — Pilar 1: Orquestador de usuarios VPN
 ===========================================================
 Gestiona automáticamente los usuarios SSTP en SoftEther cuando
 se registra o elimina una ISP (MikroTikRouter) en el panel.
-
-Funciones principales:
-  - on_router_created(router): crea usuario VPN + asigna IP fija
-  - on_router_deleted(router): revoca usuario VPN
-  - assign_static_vpn_ip(router_id): asigna IP fija del pool
-  - get_vpn_status(router_id): estado del túnel VPN
-
-La IP fija se guarda en MikroTikRouter.vpn_ip_address (campo nuevo).
 """
 
 import logging
@@ -33,11 +25,7 @@ SSTP_SERVER_HOST    = os.environ.get("SSTP_SERVER_HOST", "fastisp.cloud")
 SSTP_SERVER_PORT    = int(os.environ.get("SSTP_SERVER_PORT", "8443"))
 
 # Pool de IPs fijas para los MikroTik (10.100.1.x - 10.100.254.x)
-# Cada ISP recibe una IP fija única en este rango
 VPN_IP_POOL_BASE    = "10.100"
-VPN_IP_POOL_START   = 10   # 10.100.1.10
-VPN_IP_POOL_END     = 250
-
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -62,7 +50,6 @@ def _vpncmd(cmd: str, timeout: int = 20) -> dict:
     except subprocess.TimeoutExpired:
         return {"success": False, "error": "Timeout", "output": ""}
     except FileNotFoundError:
-        # Docker no disponible (entorno dev)
         logger.warning(f"Docker no disponible, simulando: {cmd}")
         return {"success": True, "output": "simulated", "error": ""}
     except Exception as e:
@@ -107,7 +94,6 @@ def _get_next_available_ip(tenant_id: int, router_id: int) -> str:
     """
     Asigna una IP fija única del pool VPN.
     Usa tenant_id y router_id para generar una IP determinista y única.
-    Formato: 10.100.<tenant_id % 254 + 1>.<router_id % 240 + 10>
     """
     octet3 = (tenant_id % 254) + 1      # 1-254
     octet4 = (router_id % 240) + 10     # 10-249
@@ -116,244 +102,105 @@ def _get_next_available_ip(tenant_id: int, router_id: int) -> str:
 
 # ── API pública ────────────────────────────────────────────────────────────────
 
-def on_router_created(router) -> dict:
+def on_router_created(router, mode: str = "native") -> dict:
     """
-    Hook llamado cuando se crea un nuevo MikroTikRouter.
-    Crea el usuario VPN en SoftEther y asigna IP fija.
-
-    Args:
-        router: instancia de MikroTikRouter (con tenant_id, id, name)
-
-    Returns:
-        dict con vpn_username, vpn_password, vpn_ip, sstp_url
+    Provisiona la conectividad del router.
+    Soporta dos arquitecturas:
+      - 'native': MikroTik es el Servidor SSTP (Requiere IP Pública).
+      - 'hub': MikroTik es el Cliente SSTP (Estilo WispHub, recomendado para NAT).
     """
-    from app import db
-
-    # Generar credenciales únicas
-    safe_name = "".join(c for c in router.name.lower() if c.isalnum() or c == "-")[:10]
-    vpn_username = f"isp-{safe_name}-{secrets.token_hex(3)}"
-    vpn_password = _generate_vpn_password(16)
-
-    # Asignar IP fija del pool
-    vpn_ip = _get_next_available_ip(
-        tenant_id=router.tenant_id or 1,
-        router_id=router.id
-    )
-
-    logger.info(f"Creando usuario VPN '{vpn_username}' para router '{router.name}' (IP: {vpn_ip})")
-
-    # Crear usuario en SoftEther
-    result = _vpncmd_hub(f"UserCreate {vpn_username} /GROUP:none /REALNAME:{router.name} /NOTE:tenant-{router.tenant_id}")
-    if not result["success"] and "already exists" not in result.get("output", "").lower():
-        logger.warning(f"UserCreate warning: {result.get('error', '')}")
-
-    # Establecer contraseña
-    result_pw = _vpncmd_hub(f"UserPasswordSet {vpn_username} /PASSWORD:{vpn_password}")
-    if not result_pw["success"]:
-        logger.warning(f"UserPasswordSet warning: {result_pw.get('error', '')}")
-
-    # Guardar en la BD (campos vpn_username, vpn_password, vpn_ip_address)
-    try:
-        router.vpn_username = vpn_username
-        router.vpn_password_plain = vpn_password  # Se encripta en el setter
-        router.vpn_ip_address = vpn_ip
-        router.vpn_provisioned_at = datetime.utcnow()
-        db.session.add(router)
-        db.session.commit()
-        logger.info(f"Router {router.id} actualizado con credenciales VPN en BD")
-    except Exception as e:
-        logger.error(f"Error guardando credenciales VPN en BD: {e}")
-        db.session.rollback()
-
-    return {
-        "success": True,
-        "vpn_username": vpn_username,
-        "vpn_password": vpn_password,
-        "vpn_ip": vpn_ip,
-        "sstp_url": f"sstp://{SSTP_SERVER_HOST}:{SSTP_SERVER_PORT}",
-        "hub": SOFTETHER_HUB,
-        "provisioned_at": datetime.utcnow().isoformat(),
-    }
-
-
-def on_router_deleted(router) -> bool:
-    """
-    Hook llamado cuando se elimina un MikroTikRouter.
-    Revoca el usuario VPN en SoftEther.
-    """
-    vpn_username = getattr(router, 'vpn_username', None)
-    if not vpn_username:
-        logger.info(f"Router {router.id} no tiene usuario VPN, nada que revocar")
-        return True
-
-    result = _vpncmd_hub(f"UserDelete {vpn_username}")
-    if result["success"]:
-        logger.info(f"Usuario VPN '{vpn_username}' eliminado de SoftEther")
-    else:
-        logger.warning(f"No se pudo eliminar usuario VPN '{vpn_username}': {result.get('error')}")
-
-    return result["success"]
-
-
-def get_vpn_user_status(vpn_username: str) -> dict:
-    """
-    Verifica si un usuario VPN existe y está activo en SoftEther.
-    """
-    result = _vpncmd_hub(f"UserGet {vpn_username}")
-    if result["success"] and vpn_username in result.get("output", ""):
-        return {
-            "exists": True,
-            "username": vpn_username,
-            "hub": SOFTETHER_HUB,
-            "output": result["output"][:200]
-        }
-    return {"exists": False, "username": vpn_username}
-
-
-def get_connected_sessions() -> dict:
-    """
-    Retorna las sesiones VPN activas en SoftEther.
-    Útil para el dashboard de conectividad.
-    """
-    result = _vpncmd_hub("SessionList")
-    if not result["success"]:
-        return {"success": False, "sessions": [], "error": result.get("error")}
-
-    # Parsear output de SessionList
-    sessions = []
-    lines = result.get("output", "").split("\n")
-    current = {}
-    for line in lines:
-        if "Session Name" in line:
-            if current:
-                sessions.append(current)
-            current = {"name": line.split("|")[-1].strip() if "|" in line else ""}
-        elif "IP Address" in line and "|" in line:
-            current["ip"] = line.split("|")[-1].strip()
-        elif "Username" in line and "|" in line:
-            current["username"] = line.split("|")[-1].strip()
-        elif "Connected Time" in line and "|" in line:
-            current["connected_at"] = line.split("|")[-1].strip()
-    if current:
-        sessions.append(current)
-
-    return {
-        "success": True,
-        "sessions": sessions,
-        "count": len(sessions),
-        "hub": SOFTETHER_HUB
-    }
-
-
-def provision_router_vpn(router_id: int) -> dict:
-    """
-    Provisiona o re-provisiona el VPN de un router existente.
-    Útil para regenerar credenciales.
-    """
-    from app.models import MikroTikRouter
-    router = MikroTikRouter.query.get(router_id)
-    if not router:
-        return {"success": False, "error": f"Router {router_id} no encontrado"}
-
-    # Si ya tiene usuario, eliminarlo primero
-    if hasattr(router, 'vpn_username') and router.vpn_username:
-        on_router_deleted(router)
-
-    return on_router_created(router)
-
-
-def list_vpn_users() -> list:
-    """Lista todos los usuarios VPN del hub FASTISP."""
-    result = _vpncmd_hub("UserList")
-    if not result["success"]:
-        return []
-
-    users = []
-    for line in result.get("output", "").split("\n"):
-        if "User Name" in line and "|" in line:
-            username = line.split("|")[-1].strip()
-            if username and username != "User Name":
-                users.append(username)
-    return users
-
-
-# Override final: compatibilidad legacy montada sobre SSTP nativo RouterOS.
-
-def on_router_created(router) -> dict:
-    """Provisiona SSTP nativo y sincroniza los campos legacy del router."""
     from app import db
     from app.models import SstpTunnel, _get_fernet
     from app.services.sstp_service import provision_sstp_tunnel, provision_sstp_tunnel_api
 
-    tunnel = SstpTunnel.query.filter_by(router_id=router.id, status='active').first()
-    if tunnel:
-        provisioning = {
-            "username": tunnel.username,
-            "password": tunnel.password or "",
-            "server_host": tunnel.server_host,
-            "server_port": tunnel.server_port,
-            "server_ip": tunnel.server_ip,
-            "client_ip": tunnel.client_ip,
-            "fingerprint": "MIKROTIK-NATIVE-CERT",
-            "router_name": router.name,
-            "provisioned_at": tunnel.created_at.isoformat() if tunnel.created_at else datetime.utcnow().isoformat(),
+    if mode == "native":
+        tunnel = SstpTunnel.query.filter_by(router_id=router.id, status='active').first()
+        if not tunnel:
+            provisioning = provision_sstp_tunnel(router)
+            tunnel = SstpTunnel(
+                router_id=router.id,
+                tenant_id=router.tenant_id,
+                username=provisioning["username"],
+                server_ip=provisioning["server_ip"],
+                client_ip=provisioning["client_ip"],
+                server_host=provisioning["server_host"],
+                server_port=provisioning["server_port"],
+                status="active",
+            )
+            tunnel.password = provisioning["password"]
+            db.session.add(tunnel)
+        else:
+            provisioning = {
+                "username": tunnel.username,
+                "password": tunnel.password or "",
+                "server_host": tunnel.server_host,
+                "server_port": tunnel.server_port,
+                "server_ip": tunnel.server_ip,
+                "client_ip": tunnel.client_ip,
+            }
+
+        router.vpn_username = provisioning["username"]
+        router.vpn_ip_address = provisioning["server_ip"]
+        router.vpn_password_encrypted = _get_fernet().encrypt(provisioning["password"].encode("utf-8"))
+        router.vpn_provisioned_at = datetime.utcnow()
+        db.session.add(router)
+        db.session.commit()
+
+        return {
+            "success": True,
+            "mode": "native",
+            "vpn_username": provisioning["username"],
+            "vpn_password": provisioning["password"],
+            "vpn_ip": provisioning["server_ip"],
+            "sstp_url": f"sstp://{provisioning['server_host']}:{provisioning['server_port']}",
+            "provisioned_at": datetime.utcnow().isoformat(),
         }
+
     else:
-        provisioning = provision_sstp_tunnel(router)
-        tunnel = SstpTunnel(
-            router_id=router.id,
-            tenant_id=router.tenant_id,
-            username=provisioning["username"],
-            server_ip=provisioning["server_ip"],
-            client_ip=provisioning["client_ip"],
-            server_host=provisioning["server_host"],
-            server_port=provisioning["server_port"],
-            status="active",
-        )
-        tunnel.password = provisioning["password"]
-        db.session.add(tunnel)
+        # Modo HUB: SoftEther centralizado
+        safe_name = "".join(c for c in router.name.lower() if c.isalnum() or c == "-")[:10]
+        vpn_username = f"hub-{safe_name}-{secrets.token_hex(3)}"
+        vpn_password = _generate_vpn_password(16)
+        vpn_ip = _get_next_available_ip(router.tenant_id or 1, router.id)
 
-    router.vpn_username = provisioning["username"]
-    router.vpn_ip_address = provisioning["server_ip"]
-    router.vpn_password_encrypted = _get_fernet().encrypt(provisioning["password"].encode("utf-8"))
-    router.vpn_provisioned_at = datetime.utcnow()
-    db.session.add(router)
-    db.session.commit()
+        _vpncmd_hub(f"UserCreate {vpn_username} /GROUP:none /REALNAME:{router.name} /NOTE:tenant-{router.tenant_id}")
+        _vpncmd_hub(f"UserPasswordSet {vpn_username} /PASSWORD:{vpn_password}")
 
-    api_applied = False
-    api_results: list[str] = []
-    try:
-        api_result = provision_sstp_tunnel_api(router, provisioning=provisioning)
-        api_applied = bool(api_result.get("api_applied"))
-        api_results = list(api_result.get("api_results") or [])
-    except Exception as exc:
-        api_results = [str(exc)]
-        logger.warning("No se pudo auto-aplicar SSTP nativo en router %s: %s", router.id, exc)
+        router.vpn_username = vpn_username
+        router.vpn_ip_address = vpn_ip
+        router.vpn_password_encrypted = _get_fernet().encrypt(vpn_password.encode("utf-8"))
+        router.vpn_provisioned_at = datetime.utcnow()
+        db.session.add(router)
+        db.session.commit()
 
-    return {
-        "success": True,
-        "vpn_username": provisioning["username"],
-        "vpn_password": provisioning["password"],
-        "vpn_ip": provisioning["server_ip"],
-        "sstp_url": f"sstp://{provisioning['server_host']}:{provisioning['server_port']}",
-        "router_name": router.name,
-        "api_applied": api_applied,
-        "api_results": api_results,
-        "architecture": "mikrotik-native-sstp",
-        "provisioned_at": datetime.utcnow().isoformat(),
-    }
+        return {
+            "success": True,
+            "mode": "hub",
+            "vpn_username": vpn_username,
+            "vpn_password": vpn_password,
+            "vpn_ip": vpn_ip,
+            "server_host": SSTP_SERVER_HOST,
+            "server_port": SSTP_SERVER_PORT,
+            "sstp_url": f"sstp://{SSTP_SERVER_HOST}:{SSTP_SERVER_PORT}",
+            "provisioned_at": datetime.utcnow().isoformat(),
+        }
 
 
 def on_router_deleted(router) -> bool:
-    """Marca el tunel SSTP como revocado y limpia los campos legacy."""
+    """Elimina las credenciales VPN y el usuario en SoftEther (si existe)."""
     from app import db
     from app.models import SstpTunnel
 
+    # Limpieza modo Nativo
     tunnel = SstpTunnel.query.filter_by(router_id=router.id, status='active').first()
     if tunnel:
         tunnel.status = 'revoked'
         tunnel.revoked_at = datetime.utcnow()
         db.session.add(tunnel)
+
+    # Limpieza modo Hub
+    if router.vpn_username and router.vpn_username.startswith("hub-"):
+        _vpncmd_hub(f"UserDelete {router.vpn_username}")
 
     router.vpn_username = None
     router.vpn_password_encrypted = None
@@ -365,61 +212,59 @@ def on_router_deleted(router) -> bool:
 
 
 def get_vpn_user_status(vpn_username: str) -> dict:
-    """Devuelve el estado de un tunel SSTP nativo por username legacy."""
+    """Retorna el estado de conexión del usuario."""
+    # Primero buscamos en modo Nativo
     from app.models import SstpTunnel
-
     tunnel = SstpTunnel.query.filter_by(username=vpn_username).order_by(SstpTunnel.created_at.desc()).first()
-    if not tunnel:
-        return {"exists": False, "username": vpn_username}
+    if tunnel:
+        return {
+            "exists": tunnel.status == "active",
+            "username": vpn_username,
+            "vpn_ip": tunnel.server_ip,
+            "status": tunnel.status,
+            "architecture": "mikrotik-native-sstp",
+        }
 
-    return {
-        "exists": tunnel.status == "active",
-        "username": vpn_username,
-        "router_id": tunnel.router_id,
-        "router_name": tunnel.router.name if tunnel.router else None,
-        "server_host": tunnel.server_host,
-        "server_port": tunnel.server_port,
-        "vpn_ip": tunnel.server_ip,
-        "last_seen": tunnel.last_seen.isoformat() if tunnel.last_seen else None,
-        "status": tunnel.status,
-        "architecture": "mikrotik-native-sstp",
-    }
+    # Si no, buscamos en SoftEther (Hub)
+    result = _vpncmd_hub(f"UserGet {vpn_username}")
+    if result["success"]:
+        return {
+            "exists": True,
+            "username": vpn_username,
+            "architecture": "softether-hub",
+        }
+
+    return {"exists": False, "username": vpn_username}
 
 
 def get_connected_sessions() -> dict:
-    """Expone los servidores SSTP nativos activos para compatibilidad legacy."""
-    from app.models import SstpTunnel
+    """Retorna lista de sesiones activas en el Hub."""
+    result = _vpncmd_hub("SessionList")
+    sessions = []
+    if result["success"]:
+        lines = result.get("output", "").split("\n")
+        current = {}
+        for line in lines:
+            if "Session Name" in line:
+                if current: sessions.append(current)
+                current = {"name": line.split("|")[-1].strip() if "|" in line else ""}
+            elif "Username" in line and "|" in line:
+                current["username"] = line.split("|")[-1].strip()
+            elif "IP Address" in line and "|" in line:
+                current["ip"] = line.split("|")[-1].strip()
+        if current: sessions.append(current)
 
-    tunnels = (
-        SstpTunnel.query.filter_by(status='active')
-        .order_by(SstpTunnel.created_at.desc())
-        .all()
-    )
-    sessions = [
-        {
-            "username": tunnel.username,
-            "ip": tunnel.server_ip,
-            "router_id": tunnel.router_id,
-            "router_name": tunnel.router.name if tunnel.router else None,
-            "connected_at": tunnel.created_at.isoformat() if tunnel.created_at else None,
-            "status": tunnel.status,
-        }
-        for tunnel in tunnels
-    ]
     return {
         "success": True,
         "sessions": sessions,
         "count": len(sessions),
-        "hub": "routeros-native",
-        "architecture": "mikrotik-native-sstp",
+        "hub": SOFTETHER_HUB
     }
 
 
 def provision_router_vpn(router_id: int) -> dict:
-    """Compatibilidad legacy: provisiona SSTP nativo para el router."""
+    """Provisiona el VPN por defecto (Nativo) para compatibilidad."""
     from app.models import MikroTikRouter
-
     router = MikroTikRouter.query.get(router_id)
-    if not router:
-        return {"success": False, "error": f"Router {router_id} no encontrado"}
-    return on_router_created(router)
+    if not router: return {"success": False, "error": "Router no encontrado"}
+    return on_router_created(router, mode="native")
