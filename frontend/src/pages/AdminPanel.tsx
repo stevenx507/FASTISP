@@ -276,6 +276,9 @@ const AdminPanel: React.FC = () => {
     }
   }, [])
 
+  const unreadCount = notifications.filter((n) => !n.read).length
+  const isPlatformAdminMode = normalizeRole(user?.role) === 'platform_admin'
+
   useEffect(() => {
     if (isPlatformAdminMode && !tenantContextId) {
       navigate('/platform')
@@ -285,9 +288,6 @@ const AdminPanel: React.FC = () => {
     const timer = setInterval(loadNotifications, 30000)
     return () => clearInterval(timer)
   }, [loadNotifications, isPlatformAdminMode, tenantContextId, navigate])
-
-  const unreadCount = notifications.filter((n) => !n.read).length
-  const isPlatformAdminMode = normalizeRole(user?.role) === 'platform_admin'
 
   const handleExitTenantMode = () => {
     setTenantContext(null)
