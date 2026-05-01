@@ -141,7 +141,7 @@ def create_app(config_name_or_class='development'):
         r"/api/*": {
             "origins": origins,
             "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
+            "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "X-Tenant-ID"],
             "supports_credentials": True,
             "max_age": 600,
         }
