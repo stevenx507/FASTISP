@@ -358,7 +358,7 @@ const ClientsManagement: React.FC = () => {
         const a = document.createElement('a'); a.href = url; a.download = 'clientes.csv'; a.click()
         toast.success('CSV exportado')
       } else {
-        toast('AcciÃ³n no implementada aÃºn')
+        toast('Acción no implementada aún')
       }
       setSelectedIds(new Set())
       setBulkAction('')
@@ -381,7 +381,7 @@ const ClientsManagement: React.FC = () => {
       toast('Función amarrar IP-MAC disponible próximamente desde el panel de cliente.')
       return
     }
-    toast(`"${action}" para ${client.name} â€” prÃ³ximamente`)
+    toast(`"${action}" para ${client.name} â€” próximamente`)
   }
 
   const suspend = async (id: number) => {
@@ -587,7 +587,7 @@ const ClientsManagement: React.FC = () => {
     }
   }
 
-  // â”€â”€â”€ action tooltip button helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──â”€ action tooltip button helper ──────────────────────────────────────────â”€
   const ActionBtn = ({ color, tip, onClick, children }: { color: string; tip: string; onClick: () => void; children: React.ReactNode }) => (
     <div className="group relative">
       <button type="button" onClick={onClick}
@@ -603,7 +603,7 @@ const ClientsManagement: React.FC = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-0 rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-sm overflow-hidden">
 
-      {/* â”€â”€ Header â”€â”€ */}
+      {/* ── Header ── */}
       <div className="border-b border-gray-200 bg-white backdrop-blur-md px-5 py-4">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="flex items-center gap-2 text-xl font-bold text-slate-700">
@@ -629,9 +629,9 @@ const ClientsManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* â”€â”€ AcciÃ³n masiva â”€â”€ */}
+      {/* ── Acción masiva ── */}
       <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 bg-white px-5 py-2">
-        <span className="text-sm font-medium text-slate-500">AcciÃ³n:</span>
+        <span className="text-sm font-medium text-slate-500">Acción:</span>
         <select
           value={bulkAction}
           onChange={(e) => setBulkAction(e.target.value)}
@@ -649,12 +649,12 @@ const ClientsManagement: React.FC = () => {
           disabled={runningBulk}
           className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
         >
-          â–¶ Ejecutar
+          ▶ Ejecutar
         </button>
         <span className="text-xs text-slate-500">{selectedIds.size} seleccionados/as</span>
       </div>
 
-      {/* â”€â”€ Toolbar â”€â”€ */}
+      {/* ── Toolbar ── */}
       <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 bg-white px-5 py-2">
         {/* Page size */}
         <select
@@ -668,15 +668,15 @@ const ClientsManagement: React.FC = () => {
         <button onClick={() => { const rows = allFiltered; const csv = ['ID,Nombre,Usuario,IP,Estado,LAN,Corte', ...rows.map((c) => `${c.id},"${c.name}",${c.username||''},${c.ip_address||''},${c.status},${c.lan_interface||''},${c.dia_corte??''}`)].join('\n'); const b = new Blob([csv],{type:'text/csv'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href=u; a.download='clientes.csv'; a.click(); toast.success('CSV exportado') }}
           className="rounded border border-white/20 bg-white backdrop-blur-md px-2 py-1 text-xs text-slate-500 hover:bg-white/10" title="Exportar CSV">CSV</button>
 
-        <span className="ml-2 text-xs font-semibold text-slate-500">Botonas de AcciÃ³n:</span>
+        <span className="ml-2 text-xs font-semibold text-slate-500">Botonas de Acción:</span>
 
-        <ActionBtn color="bg-green-500" tip="Generar Factura" onClick={() => { if(selectedIds.size===0){toast('Selecciona clientes');return} toast('Generar factura â€” prÃ³ximamente') }}>$</ActionBtn>
-        <ActionBtn color="bg-green-600" tip="Activar Cliente" onClick={() => { selectedIds.forEach((id)=>void activate(id)); toast.success('Activandoâ€¦') }}>â–¶</ActionBtn>
+        <ActionBtn color="bg-green-500" tip="Generar Factura" onClick={() => { if(selectedIds.size===0){toast('Selecciona clientes');return} toast('Generar factura â€” próximamente') }}>$</ActionBtn>
+        <ActionBtn color="bg-green-600" tip="Activar Cliente" onClick={() => { selectedIds.forEach((id)=>void activate(id)); toast.success('Activandoâ€¦') }}>▶</ActionBtn>
         <ActionBtn color="bg-orange-500" tip="Desactivar Cliente" onClick={() => { selectedIds.forEach((id)=>void suspend(id)); toast.success('Desactivandoâ€¦') }}>â¸</ActionBtn>
-        <ActionBtn color="bg-yellow-500" tip="Agregar Ticket" onClick={() => toast('Agregar Ticket â€” prÃ³ximamente')}>ðŸŽ«</ActionBtn>
-        <ActionBtn color="bg-blue-500" tip="Ver TrÃ¡fico" onClick={() => toast('Ver TrÃ¡fico â€” prÃ³ximamente')}>ðŸ“Š</ActionBtn>
-        <ActionBtn color="bg-violet-600" tip="Ver ONU" onClick={() => { const id = Array.from(selectedIds)[0]; if(id){const c=clients.find(x=>x.id===id); if(c) openGponModal(c)} else toast('Selecciona un cliente') }}>ðŸ“¡</ActionBtn>
-        <ActionBtn color="bg-teal-500" tip="Portal Cliente" onClick={() => { const id = Array.from(selectedIds)[0]; if(id){const c=clients.find(x=>x.id===id); if(c) openPortalModal(c)} else toast('Selecciona un cliente') }}>ðŸ”‘</ActionBtn>
+        <ActionBtn color="bg-yellow-500" tip="Agregar Ticket" onClick={() => toast('Agregar Ticket â€” próximamente')}>🎟️</ActionBtn>
+        <ActionBtn color="bg-blue-500" tip="Ver TrÃ¡fico" onClick={() => toast('Ver TrÃ¡fico â€” próximamente')}>📊</ActionBtn>
+        <ActionBtn color="bg-violet-600" tip="Ver ONU" onClick={() => { const id = Array.from(selectedIds)[0]; if(id){const c=clients.find(x=>x.id===id); if(c) openGponModal(c)} else toast('Selecciona un cliente') }}>📡</ActionBtn>
+        <ActionBtn color="bg-teal-500" tip="Portal Cliente" onClick={() => { const id = Array.from(selectedIds)[0]; if(id){const c=clients.find(x=>x.id===id); if(c) openPortalModal(c)} else toast('Selecciona un cliente') }}>🔑</ActionBtn>
 
         {/* Herramientas */}
         <div className="relative ml-1" ref={herramientasRef}>
@@ -693,13 +693,13 @@ const ClientsManagement: React.FC = () => {
                 { label: 'ðŸ” Actualizar Password', key: 'password' },
                 { label: 'ðŸ‘ Auto-Login Portal del Cliente', key: 'portal_login' },
                 { label: 'ðŸ’³ Ver Historial de Pagos', key: 'pagos' },
-                { label: 'ðŸŽ« Ver Historial de Tickets', key: 'tickets' },
+                { label: '🎟️ Ver Historial de Tickets', key: 'tickets' },
                 { label: 'ðŸ“‹ Ver Log', key: 'log' },
                 { label: 'ðŸ”— Hacer Amarrar IP-MAC', key: 'mac' },
                 { label: 'ðŸš« Cancelar Cliente', key: 'cancelar' },
                 { label: 'ðŸ—‘ Eliminar Cliente de FASTISP + RB', key: 'delete' },
-                { label: 'ðŸ“¶ Cambiar ContraseÃ±a WiFi', key: 'wifi_pass' },
-                { label: 'ðŸ”„ Recalcular informaciÃ³n del cliente', key: 'recalc' },
+                { label: '📶 Cambiar Contraseña WiFi', key: 'wifi_pass' },
+                { label: '🔄 Recalcular información del cliente', key: 'recalc' },
               ].map(({ label, key }) => (
                 <button key={key} onClick={() => {
                     const id = Array.from(selectedIds)[0]
@@ -726,7 +726,7 @@ const ClientsManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* â”€â”€ Credenciales banner â”€â”€ */}
+      {/* ── Credenciales banner ── */}
       {lastPortalCredentials && (
         <div className="mx-5 mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm">
           <p className="font-semibold text-emerald-700">Credenciales portal generadas â€” {lastPortalCredentials.clientName}</p>
@@ -735,7 +735,7 @@ const ClientsManagement: React.FC = () => {
         </div>
       )}
 
-      {/* â”€â”€ Tabla â”€â”€ */}
+      {/* ── Tabla ── */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="border-b border-gray-200 bg-white text-xs font-semibold uppercase text-slate-500">
@@ -744,14 +744,14 @@ const ClientsManagement: React.FC = () => {
                 <input type="checkbox" checked={allPageSelected} onChange={toggleSelectAll} className="cursor-pointer" />
               </th>
               <th className="px-3 py-2 text-left cursor-pointer select-none" onClick={() => setSortBy('name')}>
-                Nombre {sortBy === 'name' && 'â†‘'}
+                Nombre {sortBy === 'name' && '↑'}
               </th>
               <th className="px-3 py-2 text-left">Usuario</th>
               <th className="px-3 py-2 text-left">IP</th>
               <th className="px-3 py-2 text-center">Enviar Avisos en Pantalla</th>
               <th className="px-3 py-2 text-left">Interfaz LAN</th>
-              <th className="px-3 py-2 text-left">DÃ­a de Corte</th>
-              <th className="px-3 py-2 text-right">AcciÃ³n</th>
+              <th className="px-3 py-2 text-left">Día de Corte</th>
+              <th className="px-3 py-2 text-right">Acción</th>
             </tr>
             {/* Per-column search row */}
             <tr className="bg-white backdrop-blur-md border-b border-white/5">
@@ -761,7 +761,7 @@ const ClientsManagement: React.FC = () => {
               <td className="px-2 py-1"><input value={colSearch.ip} onChange={(e)=>setColSearch(p=>({...p,ip:e.target.value}))} placeholder="Buscar IP" className="w-full rounded border border-gray-200 px-2 py-1 text-xs text-slate-600" /></td>
               <td className="px-2 py-1 text-center"><input value={colSearch.lan_interface} onChange={(e)=>setColSearch(p=>({...p,lan_interface:e.target.value}))} placeholder="Buscar" className="w-24 rounded border border-gray-200 px-2 py-1 text-xs text-slate-600" /></td>
               <td className="px-2 py-1"><input value={colSearch.lan_interface} onChange={(e)=>setColSearch(p=>({...p,lan_interface:e.target.value}))} placeholder="Buscar Interfaz" className="w-full rounded border border-gray-200 px-2 py-1 text-xs text-slate-600" /></td>
-              <td className="px-2 py-1"><input value={colSearch.dia_corte} onChange={(e)=>setColSearch(p=>({...p,dia_corte:e.target.value}))} placeholder="Buscar DÃ­a" className="w-full rounded border border-gray-200 px-2 py-1 text-xs text-slate-600" /></td>
+              <td className="px-2 py-1"><input value={colSearch.dia_corte} onChange={(e)=>setColSearch(p=>({...p,dia_corte:e.target.value}))} placeholder="Buscar Día" className="w-full rounded border border-gray-200 px-2 py-1 text-xs text-slate-600" /></td>
               <td className="px-2 py-1 text-right"><button onClick={()=>setColSearch({name:'',username:'',ip:'',lan_interface:'',dia_corte:''})} className="rounded bg-white/15 px-2 py-1 text-xs text-slate-500 hover:bg-gray-300">Limpiar</button></td>
             </tr>
           </thead>
@@ -809,10 +809,10 @@ const ClientsManagement: React.FC = () => {
                             { label: 'ðŸ‘ Portal auto-login', key: 'portal_login' },
                             { label: 'ðŸ” Actualizar Password', key: 'password' },
                             { label: 'ðŸ’³ Historial de Pagos', key: 'pagos' },
-                            { label: 'ðŸŽ« Historial de Tickets', key: 'tickets' },
+                            { label: '🎟️ Historial de Tickets', key: 'tickets' },
                             { label: 'ðŸ”— Amarrar IP-MAC', key: 'mac' },
-                            { label: 'ðŸ“¡ Ver ONU GPON', key: 'gpon' },
-                            { label: 'â–¶ Activar Cliente', key: 'activate' },
+                            { label: '📡 Ver ONU GPON', key: 'gpon' },
+                            { label: '▶ Activar Cliente', key: 'activate' },
                             { label: 'â¸ Suspender Cliente', key: 'suspend' },
                             { label: 'ðŸ—‘ Eliminar Cliente', key: 'delete' },
                           ].map(({ label, key }) => (
@@ -825,7 +825,7 @@ const ClientsManagement: React.FC = () => {
                       )}
                     </div>
                     {/* Edit button (orange) */}
-                    <button title="Editar" onClick={() => toast(`Editar ${client.name} — prÃ³ximamente`)}
+                    <button title="Editar" onClick={() => toast(`Editar ${client.name} — próximamente`)}
                       className="flex h-7 w-7 items-center justify-center rounded bg-orange-400 text-white text-xs hover:opacity-80">✎ </button>
                     {/* View button (blue) */}
                     <button title="Ver detalle" onClick={() => openPortalModal(client)}
@@ -841,7 +841,7 @@ const ClientsManagement: React.FC = () => {
         </table>
       </div>
 
-      {/* â”€â”€ Pagination â”€â”€ */}
+      {/* ── Pagination ── */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 bg-white px-5 py-3">
         <span className="text-xs text-slate-500">
           Mostrando {Math.min((page-1)*pageSize+1, initData?.total || 0)}–{Math.min(page*pageSize, initData?.total || 0)} de {initData?.total || 0} registros totales
@@ -859,7 +859,7 @@ const ClientsManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* â”€â”€ Footer stats â”€â”€ */}
+      {/* ── Footer stats ── */}
       <div className="grid grid-cols-4 border-t border-gray-200 bg-white backdrop-blur-md divide-x divide-white/10">
         {[
           { label: 'Total', value: clients.length, color: 'text-white' },
@@ -874,7 +874,7 @@ const ClientsManagement: React.FC = () => {
         ))}
       </div>
 
-      {/* â”€â”€ Modals â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Modals ──────────────────────────────────────────── */}
       {showModal && renderModal(
         <div className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/60 p-3 backdrop-blur-sm sm:p-4"
           onClick={() => { setShowModal(false); setClientTab(1) }}>
@@ -1233,7 +1233,7 @@ const ClientsManagement: React.FC = () => {
         <div className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-3 backdrop-blur-sm sm:p-6" onClick={() => setGponClient(null)}>
           <div className="my-4 w-full max-w-2xl overflow-hidden rounded-2xl bg-white backdrop-blur-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b bg-violet-500/10 px-6 py-4">
-              <div><p className="text-xs font-semibold uppercase tracking-wide text-violet-600">ProvisiÃ³n GPON</p>
+              <div><p className="text-xs font-semibold uppercase tracking-wide text-violet-600">Provisión GPON</p>
                 <h3 className="text-lg font-bold text-white">Autorizar ONU â€” {gponClient.name}</h3></div>
               <button onClick={() => setGponClient(null)} className="rounded-full p-2 hover:bg-violet-500/20"><XMarkIcon className="h-5 w-5 text-slate-500" /></button>
             </div>
@@ -1284,12 +1284,12 @@ const ClientsManagement: React.FC = () => {
                     <div><label className="mb-1 block text-xs font-semibold text-slate-600">VLAN</label><input type="number" value={gponVlan} onChange={e=>setGponVlan(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" /></div>
                     <div><label className="mb-1 block text-xs font-semibold text-slate-600">Tipo WAN</label>
                       <select value={gponWanType} onChange={e=>setGponWanType(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm">
-                        <option value="pppoe">PPPoE</option><option value="dhcp">DHCP</option><option value="static">IP EstÃ¡tica</option><option value="bridge">Bridge</option>
+                        <option value="pppoe">PPPoE</option><option value="dhcp">DHCP</option><option value="static">IP Estática</option><option value="bridge">Bridge</option>
                       </select>
                     </div>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <button onClick={()=>setGponStep(1)} className="rounded-lg border border-white/20 px-4 py-2 text-sm text-slate-600">â† AtrÃ¡s</button>
+                    <button onClick={()=>setGponStep(1)} className="rounded-lg border border-white/20 px-4 py-2 text-sm text-slate-600">â† Atrás</button>
                     <button onClick={()=>void authorizeOnu()} disabled={authorizingOnu||!gponSerial}
                       className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
                       {authorizingOnu?<ArrowPathIcon className="h-4 w-4 animate-spin"/>:<CheckCircleIcon className="h-4 w-4"/>}
@@ -1330,7 +1330,7 @@ const ClientsManagement: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-600 mb-1">Nueva contraseÃ±a (opcional)</label>
-                <input type="password" value={portalForm.password} onChange={(e)=>setPortalForm(p=>({...p,password:e.target.value}))} placeholder="Auto-generada si se deja vacÃ­o" className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" />
+                <input type="password" value={portalForm.password} onChange={(e)=>setPortalForm(p=>({...p,password:e.target.value}))} placeholder="Auto-generada si se deja vacío" className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" />
               </div>
             </div>
             <div className="flex justify-end gap-3 border-t px-6 py-4">
