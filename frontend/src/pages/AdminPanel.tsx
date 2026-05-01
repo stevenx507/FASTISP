@@ -282,7 +282,8 @@ const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     if (isPlatformAdminMode && !tenantContextId) {
-      navigate('/platform')
+      console.warn('[AdminPanel] No tenant selected, redirecting to platform admin...')
+      navigate('/platform', { replace: true })
       return
     }
     loadNotifications()
@@ -754,7 +755,24 @@ const AdminPanel: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
             >
-              {viewComponents[activeView] ?? (
+              {isPlatformAdminMode && !tenantContextId ? (
+                <div className="flex flex-col items-center justify-center text-center p-12 bg-white/50 backdrop-blur-md rounded-3xl border border-coral-200 shadow-xl shadow-coral-500/5 animate-in fade-in zoom-in duration-500">
+                  <div className="h-20 w-20 bg-coral-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-coral-500/30 mb-6 rotate-3">
+                    <BuildingOffice2Icon className="h-10 w-10" />
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-800">No hay un ISP seleccionado</h3>
+                  <p className="text-slate-500 max-w-sm mt-3 text-sm leading-relaxed">
+                    Como Administrador Global, debes elegir qué ISP deseas gestionar para visualizar sus métricas e infraestructura.
+                  </p>
+                  <button
+                    onClick={() => navigate('/platform')}
+                    className="mt-8 rounded-2xl bg-slate-900 px-8 py-4 text-sm font-bold text-white shadow-xl hover:bg-slate-800 transition-all active:scale-95 flex items-center gap-2 group"
+                  >
+                    <span>Seleccionar un ISP</span>
+                    <ChevronRightIcon className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+              ) : viewComponents[activeView] ?? (
                 <div className="flex items-center justify-center py-20 text-slate-500">
                   Vista no encontrada
                 </div>
