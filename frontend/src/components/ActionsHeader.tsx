@@ -44,8 +44,8 @@ const ActionsHeader: React.FC<ActionsHeaderProps> = ({
     <div className="flex justify-between items-center">
       <div>
         <h2 className="text-2xl font-bold text-white">Gestión MikroTik</h2>
-        <p className="text-slate-400">Administra y monitorea tus routers MikroTik</p>
-        {selectedRouter ? <p className="mt-1 text-xs text-slate-400">Router seleccionado: {selectedRouter.name}</p> : null}
+        <p className="text-slate-500">Administra y monitorea tus routers MikroTik</p>
+        {selectedRouter ? <p className="mt-1 text-xs text-slate-500">Router seleccionado: {selectedRouter.name}</p> : null}
       </div>
       <div className="flex flex-wrap gap-3">
         <button

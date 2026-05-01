@@ -93,14 +93,14 @@ const SidePanels: React.FC<SidePanelsProps> = ({ sidePanel, onClose, selectedRou
   return (
     <div className="fixed inset-0 z-40">
       <div className="absolute inset-0 bg-black/30" onClick={onClose}></div>
-      <div className="absolute right-0 top-0 h-full w-full max-w-xl bg-white/5 backdrop-blur-md shadow-xl p-4 overflow-y-auto">
+      <div className="absolute right-0 top-0 h-full w-full max-w-xl bg-white backdrop-blur-md shadow-xl p-4 overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-white">
             {sidePanel === 'logs' && 'Logs del Router'}
             {sidePanel === 'dhcp' && 'DHCP Leases'}
             {sidePanel === 'wifi' && 'Clientes WiFi'}
           </h3>
-          <button className="text-slate-400 hover:text-slate-200" onClick={onClose}>Cerrar</button>
+          <button className="text-slate-500 hover:text-slate-700" onClick={onClose}>Cerrar</button>
         </div>
 
         {sidePanel === 'logs' && (
@@ -115,11 +115,11 @@ const SidePanels: React.FC<SidePanelsProps> = ({ sidePanel, onClose, selectedRou
               </select>
               <button className="px-3 py-1 bg-slate-200 rounded hover:bg-slate-300" onClick={() => void loadLogs()}>Filtrar</button>
             </div>
-            <div className="text-sm text-slate-400">{panelLoading ? 'Cargando logs...' : `${logs.length} entradas`}</div>
+            <div className="text-sm text-slate-500">{panelLoading ? 'Cargando logs...' : `${logs.length} entradas`}</div>
             <div className="divide-y">
               {logs.map((l, idx) => (
                 <div key={idx} className="py-2">
-                  <div className="text-xs text-slate-400">{l.time || ''} {l.topics ? `[${l.topics}]` : ''}</div>
+                  <div className="text-xs text-slate-500">{l.time || ''} {l.topics ? `[${l.topics}]` : ''}</div>
                   <div className="text-white">{l.message || ''}</div>
                 </div>
               ))}
@@ -133,7 +133,7 @@ const SidePanels: React.FC<SidePanelsProps> = ({ sidePanel, onClose, selectedRou
               <input className="border rounded px-2 py-1" placeholder="Buscar IP/MAC" value={leaseFilter} onChange={(e) => setLeaseFilter(e.target.value)} />
               <button className="px-3 py-1 bg-slate-200 rounded hover:bg-slate-300" onClick={() => void loadDhcpLeases()}>Refrescar</button>
             </div>
-            <div className="text-sm text-slate-400">{panelLoading ? 'Cargando leases...' : `${leases.length} leases`}</div>
+            <div className="text-sm text-slate-500">{panelLoading ? 'Cargando leases...' : `${leases.length} leases`}</div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-white/10 text-sm">
                 <thead>
@@ -168,7 +168,7 @@ const SidePanels: React.FC<SidePanelsProps> = ({ sidePanel, onClose, selectedRou
 
         {sidePanel === 'wifi' && (
           <div className="space-y-3">
-            <div className="text-sm text-slate-400">{panelLoading ? 'Cargando clientes WiFi...' : `${wifiClients.length} clientes`}</div>
+            <div className="text-sm text-slate-500">{panelLoading ? 'Cargando clientes WiFi...' : `${wifiClients.length} clientes`}</div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-white/10 text-sm">
                 <thead>

@@ -152,12 +152,12 @@ const HotspotCards: React.FC = () => {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-white">Fichas Hotspot</h2>
-          <p className="text-sm text-slate-400">Generacion masiva de vouchers, ciclo de vida y revenue estimado.</p>
+          <p className="text-sm text-slate-500">Generacion masiva de vouchers, ciclo de vida y revenue estimado.</p>
         </div>
         <button
           onClick={load}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white disabled:opacity-60"
         >
           <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Actualizando...' : 'Actualizar'}
@@ -184,7 +184,7 @@ const HotspotCards: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <form onSubmit={createBatch} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
+        <form onSubmit={createBatch} className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
           <h3 className="mb-3 font-semibold text-white">Generar lote</h3>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
@@ -239,7 +239,7 @@ const HotspotCards: React.FC = () => {
           </div>
         </form>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm xl:col-span-2">
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-sm xl:col-span-2">
           <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
             <h3 className="font-semibold text-white">Inventario de vouchers</h3>
             <select
@@ -257,7 +257,7 @@ const HotspotCards: React.FC = () => {
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-white/5 text-sm">
-              <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
+              <thead className="bg-white text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3 text-left">Codigo</th>
                   <th className="px-4 py-3 text-left">Perfil</th>
@@ -272,23 +272,23 @@ const HotspotCards: React.FC = () => {
                   <tr key={item.id}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs text-slate-300">{item.code}</span>
+                        <span className="font-mono text-xs text-slate-600">{item.code}</span>
                         <button
                           onClick={() => copyCode(item.code)}
-                          className="rounded-md border border-white/10 p-1 text-slate-400 hover:bg-white/10"
+                          className="rounded-md border border-gray-200 p-1 text-slate-500 hover:bg-white/10"
                         >
                           <DocumentDuplicateIcon className="h-3 w-3" />
                         </button>
                       </div>
-                      <p className="mt-1 text-[11px] text-slate-400">
+                      <p className="mt-1 text-[11px] text-slate-500">
                         creado: {item.created_by_name || 'system'} - {formatDateTime(item.created_at)}
                       </p>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-[11px] text-slate-500">
                         actualizado: {item.updated_by_name || 'system'} - {formatDateTime(item.updated_at)}
                       </p>
                     </td>
-                    <td className="px-4 py-3 text-slate-300">{item.profile}</td>
-                    <td className="px-4 py-3 text-right text-slate-300">{item.duration_minutes}m</td>
+                    <td className="px-4 py-3 text-slate-600">{item.profile}</td>
+                    <td className="px-4 py-3 text-right text-slate-600">{item.duration_minutes}m</td>
                     <td className="px-4 py-3 text-right font-semibold text-white">${item.price.toFixed(2)}</td>
                     <td className="px-4 py-3">
                       <select
@@ -317,13 +317,13 @@ const HotspotCards: React.FC = () => {
                         className="w-36 rounded-md border border-white/20 px-2 py-1 text-xs"
                         placeholder="cliente/email"
                       />
-                      {updatingId === item.id && <span className="ml-2 text-xs text-slate-400">...</span>}
+                      {updatingId === item.id && <span className="ml-2 text-xs text-slate-500">...</span>}
                     </td>
                   </tr>
                 ))}
                 {!filteredItems.length && (
                   <tr>
-                    <td className="px-4 py-8 text-center text-sm text-slate-400" colSpan={6}>
+                    <td className="px-4 py-8 text-center text-sm text-slate-500" colSpan={6}>
                       Sin vouchers para este filtro.
                     </td>
                   </tr>

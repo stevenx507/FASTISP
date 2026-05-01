@@ -218,7 +218,7 @@ const toNumber = (value: string) => {
 }
 
 const statusPillClass = (status?: string) => {
-  if (!status) return 'bg-slate-700 text-slate-200'
+  if (!status) return 'bg-gray-100 text-slate-700'
   if (status === 'ready') return 'bg-emerald-500/20 text-emerald-300'
   if (status === 'degraded') return 'bg-amber-500/20 text-amber-200'
   return 'bg-rose-500/20 text-rose-300'
@@ -1342,7 +1342,7 @@ const OltManagement: React.FC = () => {
               </option>
             ))}
           </select>
-          <p className="mt-2 text-xs text-slate-400">
+          <p className="mt-2 text-xs text-slate-500">
             {selectedDevice?.host || '-'} | {selectedDevice?.transport || '-'} | {selectedDevice?.site || '-'}
           </p>
           {selectedDevice && (
@@ -1356,7 +1356,7 @@ const OltManagement: React.FC = () => {
             </div>
           )}
           {!!remoteOptions?.readiness?.checked_at && (
-            <p className="mt-1 text-[11px] text-slate-400">
+            <p className="mt-1 text-[11px] text-slate-500">
               ultimo check {formatCheckedAt(remoteOptions.readiness.checked_at)}
             </p>
           )}
@@ -1689,14 +1689,14 @@ const OltManagement: React.FC = () => {
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-slate-600">
               Dashboard: <code>{remoteOptions?.grafana?.dashboard_url || '-'}</code>
             </p>
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-slate-600">
               Health: <code>{remoteOptions?.grafana?.health_url || '-'}</code>
             </p>
             {!!remoteOptions?.grafana?.datasource_uid && (
-              <p className="text-xs text-slate-300">
+              <p className="text-xs text-slate-600">
                 Datasource UID: <code>{remoteOptions.grafana.datasource_uid}</code>
               </p>
             )}
@@ -1704,7 +1704,7 @@ const OltManagement: React.FC = () => {
               <p className="text-xs text-amber-300">Detalle: {remoteOptions.grafana.error}</p>
             )}
             {(remoteOptions?.grafana?.recommendations || []).length > 0 && (
-              <ul className="space-y-1 text-xs text-slate-300">
+              <ul className="space-y-1 text-xs text-slate-600">
                 {(remoteOptions?.grafana?.recommendations || []).map((item, idx) => (
                   <li key={idx}>- {item}</li>
                 ))}
@@ -1750,7 +1750,7 @@ const OltManagement: React.FC = () => {
           <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase text-slate-500">Cliente objetivo</p>
-              <span className="rounded-full bg-slate-900 px-2 py-1 text-[10px] text-slate-300">
+              <span className="rounded-full bg-white px-2 py-1 text-[10px] text-slate-600">
                 {provisionClients.length} resultado(s)
               </span>
             </div>
@@ -1801,7 +1801,7 @@ const OltManagement: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Busca y selecciona un cliente para asociar la ONU descubierta.
               </p>
             )}
@@ -1810,7 +1810,7 @@ const OltManagement: React.FC = () => {
           <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase text-slate-500">Instalacion y metadatos</p>
-              <span className="rounded-full bg-slate-900 px-2 py-1 text-[10px] text-slate-300">
+              <span className="rounded-full bg-white px-2 py-1 text-[10px] text-slate-600">
                 {filteredProvisionInstallations.length} abierta(s)
               </span>
             </div>
@@ -1839,7 +1839,7 @@ const OltManagement: React.FC = () => {
               placeholder="Notas para guardar en perfil tecnico / instalacion"
               className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
             />
-            <label className="flex items-center gap-2 text-xs text-slate-300">
+            <label className="flex items-center gap-2 text-xs text-slate-600">
               <input
                 type="checkbox"
                 checked={markInstallationCompleted}
@@ -1869,7 +1869,7 @@ const OltManagement: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Puedes dejar la instalacion vacia, pero si eliges una el checklist se actualiza junto al provisionamiento.
               </p>
             )}
@@ -1941,7 +1941,7 @@ const OltManagement: React.FC = () => {
                 {!!connection?.connection?.error && <p className="text-rose-300">Detalle: {connection.connection.error}</p>}
               </div>
               {!!connection?.recommendations?.length && (
-                <ul className="mt-3 space-y-1 text-xs text-slate-300">
+                <ul className="mt-3 space-y-1 text-xs text-slate-600">
                   {connection.recommendations.slice(0, 3).map((item) => (
                     <li key={item}>- {item}</li>
                   ))}
@@ -1984,7 +1984,7 @@ const OltManagement: React.FC = () => {
                   </p>
                 </>
               ) : (
-                <p className="mt-2 text-sm text-slate-300">Aun no hay snapshot. Ejecuta la accion para poblar telemetria operativa.</p>
+                <p className="mt-2 text-sm text-slate-600">Aun no hay snapshot. Ejecuta la accion para poblar telemetria operativa.</p>
               )}
               <details className="mt-3 rounded border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
                 <summary className="cursor-pointer font-semibold text-slate-800">Ver JSON de snapshot</summary>
@@ -2010,7 +2010,7 @@ const OltManagement: React.FC = () => {
             {!!executionSummary.transcript.length && (
               <div className="mt-3 rounded border border-slate-200 bg-slate-50 p-3">
                 <p className="text-xs font-semibold uppercase text-slate-700">Preview transcript</p>
-                <div className="mt-2 space-y-1 font-mono text-xs text-slate-200">
+                <div className="mt-2 space-y-1 font-mono text-xs text-slate-700">
                   {executionSummary.transcript.map((line, index) => (
                     <p key={`${index}-${line}`}>{line}</p>
                   ))}

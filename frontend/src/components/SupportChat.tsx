@@ -41,7 +41,7 @@ const statusBadge: Record<TicketStatus, string> = {
   open: 'bg-rose-500/20 text-rose-400',
   in_progress: 'bg-amber-500/20 text-amber-400',
   resolved: 'bg-emerald-500/20 text-emerald-400',
-  closed: 'bg-white/10 text-slate-300',
+  closed: 'bg-white/10 text-slate-600',
 }
 
 const priorityBadge: Record<TicketPriority, string> = {
@@ -181,18 +181,18 @@ const SupportChat: React.FC = () => {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <section className="lg:col-span-2 overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow">
-        <div className="border-b border-white/10 p-4">
+      <section className="lg:col-span-2 overflow-hidden rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow">
+        <div className="border-b border-gray-200 p-4">
           <h3 className="text-lg font-semibold text-white">Asistente de soporte</h3>
-          <p className="text-sm text-slate-400">Describe el problema o usa respuestas rapidas para acelerar atencion.</p>
+          <p className="text-sm text-slate-500">Describe el problema o usa respuestas rapidas para acelerar atencion.</p>
         </div>
 
-        <div className="max-h-96 space-y-3 overflow-y-auto bg-white/5 p-4">
+        <div className="max-h-96 space-y-3 overflow-y-auto bg-white p-4">
           {messages.map((message) => (
             <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
                 className={`max-w-[88%] rounded-lg px-3 py-2 text-sm ${
-                  message.role === 'user' ? 'bg-blue-600 text-white' : 'border border-white/10 bg-white/5 backdrop-blur-md text-slate-300'
+                  message.role === 'user' ? 'bg-blue-600 text-white' : 'border border-gray-200 bg-white backdrop-blur-md text-slate-600'
                 }`}
               >
                 {message.text}
@@ -207,7 +207,7 @@ const SupportChat: React.FC = () => {
               <button
                 key={reply}
                 onClick={() => sendMessage(reply)}
-                className="rounded-full border border-white/20 bg-white/5 backdrop-blur-md px-3 py-1 text-xs text-slate-300 hover:bg-white/10"
+                className="rounded-full border border-white/20 bg-white backdrop-blur-md px-3 py-1 text-xs text-slate-600 hover:bg-white/10"
               >
                 {reply}
               </button>
@@ -262,13 +262,13 @@ const SupportChat: React.FC = () => {
         </div>
       </section>
 
-      <section className="space-y-4 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow">
+      <section className="space-y-4 rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow">
         <div>
           <h3 className="text-lg font-semibold text-white">Tickets</h3>
-          <p className="text-sm text-slate-400">Abiertos: {unreadOpenTickets}</p>
+          <p className="text-sm text-slate-500">Abiertos: {unreadOpenTickets}</p>
         </div>
 
-        <div className="space-y-2 rounded-lg border border-white/10 p-3">
+        <div className="space-y-2 rounded-lg border border-gray-200 p-3">
           <p className="text-sm font-semibold text-white">Nuevo ticket</p>
           <input
             value={ticketSubject}
@@ -316,7 +316,7 @@ const SupportChat: React.FC = () => {
 
           <div className="max-h-80 space-y-2 overflow-y-auto">
             {tickets.map((ticket) => (
-              <div key={ticket.id} className="rounded-lg border border-white/10 p-3">
+              <div key={ticket.id} className="rounded-lg border border-gray-200 p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-semibold text-white">#{ticket.id} {ticket.subject}</p>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[ticket.status]}`}>
@@ -326,12 +326,12 @@ const SupportChat: React.FC = () => {
                     {ticket.priority}
                   </span>
                 </div>
-                <p className="mt-1 line-clamp-2 text-xs text-slate-400">{ticket.description}</p>
-                <p className="mt-1 text-[11px] text-slate-400">{formatDate(ticket.created_at)}</p>
+                <p className="mt-1 line-clamp-2 text-xs text-slate-500">{ticket.description}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{formatDate(ticket.created_at)}</p>
               </div>
             ))}
             {!tickets.length && !loadingTickets && (
-              <p className="rounded-lg border border-dashed border-white/20 p-3 text-sm text-slate-400">
+              <p className="rounded-lg border border-dashed border-white/20 p-3 text-sm text-slate-500">
                 No hay tickets registrados.
               </p>
             )}

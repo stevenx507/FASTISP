@@ -157,12 +157,12 @@ const TechSupport: React.FC = () => {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-white">Soporte Tecnico</h2>
-          <p className="text-sm text-slate-400">Cola operativa de tickets, SLA y seguimiento de comentarios.</p>
+          <p className="text-sm text-slate-500">Cola operativa de tickets, SLA y seguimiento de comentarios.</p>
         </div>
         <button
           onClick={loadBase}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white disabled:opacity-60"
         >
           <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Actualizando...' : 'Actualizar'}
@@ -189,7 +189,7 @@ const TechSupport: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm xl:col-span-1">
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-sm xl:col-span-1">
           <div className="flex flex-wrap items-center gap-2 border-b border-white/5 px-4 py-3">
             <select
               value={filters.status}
@@ -220,7 +220,7 @@ const TechSupport: React.FC = () => {
                 key={ticket.id}
                 onClick={() => setSelectedTicketId(ticket.id)}
                 className={`w-full px-4 py-3 text-left transition ${
-                  selectedTicketId === ticket.id ? 'bg-blue-500/10' : 'hover:bg-white/5'
+                  selectedTicketId === ticket.id ? 'bg-blue-500/10' : 'hover:bg-white'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
@@ -229,29 +229,29 @@ const TechSupport: React.FC = () => {
                     {ticket.status}
                   </span>
                 </div>
-                <p className="mt-1 line-clamp-2 text-xs text-slate-400">{ticket.description}</p>
-                <p className="mt-1 text-[11px] text-slate-400">Prioridad: {ticket.priority}</p>
+                <p className="mt-1 line-clamp-2 text-xs text-slate-500">{ticket.description}</p>
+                <p className="mt-1 text-[11px] text-slate-500">Prioridad: {ticket.priority}</p>
               </button>
             ))}
             {!filteredTickets.length && (
-              <div className="px-4 py-8 text-center text-sm text-slate-400">Sin tickets para estos filtros.</div>
+              <div className="px-4 py-8 text-center text-sm text-slate-500">Sin tickets para estos filtros.</div>
             )}
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm xl:col-span-2">
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm xl:col-span-2">
           {selectedTicket ? (
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-semibold text-white">
                   Ticket #{selectedTicket.id} - {selectedTicket.subject}
                 </h3>
-                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-300">{selectedTicket.description}</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{selectedTicket.description}</p>
               </div>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
                 <div>
-                  <label className="mb-1 block text-xs text-slate-400">Estado</label>
+                  <label className="mb-1 block text-xs text-slate-500">Estado</label>
                   <select
                     value={selectedTicket.status}
                     onChange={(e) => updateTicket({ status: e.target.value as TicketStatus })}
@@ -264,7 +264,7 @@ const TechSupport: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-slate-400">Prioridad</label>
+                  <label className="mb-1 block text-xs text-slate-500">Prioridad</label>
                   <select
                     value={selectedTicket.priority}
                     onChange={(e) => updateTicket({ priority: e.target.value as TicketPriority })}
@@ -277,7 +277,7 @@ const TechSupport: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-slate-400">Asignado</label>
+                  <label className="mb-1 block text-xs text-slate-500">Asignado</label>
                   <select
                     value={selectedTicket.assigned_to || ''}
                     onChange={(e) => updateTicket({ assigned_to: e.target.value || undefined })}
@@ -292,7 +292,7 @@ const TechSupport: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-slate-400">SLA</label>
+                  <label className="mb-1 block text-xs text-slate-500">SLA</label>
                   <input
                     value={selectedTicket.sla_due_at || ''}
                     onChange={(e) => updateTicket({ sla_due_at: e.target.value })}
@@ -302,19 +302,19 @@ const TechSupport: React.FC = () => {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-white/10 p-3">
+              <div className="rounded-lg border border-gray-200 p-3">
                 <h4 className="mb-2 font-semibold text-white">Comentarios</h4>
                 <div className="max-h-48 space-y-2 overflow-y-auto">
                   {(comments[selectedTicket.id] || []).map((comment) => (
-                    <div key={comment.id} className="rounded-md border border-white/10 px-3 py-2 text-sm">
-                      <p className="text-xs text-slate-400">
+                    <div key={comment.id} className="rounded-md border border-gray-200 px-3 py-2 text-sm">
+                      <p className="text-xs text-slate-500">
                         {comment.author || 'usuario'} - {comment.created_at?.replace('T', ' ').slice(0, 16) || '-'}
                       </p>
-                      <p className="mt-1 text-slate-200">{comment.comment}</p>
+                      <p className="mt-1 text-slate-700">{comment.comment}</p>
                     </div>
                   ))}
                   {!comments[selectedTicket.id]?.length && (
-                    <p className="text-sm text-slate-400">Sin comentarios.</p>
+                    <p className="text-sm text-slate-500">Sin comentarios.</p>
                   )}
                 </div>
                 <div className="mt-3 flex gap-2">
@@ -335,7 +335,7 @@ const TechSupport: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="py-10 text-center text-sm text-slate-400">Selecciona un ticket para comenzar.</div>
+            <div className="py-10 text-center text-sm text-slate-500">Selecciona un ticket para comenzar.</div>
           )}
         </div>
       </div>

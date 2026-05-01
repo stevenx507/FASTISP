@@ -58,7 +58,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                   onClick={onCancel}
                   className="p-1 hover:bg-gray-100 rounded-lg transition"
                 >
-                  <XMarkIcon className="w-5 h-5 text-slate-400" />
+                  <XMarkIcon className="w-5 h-5 text-slate-500" />
                 </button>
               </div>
 

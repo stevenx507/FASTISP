@@ -35,7 +35,7 @@ const PushOptInCard: React.FC<Props> = ({ className = '' }) => {
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`relative overflow-hidden bg-gradient-to-br from-slate-900/60 to-slate-900/40 backdrop-blur-xl rounded-2xl shadow-2xl p-6 border border-white/10 ${className}`}
+      className={`relative overflow-hidden bg-gradient-to-br from-slate-900/60 to-slate-900/40 backdrop-blur-xl rounded-2xl shadow-2xl p-6 border border-gray-200 ${className}`}
     >
       <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-blue-500 opacity-5 blur-3xl" />
       
@@ -56,7 +56,7 @@ const PushOptInCard: React.FC<Props> = ({ className = '' }) => {
             <p className="text-lg font-black text-white tracking-tight">Experiencia Pro</p>
             <SparklesIcon className="w-4 h-4 text-amber-400" />
           </div>
-          <p className="text-sm text-slate-400 mt-1 leading-relaxed">
+          <p className="text-sm text-slate-500 mt-1 leading-relaxed">
             Activa el centro de avisos para recibir alertas de pago, mantenimientos y soporte en tiempo real directamente en tu pantalla.
           </p>
           
@@ -66,7 +66,7 @@ const PushOptInCard: React.FC<Props> = ({ className = '' }) => {
               disabled={isRequesting || permission === 'granted'}
               className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all transform hover:scale-105 active:scale-95 shadow-lg ${
                 permission === 'granted' 
-                  ? 'bg-white/5 text-slate-400 border border-white/10 cursor-default' 
+                  ? 'bg-white text-slate-500 border border-gray-200 cursor-default' 
                   : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-blue-500/20 hover:shadow-cyan-500/30'
               } disabled:opacity-50`}
             >

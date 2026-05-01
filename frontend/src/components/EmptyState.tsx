@@ -25,7 +25,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       {icon && (
         <div className="mb-4 p-4 bg-gray-100 rounded-2xl">
           {React.cloneElement(icon as React.ReactElement, { 
-            className: 'w-8 h-8 text-slate-400' 
+            className: 'w-8 h-8 text-slate-500' 
           })}
         </div>
       )}

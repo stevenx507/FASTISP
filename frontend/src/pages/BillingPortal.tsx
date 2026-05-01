@@ -67,15 +67,15 @@ const BillingPortal: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white">Facturación</h1>
-            <p className="text-slate-400">Revisa y paga tus facturas.</p>
+            <p className="text-slate-500">Revisa y paga tus facturas.</p>
           </div>
           <button onClick={load} disabled={loading} className="px-4 py-2 rounded-lg bg-blue-600/80 text-white hover:bg-blue-600 transition-colors disabled:opacity-50">
             {loading ? 'Actualizando...' : 'Actualizar'}
           </button>
         </div>
 
-        <div className="bg-white/5 backdrop-blur-md rounded-xl shadow-xl border border-white/10 overflow-hidden">
-          <div className="grid grid-cols-6 px-6 py-4 text-xs font-semibold text-slate-400 bg-black/20 border-b border-white/10">
+        <div className="bg-white backdrop-blur-md rounded-xl shadow-xl border border-gray-200 overflow-hidden">
+          <div className="grid grid-cols-6 px-6 py-4 text-xs font-semibold text-slate-500 bg-black/20 border-b border-gray-200">
             <span>ID</span>
             <span>Monto</span>
             <span>Impuesto</span>
@@ -85,14 +85,14 @@ const BillingPortal: React.FC = () => {
           </div>
           <div className="divide-y divide-white/5">
             {invoices.map((inv) => (
-              <motion.div key={inv.id} className="grid grid-cols-6 px-6 py-4 items-center hover:bg-white/5 transition-colors">
+              <motion.div key={inv.id} className="grid grid-cols-6 px-6 py-4 items-center hover:bg-white transition-colors">
                 <span className="font-mono text-sm text-white">#{inv.id}</span>
-                <span className="text-sm text-slate-300">{inv.amount.toFixed(2)} {inv.currency}</span>
-                <span className="text-sm text-slate-400">{(inv.tax_percent ?? 0).toFixed(2)}%</span>
+                <span className="text-sm text-slate-600">{inv.amount.toFixed(2)} {inv.currency}</span>
+                <span className="text-sm text-slate-500">{(inv.tax_percent ?? 0).toFixed(2)}%</span>
                 <span className="text-sm font-semibold text-emerald-400">{(inv.total_amount ?? inv.amount).toFixed(2)} {inv.currency}</span>
-                <span className="text-sm text-slate-300">{inv.due_date}</span>
+                <span className="text-sm text-slate-600">{inv.due_date}</span>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2 py-1 rounded-full ${statusColors[inv.status] || 'bg-slate-500/20 text-slate-300 border border-slate-500/30'}`}>
+                  <span className={`text-xs px-2 py-1 rounded-full ${statusColors[inv.status] || 'bg-slate-500/20 text-slate-600 border border-slate-500/30'}`}>
                     {inv.status}
                   </span>
                   {inv.status !== 'paid' && (

@@ -71,7 +71,7 @@ interface Router {
 
 const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
   active: { bg: 'bg-emerald-500/20', text: 'text-emerald-400 border border-emerald-500/30', label: 'Activo' },
-  inactive: { bg: 'bg-white/10', text: 'text-slate-200', label: 'Inactivo' },
+  inactive: { bg: 'bg-white/10', text: 'text-slate-700', label: 'Inactivo' },
   suspended: { bg: 'bg-rose-500/20', text: 'text-rose-400 border border-rose-500/30', label: 'Suspendido' },
   past_due: { bg: 'bg-amber-500/20', text: 'text-amber-400 border border-amber-500/30', label: 'Mora' },
   trial: { bg: 'bg-blue-500/20', text: 'text-blue-300', label: 'Trial' },
@@ -601,18 +601,18 @@ const ClientsManagement: React.FC = () => {
   )
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-0 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm overflow-hidden">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-0 rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-sm overflow-hidden">
 
       {/* â”€â”€ Header â”€â”€ */}
-      <div className="border-b border-white/10 bg-white/5 backdrop-blur-md px-5 py-4">
+      <div className="border-b border-gray-200 bg-white backdrop-blur-md px-5 py-4">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="flex items-center gap-2 text-xl font-bold text-slate-200">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-slate-700">
             <span className="text-green-500">ðŸ‘¥</span> Lista de Clientes
           </h2>
           <select
             value={filterStatus}
             onChange={(e) => { setFilterStatus(e.target.value); setPage(1) }}
-            className="rounded-lg border border-white/20 px-3 py-1.5 text-sm text-slate-300 focus:outline-none"
+            className="rounded-lg border border-white/20 px-3 py-1.5 text-sm text-slate-600 focus:outline-none"
           >
             <option value="all">Todas las Zonas / Estados</option>
             <option value="active">Activos</option>
@@ -630,12 +630,12 @@ const ClientsManagement: React.FC = () => {
       </div>
 
       {/* â”€â”€ AcciÃ³n masiva â”€â”€ */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-white/10 bg-white/5 px-5 py-2">
-        <span className="text-sm font-medium text-slate-400">AcciÃ³n:</span>
+      <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 bg-white px-5 py-2">
+        <span className="text-sm font-medium text-slate-500">AcciÃ³n:</span>
         <select
           value={bulkAction}
           onChange={(e) => setBulkAction(e.target.value)}
-          className="rounded border border-white/20 px-2 py-1 text-sm text-slate-300"
+          className="rounded border border-white/20 px-2 py-1 text-sm text-slate-600"
         >
           <option value="">----------</option>
           <option value="activate">Activar Clientes Seleccionados</option>
@@ -651,24 +651,24 @@ const ClientsManagement: React.FC = () => {
         >
           â–¶ Ejecutar
         </button>
-        <span className="text-xs text-slate-400">{selectedIds.size} seleccionados/as</span>
+        <span className="text-xs text-slate-500">{selectedIds.size} seleccionados/as</span>
       </div>
 
       {/* â”€â”€ Toolbar â”€â”€ */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-white/10 bg-white/5 px-5 py-2">
+      <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 bg-white px-5 py-2">
         {/* Page size */}
         <select
           value={pageSize}
           onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }}
-          className="rounded border border-white/20 px-2 py-1 text-xs text-slate-300"
+          className="rounded border border-white/20 px-2 py-1 text-xs text-slate-600"
         >
           {[10, 25, 50, 100].map((n) => <option key={n} value={n}>Mostrar {n} registros</option>)}
         </select>
         {/* Export buttons */}
         <button onClick={() => { const rows = allFiltered; const csv = ['ID,Nombre,Usuario,IP,Estado,LAN,Corte', ...rows.map((c) => `${c.id},"${c.name}",${c.username||''},${c.ip_address||''},${c.status},${c.lan_interface||''},${c.dia_corte??''}`)].join('\n'); const b = new Blob([csv],{type:'text/csv'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href=u; a.download='clientes.csv'; a.click(); toast.success('CSV exportado') }}
-          className="rounded border border-white/20 bg-white/5 backdrop-blur-md px-2 py-1 text-xs text-slate-400 hover:bg-white/10" title="Exportar CSV">CSV</button>
+          className="rounded border border-white/20 bg-white backdrop-blur-md px-2 py-1 text-xs text-slate-500 hover:bg-white/10" title="Exportar CSV">CSV</button>
 
-        <span className="ml-2 text-xs font-semibold text-slate-400">Botonas de AcciÃ³n:</span>
+        <span className="ml-2 text-xs font-semibold text-slate-500">Botonas de AcciÃ³n:</span>
 
         <ActionBtn color="bg-green-500" tip="Generar Factura" onClick={() => { if(selectedIds.size===0){toast('Selecciona clientes');return}; toast('Generar factura â€” prÃ³ximamente') }}>$</ActionBtn>
         <ActionBtn color="bg-green-600" tip="Activar Cliente" onClick={() => { selectedIds.forEach((id)=>void activate(id)); toast.success('Activandoâ€¦') }}>â–¶</ActionBtn>
@@ -682,12 +682,12 @@ const ClientsManagement: React.FC = () => {
         <div className="relative ml-1" ref={herramientasRef}>
           <button
             onClick={() => setHerramientasId(herramientasId === -1 ? null : -1)}
-            className="flex items-center gap-1 rounded border border-white/20 bg-white/5 backdrop-blur-md px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10"
+            className="flex items-center gap-1 rounded border border-white/20 bg-white backdrop-blur-md px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white/10"
           >
             ðŸ”§ Herramientas <ChevronDownIcon className="h-3 w-3" />
           </button>
           {herramientasId === -1 && (
-            <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-2xl py-1">
+            <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-2xl py-1">
               {[
                 { label: 'âš¡ Torch al Cliente', key: 'torch' },
                 { label: 'ðŸ” Actualizar Password', key: 'password' },
@@ -707,7 +707,7 @@ const ClientsManagement: React.FC = () => {
                     if (!c) { toast('Selecciona un cliente primero'); return }
                     void herramientasAction(key, c)
                   }}
-                  className="block w-full px-4 py-2 text-left text-sm text-slate-300 hover:bg-white/10 transition"
+                  className="block w-full px-4 py-2 text-left text-sm text-slate-600 hover:bg-white/10 transition"
                 >{label}</button>
               ))}
             </div>
@@ -738,7 +738,7 @@ const ClientsManagement: React.FC = () => {
       {/* â”€â”€ Tabla â”€â”€ */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="border-b border-white/10 bg-white/5 text-xs font-semibold uppercase text-slate-400">
+          <thead className="border-b border-gray-200 bg-white text-xs font-semibold uppercase text-slate-500">
             <tr>
               <th className="px-3 py-2 text-left w-8">
                 <input type="checkbox" checked={allPageSelected} onChange={toggleSelectAll} className="cursor-pointer" />
@@ -754,15 +754,15 @@ const ClientsManagement: React.FC = () => {
               <th className="px-3 py-2 text-right">AcciÃ³n</th>
             </tr>
             {/* Per-column search row */}
-            <tr className="bg-white/5 backdrop-blur-md border-b border-white/5">
+            <tr className="bg-white backdrop-blur-md border-b border-white/5">
               <td />
-              <td className="px-2 py-1"><input value={colSearch.name} onChange={(e)=>setColSearch(p=>({...p,name:e.target.value}))} placeholder="Buscar Nombre" className="w-full rounded border border-white/10 px-2 py-1 text-xs text-slate-300" /></td>
-              <td className="px-2 py-1"><input value={colSearch.username} onChange={(e)=>setColSearch(p=>({...p,username:e.target.value}))} placeholder="Buscar Usuario" className="w-full rounded border border-white/10 px-2 py-1 text-xs text-slate-300" /></td>
-              <td className="px-2 py-1"><input value={colSearch.ip} onChange={(e)=>setColSearch(p=>({...p,ip:e.target.value}))} placeholder="Buscar IP" className="w-full rounded border border-white/10 px-2 py-1 text-xs text-slate-300" /></td>
-              <td className="px-2 py-1 text-center"><input value={colSearch.lan_interface} onChange={(e)=>setColSearch(p=>({...p,lan_interface:e.target.value}))} placeholder="Buscar" className="w-24 rounded border border-white/10 px-2 py-1 text-xs text-slate-300" /></td>
-              <td className="px-2 py-1"><input value={colSearch.lan_interface} onChange={(e)=>setColSearch(p=>({...p,lan_interface:e.target.value}))} placeholder="Buscar Interfaz" className="w-full rounded border border-white/10 px-2 py-1 text-xs text-slate-300" /></td>
-              <td className="px-2 py-1"><input value={colSearch.dia_corte} onChange={(e)=>setColSearch(p=>({...p,dia_corte:e.target.value}))} placeholder="Buscar DÃ­a" className="w-full rounded border border-white/10 px-2 py-1 text-xs text-slate-300" /></td>
-              <td className="px-2 py-1 text-right"><button onClick={()=>setColSearch({name:'',username:'',ip:'',lan_interface:'',dia_corte:''})} className="rounded bg-white/15 px-2 py-1 text-xs text-slate-400 hover:bg-gray-300">Limpiar</button></td>
+              <td className="px-2 py-1"><input value={colSearch.name} onChange={(e)=>setColSearch(p=>({...p,name:e.target.value}))} placeholder="Buscar Nombre" className="w-full rounded border border-gray-200 px-2 py-1 text-xs text-slate-600" /></td>
+              <td className="px-2 py-1"><input value={colSearch.username} onChange={(e)=>setColSearch(p=>({...p,username:e.target.value}))} placeholder="Buscar Usuario" className="w-full rounded border border-gray-200 px-2 py-1 text-xs text-slate-600" /></td>
+              <td className="px-2 py-1"><input value={colSearch.ip} onChange={(e)=>setColSearch(p=>({...p,ip:e.target.value}))} placeholder="Buscar IP" className="w-full rounded border border-gray-200 px-2 py-1 text-xs text-slate-600" /></td>
+              <td className="px-2 py-1 text-center"><input value={colSearch.lan_interface} onChange={(e)=>setColSearch(p=>({...p,lan_interface:e.target.value}))} placeholder="Buscar" className="w-24 rounded border border-gray-200 px-2 py-1 text-xs text-slate-600" /></td>
+              <td className="px-2 py-1"><input value={colSearch.lan_interface} onChange={(e)=>setColSearch(p=>({...p,lan_interface:e.target.value}))} placeholder="Buscar Interfaz" className="w-full rounded border border-gray-200 px-2 py-1 text-xs text-slate-600" /></td>
+              <td className="px-2 py-1"><input value={colSearch.dia_corte} onChange={(e)=>setColSearch(p=>({...p,dia_corte:e.target.value}))} placeholder="Buscar DÃ­a" className="w-full rounded border border-gray-200 px-2 py-1 text-xs text-slate-600" /></td>
+              <td className="px-2 py-1 text-right"><button onClick={()=>setColSearch({name:'',username:'',ip:'',lan_interface:'',dia_corte:''})} className="rounded bg-white/15 px-2 py-1 text-xs text-slate-500 hover:bg-gray-300">Limpiar</button></td>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -785,15 +785,15 @@ const ClientsManagement: React.FC = () => {
                   <div className="font-medium text-white">{client.name}</div>
                   <div className="text-xs text-slate-500">{client.email || ''}</div>
                 </td>
-                <td className="px-3 py-2 font-mono text-xs text-slate-400">{client.username || '-'}</td>
-                <td className="px-3 py-2 font-mono text-xs text-slate-300">{client.ip_address || '-'}</td>
+                <td className="px-3 py-2 font-mono text-xs text-slate-500">{client.username || '-'}</td>
+                <td className="px-3 py-2 font-mono text-xs text-slate-600">{client.ip_address || '-'}</td>
                 <td className="px-3 py-2 text-center">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${client.avisos_pantalla ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-slate-400'}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${client.avisos_pantalla ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-slate-500'}`}>
                     {client.avisos_pantalla ? 'Si' : 'No'}
                   </span>
                 </td>
-                <td className="px-3 py-2 font-mono text-xs text-slate-400">{client.lan_interface || '-'}</td>
-                <td className="px-3 py-2 text-xs text-slate-400">{client.dia_corte ?? '-'}</td>
+                <td className="px-3 py-2 font-mono text-xs text-slate-500">{client.lan_interface || '-'}</td>
+                <td className="px-3 py-2 text-xs text-slate-500">{client.dia_corte ?? '-'}</td>
                 <td className="px-3 py-2 text-right">
                   <div className="inline-flex items-center gap-1">
                     {/* Row Herramientas */}
@@ -804,7 +804,7 @@ const ClientsManagement: React.FC = () => {
                         className="flex h-7 w-7 items-center justify-center rounded bg-teal-500 text-white text-xs hover:opacity-80"
                       >ðŸ”§</button>
                       {herramientasId === client.id && (
-                        <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-2xl py-1">
+                        <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-2xl py-1">
                           {[
                             { label: 'ðŸ‘ Portal auto-login', key: 'portal_login' },
                             { label: 'ðŸ” Actualizar Password', key: 'password' },
@@ -818,7 +818,7 @@ const ClientsManagement: React.FC = () => {
                           ].map(({ label, key }) => (
                             <button key={key}
                               onClick={() => void herramientasAction(key, client)}
-                              className="block w-full px-4 py-2 text-left text-sm text-slate-300 hover:bg-white/10"
+                              className="block w-full px-4 py-2 text-left text-sm text-slate-600 hover:bg-white/10"
                             >{label}</button>
                           ))}
                         </div>
@@ -842,25 +842,25 @@ const ClientsManagement: React.FC = () => {
       </div>
 
       {/* â”€â”€ Pagination â”€â”€ */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-white/5 px-5 py-3">
-        <span className="text-xs text-slate-400">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 bg-white px-5 py-3">
+        <span className="text-xs text-slate-500">
           Mostrando {Math.min((page-1)*pageSize+1, initData?.total || 0)}–{Math.min(page*pageSize, initData?.total || 0)} de {initData?.total || 0} registros totales
         </span>
         <div className="flex items-center gap-1">
-          <button onClick={() => setPage(1)} disabled={page===1} className="rounded border border-white/20 px-2 py-1 text-xs text-slate-400 disabled:opacity-40">Â«</button>
-          <button onClick={() => setPage(p=>Math.max(1,p-1))} disabled={page===1} className="rounded border border-white/20 px-2 py-1 text-xs text-slate-400 disabled:opacity-40">Anterior</button>
+          <button onClick={() => setPage(1)} disabled={page===1} className="rounded border border-white/20 px-2 py-1 text-xs text-slate-500 disabled:opacity-40">Â«</button>
+          <button onClick={() => setPage(p=>Math.max(1,p-1))} disabled={page===1} className="rounded border border-white/20 px-2 py-1 text-xs text-slate-500 disabled:opacity-40">Anterior</button>
           {Array.from({length: Math.min(5,totalPages)}, (_,i) => {
             const p = page <= 3 ? i+1 : page - 2 + i
             if (p < 1 || p > totalPages) return null
-            return <button key={p} onClick={()=>setPage(p)} className={`rounded border px-2 py-1 text-xs ${p===page ? 'border-blue-500 bg-blue-500 text-white' : 'border-white/20 text-slate-400'}`}>{p}</button>
+            return <button key={p} onClick={()=>setPage(p)} className={`rounded border px-2 py-1 text-xs ${p===page ? 'border-blue-500 bg-blue-500 text-white' : 'border-white/20 text-slate-500'}`}>{p}</button>
           })}
-          <button onClick={() => setPage(p=>Math.min(totalPages,p+1))} disabled={page===totalPages} className="rounded border border-white/20 px-2 py-1 text-xs text-slate-400 disabled:opacity-40">Siguiente</button>
-          <button onClick={() => setPage(totalPages)} disabled={page===totalPages} className="rounded border border-white/20 px-2 py-1 text-xs text-slate-400 disabled:opacity-40">Â»</button>
+          <button onClick={() => setPage(p=>Math.min(totalPages,p+1))} disabled={page===totalPages} className="rounded border border-white/20 px-2 py-1 text-xs text-slate-500 disabled:opacity-40">Siguiente</button>
+          <button onClick={() => setPage(totalPages)} disabled={page===totalPages} className="rounded border border-white/20 px-2 py-1 text-xs text-slate-500 disabled:opacity-40">Â»</button>
         </div>
       </div>
 
       {/* â”€â”€ Footer stats â”€â”€ */}
-      <div className="grid grid-cols-4 border-t border-white/10 bg-white/5 backdrop-blur-md divide-x divide-white/10">
+      <div className="grid grid-cols-4 border-t border-gray-200 bg-white backdrop-blur-md divide-x divide-white/10">
         {[
           { label: 'Total', value: clients.length, color: 'text-white' },
           { label: 'Activos', value: clients.filter(c=>c.status==='active').length, color: 'text-green-600' },
@@ -869,7 +869,7 @@ const ClientsManagement: React.FC = () => {
         ].map(({label,value,color}) => (
           <div key={label} className="px-4 py-3 text-center">
             <div className={`text-xl font-bold ${color}`}>{value}</div>
-            <div className="text-xs text-slate-400">{label}</div>
+            <div className="text-xs text-slate-500">{label}</div>
           </div>
         ))}
       </div>
@@ -878,20 +878,20 @@ const ClientsManagement: React.FC = () => {
       {showModal && renderModal(
         <div className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/60 p-3 backdrop-blur-sm sm:p-4"
           onClick={() => { setShowModal(false); setClientTab(1) }}>
-          <div className="my-2 flex max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white/5 backdrop-blur-md shadow-2xl"
+          <div className="my-2 flex max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white backdrop-blur-md shadow-2xl"
             onClick={(e) => e.stopPropagation()}>
 
             {/* Header */}
-            <div className="flex items-center gap-3 border-b bg-white/5 backdrop-blur-md px-6 py-4">
+            <div className="flex items-center gap-3 border-b bg-white backdrop-blur-md px-6 py-4">
               <span className="text-2xl">👤</span>
               <h3 className="text-xl font-bold text-white">Agregar Cliente</h3>
               <button onClick={() => { setShowModal(false); setClientTab(1) }} className="ml-auto rounded-full p-2 hover:bg-white/10">
-                <XMarkIcon className="h-5 w-5 text-slate-400" />
+                <XMarkIcon className="h-5 w-5 text-slate-500" />
               </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b bg-white/5">
+            <div className="flex border-b bg-white">
               {[
                 { id: 1 as const, label: 'Datos de Conexión', icon: '📶' },
                 { id: 2 as const, label: 'Datos del Cliente', icon: 'ℹ️' },
@@ -899,7 +899,7 @@ const ClientsManagement: React.FC = () => {
                 { id: 4 as const, label: 'Config. Avanzada',  icon: '⚙️' },
               ].map(({ id, label, icon }) => (
                 <button key={id} type="button" onClick={() => setClientTab(id)}
-                  className={`flex flex-1 items-center justify-center gap-1.5 border-b-2 px-3 py-3 text-xs font-semibold transition ${clientTab === id ? 'border-green-500 bg-white/5 backdrop-blur-md text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-300'}`}>
+                  className={`flex flex-1 items-center justify-center gap-1.5 border-b-2 px-3 py-3 text-xs font-semibold transition ${clientTab === id ? 'border-green-500 bg-white backdrop-blur-md text-emerald-400' : 'border-transparent text-slate-500 hover:text-slate-600'}`}>
                   <span>{icon}</span><span className="hidden sm:inline">{label}</span>
                 </button>
               ))}
@@ -911,7 +911,7 @@ const ClientsManagement: React.FC = () => {
               {/* ── Tab 1: Datos de Conexión ── */}
               {clientTab === 1 && (
                 <div className="p-6 space-y-4">
-                  <h4 className="flex items-center gap-2 text-sm font-bold text-slate-300">📶 Datos de Conexión</h4>
+                  <h4 className="flex items-center gap-2 text-sm font-bold text-slate-600">📶 Datos de Conexión</h4>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className="label-ws">Nombre Secret PPPoE</label>
@@ -969,7 +969,7 @@ const ClientsManagement: React.FC = () => {
               {/* ── Tab 2: Datos del Cliente ── */}
               {clientTab === 2 && (
                 <div className="p-6 space-y-4">
-                  <h4 className="flex items-center gap-2 text-sm font-bold text-slate-300">ℹ️ Datos del cliente</h4>
+                  <h4 className="flex items-center gap-2 text-sm font-bold text-slate-600">ℹ️ Datos del cliente</h4>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className="label-ws">Nombre</label>
@@ -1072,11 +1072,11 @@ const ClientsManagement: React.FC = () => {
                   {/* Toggle helper */}
                   {(() => {
                     const Toggle = ({ label, val, field }: { label: string; val: boolean; field: string }) => (
-                      <div className="flex items-center justify-between rounded-lg border border-white/10 px-3 py-2">
-                        <span className="text-sm text-slate-300">{label}</span>
+                      <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
+                        <span className="text-sm text-slate-600">{label}</span>
                         <button type="button" onClick={() => setForm((p) => ({ ...p, [field]: !val }))}
                           className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors ${val ? 'bg-blue-500' : 'bg-gray-300'}`}>
-                          <span className={`inline-block h-5 w-5 transform rounded-full bg-white/5 backdrop-blur-md shadow transition-transform ${val ? 'translate-x-5' : 'translate-x-0'}`} />
+                          <span className={`inline-block h-5 w-5 transform rounded-full bg-white backdrop-blur-md shadow transition-transform ${val ? 'translate-x-5' : 'translate-x-0'}`} />
                         </button>
                       </div>
                     )
@@ -1109,14 +1109,14 @@ const ClientsManagement: React.FC = () => {
                       <div className="flex gap-2">
                         <input className="input-ws flex-1" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Auto-generado" />
                         <button type="button" onClick={() => setForm((p) => ({ ...p, password: Math.random().toString(36).slice(2,10) }))}
-                          className="rounded-lg bg-white/15 px-2 py-1 text-xs text-slate-300 hover:bg-gray-300">Gen</button>
+                          className="rounded-lg bg-white/15 px-2 py-1 text-xs text-slate-600 hover:bg-gray-300">Gen</button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 rounded-lg border border-white/10 px-3 py-2 self-end">
-                      <span className="text-sm text-slate-300">Firewall</span>
+                    <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 self-end">
+                      <span className="text-sm text-slate-600">Firewall</span>
                       <button type="button" onClick={() => setForm((p) => ({ ...p, firewall_enabled: !p.firewall_enabled }))}
                         className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors ${form.firewall_enabled ? 'bg-blue-500' : 'bg-gray-300'}`}>
-                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white/5 backdrop-blur-md shadow transition-transform ${form.firewall_enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white backdrop-blur-md shadow transition-transform ${form.firewall_enabled ? 'translate-x-5' : 'translate-x-0'}`} />
                       </button>
                     </div>
                     <div>
@@ -1125,7 +1125,7 @@ const ClientsManagement: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2 pt-5">
                       <input type="checkbox" id="portal_cb" checked={form.create_portal_access} onChange={(e) => setForm({ ...form, create_portal_access: e.target.checked })} className="h-4 w-4" />
-                      <label htmlFor="portal_cb" className="text-sm font-semibold text-slate-300">Crear acceso al portal cliente</label>
+                      <label htmlFor="portal_cb" className="text-sm font-semibold text-slate-600">Crear acceso al portal cliente</label>
                     </div>
                   </div>
 
@@ -1203,16 +1203,16 @@ const ClientsManagement: React.FC = () => {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between border-t bg-white/5 px-6 py-4">
+            <div className="flex items-center justify-between border-t bg-white px-6 py-4">
               <div className="flex gap-2">
                 {clientTab > 1 && (
                   <button type="button" onClick={() => setClientTab((t) => Math.max(1, t - 1) as 1|2|3|4)}
-                    className="rounded-lg border border-white/20 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">← Anterior</button>
+                    className="rounded-lg border border-white/20 px-4 py-2 text-sm text-slate-600 hover:bg-white/10">← Anterior</button>
                 )}
               </div>
               <div className="flex gap-2">
                 <button onClick={() => { setShowModal(false); setClientTab(1) }}
-                  className="rounded-lg border border-white/20 px-4 py-2 text-sm text-slate-300 hover:bg-white/5">Cancelar</button>
+                  className="rounded-lg border border-white/20 px-4 py-2 text-sm text-slate-600 hover:bg-white">Cancelar</button>
                 {clientTab < 4 ? (
                   <button type="button" onClick={() => setClientTab((t) => Math.min(4, t + 1) as 1|2|3|4)}
                     className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Siguiente →</button>
@@ -1231,11 +1231,11 @@ const ClientsManagement: React.FC = () => {
       {/* GPON Modal */}
       {gponClient && renderModal(
         <div className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-3 backdrop-blur-sm sm:p-6" onClick={() => setGponClient(null)}>
-          <div className="my-4 w-full max-w-2xl overflow-hidden rounded-2xl bg-white/5 backdrop-blur-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="my-4 w-full max-w-2xl overflow-hidden rounded-2xl bg-white backdrop-blur-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b bg-violet-500/10 px-6 py-4">
               <div><p className="text-xs font-semibold uppercase tracking-wide text-violet-600">ProvisiÃ³n GPON</p>
                 <h3 className="text-lg font-bold text-white">Autorizar ONU â€” {gponClient.name}</h3></div>
-              <button onClick={() => setGponClient(null)} className="rounded-full p-2 hover:bg-violet-500/20"><XMarkIcon className="h-5 w-5 text-slate-400" /></button>
+              <button onClick={() => setGponClient(null)} className="rounded-full p-2 hover:bg-violet-500/20"><XMarkIcon className="h-5 w-5 text-slate-500" /></button>
             </div>
             <div className="flex border-b">
               {[1,2,3].map((s) => (<div key={s} className={`flex-1 py-2 text-center text-xs font-semibold ${gponStep===s?'border-b-2 border-violet-500 text-violet-700':'text-slate-500'}`}>{s===1?'1. OLT + PON':s===2?'2. Seleccionar ONU':'3. Resultado'}</div>))}
@@ -1243,19 +1243,19 @@ const ClientsManagement: React.FC = () => {
             <div className="max-h-[65vh] overflow-y-auto p-6">
               {gponStep===1 && (
                 <div className="space-y-4">
-                  <div><label className="mb-1 block text-sm font-semibold text-slate-300">Dispositivo OLT</label>
+                  <div><label className="mb-1 block text-sm font-semibold text-slate-600">Dispositivo OLT</label>
                     <select value={gponDeviceId} onChange={e=>setGponDeviceId(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm">
                       <option value="">Seleccionar OLT...</option>
                       {oltDevices.map(d=><option key={d.id} value={d.id}>{d.name} ({d.vendor}) {d.host?`â€” ${d.host}`:''}</option>)}
                     </select>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
-                    <div><label className="mb-1 block text-xs font-semibold text-slate-400">Frame</label><input type="number" min="0" value={gponFrame} onChange={e=>setGponFrame(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" /></div>
-                    <div><label className="mb-1 block text-xs font-semibold text-slate-400">Slot</label><input type="number" min="0" value={gponSlot} onChange={e=>setGponSlot(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" /></div>
-                    <div><label className="mb-1 block text-xs font-semibold text-slate-400">Puerto PON</label><input type="number" min="1" value={gponPon} onChange={e=>setGponPon(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" /></div>
+                    <div><label className="mb-1 block text-xs font-semibold text-slate-500">Frame</label><input type="number" min="0" value={gponFrame} onChange={e=>setGponFrame(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" /></div>
+                    <div><label className="mb-1 block text-xs font-semibold text-slate-500">Slot</label><input type="number" min="0" value={gponSlot} onChange={e=>setGponSlot(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" /></div>
+                    <div><label className="mb-1 block text-xs font-semibold text-slate-500">Puerto PON</label><input type="number" min="1" value={gponPon} onChange={e=>setGponPon(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" /></div>
                   </div>
                   <div className="flex justify-end gap-2">
-                    <button onClick={() => setGponClient(null)} className="rounded-lg border border-white/20 px-4 py-2 text-sm text-slate-300">Cancelar</button>
+                    <button onClick={() => setGponClient(null)} className="rounded-lg border border-white/20 px-4 py-2 text-sm text-slate-600">Cancelar</button>
                     <button onClick={async()=>{await searchPendingOnus();setGponStep(2)}} disabled={searchingOnus||!gponDeviceId}
                       className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
                       {searchingOnus?<ArrowPathIcon className="h-4 w-4 animate-spin"/>:<SignalIcon className="h-4 w-4"/>}
@@ -1266,30 +1266,30 @@ const ClientsManagement: React.FC = () => {
               )}
               {gponStep===2 && (
                 <div className="space-y-4">
-                  <p className="mb-2 text-sm font-semibold text-slate-300">ONUs encontradas:</p>
+                  <p className="mb-2 text-sm font-semibold text-slate-600">ONUs encontradas:</p>
                   {pendingOnus.length>0?(
                     <div className="space-y-2">{pendingOnus.map((onu,i)=>(
                       <button key={i} onClick={()=>{setGponSerial(onu.serial);setGponOnu(String(onu.onu||i+1))}}
-                        className={`w-full rounded-lg border px-4 py-3 text-left text-sm transition ${gponSerial===onu.serial?'border-violet-500 bg-violet-500/10':'border-white/10 hover:border-violet-300'}`}>
+                        className={`w-full rounded-lg border px-4 py-3 text-left text-sm transition ${gponSerial===onu.serial?'border-violet-500 bg-violet-500/10':'border-gray-200 hover:border-violet-300'}`}>
                         <div className="flex items-center justify-between"><span className="font-mono font-semibold">{onu.serial}</span>{gponSerial===onu.serial&&<CheckCircleIcon className="h-5 w-5 text-violet-600"/>}</div>
-                        <div className="mt-1 text-xs text-slate-400">{onu.vendor&&<span className="mr-3">{onu.vendor}</span>}{onu.model&&<span>{onu.model}</span>}</div>
+                        <div className="mt-1 text-xs text-slate-500">{onu.vendor&&<span className="mr-3">{onu.vendor}</span>}{onu.model&&<span>{onu.model}</span>}</div>
                       </button>
                     ))}</div>
                   ):(
-                    <div className="rounded-lg border border-dashed border-white/20 p-4 text-center text-sm text-slate-400">No se encontraron ONUs pendientes.</div>
+                    <div className="rounded-lg border border-dashed border-white/20 p-4 text-center text-sm text-slate-500">No se encontraron ONUs pendientes.</div>
                   )}
-                  <div><label className="mb-1 block text-xs font-semibold text-slate-300">Serial ONU (manual)</label>
+                  <div><label className="mb-1 block text-xs font-semibold text-slate-600">Serial ONU (manual)</label>
                     <input value={gponSerial} onChange={e=>setGponSerial(e.target.value)} placeholder="ZTEG12345678" className="w-full rounded-lg border border-white/20 px-3 py-2 font-mono text-sm" /></div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><label className="mb-1 block text-xs font-semibold text-slate-300">VLAN</label><input type="number" value={gponVlan} onChange={e=>setGponVlan(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" /></div>
-                    <div><label className="mb-1 block text-xs font-semibold text-slate-300">Tipo WAN</label>
+                    <div><label className="mb-1 block text-xs font-semibold text-slate-600">VLAN</label><input type="number" value={gponVlan} onChange={e=>setGponVlan(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" /></div>
+                    <div><label className="mb-1 block text-xs font-semibold text-slate-600">Tipo WAN</label>
                       <select value={gponWanType} onChange={e=>setGponWanType(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm">
                         <option value="pppoe">PPPoE</option><option value="dhcp">DHCP</option><option value="static">IP EstÃ¡tica</option><option value="bridge">Bridge</option>
                       </select>
                     </div>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <button onClick={()=>setGponStep(1)} className="rounded-lg border border-white/20 px-4 py-2 text-sm text-slate-300">â† AtrÃ¡s</button>
+                    <button onClick={()=>setGponStep(1)} className="rounded-lg border border-white/20 px-4 py-2 text-sm text-slate-600">â† AtrÃ¡s</button>
                     <button onClick={()=>void authorizeOnu()} disabled={authorizingOnu||!gponSerial}
                       className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
                       {authorizingOnu?<ArrowPathIcon className="h-4 w-4 animate-spin"/>:<CheckCircleIcon className="h-4 w-4"/>}
@@ -1315,26 +1315,26 @@ const ClientsManagement: React.FC = () => {
       {/* Portal access modal */}
       {portalModalClient && renderModal(
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={() => setPortalModalClient(null)}>
-          <div className="w-full max-w-md rounded-2xl bg-white/5 backdrop-blur-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md rounded-2xl bg-white backdrop-blur-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b px-6 py-4">
               <div>
                 <p className="text-xs font-semibold uppercase text-blue-600">Portal cliente</p>
                 <h3 className="text-lg font-bold text-white">{portalModalClient.name}</h3>
               </div>
-              <button onClick={() => setPortalModalClient(null)} className="rounded-full p-2 hover:bg-white/10"><XMarkIcon className="h-5 w-5 text-slate-400" /></button>
+              <button onClick={() => setPortalModalClient(null)} className="rounded-full p-2 hover:bg-white/10"><XMarkIcon className="h-5 w-5 text-slate-500" /></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-1">Email</label>
+                <label className="block text-sm font-semibold text-slate-600 mb-1">Email</label>
                 <input value={portalForm.email} onChange={(e)=>setPortalForm(p=>({...p,email:e.target.value}))} placeholder="cliente@correo.com" className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-1">Nueva contraseÃ±a (opcional)</label>
+                <label className="block text-sm font-semibold text-slate-600 mb-1">Nueva contraseÃ±a (opcional)</label>
                 <input type="password" value={portalForm.password} onChange={(e)=>setPortalForm(p=>({...p,password:e.target.value}))} placeholder="Auto-generada si se deja vacÃ­o" className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" />
               </div>
             </div>
             <div className="flex justify-end gap-3 border-t px-6 py-4">
-              <button onClick={() => setPortalModalClient(null)} className="rounded-lg border border-white/20 px-4 py-2 text-sm text-slate-300">Cancelar</button>
+              <button onClick={() => setPortalModalClient(null)} className="rounded-lg border border-white/20 px-4 py-2 text-sm text-slate-600">Cancelar</button>
               <button onClick={() => void submitPortalAccess()} disabled={portalSaving}
                 className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
                 <KeyIcon className="h-4 w-4" />{portalSaving ? 'Guardando...' : 'Guardar credenciales'}

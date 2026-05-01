@@ -142,12 +142,12 @@ const StatsView: React.FC = () => {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-white">Estadisticas</h2>
-          <p className="text-sm text-slate-400">KPIs de clientes, red, tickets y facturacion.</p>
+          <p className="text-sm text-slate-500">KPIs de clientes, red, tickets y facturacion.</p>
         </div>
         <button
           onClick={load}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white disabled:opacity-60"
         >
           <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Actualizando...' : 'Actualizar'}
@@ -182,7 +182,7 @@ const StatsView: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
           <h3 className="font-semibold text-white">Alertas por severidad</h3>
           <div className="mt-4 space-y-3">
             {Object.entries(severityCounts).map(([severity, count]) => (
@@ -196,12 +196,12 @@ const StatsView: React.FC = () => {
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
           <h3 className="font-semibold text-white">Tickets por prioridad</h3>
           <div className="mt-4 space-y-3">
             {Object.entries(priorityCounts).map(([priority, count]) => (
               <div key={priority}>
-                <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
+                <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
                   <span>{priority}</span>
                   <span>{count}</span>
                 </div>
@@ -213,23 +213,23 @@ const StatsView: React.FC = () => {
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
           <h3 className="font-semibold text-white">Ingreso de Hoy</h3>
           <p className="mt-3 text-3xl font-bold text-emerald-700">${dashboard?.finance?.paid_today ?? 0}</p>
-          <p className="mt-2 text-sm text-slate-400">Pendiente: ${dashboard?.finance?.pending ?? 0}</p>
-          <div className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-400">
+          <p className="mt-2 text-sm text-slate-500">Pendiente: ${dashboard?.finance?.pending ?? 0}</p>
+          <div className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-500">
             Tickets hoy: {dashboard?.tickets?.today ?? 0} | Pendientes: {dashboard?.tickets?.pending ?? 0}
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm xl:col-span-1">
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm xl:col-span-1">
           <h3 className="font-semibold text-white">Clientes por plan</h3>
           <div className="mt-4 space-y-3">
             {topPlans.map((entry) => (
               <div key={entry.plan}>
-                <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
+                <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
                   <span>{entry.plan}</span>
                   <span>{entry.total}</span>
                 </div>
@@ -241,17 +241,17 @@ const StatsView: React.FC = () => {
                 </div>
               </div>
             ))}
-            {!topPlans.length && <p className="text-sm text-slate-400">Sin datos de planes.</p>}
+            {!topPlans.length && <p className="text-sm text-slate-500">Sin datos de planes.</p>}
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm xl:col-span-2">
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-sm xl:col-span-2">
           <div className="border-b border-white/5 px-4 py-3">
             <h3 className="font-semibold text-white">Tickets recientes</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-white/5 text-sm">
-              <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
+              <thead className="bg-white text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3 text-left">ID</th>
                   <th className="px-4 py-3 text-left">Asunto</th>
@@ -263,16 +263,16 @@ const StatsView: React.FC = () => {
               <tbody className="divide-y divide-white/5">
                 {tickets.map((ticket) => (
                   <tr key={ticket.id}>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-400">#{ticket.id}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-slate-500">#{ticket.id}</td>
                     <td className="px-4 py-3 text-white">{ticket.subject}</td>
-                    <td className="px-4 py-3 text-slate-300">{ticket.status}</td>
-                    <td className="px-4 py-3 text-slate-300">{ticket.priority}</td>
-                    <td className="px-4 py-3 text-slate-300">{ticket.assigned_to || '-'}</td>
+                    <td className="px-4 py-3 text-slate-600">{ticket.status}</td>
+                    <td className="px-4 py-3 text-slate-600">{ticket.priority}</td>
+                    <td className="px-4 py-3 text-slate-600">{ticket.assigned_to || '-'}</td>
                   </tr>
                 ))}
                 {!tickets.length && (
                   <tr>
-                    <td className="px-4 py-8 text-center text-sm text-slate-400" colSpan={5}>
+                    <td className="px-4 py-8 text-center text-sm text-slate-500" colSpan={5}>
                       Sin tickets recientes.
                     </td>
                   </tr>

@@ -141,10 +141,10 @@ const loadGoogleMapsApi = (apiKey: string) => {
 
 const MapLegend: React.FC<{ provider: 'google' | 'leaflet' }> = ({ provider }) => (
   <>
-    <div className="absolute left-4 top-4 z-[1000] rounded-full border border-white/10 bg-white/90 px-3 py-1 text-xs font-semibold text-slate-300 shadow">
+    <div className="absolute left-4 top-4 z-[1000] rounded-full border border-gray-200 bg-white/90 px-3 py-1 text-xs font-semibold text-slate-600 shadow">
       {provider === 'google' ? 'Google Maps' : 'OpenStreetMap'}
     </div>
-    <div className="absolute bottom-4 right-4 z-[1000] rounded-lg border border-white/10 bg-white/80 p-3 shadow-lg backdrop-blur-sm">
+    <div className="absolute bottom-4 right-4 z-[1000] rounded-lg border border-gray-200 bg-white/80 p-3 shadow-lg backdrop-blur-sm">
       <h4 className="mb-2 text-sm font-bold">Leyenda</h4>
       <div className="space-y-2">
         <div className="flex items-center space-x-2">
@@ -181,10 +181,10 @@ const HistoryModal: React.FC<{
       initial={{ scale: 0.95, y: 20 }}
       animate={{ scale: 1, y: 0 }}
       exit={{ scale: 0.95, y: 20 }}
-      className="flex h-[70vh] w-full max-w-2xl flex-col rounded-2xl bg-white/5 shadow-2xl"
+      className="flex h-[70vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl"
       onClick={(event) => event.stopPropagation()}
     >
-      <div className="flex items-center justify-between border-b border-white/10 p-5">
+      <div className="flex items-center justify-between border-b border-gray-200 p-5">
         <h3 className="text-xl font-bold text-white">Historial de Eventos: {clientName}</h3>
         <button onClick={onClose} className="rounded-full p-2 text-slate-500 hover:bg-white/15">
           <XMarkIcon className="h-6 w-6" />
@@ -207,14 +207,14 @@ const HistoryModal: React.FC<{
                     <div className="relative flex space-x-3">
                       <div>
                         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15">
-                          <DocumentTextIcon className="h-5 w-5 text-slate-400" />
+                          <DocumentTextIcon className="h-5 w-5 text-slate-500" />
                         </span>
                       </div>
                       <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
                         <div>
-                          <p className="text-sm text-slate-300">{event.message}</p>
+                          <p className="text-sm text-slate-600">{event.message}</p>
                         </div>
-                        <div className="whitespace-nowrap text-right text-sm text-slate-400">
+                        <div className="whitespace-nowrap text-right text-sm text-slate-500">
                           <time dateTime={event.timestamp}>{new Date(event.timestamp).toLocaleString()}</time>
                         </div>
                       </div>
@@ -260,12 +260,12 @@ const ClientDetailModal: React.FC<{
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="w-full max-w-lg overflow-hidden rounded-2xl bg-white/5 backdrop-blur-md shadow-2xl"
+            className="w-full max-w-lg overflow-hidden rounded-2xl bg-white backdrop-blur-md shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-white/10 p-5">
+            <div className="flex items-center justify-between border-b border-gray-200 p-5">
               <h3 className="text-xl font-bold text-white">{client.name}</h3>
-              <button onClick={onClose} className="rounded-full p-2 text-slate-500 hover:bg-white/10 hover:text-slate-400">
+              <button onClick={onClose} className="rounded-full p-2 text-slate-500 hover:bg-white/10 hover:text-slate-500">
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
@@ -283,12 +283,12 @@ const ClientDetailModal: React.FC<{
                 >
                   {getStatusText(client.status)}
                 </span>
-                <p className="text-sm text-slate-400">Ultima vez visto: {client.last_seen || 'N/A'}</p>
+                <p className="text-sm text-slate-500">Ultima vez visto: {client.last_seen || 'N/A'}</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
-                <div className="rounded-lg bg-white/5 p-4">
-                  <h4 className="mb-2 font-semibold text-slate-400">Detalles de Red</h4>
+                <div className="rounded-lg bg-white p-4">
+                  <h4 className="mb-2 font-semibold text-slate-500">Detalles de Red</h4>
                   <ul className="space-y-2">
                     <li className="flex items-center">
                       <ComputerDesktopIcon className="mr-2 h-4 w-4 text-slate-500" />
@@ -304,8 +304,8 @@ const ClientDetailModal: React.FC<{
                     </li>
                   </ul>
                 </div>
-                <div className="rounded-lg bg-white/5 p-4">
-                  <h4 className="mb-2 font-semibold text-slate-400">Ubicacion</h4>
+                <div className="rounded-lg bg-white p-4">
+                  <h4 className="mb-2 font-semibold text-slate-500">Ubicacion</h4>
                   <ul className="space-y-2">
                     <li className="flex items-center">
                       <MapPinIcon className="mr-2 h-4 w-4 text-slate-500" />
@@ -320,10 +320,10 @@ const ClientDetailModal: React.FC<{
               </div>
             </div>
 
-            <div className="flex items-center justify-end space-x-3 border-t border-white/10 bg-white/5 px-6 py-4">
+            <div className="flex items-center justify-end space-x-3 border-t border-gray-200 bg-white px-6 py-4">
               <button
                 onClick={() => client && onShowHistory(client)}
-                className="flex items-center space-x-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/5"
+                className="flex items-center space-x-2 rounded-lg border border-white/20 bg-white backdrop-blur-md px-4 py-2 text-sm font-medium text-slate-600 hover:bg-white"
               >
                 <DocumentTextIcon className="h-4 w-4" />
                 <span>Ver Historial</span>
@@ -519,7 +519,7 @@ const NetworkMap: React.FC = () => {
   const isMapBooting = mapProvider === 'google' && !isGoogleMapsReady
 
   return (
-    <div className="relative h-96 overflow-hidden rounded-lg border border-white/10">
+    <div className="relative h-96 overflow-hidden rounded-lg border border-gray-200">
       {error && (
         <div className="absolute inset-0 z-[1001] flex items-center justify-center bg-rose-500/20/80">
           <p className="font-semibold text-rose-400">{error}</p>
@@ -529,7 +529,7 @@ const NetworkMap: React.FC = () => {
         <div className="absolute inset-0 z-[1001] flex items-center justify-center bg-white/10/50">
           <div className="text-center">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-slate-400">{isMapBooting ? 'Cargando Google Maps...' : 'Cargando mapa de red...'}</p>
+            <p className="mt-2 text-slate-500">{isMapBooting ? 'Cargando Google Maps...' : 'Cargando mapa de red...'}</p>
           </div>
         </div>
       )}
@@ -575,8 +575,8 @@ const NetworkMap: React.FC = () => {
             <Marker key={client.id} position={[client.lat, client.lng]} icon={createClientIcon(client.status)}>
               <Popup>
                 <div className="p-1">
-                  <div className="font-bold text-slate-200">{client.name}</div>
-                  <p className="text-sm text-slate-400">Estado: {getStatusText(client.status)}</p>
+                  <div className="font-bold text-slate-700">{client.name}</div>
+                  <p className="text-sm text-slate-500">Estado: {getStatusText(client.status)}</p>
                   <button
                     onClick={(event) => {
                       event.stopPropagation()

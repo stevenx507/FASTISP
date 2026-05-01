@@ -138,7 +138,7 @@ const SpeedTestWidget: React.FC = () => {
           <div className="absolute inset-0 flex items-center justify-center">
             <div>
               <div className="text-2xl font-bold text-white">{progress}%</div>
-              <div className="text-sm text-slate-300">{isTesting ? 'Midiendo...' : 'Listo'}</div>
+              <div className="text-sm text-slate-600">{isTesting ? 'Midiendo...' : 'Listo'}</div>
             </div>
           </div>
         </div>
@@ -169,15 +169,15 @@ const SpeedTestWidget: React.FC = () => {
           </div>
           <div className="grid grid-cols-1 gap-1 text-sm sm:grid-cols-3">
             <div>
-              <span className="text-slate-300">Ping:</span>
+              <span className="text-slate-600">Ping:</span>
               <span className="ml-2 font-semibold text-white">{results.ping.toFixed(1)} ms</span>
             </div>
             <div>
-              <span className="text-slate-300">Jitter:</span>
+              <span className="text-slate-600">Jitter:</span>
               <span className="ml-2 font-semibold text-white">{results.jitter.toFixed(1)} ms</span>
             </div>
             <div>
-              <span className="text-slate-300">Perdida:</span>
+              <span className="text-slate-600">Perdida:</span>
               <span className="ml-2 font-semibold text-white">{results.packetLoss.toFixed(2)}%</span>
             </div>
           </div>
@@ -191,8 +191,8 @@ const SpeedTestWidget: React.FC = () => {
         <div className="mt-4">
           <div className="flex justify-center space-x-3">
             {['Telemetria', 'Ping', 'Throughput'].map((text, i) => (
-              <div key={text} className="flex items-center space-x-1 text-sm text-slate-300">
-                <span className={`h-2 w-2 rounded-full ${progress > i * 30 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-slate-700'}`} />
+              <div key={text} className="flex items-center space-x-1 text-sm text-slate-600">
+                <span className={`h-2 w-2 rounded-full ${progress > i * 30 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-gray-100'}`} />
                 <span>{text}</span>
               </div>
             ))}

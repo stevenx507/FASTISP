@@ -98,12 +98,12 @@ const MaintenanceWindowsView: React.FC = () => {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-white">Ventanas de Mantenimiento NOC</h2>
-          <p className="text-sm text-slate-400">Programa mantenimientos y silencia alertas por alcance.</p>
+          <p className="text-sm text-slate-500">Programa mantenimientos y silencia alertas por alcance.</p>
         </div>
         <button
           onClick={load}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white disabled:opacity-60"
         >
           <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Actualizando...' : 'Actualizar'}
@@ -111,7 +111,7 @@ const MaintenanceWindowsView: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <form onSubmit={createWindow} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
+        <form onSubmit={createWindow} className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
           <h3 className="mb-3 font-semibold text-white">Nueva ventana</h3>
           <div className="space-y-3">
             <input
@@ -128,7 +128,7 @@ const MaintenanceWindowsView: React.FC = () => {
             </select>
             <input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" />
             <input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" />
-            <label className="flex items-center gap-2 text-sm text-slate-300">
+            <label className="flex items-center gap-2 text-sm text-slate-600">
               <input type="checkbox" checked={muteAlerts} onChange={(e) => setMuteAlerts(e.target.checked)} />
               Silenciar alertas durante la ventana
             </label>
@@ -139,7 +139,7 @@ const MaintenanceWindowsView: React.FC = () => {
           </div>
         </form>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm xl:col-span-2">
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-sm xl:col-span-2">
           <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
             <h3 className="font-semibold text-white">Ventanas configuradas</h3>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-lg border border-white/20 px-2 py-1 text-xs">
@@ -151,7 +151,7 @@ const MaintenanceWindowsView: React.FC = () => {
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-white/5 text-sm">
-              <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
+              <thead className="bg-white text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3 text-left">Titulo</th>
                   <th className="px-4 py-3 text-left">Scope</th>
@@ -166,11 +166,11 @@ const MaintenanceWindowsView: React.FC = () => {
                   <tr key={item.id}>
                     <td className="px-4 py-3">
                       <p className="font-medium text-white">{item.title}</p>
-                      <p className="text-xs text-slate-400">{item.note || '-'}</p>
+                      <p className="text-xs text-slate-500">{item.note || '-'}</p>
                     </td>
-                    <td className="px-4 py-3 text-slate-300">{item.scope}</td>
-                    <td className="px-4 py-3 text-slate-300">{new Date(item.starts_at).toLocaleString()}</td>
-                    <td className="px-4 py-3 text-slate-300">{new Date(item.ends_at).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-slate-600">{item.scope}</td>
+                    <td className="px-4 py-3 text-slate-600">{new Date(item.starts_at).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-slate-600">{new Date(item.ends_at).toLocaleString()}</td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2 py-1 text-xs font-semibold ${item.status === 'active' ? 'bg-emerald-100 text-emerald-700' : item.status === 'scheduled' ? 'bg-blue-500/20 text-blue-300' : 'bg-slate-100 text-slate-700'}`}>
                         {item.status || '-'}
@@ -190,7 +190,7 @@ const MaintenanceWindowsView: React.FC = () => {
                 ))}
                 {!items.length && (
                   <tr>
-                    <td className="px-4 py-8 text-center text-sm text-slate-400" colSpan={6}>
+                    <td className="px-4 py-8 text-center text-sm text-slate-500" colSpan={6}>
                       Sin ventanas registradas.
                     </td>
                   </tr>

@@ -43,13 +43,13 @@ export const Table = React.forwardRef<HTMLDivElement, TableProps<any>>(({
               <td colSpan={columns.length} className="px-6 py-8 text-center">
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-gray-200 border-t-coral-500 rounded-full animate-spin"></div>
-                  <span className="text-slate-400">Cargando...</span>
+                  <span className="text-slate-500">Cargando...</span>
                 </div>
               </td>
             </tr>
           ) : data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-6 py-8 text-center text-slate-400">
+              <td colSpan={columns.length} className="px-6 py-8 text-center text-slate-500">
                 {emptyMessage}
               </td>
             </tr>

@@ -120,7 +120,7 @@ export const BarChart: React.FC<BarChartProps> = ({ data, title, showValues = tr
           <div key={i}>
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-xs font-bold text-slate-600">{d.label}</span>
-              {showValues && <span className="text-xs font-black text-slate-400">{d.value}%</span>}
+              {showValues && <span className="text-xs font-black text-slate-500">{d.value}%</span>}
             </div>
             <div className="w-full bg-gray-50 rounded-full h-2 overflow-hidden border border-gray-100">
               <motion.div

@@ -3,8 +3,8 @@
  * Permite configurar ratio (1:1, 1:2, 1:4, 1:8), tipo de cola y algoritmo por plan.
  * Muestra velocidades efectivas en tiempo real según clientes activos.
  */
-import { useEffect, useState, useCallback } from 'react'
-import { apiClient } from '../../lib/apiClient'
+import { useEffect, useState, useCallback } from'react'
+import { apiClient } from'../../lib/apiClient'
 
 interface ReuseConfig {
  id: number
@@ -31,22 +31,22 @@ interface Router {
 }
 
 const RATIO_LABELS: Record<string, string> = {
- '1:1': '1:1 – Sin reuso (dedicado)',
- '1:2': '1:2 – Compartido x2',
- '1:4': '1:4 – Compartido x4',
- '1:8': '1:8 – Compartido x8',
+'1:1':'1:1 – Sin reuso (dedicado)',
+'1:2':'1:2 – Compartido x2',
+'1:4':'1:4 – Compartido x4',
+'1:8':'1:8 – Compartido x8',
 }
 
 const QUEUE_TYPE_LABELS: Record<string, string> = {
- simple: 'Queue Simple',
- tree: 'Queue Tree',
- mangle_tree: 'Mangle + Queue Tree',
+ simple:'Queue Simple',
+ tree:'Queue Tree',
+ mangle_tree:'Mangle + Queue Tree',
 }
 
 const ALGO_LABELS: Record<string, string> = {
- default: 'Default (FIFO)',
- pcq: 'PCQ (Per Connection Queue)',
- cake: 'CAKE (v7+)',
+ default:'Default (FIFO)',
+ pcq:'PCQ (Per Connection Queue)',
+ cake:'CAKE (v7+)',
 }
 
 export default function BandwidthReusePanel() {
@@ -55,7 +55,7 @@ export default function BandwidthReusePanel() {
  const [loading, setLoading] = useState(true)
  const [error, setError] = useState<string | null>(null)
  const [editing, setEditing] = useState<ReuseConfig | null>(null)
- const [editForm, setEditForm] = useState({ reuse_ratio: '1:1', queue_type: 'simple', queue_algorithm: 'default', parent_queue_name: '', auto_adjust: true })
+ const [editForm, setEditForm] = useState({ reuse_ratio:'1:1', queue_type:'simple', queue_algorithm:'default', parent_queue_name:'', auto_adjust: true })
  const [saving, setSaving] = useState(false)
  const [applying, setApplying] = useState<number | null>(null)
  const [applyResult, setApplyResult] = useState<any>(null)
@@ -88,7 +88,7 @@ export default function BandwidthReusePanel() {
  reuse_ratio: cfg.reuse_ratio,
  queue_type: cfg.queue_type,
  queue_algorithm: cfg.queue_algorithm,
- parent_queue_name: cfg.parent_queue_name || '',
+ parent_queue_name: cfg.parent_queue_name ||'',
  auto_adjust: cfg.auto_adjust,
  })
  }
@@ -98,13 +98,13 @@ export default function BandwidthReusePanel() {
  setSaving(true)
  try {
  const res = await apiClient.request(`/api/network/bandwidth-reuse/${editing.plan_id}`, {
- method: 'PUT',
- headers: { 'Content-Type': 'application/json' },
+ method:'PUT',
+ headers: {'Content-Type':'application/json' },
  body: JSON.stringify(editForm),
  })
  if (!res.ok) {
  const d = await res.json()
- alert(d.error || 'Error guardando')
+ alert(d.error ||'Error guardando')
  return
  }
  setEditing(null)
@@ -123,8 +123,8 @@ export default function BandwidthReusePanel() {
  setApplyResult(null)
  try {
  const res = await apiClient.request(`/api/network/bandwidth-reuse/${planId}/apply/${selectedRouter}`, {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
+ method:'POST',
+ headers: {'Content-Type':'application/json' },
  body: JSON.stringify({ force: true }),
  })
  const data = await res.json()
@@ -144,7 +144,7 @@ export default function BandwidthReusePanel() {
  setApplyResult(null)
  try {
  const res = await apiClient.request(`/api/network/bandwidth-reuse/apply-all/${selectedRouter}`, {
- method: 'POST',
+ method:'POST',
  })
  const data = await res.json()
  setApplyResult(data)
@@ -159,7 +159,7 @@ export default function BandwidthReusePanel() {
  return (
  <div className="flex items-center gap-2">
  <div className="flex-1 bg-gray-100 hover:bg-gray-200 rounded-full h-2">
- <div className="h-2 rounded-full bg-blue-500 transition-all" style={{ width: `${pct}%` }} />
+ <div className="h-2 rounded-full bg-blue-500 transition-all" style={{ width: `${pct}%`}} />
  </div>
  <span className="text-xs font-mono text-slate-500 w-16 text-right">{effective}/{plan}M</span>
  </div>
@@ -177,7 +177,7 @@ export default function BandwidthReusePanel() {
  <div className="flex gap-2 flex-wrap items-center">
  <select
  aria-label="Seleccionar router"
- value={selectedRouter || ''}
+ value={selectedRouter ||''}
  onChange={e => setSelectedRouter(e.target.value ? parseInt(e.target.value) : null)}
  className="text-sm border rounded-lg px-3 py-2">
  <option value="">Seleccionar router...</option>
@@ -185,7 +185,7 @@ export default function BandwidthReusePanel() {
  </select>
  <button onClick={handleApplyAll} disabled={applying !== null || !selectedRouter}
  className="px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50">
- {applying === -1 ? '⏳ Aplicando...' : '⚡ Aplicar Todos'}
+ {applying === -1 ?'⏳ Aplicando...' :'⚡ Aplicar Todos'}
  </button>
  <button onClick={load} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-slate-700 rounded-lg text-sm">↻</button>
  </div>
@@ -193,14 +193,14 @@ export default function BandwidthReusePanel() {
 
  {/* Resultado de aplicación */}
  {applyResult && (
- <div className={`rounded-xl p-4 text-sm border ${applyResult.success ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
- <p className="font-semibold">{applyResult.success ? '✅ Aplicado correctamente' : '❌ Error al aplicar'}</p>
+ <div className={`rounded-xl p-4 text-sm border ${applyResult.success ?'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' :'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
+ <p className="font-semibold">{applyResult.success ?'✅ Aplicado correctamente' :'❌ Error al aplicar'}</p>
  {applyResult.plan_name && <p>Plan: {applyResult.plan_name} · {applyResult.active_clients} clientes activos</p>}
  {applyResult.effective_down_mbps && (
  <p>Velocidad efectiva: ↓{applyResult.effective_down_mbps}M / ↑{applyResult.effective_up_mbps}M</p>
  )}
  {applyResult.errors?.length > 0 && (
- <p className="text-red-600 mt-1">Errores: {applyResult.errors.map((e: any) => e.error || JSON.stringify(e)).join(', ')}</p>
+ <p className="text-red-600 mt-1">Errores: {applyResult.errors.map((e: any) => e.error || JSON.stringify(e)).join(',')}</p>
  )}
  <button onClick={() => setApplyResult(null)} className="mt-2 text-xs underline">Cerrar</button>
  </div>
@@ -229,10 +229,10 @@ export default function BandwidthReusePanel() {
  <p className="text-xs text-slate-500">Plan: ↓{cfg.plan_down}M / ↑{cfg.plan_up}M</p>
  </div>
  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
- cfg.reuse_ratio === '1:1' ? 'bg-emerald-100 text-emerald-800' :
- cfg.reuse_ratio === '1:2' ? 'bg-blue-100 text-blue-800 text-blue-800' :
- cfg.reuse_ratio === '1:4' ? 'bg-amber-100 text-amber-800' :
- 'bg-rose-100 text-rose-800'}`}>{cfg.reuse_ratio}</span>
+ cfg.reuse_ratio ==='1:1' ?'bg-emerald-100 text-emerald-800' :
+ cfg.reuse_ratio ==='1:2' ?'bg-blue-100 text-blue-800 text-blue-800' :
+ cfg.reuse_ratio ==='1:4' ?'bg-amber-100 text-amber-800' :
+'bg-rose-100 text-rose-800'}`}>{cfg.reuse_ratio}</span>
  </div>
 
  {/* Velocidades efectivas */}
@@ -250,20 +250,20 @@ export default function BandwidthReusePanel() {
  <div className="grid grid-cols-2 gap-2 text-xs">
  <div className="bg-white rounded-lg p-2">
  <p className="text-slate-500">Clientes activos</p>
- <p className="font-bold text-slate-200">{cfg.current_active_clients}</p>
+ <p className="font-bold text-slate-700">{cfg.current_active_clients}</p>
  </div>
  <div className="bg-white rounded-lg p-2">
  <p className="text-slate-500">Tipo de cola</p>
- <p className="font-bold text-slate-200 capitalize">{cfg.queue_type.replace('_', ' ')}</p>
+ <p className="font-bold text-slate-700 capitalize">{cfg.queue_type.replace('_','')}</p>
  </div>
  <div className="bg-white rounded-lg p-2">
  <p className="text-slate-500">Algoritmo</p>
- <p className="font-bold text-slate-200 uppercase">{cfg.queue_algorithm}</p>
+ <p className="font-bold text-slate-700 uppercase">{cfg.queue_algorithm}</p>
  </div>
  <div className="bg-white rounded-lg p-2">
  <p className="text-slate-500">Auto-ajuste</p>
- <p className={`font-bold ${cfg.auto_adjust ? 'text-green-600' : 'text-slate-500'}`}>
- {cfg.auto_adjust ? '✅ Activo' : '⏸ Inactivo'}
+ <p className={`font-bold ${cfg.auto_adjust ?'text-green-600' :'text-slate-500'}`}>
+ {cfg.auto_adjust ?'✅ Activo' :'⏸ Inactivo'}
  </p>
  </div>
  </div>
@@ -271,12 +271,12 @@ export default function BandwidthReusePanel() {
  {/* Acciones */}
  <div className="flex gap-2 mt-1">
  <button onClick={() => openEdit(cfg)}
- className="flex-1 text-xs py-1.5 bg-blue-50 text-blue-800 dark:text-blue-800 rounded-lg hover:bg-blue-100 text-blue-800 font-medium">
+ className="flex-1 text-xs py-1.5 bg-blue-50 text-blue-800 rounded-lg hover:bg-blue-100 text-blue-800 font-medium">
  ✏️ Configurar
  </button>
  <button onClick={() => handleApply(cfg.plan_id)} disabled={applying !== null || !selectedRouter}
- className="flex-1 text-xs py-1.5 bg-emerald-500/10 dark:bg-green-900/30 text-emerald-400 dark:text-green-300 rounded-lg hover:bg-emerald-500/20 font-medium disabled:opacity-50">
- {applying === cfg.plan_id ? '⏳' : '⚡ Aplicar'}
+ className="flex-1 text-xs py-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20 font-medium disabled:opacity-50">
+ {applying === cfg.plan_id ?'⏳' :'⚡ Aplicar'}
  </button>
  </div>
  </div>
@@ -321,7 +321,7 @@ export default function BandwidthReusePanel() {
  </select>
  </div>
 
- {editForm.queue_type === 'tree' && (
+ {editForm.queue_type ==='tree' && (
  <div>
  <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Cola Padre (opcional)</label>
  <input value={editForm.parent_queue_name} onChange={e => setEditForm(f => ({ ...f, parent_queue_name: e.target.value }))}
@@ -343,7 +343,7 @@ export default function BandwidthReusePanel() {
  <div className="flex gap-3 mt-6">
  <button onClick={handleSave} disabled={saving}
  className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
- {saving ? 'Guardando...' : '💾 Guardar'}
+ {saving ?'Guardando...' :'💾 Guardar'}
  </button>
  <button onClick={() => setEditing(null)}
  className="flex-1 bg-gray-100 hover:bg-gray-200 text-slate-700 rounded-lg py-2 text-sm hover:bg-gray-300">

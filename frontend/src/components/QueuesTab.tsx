@@ -279,23 +279,23 @@ const QueuesTab: React.FC<QueuesTabProps> = ({
          <motion.div
            initial={{ opacity: 0, y: 20 }}
            animate={{ opacity: 1, y: 0 }}
-           className="relative bg-white/5 backdrop-blur-md rounded-lg shadow-xl max-w-lg w-full p-6"
+           className="relative bg-white backdrop-blur-md rounded-lg shadow-xl max-w-lg w-full p-6"
          >
            <div className="flex justify-between items-center mb-4">
              <h4 className="text-lg font-semibold text-white">
                Editar Límite de Cola: <span className="font-mono">{editingQueue.name}</span>
              </h4>
              <button onClick={() => setEditingQueue(null)} className="p-1 rounded-full hover:bg-white/15">
-               <XMarkIcon className="w-6 h-6 text-slate-400" />
+               <XMarkIcon className="w-6 h-6 text-slate-500" />
              </button>
            </div>
            <form onSubmit={handleUpdateQueueLimit}>
-             <p className="text-sm text-slate-400 mb-4">
+             <p className="text-sm text-slate-500 mb-4">
                Introduce los nuevos límites de velocidad en Megabits por segundo (Mbps).
              </p>
              <div className="grid grid-cols-2 gap-4">
                <div>
-                 <label htmlFor="upload" className="block text-sm font-medium text-slate-300">
+                 <label htmlFor="upload" className="block text-sm font-medium text-slate-600">
                    Subida (Upload)
                  </label>
                  <div className="mt-1 relative rounded-md shadow-sm">
@@ -309,12 +309,12 @@ const QueuesTab: React.FC<QueuesTabProps> = ({
                      required
                    />
                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                     <span className="text-slate-400 sm:text-sm">Mbps</span>
+                     <span className="text-slate-500 sm:text-sm">Mbps</span>
                    </div>
                  </div>
                </div>
                <div>
-                 <label htmlFor="download" className="block text-sm font-medium text-slate-300">
+                 <label htmlFor="download" className="block text-sm font-medium text-slate-600">
                    Bajada (Download)
                  </label>
                  <div className="mt-1 relative rounded-md shadow-sm">
@@ -328,13 +328,13 @@ const QueuesTab: React.FC<QueuesTabProps> = ({
                      required
                    />
                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                     <span className="text-slate-400 sm:text-sm">Mbps</span>
+                     <span className="text-slate-500 sm:text-sm">Mbps</span>
                    </div>
                  </div>
                </div>
              </div>
              <div className="mt-6 flex justify-end gap-3">
-               <button type="button" className="px-4 py-2 rounded bg-white/15 text-slate-200 hover:bg-gray-300" onClick={() => setEditingQueue(null)}>
+               <button type="button" className="px-4 py-2 rounded bg-white/15 text-slate-700 hover:bg-gray-300" onClick={() => setEditingQueue(null)}>
                  Cancelar
                </button>
                <button type="submit" disabled={isSavingQueue} className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300 flex items-center">
@@ -354,18 +354,18 @@ const QueuesTab: React.FC<QueuesTabProps> = ({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative bg-white/5 backdrop-blur-md rounded-lg shadow-xl max-w-lg w-full p-6"
+          className="relative bg-white backdrop-blur-md rounded-lg shadow-xl max-w-lg w-full p-6"
         >
           <div className="flex justify-between items-center mb-4">
             <h4 className="text-lg font-semibold text-white">Crear Nueva Cola Simple</h4>
             <button onClick={() => setCreateQueueModalOpen(false)} className="p-1 rounded-full hover:bg-white/15">
-              <XMarkIcon className="w-6 h-6 text-slate-400" />
+              <XMarkIcon className="w-6 h-6 text-slate-500" />
             </button>
           </div>
           <form onSubmit={handleCreateQueue}>
             <div className="space-y-4">
               <div>
-                <label htmlFor="create-name" className="block text-sm font-medium text-slate-300">Nombre de la Cola</label>
+                <label htmlFor="create-name" className="block text-sm font-medium text-slate-600">Nombre de la Cola</label>
                 <input
                   type="text"
                   name="name"
@@ -376,7 +376,7 @@ const QueuesTab: React.FC<QueuesTabProps> = ({
                 />
               </div>
               <div>
-                <label htmlFor="create-target" className="block text-sm font-medium text-slate-300">Target (IP)</label>
+                <label htmlFor="create-target" className="block text-sm font-medium text-slate-600">Target (IP)</label>
                 <input
                   type="text"
                   name="target"
@@ -390,7 +390,7 @@ const QueuesTab: React.FC<QueuesTabProps> = ({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="create-upload" className="block text-sm font-medium text-slate-300">Subida (Mbps)</label>
+                  <label htmlFor="create-upload" className="block text-sm font-medium text-slate-600">Subida (Mbps)</label>
                   <input
                     type="number"
                     name="upload"
@@ -403,7 +403,7 @@ const QueuesTab: React.FC<QueuesTabProps> = ({
                   />
                 </div>
                 <div>
-                  <label htmlFor="create-download" className="block text-sm font-medium text-slate-300">Bajada (Mbps)</label>
+                  <label htmlFor="create-download" className="block text-sm font-medium text-slate-600">Bajada (Mbps)</label>
                   <input
                     type="number"
                     name="download"
@@ -418,7 +418,7 @@ const QueuesTab: React.FC<QueuesTabProps> = ({
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">
-              <button type="button" className="px-4 py-2 rounded bg-white/15 text-slate-200 hover:bg-gray-300" onClick={() => setCreateQueueModalOpen(false)}>
+              <button type="button" className="px-4 py-2 rounded bg-white/15 text-slate-700 hover:bg-gray-300" onClick={() => setCreateQueueModalOpen(false)}>
                 Cancelar
               </button>
               <button type="submit" disabled={isCreatingQueue} className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300 flex items-center">
@@ -459,23 +459,23 @@ const QueuesTab: React.FC<QueuesTabProps> = ({
         <table className="min-w-full divide-y divide-white/10">
           <thead>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Nombre</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Target</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Límite</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Uso Actual</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Comentario</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Estado</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Acciones</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nombre</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Target</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Límite</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Uso Actual</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Comentario</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
-          <tbody className="bg-white/5 backdrop-blur-md divide-y divide-white/10">
+          <tbody className="bg-white backdrop-blur-md divide-y divide-white/10">
             {currentQueues?.map((queue) => (
               <tr key={queue.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{queue.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{queue.target}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{queue.max_limit || 'Sin límite'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{queue.rate || '0/0'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{queue.target}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{queue.max_limit || 'Sin límite'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{queue.rate || '0/0'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                   {editingCommentId === queue.id ? (
                     <div className="flex items-center gap-2">
                       <input
@@ -529,7 +529,7 @@ const QueuesTab: React.FC<QueuesTabProps> = ({
                         <span>{queue.disabled ? 'Activar' : 'Desactivar'}</span>
                       )}
                     </button>
-                    <button onClick={() => setEditingQueue(queue)} className="p-2 text-slate-400 hover:bg-white/10 rounded-md" title="Editar Límite">
+                    <button onClick={() => setEditingQueue(queue)} className="p-2 text-slate-500 hover:bg-white/10 rounded-md" title="Editar Límite">
                       <PencilIcon className="w-4 h-4" />
                     </button>
                     <button
@@ -549,17 +549,17 @@ const QueuesTab: React.FC<QueuesTabProps> = ({
           <button
             onClick={() => paginateQueues(queuesCurrentPage - 1)}
             disabled={queuesCurrentPage === 1}
-            className="px-4 py-2 text-sm font-medium text-slate-300 bg-white/5 backdrop-blur-md border border-white/20 rounded-lg hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium text-slate-600 bg-white backdrop-blur-md border border-white/20 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Anterior
           </button>
-          <span className="text-sm text-slate-300">
+          <span className="text-sm text-slate-600">
             Página {queuesCurrentPage} de {totalQueuePages}
           </span>
           <button
             onClick={() => paginateQueues(queuesCurrentPage + 1)}
             disabled={queuesCurrentPage === totalQueuePages}
-            className="px-4 py-2 text-sm font-medium text-slate-300 bg-white/5 backdrop-blur-md border border-white/20 rounded-lg hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium text-slate-600 bg-white backdrop-blur-md border border-white/20 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Siguiente
           </button>

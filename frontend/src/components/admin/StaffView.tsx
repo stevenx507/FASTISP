@@ -160,12 +160,12 @@ const StaffView: React.FC = () => {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-white">Staff</h2>
-          <p className="text-sm text-slate-400">Gestiona roles operativos, turnos, zonas y MFA.</p>
+          <p className="text-sm text-slate-500">Gestiona roles operativos, turnos, zonas y MFA.</p>
         </div>
         <button
           onClick={loadStaff}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white disabled:opacity-60"
         >
           <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Actualizando...' : 'Actualizar'}
@@ -179,7 +179,7 @@ const StaffView: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <form onSubmit={handleCreate} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
+        <form onSubmit={handleCreate} className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
           <h3 className="mb-3 font-semibold text-white">Nuevo miembro</h3>
           <div className="space-y-3">
             <input
@@ -237,7 +237,7 @@ const StaffView: React.FC = () => {
               placeholder="Telefono"
               className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
-            <label className="flex items-center gap-2 text-sm text-slate-300">
+            <label className="flex items-center gap-2 text-sm text-slate-600">
               <input
                 type="checkbox"
                 checked={form.mfa_enabled}
@@ -255,7 +255,7 @@ const StaffView: React.FC = () => {
           </div>
         </form>
 
-        <div className="xl:col-span-2 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm">
+        <div className="xl:col-span-2 rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 px-4 py-3">
             <div className="flex flex-wrap items-center gap-2">
               <input
@@ -275,12 +275,12 @@ const StaffView: React.FC = () => {
                 ))}
               </select>
             </div>
-            <p className="text-xs text-slate-400">{filteredStaff.length} miembros</p>
+            <p className="text-xs text-slate-500">{filteredStaff.length} miembros</p>
           </div>
 
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-white/5 text-sm">
-              <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
+              <thead className="bg-white text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3 text-left">Miembro</th>
                   <th className="px-4 py-3 text-left">Rol</th>
@@ -299,7 +299,7 @@ const StaffView: React.FC = () => {
                     <tr key={member.id}>
                       <td className="px-4 py-3">
                         <p className="font-medium text-white">{member.name}</p>
-                        <p className="text-xs text-slate-400">{member.email}</p>
+                        <p className="text-xs text-slate-500">{member.email}</p>
                       </td>
                       <td className="px-4 py-3">
                         <select
@@ -347,7 +347,7 @@ const StaffView: React.FC = () => {
                           <button
                             onClick={() => updateDraft(member.id, 'mfa_enabled', !currentMfa)}
                             className={`rounded-md px-2 py-1 text-xs font-semibold ${
-                              currentMfa ? 'bg-emerald-100 text-emerald-700' : 'bg-white/10 text-slate-300'
+                              currentMfa ? 'bg-emerald-100 text-emerald-700' : 'bg-white/10 text-slate-600'
                             }`}
                           >
                             MFA {currentMfa ? 'on' : 'off'}
@@ -366,7 +366,7 @@ const StaffView: React.FC = () => {
                 })}
                 {!filteredStaff.length && (
                   <tr>
-                    <td className="px-4 py-8 text-center text-sm text-slate-400" colSpan={7}>
+                    <td className="px-4 py-8 text-center text-sm text-slate-500" colSpan={7}>
                       Sin miembros para mostrar.
                     </td>
                   </tr>

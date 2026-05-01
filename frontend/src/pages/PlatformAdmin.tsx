@@ -638,7 +638,7 @@ const PlatformAdmin: React.FC = () => {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Buscar por nombre o slug"
-                className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
+                className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
               />
               <select
                 value={statusFilter}
@@ -693,10 +693,10 @@ const PlatformAdmin: React.FC = () => {
                           <p className="text-xs text-slate-700">{tenant.host || `${tenant.slug}.fastisp.cloud`}</p>
                           <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-700">
                             <p>
-                              <span className="text-slate-400">Creado:</span> {formatDateTime(tenant.created_at)}
+                              <span className="text-slate-500">Creado:</span> {formatDateTime(tenant.created_at)}
                             </p>
                             <p>
-                              <span className="text-slate-400">Trial hasta:</span> {formatDateTime(tenant.trial_ends_at)}
+                              <span className="text-slate-500">Trial hasta:</span> {formatDateTime(tenant.trial_ends_at)}
                             </p>
                           </div>
                         </div>
@@ -781,10 +781,10 @@ const PlatformAdmin: React.FC = () => {
                       </div>
 
                       <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600 md:grid-cols-4 font-medium">
-                        <p><span className="text-slate-400">Usuarios:</span> {tenant.users_total}</p>
-                        <p><span className="text-slate-400">Subs:</span> {tenant.subscriptions_total}</p>
-                        <p><span className="text-slate-400">Ciclo:</span> {tenant.billing_cycle}</p>
-                        <p><span className="text-slate-400">Precio:</span> ${Number(tenant.monthly_price || 0).toFixed(2)}</p>
+                        <p><span className="text-slate-500">Usuarios:</span> {tenant.users_total}</p>
+                        <p><span className="text-slate-500">Subs:</span> {tenant.subscriptions_total}</p>
+                        <p><span className="text-slate-500">Ciclo:</span> {tenant.billing_cycle}</p>
+                        <p><span className="text-slate-500">Precio:</span> ${Number(tenant.monthly_price || 0).toFixed(2)}</p>
                       </div>
                     </article>
                   )
@@ -810,13 +810,13 @@ const PlatformAdmin: React.FC = () => {
                 value={tenantForm.name}
                 onChange={(event) => setTenantForm((prev) => ({ ...prev, name: event.target.value }))}
                 placeholder="Nombre comercial ISP"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
               />
               <input
                 value={tenantForm.slug}
                 onChange={(event) => setTenantForm((prev) => ({ ...prev, slug: event.target.value }))}
                 placeholder="Slug (opcional)"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
               />
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 <select
@@ -856,7 +856,7 @@ const PlatformAdmin: React.FC = () => {
                   value={tenantForm.monthly_price}
                   onChange={(event) => setTenantForm((prev) => ({ ...prev, monthly_price: event.target.value }))}
                   placeholder="Precio mensual (opcional)"
-                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
                 />
               </div>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
@@ -864,19 +864,19 @@ const PlatformAdmin: React.FC = () => {
                   value={tenantForm.max_admins}
                   onChange={(event) => setTenantForm((prev) => ({ ...prev, max_admins: event.target.value }))}
                   placeholder="Max admins"
-                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
                 />
                 <input
                   value={tenantForm.max_routers}
                   onChange={(event) => setTenantForm((prev) => ({ ...prev, max_routers: event.target.value }))}
                   placeholder="Max routers"
-                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
                 />
                 <input
                   value={tenantForm.max_clients}
                   onChange={(event) => setTenantForm((prev) => ({ ...prev, max_clients: event.target.value }))}
                   placeholder="Max clientes"
-                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
                 />
               </div>
               <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs text-cyan-800">
@@ -908,20 +908,20 @@ const PlatformAdmin: React.FC = () => {
                 value={tenantForm.admin_email}
                 onChange={(event) => setTenantForm((prev) => ({ ...prev, admin_email: event.target.value }))}
                 placeholder="Correo electrónico del admin"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
               />
               <input
                 value={tenantForm.admin_name}
                 onChange={(event) => setTenantForm((prev) => ({ ...prev, admin_name: event.target.value }))}
                 placeholder="Nombre completo del admin"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
               />
               <input
                 type="password"
                 value={tenantForm.admin_password}
                 onChange={(event) => setTenantForm((prev) => ({ ...prev, admin_password: event.target.value }))}
                 placeholder="Contraseña (se auto-genera si está vacío)"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
               />
               <button
                 type="submit"
@@ -952,7 +952,7 @@ const PlatformAdmin: React.FC = () => {
       </main>
 
       {editingTenant && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-800/50 backdrop-blur-sm p-4" onClick={closeAllModals}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-50 backdrop-blur-sm p-4" onClick={closeAllModals}>
           <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <h3 className="text-lg font-bold text-slate-900">Editar usuario ISP</h3>
             <form onSubmit={submitEditTenant} className="mt-4 space-y-3">
@@ -982,7 +982,7 @@ const PlatformAdmin: React.FC = () => {
       )}
 
       {billingTarget && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-800/50 backdrop-blur-sm p-4" onClick={closeAllModals}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-50 backdrop-blur-sm p-4" onClick={closeAllModals}>
           <div className="w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <h3 className="text-lg font-bold text-slate-900">Suscripción de {billingTarget.name}</h3>
             <form onSubmit={submitBillingUpdate} className="mt-4 space-y-3">
@@ -1067,7 +1067,7 @@ const PlatformAdmin: React.FC = () => {
       )}
 
       {adminTarget && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-800/50 backdrop-blur-sm p-4" onClick={closeAllModals}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-50 backdrop-blur-sm p-4" onClick={closeAllModals}>
           <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <h3 className="text-lg font-bold text-slate-900">Crear admin para {adminTarget.name}</h3>
             <form onSubmit={submitCreateTenantAdmin} className="mt-4 space-y-3">

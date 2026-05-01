@@ -39,7 +39,7 @@ const NetworkTopology: React.FC = () => {
       case 'router': return <ServerIcon className="h-6 w-6 text-cyan-400" />
       case 'client': return <DevicePhoneMobileIcon className="h-5 w-5 text-emerald-400" />
       case 'nap': return <CpuChipIcon className="h-6 w-6 text-amber-400" />
-      default: return <HomeIcon className="h-5 w-5 text-slate-400" />
+      default: return <HomeIcon className="h-5 w-5 text-slate-500" />
     }
   }
 
@@ -57,7 +57,7 @@ const NetworkTopology: React.FC = () => {
             <motion.div 
               initial={{ scale: 0 }} 
               animate={{ scale: 1 }}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-800 border border-cyan-500/30 shadow-lg shadow-cyan-500/10"
+              className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-gray-50 border border-cyan-500/30 shadow-lg shadow-cyan-500/10"
             >
               {getNodeIcon('router')}
               <span className="text-xs font-black text-white uppercase">{router.label}</span>
@@ -74,9 +74,9 @@ const NetworkTopology: React.FC = () => {
 
               return (
                 <div key={node.id} className="space-y-6">
-                  <div className="flex flex-col items-center gap-2 p-3 rounded-xl bg-slate-800/50 border border-amber-500/20">
+                  <div className="flex flex-col items-center gap-2 p-3 rounded-xl bg-gray-50 border border-amber-500/20">
                     {getNodeIcon(node.type)}
-                    <span className="text-[10px] font-bold text-slate-300 uppercase">{node.label}</span>
+                    <span className="text-[10px] font-bold text-slate-600 uppercase">{node.label}</span>
                   </div>
 
                   {/* Clientes Nivel 3 */}
@@ -87,7 +87,7 @@ const NetworkTopology: React.FC = () => {
                         <motion.div 
                           key={cEdge.to}
                           whileHover={{ y: -5 }}
-                          className="p-2 rounded-lg bg-slate-900 border border-white/5 flex flex-col items-center gap-1"
+                          className="p-2 rounded-lg bg-white border border-white/5 flex flex-col items-center gap-1"
                           title={client?.label}
                         >
                           {getNodeIcon('client')}

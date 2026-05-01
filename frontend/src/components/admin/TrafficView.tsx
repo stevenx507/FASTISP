@@ -66,12 +66,12 @@ const TrafficView: React.FC = () => {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-white">Trafico</h2>
-          <p className="text-sm text-slate-400">Throughput agregado por router y carga operacional.</p>
+          <p className="text-sm text-slate-500">Throughput agregado por router y carga operacional.</p>
         </div>
         <button
           onClick={load}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white disabled:opacity-60"
         >
           <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Actualizando...' : 'Actualizar'}
@@ -101,14 +101,14 @@ const TrafficView: React.FC = () => {
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
+      <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
         <h3 className="font-semibold text-white">Carga por router</h3>
         <div className="mt-4 space-y-3">
           {routers.map((router) => {
             const total = Number(router.rx_mbps || 0) + Number(router.tx_mbps || 0)
             return (
               <div key={router.router_id}>
-                <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
+                <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
                   <span>{router.router_id}</span>
                   <span>{total.toFixed(1)} Mbps</span>
                 </div>
@@ -121,17 +121,17 @@ const TrafficView: React.FC = () => {
               </div>
             )
           })}
-          {!routers.length && <p className="text-sm text-slate-400">Sin datos de trafico para mostrar.</p>}
+          {!routers.length && <p className="text-sm text-slate-500">Sin datos de trafico para mostrar.</p>}
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm">
+      <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-sm">
         <div className="border-b border-white/5 px-4 py-3">
           <h3 className="font-semibold text-white">Detalle por router</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-white/5 text-sm">
-            <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
+            <thead className="bg-white text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3 text-left">Router</th>
                 <th className="px-4 py-3 text-right">RX (Mbps)</th>
@@ -147,13 +147,13 @@ const TrafficView: React.FC = () => {
                 return (
                   <tr key={router.router_id}>
                     <td className="px-4 py-3 font-medium text-white">{router.router_id}</td>
-                    <td className="px-4 py-3 text-right text-slate-300">{Number(router.rx_mbps || 0).toFixed(1)}</td>
-                    <td className="px-4 py-3 text-right text-slate-300">{Number(router.tx_mbps || 0).toFixed(1)}</td>
+                    <td className="px-4 py-3 text-right text-slate-600">{Number(router.rx_mbps || 0).toFixed(1)}</td>
+                    <td className="px-4 py-3 text-right text-slate-600">{Number(router.tx_mbps || 0).toFixed(1)}</td>
                     <td className="px-4 py-3 text-right font-semibold text-white">{total.toFixed(1)}</td>
-                    <td className="px-4 py-3 text-right text-slate-300">
+                    <td className="px-4 py-3 text-right text-slate-600">
                       {router.cpu != null ? `${Number(router.cpu).toFixed(1)}%` : '-'}
                     </td>
-                    <td className="px-4 py-3 text-right text-slate-300">
+                    <td className="px-4 py-3 text-right text-slate-600">
                       {router.mem != null ? `${Number(router.mem).toFixed(1)}%` : '-'}
                     </td>
                   </tr>
@@ -161,7 +161,7 @@ const TrafficView: React.FC = () => {
               })}
               {!routers.length && (
                 <tr>
-                  <td className="px-4 py-8 text-center text-sm text-slate-400" colSpan={6}>
+                  <td className="px-4 py-8 text-center text-sm text-slate-500" colSpan={6}>
                     Sin routers con metricas disponibles.
                   </td>
                 </tr>

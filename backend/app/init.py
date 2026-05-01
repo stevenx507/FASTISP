@@ -210,7 +210,7 @@ def create_app(config_name_or_class='development'):
     from app.routes.auth_routes import auth_bp
     from app.routes.billing_routes import billing_bp
     from app.routes.client_routes import client_bp
-    from app.routes.admin_routes import admin_bp
+    from app.routes.admin import admin_bp
     from app.routes.support_routes import support_bp
     from app.routes.misc_routes import misc_bp
     from app.routes.mikrotik import mikrotik_bp

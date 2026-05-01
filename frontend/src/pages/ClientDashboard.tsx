@@ -60,7 +60,7 @@ const statusPillClass = (status: string) => {
   if (normalized === 'overdue' || normalized === 'past_due' || normalized === 'suspended') {
     return 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
   }
-  return 'bg-slate-500/20 text-slate-300 border border-slate-500/30'
+  return 'bg-slate-500/20 text-slate-600 border border-slate-500/30'
 }
 
 const ClientDashboard: React.FC = () => {
@@ -128,7 +128,7 @@ const ClientDashboard: React.FC = () => {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white">Hola, {user?.name || 'Cliente'}</h1>
-            <p className="mt-2 text-sm text-slate-400">Panel de control de tu servicio de internet.</p>
+            <p className="mt-2 text-sm text-slate-500">Panel de control de tu servicio de internet.</p>
           </div>
           <button
             onClick={loadDashboard}
@@ -171,32 +171,32 @@ const ClientDashboard: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-1 rounded-xl bg-white/5 backdrop-blur-md p-6 shadow-xl border border-white/10 flex flex-col items-center justify-center">
+          <div className="lg:col-span-1 rounded-xl bg-white backdrop-blur-md p-6 shadow-xl border border-gray-200 flex flex-col items-center justify-center">
             <SpeedTestWidget />
           </div>
-          <div className="lg:col-span-2 rounded-xl bg-white/5 backdrop-blur-md p-6 shadow-xl border border-white/10">
+          <div className="lg:col-span-2 rounded-xl bg-white backdrop-blur-md p-6 shadow-xl border border-gray-200">
             <h2 className="text-xl font-bold text-white">Estado del servicio</h2>
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {serviceItems.map((item) => (
-                <div key={item.label} className="rounded-lg border border-white/10 bg-white/5 p-3 hover:bg-white/10 transition-colors">
-                  <p className="text-xs uppercase tracking-wide text-slate-400">{item.label}</p>
+                <div key={item.label} className="rounded-lg border border-gray-200 bg-white p-3 hover:bg-white/10 transition-colors">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">{item.label}</p>
                   <p className="mt-1 text-sm font-semibold text-white">{item.value}</p>
                 </div>
               ))}
             </div>
 
             {nextInvoice ? (
-              <div className="mt-4 rounded-lg border border-white/10 bg-gradient-to-r from-blue-900/40 to-cyan-900/40 p-3 shadow-inner">
+              <div className="mt-4 rounded-lg border border-gray-200 bg-gradient-to-r from-blue-900/40 to-cyan-900/40 p-3 shadow-inner">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-medium text-white">Proxima factura #{nextInvoice.id}</p>
                   <span className={`rounded-full px-2 py-1 text-xs font-semibold ${statusPillClass(nextInvoice.status || 'pending')}`}>
                     {nextInvoice.status || 'pending'}
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-slate-300">
+                <p className="mt-1 text-sm text-slate-600">
                   Monto: {(nextInvoice.total_amount ?? nextInvoice.amount ?? 0).toFixed(2)} {nextInvoice.currency || 'USD'}
                 </p>
-                <p className="text-xs text-slate-400 mt-1">Vence: {nextInvoice.due_date || stats?.nextBillDue || 'N/A'}</p>
+                <p className="text-xs text-slate-500 mt-1">Vence: {nextInvoice.due_date || stats?.nextBillDue || 'N/A'}</p>
               </div>
             ) : (
               <div className="mt-4 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-300">
@@ -209,9 +209,9 @@ const ClientDashboard: React.FC = () => {
         <UsageDetails />
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="rounded-xl border border-white/10 bg-gradient-to-br from-blue-900/30 to-slate-900/50 p-6 backdrop-blur-md">
+          <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-blue-900/30 to-slate-900/50 p-6 backdrop-blur-md">
             <h3 className="text-lg font-bold text-white">Soporte tecnico</h3>
-            <p className="mt-2 text-sm text-slate-300">Abre tickets, ejecuta diagnostico y conversa con soporte.</p>
+            <p className="mt-2 text-sm text-slate-600">Abre tickets, ejecuta diagnostico y conversa con soporte.</p>
             <button
               onClick={() => navigate('/dashboard/support')}
               className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
@@ -220,9 +220,9 @@ const ClientDashboard: React.FC = () => {
             </button>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-gradient-to-br from-violet-900/30 to-slate-900/50 p-6 backdrop-blur-md">
+          <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-violet-900/30 to-slate-900/50 p-6 backdrop-blur-md">
             <h3 className="text-lg font-bold text-white">Analitica de consumo</h3>
-            <p className="mt-2 text-sm text-slate-300">Consulta graficos por rango de fechas y comportamiento diario.</p>
+            <p className="mt-2 text-sm text-slate-600">Consulta graficos por rango de fechas y comportamiento diario.</p>
             <button
               onClick={() => navigate('/dashboard/usage')}
               className="mt-4 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 transition-colors"
@@ -231,9 +231,9 @@ const ClientDashboard: React.FC = () => {
             </button>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-gradient-to-br from-emerald-900/30 to-slate-900/50 p-6 backdrop-blur-md">
+          <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-emerald-900/30 to-slate-900/50 p-6 backdrop-blur-md">
             <h3 className="text-lg font-bold text-white">Pagos y facturas</h3>
-            <p className="mt-2 text-sm text-slate-300">Revisa estado de tus comprobantes y realiza pagos online.</p>
+            <p className="mt-2 text-sm text-slate-600">Revisa estado de tus comprobantes y realiza pagos online.</p>
             <button
               onClick={() => navigate('/dashboard/billing')}
               className="mt-4 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors"

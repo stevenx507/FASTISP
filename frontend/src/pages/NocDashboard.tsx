@@ -44,7 +44,7 @@ const PremiumStatCard: React.FC<{
         <h3 className="mt-2 text-3xl font-black text-slate-900">{value}</h3>
         {trend && (
           <p className={`mt-2 text-xs font-semibold ${trend.startsWith('+') ? 'text-emerald-600' : 'text-rose-600'}`}>
-            {trend} <span className="text-slate-400 font-normal ml-1">vs últ. 24h</span>
+            {trend} <span className="text-slate-500 font-normal ml-1">vs últ. 24h</span>
           </p>
         )}
       </div>
@@ -205,7 +205,7 @@ const NocDashboard: React.FC = () => {
                   {trafficData.length > 0 ? (
                     <BarChart data={trafficData} title="" showValues={false} />
                   ) : (
-                    <div className="h-full flex items-center justify-center text-slate-400 italic">
+                    <div className="h-full flex items-center justify-center text-slate-500 italic">
                       No hay datos de tráfico disponibles para este periodo.
                     </div>
                   )}
@@ -295,7 +295,7 @@ const NocDashboard: React.FC = () => {
           animate={{ opacity: 1 }}
           className="rounded-3xl border border-gray-100 bg-white overflow-hidden shadow-sm"
         >
-          <div className="p-6 border-b border-white/10 flex items-center justify-between">
+          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
             <h2 className="text-xl font-bold text-white flex items-center gap-3">
               <GlobeAltIcon className="h-5 w-5 text-cyan-400" />
               Sonda Externa (Grafana)

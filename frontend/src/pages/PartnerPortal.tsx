@@ -108,14 +108,14 @@ const PartnerPortal: React.FC = () => {
             </div>
             <p className="text-slate-500 text-sm mb-1">Nivel de Aliado</p>
             <p className="text-3xl font-bold text-slate-900">{partnerData?.commission_rate || 0}%</p>
-            <p className="text-xs text-slate-400 mt-2">Comisión actual por venta</p>
+            <p className="text-xs text-slate-500 mt-2">Comisión actual por venta</p>
           </div>
         </div>
 
-        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
-          <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+        <div className="bg-gray-100 border border-gray-200 rounded-2xl overflow-hidden">
+          <div className="p-6 border-b border-gray-200 flex justify-between items-center">
             <h3 className="font-bold flex items-center gap-2">
-              <History className="w-5 h-5 text-slate-400" /> Historial de Comisiones
+              <History className="w-5 h-5 text-slate-500" /> Historial de Comisiones
             </h3>
           </div>
           <div className="divide-y divide-gray-100">
@@ -136,7 +136,7 @@ const PartnerPortal: React.FC = () => {
                 </div>
               </div>
             )) : (
-              <div className="p-12 text-center text-slate-400">
+              <div className="p-12 text-center text-slate-500">
                 Aún no tienes comisiones registradas.
               </div>
             )}
@@ -146,10 +146,10 @@ const PartnerPortal: React.FC = () => {
         {/* Modal Registro */}
         {showModal && (
           <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden">
-              <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+            <div className="bg-white border border-gray-200 rounded-3xl w-full max-w-md overflow-hidden">
+              <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-xl font-bold">Nuevo Prospecto</h3>
-                <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
+                <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-50 rounded-full transition-colors">
                   <X className="w-6 h-6" />
                 </button>
               </div>

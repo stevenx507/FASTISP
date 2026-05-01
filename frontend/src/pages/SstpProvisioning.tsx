@@ -252,7 +252,7 @@ const ProvisionModal: React.FC<{
 
         <div className="p-5 space-y-4">
           <div>
-            <label htmlFor="sstp-router-select" className="block text-slate-400 text-sm font-medium mb-2">
+            <label htmlFor="sstp-router-select" className="block text-slate-500 text-sm font-medium mb-2">
               Router MikroTik
             </label>
             <select
@@ -272,7 +272,7 @@ const ProvisionModal: React.FC<{
           </div>
 
           <div>
-            <label htmlFor="sstp-notes" className="block text-slate-400 text-sm font-medium mb-2">
+            <label htmlFor="sstp-notes" className="block text-slate-500 text-sm font-medium mb-2">
               Notas (opcional)
             </label>
             <textarea
@@ -527,7 +527,7 @@ const SstpProvisioning: React.FC = () => {
               <div className="p-1.5 bg-emerald-500/10 rounded-lg"><SignalSolid className="w-4 h-4 text-emerald-400" /></div>
             </div>
             <p className="text-3xl font-bold text-emerald-400">{status.active_tunnels}</p>
-            <p className="text-slate-400 text-xs mt-1">de {status.total_tunnels} totales</p>
+            <p className="text-slate-500 text-xs mt-1">de {status.total_tunnels} totales</p>
           </div>
           <div className="bg-white border border-black/5 shadow-sm rounded-xl p-4 hover:border-gray-600 transition-all hover:shadow-lg hover:shadow-gray-500/5">
             <div className="flex items-center justify-between mb-2">
@@ -535,7 +535,7 @@ const SstpProvisioning: React.FC = () => {
               <div className="p-1.5 bg-gray-500/10 rounded-lg"><WifiIcon className="w-4 h-4 text-slate-500" /></div>
             </div>
             <p className="text-3xl font-bold text-slate-800">{status.total_tunnels}</p>
-            <p className="text-slate-400 text-xs mt-1">{status.revoked_tunnels} revocados</p>
+            <p className="text-slate-500 text-xs mt-1">{status.revoked_tunnels} revocados</p>
           </div>
           <div className="bg-white border border-black/5 shadow-sm rounded-xl p-4 hover:border-cyan-500/40 transition-all hover:shadow-lg hover:shadow-cyan-500/5">
             <div className="flex items-center justify-between mb-2">
@@ -543,7 +543,7 @@ const SstpProvisioning: React.FC = () => {
               <div className="p-1.5 bg-cyan-500/10 rounded-lg"><ServerIcon className="w-4 h-4 text-cyan-400" /></div>
             </div>
             <p className="text-sm font-mono text-cyan-400 font-bold">{status.architecture}</p>
-            <p className="text-slate-400 text-xs mt-1">Puerto {status.server_port}</p>
+            <p className="text-slate-500 text-xs mt-1">Puerto {status.server_port}</p>
           </div>
           <div className="bg-white border border-black/5 shadow-sm rounded-xl p-4 hover:border-purple-500/40 transition-all hover:shadow-lg hover:shadow-purple-500/5">
             <div className="flex items-center justify-between mb-2">
@@ -551,7 +551,7 @@ const SstpProvisioning: React.FC = () => {
               <div className="p-1.5 bg-purple-500/10 rounded-lg"><SignalIcon className="w-4 h-4 text-purple-400" /></div>
             </div>
             <p className="text-sm font-mono text-purple-400 font-bold">{status.ip_pool}</p>
-            <p className="text-slate-400 text-xs mt-1">SSTP VPN Pool</p>
+            <p className="text-slate-500 text-xs mt-1">SSTP VPN Pool</p>
           </div>
         </div>
       )}
@@ -601,8 +601,8 @@ const SstpProvisioning: React.FC = () => {
           <div className="p-4 bg-cyan-500/10 rounded-2xl border border-cyan-500/20 inline-flex mb-4">
             <ShieldCheckIcon className="w-10 h-10 text-cyan-500/60" />
           </div>
-          <p className="text-slate-400 font-medium text-lg">Sin servidores SSTP nativos</p>
-          <p className="text-slate-400 text-sm mt-1 max-w-xs mx-auto">Configura el primer router MikroTik como servidor SSTP nativo</p>
+          <p className="text-slate-500 font-medium text-lg">Sin servidores SSTP nativos</p>
+          <p className="text-slate-500 text-sm mt-1 max-w-xs mx-auto">Configura el primer router MikroTik como servidor SSTP nativo</p>
           <button
             onClick={() => setShowProvisionModal(true)}
             className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm font-semibold transition-all"
@@ -646,7 +646,7 @@ const SstpProvisioning: React.FC = () => {
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
                           isRecentlySeen(tunnel.last_seen)
                             ? 'text-cyan-400 bg-cyan-400/10 border-cyan-400/30'
-                            : 'text-slate-400 bg-gray-500/10 border-gray-500/20'
+                            : 'text-slate-500 bg-gray-500/10 border-gray-500/20'
                         }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${
                             isRecentlySeen(tunnel.last_seen) ? 'bg-cyan-400 animate-pulse' : 'bg-gray-500'
@@ -657,20 +657,20 @@ const SstpProvisioning: React.FC = () => {
                     </div>
                     <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1.5">
                       <div>
-                        <p className="text-slate-400 text-xs">Usuario PPP</p>
-                        <p className="text-slate-400 font-mono text-xs truncate">{tunnel.username}</p>
+                        <p className="text-slate-500 text-xs">Usuario PPP</p>
+                        <p className="text-slate-500 font-mono text-xs truncate">{tunnel.username}</p>
                       </div>
                       <div>
-                        <p className="text-slate-400 text-xs">Gateway</p>
-                        <p className="text-slate-400 font-mono text-xs">{tunnel.server_ip}</p>
+                        <p className="text-slate-500 text-xs">Gateway</p>
+                        <p className="text-slate-500 font-mono text-xs">{tunnel.server_ip}</p>
                       </div>
                       <div>
-                        <p className="text-slate-400 text-xs">Pool inicio</p>
-                        <p className="text-slate-400 font-mono text-xs">{tunnel.client_ip}</p>
+                        <p className="text-slate-500 text-xs">Pool inicio</p>
+                        <p className="text-slate-500 font-mono text-xs">{tunnel.client_ip}</p>
                       </div>
                       <div>
-                        <p className="text-slate-400 text-xs">Creado</p>
-                        <p className="text-slate-400 text-xs">
+                        <p className="text-slate-500 text-xs">Creado</p>
+                        <p className="text-slate-500 text-xs">
                           {new Date(tunnel.created_at).toLocaleDateString('es-CO')}
                         </p>
                       </div>
@@ -746,7 +746,7 @@ const SstpProvisioning: React.FC = () => {
                       {connectionResult[tunnel.id].checks!.map(check => (
                         <div key={check.id} className="flex items-center gap-2">
                           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${check.ok ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                          <span className="text-slate-400">{check.detail}</span>
+                          <span className="text-slate-500">{check.detail}</span>
                         </div>
                       ))}
                     </div>

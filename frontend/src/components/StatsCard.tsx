@@ -35,7 +35,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
         <div className="flex-1">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">{title}</p>
           <p className="text-3xl font-black text-slate-800 mt-2">{value}</p>
-          {subtitle && <p className="text-xs font-medium text-slate-400 mt-1">{subtitle}</p>}
+          {subtitle && <p className="text-xs font-medium text-slate-500 mt-1">{subtitle}</p>}
           {trend !== undefined && trend !== 0 && (
             <div className={`inline-flex items-center gap-1 mt-3 px-2 py-0.5 rounded-full text-[10px] font-bold ${trend > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
               {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%

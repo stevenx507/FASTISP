@@ -191,10 +191,10 @@ const AlertsView: React.FC = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <BellIcon className="h-6 w-6 text-slate-300" />
+          <BellIcon className="h-6 w-6 text-slate-600" />
           <div>
             <h2 className="text-2xl font-bold text-white">Alertas del Sistema</h2>
-            <p className="text-sm text-slate-400">{visibleAlerts.length} alertas activas</p>
+            <p className="text-sm text-slate-500">{visibleAlerts.length} alertas activas</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -212,7 +212,7 @@ const AlertsView: React.FC = () => {
           <button
             onClick={loadAlerts}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white disabled:opacity-60"
           >
             <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Actualizando...' : 'Actualizar'}
@@ -220,7 +220,7 @@ const AlertsView: React.FC = () => {
           {visibleAlerts.length > 0 && (
             <button
               onClick={dismissAllAlerts}
-              className="rounded-lg bg-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/15"
+              className="rounded-lg bg-white/10 px-4 py-2 text-sm text-slate-600 hover:bg-white/15"
             >
               Descartar todas
             </button>
@@ -251,7 +251,7 @@ const AlertsView: React.FC = () => {
                       {alert.source} | {alert.timestamp.replace('T', ' ').slice(0, 16)}
                     </p>
                   </div>
-                  <button onClick={() => dismissAlert(alert.id)} className="rounded p-1 hover:bg-white/5 backdrop-blur-md">
+                  <button onClick={() => dismissAlert(alert.id)} className="rounded p-1 hover:bg-white backdrop-blur-md">
                     <XMarkIcon className={`h-5 w-5 ${config.text}`} />
                   </button>
                 </motion.div>
@@ -259,7 +259,7 @@ const AlertsView: React.FC = () => {
             })}
           </div>
         ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-12 text-center text-slate-400">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-12 text-center text-slate-500">
             <CheckCircleIcon className="mx-auto mb-3 h-12 w-12 opacity-50" />
             <p className="text-lg font-medium">Sistema en buen estado</p>
             <p className="text-sm">No hay alertas activas para el filtro seleccionado</p>
@@ -267,7 +267,7 @@ const AlertsView: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <div className="rounded-lg border border-white/10 bg-white/5 p-6">
+      <div className="rounded-lg border border-gray-200 bg-white p-6">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-semibold text-white">Historial descartado</h3>
           {dismissedAlerts.length > 0 && (
@@ -278,12 +278,12 @@ const AlertsView: React.FC = () => {
         </div>
         <div className="space-y-2 text-sm">
           {dismissedAlerts.slice(0, 10).map((alert) => (
-            <div key={alert.id} className="flex items-center justify-between border-b py-2 text-slate-400 last:border-b-0">
+            <div key={alert.id} className="flex items-center justify-between border-b py-2 text-slate-500 last:border-b-0">
               <span>{alert.title}</span>
-              <span className="text-xs text-slate-400">{alert.timestamp.replace('T', ' ').slice(0, 16)}</span>
+              <span className="text-xs text-slate-500">{alert.timestamp.replace('T', ' ').slice(0, 16)}</span>
             </div>
           ))}
-          {!dismissedAlerts.length && <p className="text-sm text-slate-400">No hay alertas descartadas.</p>}
+          {!dismissedAlerts.length && <p className="text-sm text-slate-500">No hay alertas descartadas.</p>}
         </div>
       </div>
     </motion.div>

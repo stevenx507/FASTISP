@@ -88,15 +88,15 @@ const ConnectionsTab: React.FC<ConnectionsTabProps> = ({
         <table className="min-w-full divide-y divide-white/10">
           <thead>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Tipo</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Dirección IP</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">MAC Address</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Host Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Uptime/Expira</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Acciones</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tipo</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Dirección IP</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">MAC Address</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Host Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Uptime/Expira</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
-          <tbody className="bg-white/5 backdrop-blur-md divide-y divide-white/10">
+          <tbody className="bg-white backdrop-blur-md divide-y divide-white/10">
             {currentConnections.map((conn, idx) => (
               <tr key={`${conn.address}-${idx}`}>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -107,9 +107,9 @@ const ConnectionsTab: React.FC<ConnectionsTabProps> = ({
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{conn.address}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{conn.mac_address}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{conn.host_name || 'N/A'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{conn.uptime || conn.status}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{conn.mac_address}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{conn.host_name || 'N/A'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{conn.uptime || conn.status}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
                     onClick={() => openConfirm(`¿Eliminar la conexión de ${conn.address}? Esto forzará al dispositivo a reconectarse.`, () => deleteConnection(conn))}
@@ -128,17 +128,17 @@ const ConnectionsTab: React.FC<ConnectionsTabProps> = ({
           <button
             onClick={() => paginateConnections(connectionsCurrentPage - 1)}
             disabled={connectionsCurrentPage === 1}
-            className="px-4 py-2 text-sm font-medium text-slate-300 bg-white/5 backdrop-blur-md border border-white/20 rounded-lg hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium text-slate-600 bg-white backdrop-blur-md border border-white/20 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Anterior
           </button>
-          <span className="text-sm text-slate-300">
+          <span className="text-sm text-slate-600">
             Página {connectionsCurrentPage} de {totalConnectionPages}
           </span>
           <button
             onClick={() => paginateConnections(connectionsCurrentPage + 1)}
             disabled={connectionsCurrentPage === totalConnectionPages}
-            className="px-4 py-2 text-sm font-medium text-slate-300 bg-white/5 backdrop-blur-md border border-white/20 rounded-lg hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium text-slate-600 bg-white backdrop-blur-md border border-white/20 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Siguiente
           </button>

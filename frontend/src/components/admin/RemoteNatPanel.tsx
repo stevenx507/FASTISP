@@ -3,8 +3,8 @@
  * Gestiona reglas NAT de redirección en MikroTik para acceder a nodos internos.
  * Ejemplo: puerto 2222 del router → 192.168.1.10:22 (SSH a nodo sin IP pública)
  */
-import { useEffect, useState, useCallback } from 'react'
-import { apiClient } from '../../lib/apiClient'
+import { useEffect, useState, useCallback } from'react'
+import { apiClient } from'../../lib/apiClient'
 
 interface NatRule {
  id: number
@@ -27,14 +27,14 @@ interface Router {
 }
 
 const COMMON_PORTS = [
- { label: 'SSH (22)', port: 22 },
- { label: 'HTTP (80)', port: 80 },
- { label: 'HTTPS (443)', port: 443 },
- { label: 'RDP (3389)', port: 3389 },
- { label: 'Winbox (8291)', port: 8291 },
- { label: 'Telnet (23)', port: 23 },
- { label: 'FTP (21)', port: 21 },
- { label: 'SNMP (161)', port: 161 },
+ { label:'SSH (22)', port: 22 },
+ { label:'HTTP (80)', port: 80 },
+ { label:'HTTPS (443)', port: 443 },
+ { label:'RDP (3389)', port: 3389 },
+ { label:'Winbox (8291)', port: 8291 },
+ { label:'Telnet (23)', port: 23 },
+ { label:'FTP (21)', port: 21 },
+ { label:'SNMP (161)', port: 161 },
 ]
 
 export default function RemoteNatPanel() {
@@ -45,13 +45,13 @@ export default function RemoteNatPanel() {
  const [filterRouter, setFilterRouter] = useState<number | null>(null)
  const [showForm, setShowForm] = useState(false)
  const [form, setForm] = useState({
- router_id: '',
- name: '',
- protocol: 'tcp',
- src_port: '',
- dst_address: '',
- dst_port: '',
- description: '',
+ router_id:'',
+ name:'',
+ protocol:'tcp',
+ src_port:'',
+ dst_address:'',
+ dst_port:'',
+ description:'',
  })
  const [saving, setSaving] = useState(false)
  const [testing, setTesting] = useState<number | null>(null)
@@ -62,7 +62,7 @@ export default function RemoteNatPanel() {
  setError(null)
  try {
  const [rulesRes, routersRes] = await Promise.all([
- apiClient.request('/api/network/nat-rules' + (filterRouter ? `?router_id=${filterRouter}` : '')),
+ apiClient.request('/api/network/nat-rules' + (filterRouter ? `?router_id=${filterRouter}`:'')),
  apiClient.request('/api/routers'),
  ])
  const rulesData = await rulesRes.json()
@@ -86,8 +86,8 @@ export default function RemoteNatPanel() {
  setSaving(true)
  try {
  const res = await apiClient.request('/api/network/nat-rules', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
+ method:'POST',
+ headers: {'Content-Type':'application/json' },
  body: JSON.stringify({
  ...form,
  router_id: parseInt(form.router_id),
@@ -97,14 +97,14 @@ export default function RemoteNatPanel() {
  })
  const data = await res.json()
  if (!res.ok) {
- alert(data.error || 'Error creando regla')
+ alert(data.error ||'Error creando regla')
  return
  }
  if (data.warning) {
  alert(`⚠️ Regla guardada pero: ${data.warning}`)
  }
  setShowForm(false)
- setForm({ router_id: '', name: '', protocol: 'tcp', src_port: '', dst_address: '', dst_port: '', description: '' })
+ setForm({ router_id:'', name:'', protocol:'tcp', src_port:'', dst_address:'', dst_port:'', description:'' })
  load()
  } finally {
  setSaving(false)
@@ -113,7 +113,7 @@ export default function RemoteNatPanel() {
 
  const handleToggle = async (rule: NatRule) => {
  try {
- await apiClient.request(`/api/network/nat-rules/${rule.id}/toggle`, { method: 'POST' })
+ await apiClient.request(`/api/network/nat-rules/${rule.id}/toggle`, { method:'POST' })
  load()
  } catch {
  alert('Error al cambiar estado')
@@ -123,7 +123,7 @@ export default function RemoteNatPanel() {
  const handleDelete = async (rule: NatRule) => {
  if (!confirm(`¿Eliminar regla"${rule.name}"? Esto también la eliminará del router.`)) return
  try {
- const res = await apiClient.request(`/api/network/nat-rules/${rule.id}`, { method: 'DELETE' })
+ const res = await apiClient.request(`/api/network/nat-rules/${rule.id}`, { method:'DELETE' })
  const data = await res.json()
  if (data.warning) alert(`⚠️ ${data.warning}`)
  load()
@@ -137,8 +137,8 @@ export default function RemoteNatPanel() {
  setTestResult(null)
  try {
  const res = await apiClient.request('/api/network/nat-rules/test-access', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
+ method:'POST',
+ headers: {'Content-Type':'application/json' },
  body: JSON.stringify({ router_id: rule.router_id, src_port: rule.src_port }),
  })
  const data = await res.json()
@@ -149,7 +149,7 @@ export default function RemoteNatPanel() {
  }
 
  const getRouterName = (id: number) => routers.find(r => r.id === id)?.name || `Router #${id}`
- const getRouterIp = (id: number) => routers.find(r => r.id === id)?.ip_address || ''
+ const getRouterIp = (id: number) => routers.find(r => r.id === id)?.ip_address ||''
 
  return (
  <div className="flex flex-col gap-5">
@@ -162,7 +162,7 @@ export default function RemoteNatPanel() {
  <div className="flex gap-2 flex-wrap items-center">
  <select
  aria-label="Filtrar por router"
- value={filterRouter || ''}
+ value={filterRouter ||''}
  onChange={e => setFilterRouter(e.target.value ? parseInt(e.target.value) : null)}
  className="text-sm border rounded-lg px-3 py-2">
  <option value="">Todos los routers</option>
@@ -177,10 +177,10 @@ export default function RemoteNatPanel() {
  </div>
 
  {/* Info box */}
- <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 dark:text-blue-800">
+ <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
  <p className="font-semibold mb-1">💡 ¿Cómo funciona?</p>
  <p>Crea una regla <strong>dstnat</strong> en el router MikroTik que redirige un puerto externo hacia la IP interna del nodo destino.
- Ejemplo: <code className="bg-blue-100 text-blue-800 dark:bg-blue-800 px-1 rounded">router_ip:2222 → 192.168.1.10:22</code> permite SSH al nodo sin IP pública.</p>
+ Ejemplo: <code className="bg-blue-100 text-blue-800 px-1 rounded">router_ip:2222 → 192.168.1.10:22</code> permite SSH al nodo sin IP pública.</p>
  </div>
 
  {loading ? (
@@ -200,9 +200,9 @@ export default function RemoteNatPanel() {
  {rules.map(rule => (
  <div key={rule.id}
  className={`bg-white shadow-sm rounded-xl border p-4 flex flex-wrap items-center gap-4 ${
- rule.is_active ? 'border-gray-200 ' : 'border-gray-100 opacity-60'}`}>
+ rule.is_active ?'border-gray-200' :'border-gray-100 opacity-60'}`}>
  {/* Estado */}
- <div className={`w-3 h-3 rounded-full flex-shrink-0 ${rule.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
+ <div className={`w-3 h-3 rounded-full flex-shrink-0 ${rule.is_active ?'bg-green-500' :'bg-gray-400'}`} />
 
  {/* Info principal */}
  <div className="flex-1 min-w-0">
@@ -225,8 +225,8 @@ export default function RemoteNatPanel() {
  {/* Test result */}
  {testResult?.ruleId === rule.id && (
  <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
- testResult.reachable ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
- {testResult.reachable ? '✅ Alcanzable' : `❌ ${testResult.error || 'No alcanzable'}`}
+ testResult.reachable ?'bg-emerald-100 text-emerald-800' :'bg-rose-100 text-rose-800'}`}>
+ {testResult.reachable ?'✅ Alcanzable' : `❌ ${testResult.error ||'No alcanzable'}`}
  </span>
  )}
 
@@ -235,12 +235,12 @@ export default function RemoteNatPanel() {
  <button onClick={() => handleTest(rule)} disabled={testing === rule.id}
  title="Probar conectividad"
  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm disabled:opacity-50">
- {testing === rule.id ? '⏳' : '🔍'}
+ {testing === rule.id ?'⏳' :'🔍'}
  </button>
  <button onClick={() => handleToggle(rule)}
- title={rule.is_active ? 'Deshabilitar' : 'Habilitar'}
+ title={rule.is_active ?'Deshabilitar' :'Habilitar'}
  className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg text-sm">
- {rule.is_active ? '⏸' : '▶️'}
+ {rule.is_active ?'⏸' :'▶️'}
  </button>
  <button onClick={() => handleDelete(rule)}
  title="Eliminar regla"
@@ -326,7 +326,7 @@ export default function RemoteNatPanel() {
  <div className="bg-white rounded-lg p-3 text-xs font-mono text-slate-500">
  <p className="text-slate-500 mb-1">Vista previa de la regla:</p>
  <p>{getRouterIp(parseInt(form.router_id))}:<strong className="text-blue-600">{form.src_port}</strong>
- {' → '}<strong className="text-green-600">{form.dst_address}:{form.dst_port}</strong>
+ {' →'}<strong className="text-green-600">{form.dst_address}:{form.dst_port}</strong>
  {' ('}{form.protocol.toUpperCase()}{')'}
  </p>
  </div>
@@ -336,7 +336,7 @@ export default function RemoteNatPanel() {
  <div className="flex gap-3 mt-5">
  <button onClick={handleCreate} disabled={saving}
  className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
- {saving ? 'Creando...' : '🔌 Crear Regla NAT'}
+ {saving ?'Creando...' :'🔌 Crear Regla NAT'}
  </button>
  <button onClick={() => setShowForm(false)}
  className="flex-1 bg-gray-100 hover:bg-gray-200 text-slate-700 rounded-lg py-2 text-sm hover:bg-gray-300">

@@ -553,7 +553,7 @@ const getConnectionStatusLabel = (diagnostics?: RouterConnectionDiagnosticsPaylo
 }
 
 const getConnectionStatusTone = (diagnostics?: RouterConnectionDiagnosticsPayload | null) => {
-  if (!diagnostics) return 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+  if (!diagnostics) return 'bg-slate-500/10 text-slate-500 border border-slate-500/20'
   return diagnostics.success 
     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
     : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
@@ -2402,9 +2402,9 @@ const MikroTikManagement: React.FC = () => {
         </label>
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow">
+      <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow">
         <h3 className="mb-3 text-lg font-semibold text-white">Alta rapida de MikroTik</h3>
-        <p className="mb-3 text-sm text-slate-400">
+        <p className="mb-3 text-sm text-slate-500">
           Agrega routers nuevos con sus credenciales de API. Luego usa la pestana Configuracion para provisionar el servidor SSTP nativo.
         </p>
         <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
@@ -2428,7 +2428,7 @@ const MikroTikManagement: React.FC = () => {
               <button
                 onClick={() => applyOnboardingProfileDefaults(onboardingProfile)}
                 disabled={!onboardingProfile}
-                className="rounded-lg bg-white/5 backdrop-blur-md px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60"
+                className="rounded-lg bg-white backdrop-blur-md px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60"
               >
                 Aplicar defaults
               </button>
@@ -2495,9 +2495,9 @@ const MikroTikManagement: React.FC = () => {
 
       {/* ── Editor Router Modal (Premium Redesign) ── */}
       {showRouterModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/60 backdrop-blur-sm py-10 px-4 sm:px-6">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-white/80 backdrop-blur-sm py-10 px-4 sm:px-6">
           <div 
-            className="w-full max-w-3xl rounded-3xl bg-white/5 backdrop-blur-md shadow-2xl ring-1 ring-white/10 overflow-hidden transform transition-all" 
+            className="w-full max-w-3xl rounded-3xl bg-white backdrop-blur-md shadow-2xl ring-1 ring-white/10 overflow-hidden transform transition-all" 
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header Moderno con Gradiente */}
@@ -2535,8 +2535,8 @@ const MikroTikManagement: React.FC = () => {
                   onClick={() => setRouterModalTab(t.id as typeof routerModalTab)}
                   className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
                     routerModalTab === t.id
-                      ? 'border-teal-500 text-teal-700 bg-white/5 backdrop-blur-md shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] rounded-t-xl'
-                      : 'border-transparent text-slate-400 hover:text-slate-300 hover:bg-white/10/50 rounded-t-xl'
+                      ? 'border-teal-500 text-teal-700 bg-white backdrop-blur-md shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] rounded-t-xl'
+                      : 'border-transparent text-slate-500 hover:text-slate-600 hover:bg-white/10/50 rounded-t-xl'
                   }`}
                 >
                   {t.label}
@@ -2558,23 +2558,23 @@ const MikroTikManagement: React.FC = () => {
                     
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                       <div>
-                        <label className="block text-xs font-bold text-slate-300 mb-1.5">Nombre del Router *</label>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Nombre del Router *</label>
                         <input
                           value={routerForm.name}
                           onChange={(e) => setRouterForm((p) => ({ ...p, name: e.target.value }))}
                           placeholder="Ej. Torre Principal"
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-teal-500 focus:bg-white/5 backdrop-blur-md focus:ring-2 focus:ring-teal-200 transition-all outline-none"
+                          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-white focus:border-teal-500 focus:bg-white backdrop-blur-md focus:ring-2 focus:ring-teal-200 transition-all outline-none"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-300 mb-1.5">IP Pública (WAN) *</label>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">IP Pública (WAN) *</label>
                         <input
                           value={routerForm.ip_address}
                           onChange={(e) => setRouterForm((p) => ({ ...p, ip_address: e.target.value }))}
                           placeholder="Si tienes NAT, déjalo vacío"
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-mono text-white focus:border-teal-500 focus:bg-white/5 backdrop-blur-md focus:ring-2 focus:ring-teal-200 transition-all outline-none placeholder:font-sans placeholder:text-slate-500"
+                          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-mono text-white focus:border-teal-500 focus:bg-white backdrop-blur-md focus:ring-2 focus:ring-teal-200 transition-all outline-none placeholder:font-sans placeholder:text-slate-500"
                         />
-                        <p className="mt-1.5 text-[10px] text-slate-400 font-medium">
+                        <p className="mt-1.5 text-[10px] text-slate-500 font-medium">
                           ¿No tienes IP Pública? Usa la pestaña <strong className="text-teal-600">Equipos NAT / VPN</strong> para conectar.
                         </p>
                       </div>
@@ -2582,22 +2582,22 @@ const MikroTikManagement: React.FC = () => {
 
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                       <div>
-                        <label className="block text-xs font-bold text-slate-300 mb-1.5">Usuario API *</label>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Usuario API *</label>
                         <input
                           value={routerForm.username}
                           onChange={(e) => setRouterForm((p) => ({ ...p, username: e.target.value }))}
                           placeholder="admin"
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-teal-500 focus:bg-white/5 backdrop-blur-md focus:ring-2 focus:ring-teal-200 transition-all outline-none"
+                          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-white focus:border-teal-500 focus:bg-white backdrop-blur-md focus:ring-2 focus:ring-teal-200 transition-all outline-none"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-300 mb-1.5">Contraseña API *</label>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Contraseña API *</label>
                         <input
                           type="password"
                           value={routerForm.password}
                           onChange={(e) => setRouterForm((p) => ({ ...p, password: e.target.value }))}
                           placeholder="••••••••"
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-teal-500 focus:bg-white/5 backdrop-blur-md focus:ring-2 focus:ring-teal-200 transition-all outline-none"
+                          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-white focus:border-teal-500 focus:bg-white backdrop-blur-md focus:ring-2 focus:ring-teal-200 transition-all outline-none"
                         />
                       </div>
                     </div>
@@ -2613,32 +2613,32 @@ const MikroTikManagement: React.FC = () => {
 
                     <div className="grid grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-xs font-bold text-slate-300 mb-1.5">Puerto API</label>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Puerto API</label>
                         <input
                           value={routerForm.api_port}
                           onChange={(e) => setRouterForm((p) => ({ ...p, api_port: e.target.value }))}
                           placeholder="8728"
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-mono text-white focus:border-teal-500 focus:bg-white/5 backdrop-blur-md transition-all outline-none"
+                          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-mono text-white focus:border-teal-500 focus:bg-white backdrop-blur-md transition-all outline-none"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-300 mb-1.5">Versión ROS</label>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Versión ROS</label>
                         <select
                           value={routerForm.ros_version}
                           onChange={(e) => setRouterForm((p) => ({ ...p, ros_version: e.target.value as '6' | '7' }))}
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-teal-500 focus:bg-white/5 backdrop-blur-md transition-all outline-none appearance-none"
+                          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-white focus:border-teal-500 focus:bg-white backdrop-blur-md transition-all outline-none appearance-none"
                         >
                           <option value="7">v7 o superior</option>
                           <option value="6">v6 o inferior</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-300 mb-1.5">Interfaz LAN</label>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Interfaz LAN</label>
                         <input
                           value={routerForm.lan_interface}
                           onChange={(e) => setRouterForm((p) => ({ ...p, lan_interface: e.target.value }))}
                           placeholder="ether1"
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-mono text-white focus:border-teal-500 focus:bg-white/5 backdrop-blur-md transition-all outline-none"
+                          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-mono text-white focus:border-teal-500 focus:bg-white backdrop-blur-md transition-all outline-none"
                         />
                       </div>
                     </div>
@@ -2664,7 +2664,7 @@ const MikroTikManagement: React.FC = () => {
                               }`}
                               onClick={() => setRouterForm((p) => ({ ...p, [key]: !val }))}
                             >
-                              <span className={`inline-block h-5 w-5 transform rounded-full bg-white/5 backdrop-blur-md shadow-md transition-transform duration-300 ease-in-out ${
+                              <span className={`inline-block h-5 w-5 transform rounded-full bg-white backdrop-blur-md shadow-md transition-transform duration-300 ease-in-out ${
                                 val ? 'translate-x-5' : 'translate-x-0'
                               }`} />
                             </div>
@@ -2695,14 +2695,14 @@ const MikroTikManagement: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="rounded-2xl border border-white/5 bg-white/5 backdrop-blur-md p-5 shadow-sm ring-1 ring-white/10">
+                  <div className="rounded-2xl border border-white/5 bg-white backdrop-blur-md p-5 shadow-sm ring-1 ring-white/10">
                     <label className="flex cursor-pointer items-center gap-4 group">
                       <div className={`relative inline-flex h-7 w-12 shrink-0 rounded-full border-2 border-transparent transition-all duration-300 ease-in-out ${
                           routerForm.use_sstp_script ? 'bg-teal-500 shadow-inner' : 'bg-slate-300'
                         }`}
                         onClick={() => setRouterForm((p) => ({ ...p, use_sstp_script: !p.use_sstp_script }))}
                       >
-                        <span className={`inline-block h-6 w-6 transform rounded-full bg-white/5 backdrop-blur-md shadow-md transition-transform duration-300 ease-in-out ${
+                        <span className={`inline-block h-6 w-6 transform rounded-full bg-white backdrop-blur-md shadow-md transition-transform duration-300 ease-in-out ${
                           routerForm.use_sstp_script ? 'translate-x-5' : 'translate-x-0'
                         }`} />
                       </div>
@@ -2732,14 +2732,14 @@ const MikroTikManagement: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-white/5 bg-white/5 backdrop-blur-md p-5 shadow-sm ring-1 ring-white/10">
+                  <div className="rounded-2xl border border-white/5 bg-white backdrop-blur-md p-5 shadow-sm ring-1 ring-white/10">
                     <label className="flex cursor-pointer items-center gap-4 group">
                       <div className={`relative inline-flex h-7 w-12 shrink-0 rounded-full border-2 border-transparent transition-all duration-300 ease-in-out ${
                           routerForm.traffic_flow_enabled ? 'bg-teal-500 shadow-inner' : 'bg-slate-300'
                         }`}
                         onClick={() => setRouterForm((p) => ({ ...p, traffic_flow_enabled: !p.traffic_flow_enabled }))}
                       >
-                        <span className={`inline-block h-6 w-6 transform rounded-full bg-white/5 backdrop-blur-md shadow-md transition-transform duration-300 ease-in-out ${
+                        <span className={`inline-block h-6 w-6 transform rounded-full bg-white backdrop-blur-md shadow-md transition-transform duration-300 ease-in-out ${
                           routerForm.traffic_flow_enabled ? 'translate-x-5' : 'translate-x-0'
                         }`} />
                       </div>
@@ -2757,7 +2757,7 @@ const MikroTikManagement: React.FC = () => {
             <div className="flex items-center justify-between rounded-b-3xl border-t border-white/5 bg-slate-50 px-8 py-5">
               <button
                 onClick={() => setShowRouterModal(false)}
-                className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md px-5 py-2.5 text-sm font-bold text-slate-400 shadow-sm hover:bg-white/5 hover:text-white transition-all"
+                className="rounded-xl border border-gray-200 bg-white backdrop-blur-md px-5 py-2.5 text-sm font-bold text-slate-500 shadow-sm hover:bg-white hover:text-white transition-all"
               >
                 Cancelar
               </button>
@@ -2845,7 +2845,7 @@ const MikroTikManagement: React.FC = () => {
                       <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-tighter ${
                         router.sstp_active 
                           ? 'bg-blue-50 text-blue-600 border border-blue-100' 
-                          : 'bg-gray-100 text-slate-400'
+                          : 'bg-gray-100 text-slate-500'
                       }`}>
                         {router.sstp_active ? 'Activo' : 'Inactivo'}
                       </span>
@@ -2856,7 +2856,7 @@ const MikroTikManagement: React.FC = () => {
                     <td className="px-4 py-4 text-right">
                       <button
                         onClick={(e) => { e.stopPropagation(); setSelectedRouter(router) }}
-                        className="rounded-xl bg-slate-800 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white hover:bg-slate-700 transition-all shadow-sm"
+                        className="rounded-xl bg-gray-50 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white hover:bg-gray-100 transition-all shadow-sm"
                       >
                         Gestionar
                       </button>
@@ -2867,7 +2867,7 @@ const MikroTikManagement: React.FC = () => {
             </tbody>
           </table>
         </div>
-        {!routers.length && <p className="mt-6 text-sm text-slate-400 text-center font-bold">No hay routers registrados todavía.</p>}
+        {!routers.length && <p className="mt-6 text-sm text-slate-500 text-center font-bold">No hay routers registrados todavía.</p>}
       </div>
 
       {selectedRouter && (
@@ -2884,12 +2884,12 @@ const MikroTikManagement: React.FC = () => {
               </div>
               <div>
                 <span className="block text-sm font-black text-slate-800">{selectedRouter.name}</span>
-                <span className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-wider">{selectedRouter.ip_address}</span>
+                <span className="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-wider">{selectedRouter.ip_address}</span>
               </div>
               {selectedRouter.sstp_active ? (
                 <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black text-blue-600 border border-blue-100">TUNNEL ACTIVO</span>
               ) : (
-                <span className="rounded-full bg-gray-50 px-3 py-1 text-[10px] font-black text-slate-400 border border-gray-100">MODO DIRECTO</span>
+                <span className="rounded-full bg-gray-50 px-3 py-1 text-[10px] font-black text-slate-500 border border-gray-100">MODO DIRECTO</span>
               )}
             </div>
             <div className="relative flex items-center gap-2">
@@ -2916,7 +2916,7 @@ const MikroTikManagement: React.FC = () => {
                   🔧 Herramientas ▾
                 </button>
                 {herramientasOpen && (
-                  <div className="absolute right-0 top-full z-50 mt-1 min-w-[180px] rounded-lg border border-white/10 bg-white/5 backdrop-blur-md py-1 shadow-xl">
+                  <div className="absolute right-0 top-full z-50 mt-1 min-w-[180px] rounded-lg border border-gray-200 bg-white backdrop-blur-md py-1 shadow-xl">
                     {[
                       { label: '📍 Lista ARP', action: async () => {
                         setHerramientasLoading(true); setHerramientasOpen(false); setHerramientasModal('arp')
@@ -2943,7 +2943,7 @@ const MikroTikManagement: React.FC = () => {
                       <button
                         key={item.label}
                         onClick={() => void item.action()}
-                        className="block w-full px-4 py-2 text-left text-xs text-slate-300 hover:bg-white/5"
+                        className="block w-full px-4 py-2 text-left text-xs text-slate-600 hover:bg-white"
                       >
                         {item.label}
                       </button>
@@ -2957,22 +2957,22 @@ const MikroTikManagement: React.FC = () => {
           {/* Herramientas result modal */}
           {herramientasModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setHerramientasModal(null)}>
-              <div className="w-full max-w-3xl rounded-xl bg-white/5 backdrop-blur-md p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="w-full max-w-3xl rounded-xl bg-white backdrop-blur-md p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="font-bold text-white">
                     {herramientasModal === 'arp' ? '📍 Lista ARP' : '📶 PPP Active Connections'} — {selectedRouter.name}
                   </h3>
-                  <button onClick={() => setHerramientasModal(null)} className="text-slate-500 hover:text-slate-400 text-lg">✕</button>
+                  <button onClick={() => setHerramientasModal(null)} className="text-slate-500 hover:text-slate-500 text-lg">✕</button>
                 </div>
                 {herramientasLoading ? (
-                  <div className="py-8 text-center text-sm text-slate-400">Cargando...</div>
+                  <div className="py-8 text-center text-sm text-slate-500">Cargando...</div>
                 ) : herramientasData.length === 0 ? (
-                  <p className="py-4 text-center text-sm text-slate-400">Sin datos disponibles.</p>
+                  <p className="py-4 text-center text-sm text-slate-500">Sin datos disponibles.</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-xs">
                       <thead>
-                        <tr className="border-b bg-white/5 text-[10px] font-semibold uppercase text-slate-400">
+                        <tr className="border-b bg-white text-[10px] font-semibold uppercase text-slate-500">
                           {Object.keys(herramientasData[0]).map((k) => (
                             <th key={k} className="px-3 py-1.5 text-left">{k}</th>
                           ))}
@@ -2980,9 +2980,9 @@ const MikroTikManagement: React.FC = () => {
                       </thead>
                       <tbody>
                         {herramientasData.map((row, i) => (
-                          <tr key={i} className="border-b hover:bg-white/5">
+                          <tr key={i} className="border-b hover:bg-white">
                             {Object.values(row).map((v, j) => (
-                              <td key={j} className="px-3 py-1.5 font-mono text-slate-300">{String(v ?? '-')}</td>
+                              <td key={j} className="px-3 py-1.5 font-mono text-slate-600">{String(v ?? '-')}</td>
                             ))}
                           </tr>
                         ))}
@@ -3022,7 +3022,7 @@ const MikroTikManagement: React.FC = () => {
                         : 'bg-white text-slate-500 border border-gray-100 hover:bg-gray-50'
                     }`}
                   >
-                    <tab.icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <tab.icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                     <span>{tab.name}</span>
                   </button>
                 )
@@ -3145,7 +3145,7 @@ const MikroTikManagement: React.FC = () => {
                           <button
                             onClick={() => selectedRouter && void loadQuickConnect(selectedRouter.id, quickConnectScope)}
                             disabled={quickLoading}
-                            className="rounded bg-slate-700 px-2 py-1 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                            className="rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-white hover:bg-gray-50 disabled:opacity-60"
                           >
                             Aplicar
                           </button>
@@ -3292,7 +3292,7 @@ const MikroTikManagement: React.FC = () => {
                         </div>
                       </div>
                       {routerSnmpLoading ? (
-                        <p className="text-xs text-slate-400">Cargando perfil SNMP...</p>
+                        <p className="text-xs text-slate-500">Cargando perfil SNMP...</p>
                       ) : (
                         <div className="space-y-3">
                           <div className="grid grid-cols-1 gap-3 xl:grid-cols-4">
@@ -3466,7 +3466,7 @@ const MikroTikManagement: React.FC = () => {
                             <button
                               onClick={() => void runRouterSnmpPoll(false)}
                               disabled={routerSnmpPolling}
-                              className="rounded bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-60"
+                              className="rounded bg-gray-50 px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-100 disabled:opacity-60"
                             >
                               {routerSnmpPolling ? 'Consultando...' : 'Probar SNMP'}
                             </button>
@@ -3486,17 +3486,17 @@ const MikroTikManagement: React.FC = () => {
                                 <span>{routerSnmpPollResult.polled_at || '-'}</span>
                               </div>
                               <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-4">
-                                <div className="rounded bg-white/5 backdrop-blur-md px-2 py-2">CPU: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.cpu_percent, '%')}</strong></div>
-                                <div className="rounded bg-white/5 backdrop-blur-md px-2 py-2">Mem: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.mem_percent, '%')}</strong></div>
-                                <div className="rounded bg-white/5 backdrop-blur-md px-2 py-2">Temp: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.temperature_c, ' C')}</strong></div>
-                                <div className="rounded bg-white/5 backdrop-blur-md px-2 py-2">Volt: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.voltage_v, ' V')}</strong></div>
-                                <div className="rounded bg-white/5 backdrop-blur-md px-2 py-2">Senal: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.signal_level_dbm, ' dBm')}</strong></div>
-                                <div className="rounded bg-white/5 backdrop-blur-md px-2 py-2">Optica: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.optical_rx_dbm, ' dBm')}</strong></div>
-                                <div className="rounded bg-white/5 backdrop-blur-md px-2 py-2">ONU on: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.onu_online)}</strong></div>
-                                <div className="rounded bg-white/5 backdrop-blur-md px-2 py-2">ONU off: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.onu_offline)}</strong></div>
+                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">CPU: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.cpu_percent, '%')}</strong></div>
+                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">Mem: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.mem_percent, '%')}</strong></div>
+                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">Temp: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.temperature_c, ' C')}</strong></div>
+                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">Volt: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.voltage_v, ' V')}</strong></div>
+                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">Senal: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.signal_level_dbm, ' dBm')}</strong></div>
+                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">Optica: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.optical_rx_dbm, ' dBm')}</strong></div>
+                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">ONU on: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.onu_online)}</strong></div>
+                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">ONU off: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.onu_offline)}</strong></div>
                               </div>
                               {(routerSnmpPollResult.interfaces || []).length > 0 && (
-                                <div className="mt-2 rounded border border-sky-100 bg-white/5 backdrop-blur-md p-2">
+                                <div className="mt-2 rounded border border-sky-100 bg-white backdrop-blur-md p-2">
                                   <p className="font-semibold text-sky-800">Interfaces leidas</p>
                                   <div className="mt-1 grid grid-cols-1 gap-1 text-[11px] text-sky-900">
                                     {(routerSnmpPollResult.interfaces || []).slice(0, 4).map((iface) => (
@@ -3512,14 +3512,14 @@ const MikroTikManagement: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                    <div className="rounded-lg border border-gray-200 bg-white p-3">
                       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-200">Readiness remoto del router</p>
+                        <p className="text-sm font-semibold text-slate-700">Readiness remoto del router</p>
                         <div className="flex flex-wrap items-center gap-2">
                           <button
                             onClick={() => selectedRouter && void loadRouterReadiness(selectedRouter.id)}
                             disabled={readinessLoading}
-                            className="rounded bg-slate-700 px-2 py-1 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                            className="rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-white hover:bg-gray-50 disabled:opacity-60"
                           >
                             Refrescar
                           </button>
@@ -3532,9 +3532,9 @@ const MikroTikManagement: React.FC = () => {
                           </button>
                         </div>
                       </div>
-                      {readinessLoading && <p className="text-xs text-slate-400">Evaluando readiness...</p>}
+                      {readinessLoading && <p className="text-xs text-slate-500">Evaluando readiness...</p>}
                       {!readinessLoading && !routerReadiness && (
-                        <p className="text-xs text-slate-400">Sin datos de readiness para este router.</p>
+                        <p className="text-xs text-slate-500">Sin datos de readiness para este router.</p>
                       )}
                       {!readinessLoading && routerReadiness && (
                         <div className="space-y-2">
@@ -3576,7 +3576,7 @@ const MikroTikManagement: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    {quickLoading && <p className="text-sm text-slate-400">Cargando scripts...</p>}
+                    {quickLoading && <p className="text-sm text-slate-500">Cargando scripts...</p>}
                     {!quickLoading && !quickConnect?.scripts && (
                       <p className="text-sm text-rose-600">No se pudieron cargar scripts para este router.</p>
                     )}
@@ -3674,24 +3674,24 @@ const MikroTikManagement: React.FC = () => {
                                           
                                           <div className="grid grid-cols-2 gap-3 p-4 bg-white border border-emerald-100 rounded-2xl shadow-sm text-xs">
                                              <div className="flex flex-col gap-0.5">
-                                               <span className="text-slate-400 font-medium">VPN Management IP</span>
+                                               <span className="text-slate-500 font-medium">VPN Management IP</span>
                                                <strong className="text-emerald-700 font-mono text-sm">{hubData?.vpn_ip || 'Pendiente'}</strong>
                                              </div>
                                              <div className="flex flex-col gap-0.5">
-                                               <span className="text-slate-400 font-medium">PPP User</span>
+                                               <span className="text-slate-500 font-medium">PPP User</span>
                                                <strong className="text-emerald-700 font-mono text-sm">{hubData?.vpn_username || 'admin'}</strong>
                                              </div>
                                           </div>
 
-                                          <div className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-xl ring-1 ring-white/5">
-                                            <div className="flex items-center justify-between px-4 py-3 bg-slate-900/50 border-b border-slate-800">
+                                          <div className="rounded-2xl border border-gray-200 bg-slate-950 overflow-hidden shadow-xl ring-1 ring-white/5">
+                                            <div className="flex items-center justify-between px-4 py-3 bg-gray-100 border-b border-gray-200">
                                               <div className="flex items-center gap-2">
                                                 <div className="flex gap-1">
                                                   <div className="w-2.5 h-2.5 rounded-full bg-rose-500/20 border border-rose-500/40" />
                                                   <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20 border border-amber-500/40" />
                                                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500/40" />
                                                 </div>
-                                                <span className="text-[10px] font-bold text-slate-400 ml-2 uppercase tracking-widest">RouterOS Terminal</span>
+                                                <span className="text-[10px] font-bold text-slate-500 ml-2 uppercase tracking-widest">RouterOS Terminal</span>
                                               </div>
                                               <button
                                                 onClick={async () => {
@@ -3713,7 +3713,7 @@ const MikroTikManagement: React.FC = () => {
                                           <div className="flex gap-2">
                                             <button
                                               onClick={() => void runWizardValidation()}
-                                              className="flex-1 rounded-xl bg-slate-800 py-2.5 text-xs font-bold text-white hover:bg-slate-700 transition shadow-sm"
+                                              className="flex-1 rounded-xl bg-gray-50 py-2.5 text-xs font-bold text-white hover:bg-gray-100 transition shadow-sm"
                                             >
                                               Validar Conexión
                                             </button>
@@ -3760,19 +3760,19 @@ const MikroTikManagement: React.FC = () => {
 
                                           <div className="grid grid-cols-2 gap-3 p-4 bg-white border border-blue-100 rounded-2xl shadow-sm text-xs">
                                              <div className="flex flex-col gap-0.5">
-                                               <span className="text-slate-400 font-medium">User</span>
+                                               <span className="text-slate-500 font-medium">User</span>
                                                <strong className="text-blue-700 font-mono text-sm">{sstpTunnel.username}</strong>
                                              </div>
                                              <div className="flex flex-col gap-0.5">
-                                               <span className="text-slate-400 font-medium">Server Host</span>
+                                               <span className="text-slate-500 font-medium">Server Host</span>
                                                <strong className="text-blue-700 font-mono text-sm">{sstpTunnel.server_host}</strong>
                                              </div>
                                           </div>
 
                                           {sstpScript && (
-                                            <div className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-xl ring-1 ring-white/5">
-                                              <div className="flex items-center justify-between px-4 py-3 bg-slate-900/50 border-b border-slate-800">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">RouterOS Terminal</span>
+                                            <div className="rounded-2xl border border-gray-200 bg-slate-950 overflow-hidden shadow-xl ring-1 ring-white/5">
+                                              <div className="flex items-center justify-between px-4 py-3 bg-gray-100 border-b border-gray-200">
+                                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">RouterOS Terminal</span>
                                                 <button
                                                   onClick={async () => {
                                                     await copyToClipboard(sstpScript)
@@ -3809,8 +3809,8 @@ const MikroTikManagement: React.FC = () => {
                                         : step.status === 'running'
                                           ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
                                           : step.status === 'skipped'
-                                            ? 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
-                                            : 'bg-white/5 backdrop-blur-md text-slate-400'
+                                            ? 'bg-slate-500/20 text-slate-500 border border-slate-500/30'
+                                            : 'bg-white backdrop-blur-md text-slate-500'
                                   return (
                                     <div key={step.id} className={`rounded px-2 py-1 text-xs border ${toneClass}`}>
                                       <strong>{step.label}</strong>
@@ -3821,7 +3821,7 @@ const MikroTikManagement: React.FC = () => {
                               </div>
                             )}
 
-                            <div className="mt-2 flex items-center justify-between rounded border border-emerald-200 bg-white/5 backdrop-blur-md p-2">
+                            <div className="mt-2 flex items-center justify-between rounded border border-emerald-200 bg-white backdrop-blur-md p-2">
                               <p className="text-xs text-emerald-800">Modo avanzado (scripts/manual)</p>
                               <button
                                 onClick={() => setShowAdvancedScripts((prev) => !prev)}
@@ -3836,7 +3836,7 @@ const MikroTikManagement: React.FC = () => {
                                 {(quickConnect.connection_plan.actions || []).map((action) => {
                                   const scriptValue = resolveQuickScript(quickConnect.scripts, action.script_key)
                                   return (
-                                    <div key={action.id} className="rounded border border-emerald-200 bg-white/5 backdrop-blur-md p-2">
+                                    <div key={action.id} className="rounded border border-emerald-200 bg-white backdrop-blur-md p-2">
                                       <div className="flex flex-wrap items-center justify-between gap-2">
                                         <div>
                                           <p className="text-xs font-semibold text-emerald-900">{action.label}</p>
@@ -3872,9 +3872,9 @@ const MikroTikManagement: React.FC = () => {
                         )}
                         {showAdvancedScripts && (
                           <>
-                        <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                        <div className="rounded-lg border border-gray-200 bg-white p-3">
                           <div className="mb-2 flex items-center justify-between">
-                            <p className="text-sm font-semibold text-slate-200">Script acceso directo API/SSH</p>
+                            <p className="text-sm font-semibold text-slate-700">Script acceso directo API/SSH</p>
                             <button
                               onClick={() => copyScript('script API', quickConnect.scripts?.direct_api_script || '')}
                               className="rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-gray-200"
@@ -3882,14 +3882,14 @@ const MikroTikManagement: React.FC = () => {
                               Copiar
                             </button>
                           </div>
-                          <pre className="max-h-52 overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-100">
+                          <pre className="max-h-52 overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-800">
                             {quickConnect.scripts.direct_api_script}
                           </pre>
                         </div>
-                        <div className="rounded-lg border border-white/10 p-3">
-                          <p className="text-xs font-semibold uppercase text-slate-400">Login Windows/Linux</p>
-                          <p className="mt-2 rounded bg-slate-900 px-2 py-1 text-xs text-slate-100">{quickConnect.scripts.windows_login}</p>
-                          <p className="mt-2 rounded bg-slate-900 px-2 py-1 text-xs text-slate-100">{quickConnect.scripts.linux_login}</p>
+                        <div className="rounded-lg border border-gray-200 p-3">
+                          <p className="text-xs font-semibold uppercase text-slate-500">Login Windows/Linux</p>
+                          <p className="mt-2 rounded bg-white px-2 py-1 text-xs text-slate-800">{quickConnect.scripts.windows_login}</p>
+                          <p className="mt-2 rounded bg-white px-2 py-1 text-xs text-slate-800">{quickConnect.scripts.linux_login}</p>
                         </div>
 
                         </>
@@ -3899,21 +3899,21 @@ const MikroTikManagement: React.FC = () => {
                   </div>
                 )}
                 {activeTab === 'security' && (
-                  <div className="space-y-4 text-sm text-slate-300">
-                    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                  <div className="space-y-4 text-sm text-slate-600">
+                    <div className="rounded-lg border border-gray-200 bg-white p-3">
                       <h4 className="text-lg font-semibold text-white">Operacion enterprise y seguridad</h4>
-                      <p className="mt-1 text-xs text-slate-400">
+                      <p className="mt-1 text-xs text-slate-500">
                         Acciones live requieren ticket de cambio cuando la politica `change_control_required_for_live` esta activa.
                       </p>
                       {(quickConnect?.guidance?.notes || []).map((note, idx) => (
-                        <p key={idx} className="mt-2 text-xs text-slate-300">
+                        <p key={idx} className="mt-2 text-xs text-slate-600">
                           - {note}
                         </p>
                       ))}
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                      <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-md p-4">
+                      <div className="rounded-lg border border-gray-200 bg-white backdrop-blur-md p-4">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-sm font-semibold text-white">Hardening runbook</p>
                           <span className={`rounded px-2 py-1 text-xs font-semibold border ${hardeningDryRun ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'}`}>
@@ -3921,7 +3921,7 @@ const MikroTikManagement: React.FC = () => {
                           </span>
                         </div>
                         <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-                          <label className="text-xs text-slate-300">
+                          <label className="text-xs text-slate-600">
                             Perfil router
                             <select
                               value={hardeningProfile}
@@ -3935,7 +3935,7 @@ const MikroTikManagement: React.FC = () => {
                               ))}
                             </select>
                           </label>
-                          <label className="text-xs text-slate-300">
+                          <label className="text-xs text-slate-600">
                             Perfil sitio
                             <select
                               value={hardeningSiteProfile}
@@ -3952,7 +3952,7 @@ const MikroTikManagement: React.FC = () => {
                         </div>
 
                         <div className="mt-3 flex flex-wrap gap-3">
-                          <label className="flex items-center gap-2 text-xs text-slate-300">
+                          <label className="flex items-center gap-2 text-xs text-slate-600">
                             <input
                               type="checkbox"
                               checked={hardeningDryRun}
@@ -3961,7 +3961,7 @@ const MikroTikManagement: React.FC = () => {
                             />
                             Ejecutar dry-run
                           </label>
-                          <label className="flex items-center gap-2 text-xs text-slate-300">
+                          <label className="flex items-center gap-2 text-xs text-slate-600">
                             <input
                               type="checkbox"
                               checked={hardeningAutoRollback}
@@ -3990,21 +3990,21 @@ const MikroTikManagement: React.FC = () => {
                         </div>
 
                         {hardeningResult && (
-                          <div className="mt-3 rounded border border-white/20 bg-white/5 p-2">
-                            <p className="text-xs font-semibold uppercase text-slate-300">Resultado hardening</p>
-                            <p className="mt-1 text-xs text-slate-300">
+                          <div className="mt-3 rounded border border-white/20 bg-white p-2">
+                            <p className="text-xs font-semibold uppercase text-slate-600">Resultado hardening</p>
+                            <p className="mt-1 text-xs text-slate-600">
                               change_id: <strong>{hardeningResult.change_id || '-'}</strong> | modo:{' '}
                               <strong>{hardeningResult.dry_run ? 'dry-run' : 'live'}</strong>
                             </p>
-                            {hardeningResult.message && <p className="mt-1 text-xs text-slate-300">{hardeningResult.message}</p>}
+                            {hardeningResult.message && <p className="mt-1 text-xs text-slate-600">{hardeningResult.message}</p>}
                             {hardeningResult.error && <p className="mt-1 text-xs text-rose-700">{hardeningResult.error}</p>}
                           </div>
                         )}
                       </div>
 
-                      <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-md p-4">
+                      <div className="rounded-lg border border-gray-200 bg-white backdrop-blur-md p-4">
                         <p className="text-sm font-semibold text-white">Failover test</p>
-                        <p className="mt-1 text-xs text-slate-400">
+                        <p className="mt-1 text-xs text-slate-500">
                           Ejecuta probes desde el router para validar perdida de paquetes y latencia.
                         </p>
                         <textarea
@@ -4030,13 +4030,13 @@ const MikroTikManagement: React.FC = () => {
                         </div>
 
                         {failoverResult && (
-                          <div className="mt-3 rounded border border-white/20 bg-white/5 p-2">
-                            <p className="text-xs font-semibold uppercase text-slate-300">
+                          <div className="mt-3 rounded border border-white/20 bg-white p-2">
+                            <p className="text-xs font-semibold uppercase text-slate-600">
                               Estado general: <span className="font-bold">{failoverResult.overall_status || 'unknown'}</span>
                             </p>
                             <div className="mt-2 max-h-44 overflow-auto">
                               {(failoverResult.targets || []).map((item, idx) => (
-                                <p key={`${item.target}-${idx}`} className="text-xs text-slate-300">
+                                <p key={`${item.target}-${idx}`} className="text-xs text-slate-600">
                                   {item.target} | loss {item.packet_loss}% | avg {item.avg_latency_ms ?? '-'} ms | {item.status}
                                 </p>
                               ))}
@@ -4046,7 +4046,7 @@ const MikroTikManagement: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-md p-4">
+                    <div className="rounded-lg border border-gray-200 bg-white backdrop-blur-md p-4">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="text-sm font-semibold text-white">Change log y rollback</p>
                         <button
@@ -4057,11 +4057,11 @@ const MikroTikManagement: React.FC = () => {
                           Refrescar log
                         </button>
                       </div>
-                      {!enterpriseChangeLog.length && <p className="mt-2 text-xs text-slate-400">No hay cambios registrados.</p>}
+                      {!enterpriseChangeLog.length && <p className="mt-2 text-xs text-slate-500">No hay cambios registrados.</p>}
                       <div className="mt-2 space-y-2">
                         {enterpriseChangeLog.map((entry) => (
-                          <div key={entry.change_id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-white/10 px-2 py-2">
-                            <div className="text-xs text-slate-300">
+                          <div key={entry.change_id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 px-2 py-2">
+                            <div className="text-xs text-slate-600">
                               <p>
                                 <strong>{entry.change_id}</strong> | {entry.category || '-'} | {entry.status}
                               </p>
@@ -4093,7 +4093,7 @@ const MikroTikManagement: React.FC = () => {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <h4 className="text-lg font-bold text-white">📊 Script de Traffic Flow</h4>
-                        <p className="mt-0.5 text-xs text-slate-400">
+                        <p className="mt-0.5 text-xs text-slate-500">
                           Habilita NetFlow v5 en el MikroTik para enviar métricas de consumo por cliente a FASTISP.
                         </p>
                         {tfCollector && (
@@ -4128,9 +4128,9 @@ const MikroTikManagement: React.FC = () => {
                     </div>
 
                     {/* Gateway inputs */}
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 rounded-lg border border-white/10 bg-white/5 p-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 rounded-lg border border-gray-200 bg-white p-4">
                       <div>
-                        <label className="block text-xs font-semibold text-slate-300 mb-1">
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">
                           IPs Puerta de Enlace LAN (separadas por coma)
                         </label>
                         <input
@@ -4143,7 +4143,7 @@ const MikroTikManagement: React.FC = () => {
                         <p className="mt-0.5 text-[10px] text-slate-500">Solo RouterOS 7 — Opción 1 (LAN gateway)</p>
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-slate-300 mb-1">
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">
                           IPs Puerta de Enlace WAN (separadas por coma)
                         </label>
                         <input
@@ -4167,10 +4167,10 @@ const MikroTikManagement: React.FC = () => {
                         ].map((item) => {
                           const script = tfScripts[item.key as keyof typeof tfScripts]
                           return (
-                            <div key={item.key} className="rounded-2xl border border-gray-100 bg-slate-900 overflow-hidden shadow-sm">
-                              <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 bg-white/5">
+                            <div key={item.key} className="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm">
+                              <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 bg-white">
                                 <div>
-                                  <p className="text-xs font-black text-slate-200 uppercase tracking-widest">{item.label}</p>
+                                  <p className="text-xs font-black text-slate-700 uppercase tracking-widest">{item.label}</p>
                                   <p className="text-[10px] font-bold text-slate-500 mt-1">{item.desc}</p>
                                 </div>
                                 <button
@@ -4192,11 +4192,11 @@ const MikroTikManagement: React.FC = () => {
                     )}
 
                     {/* Stats: top consumers */}
-                    <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-md p-4">
+                    <div className="rounded-lg border border-gray-200 bg-white backdrop-blur-md p-4">
                       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                         <div>
                           <h5 className="font-semibold text-white">📈 Top Consumidores</h5>
-                          <p className="text-xs text-slate-400">Clientes con mayor consumo según NetFlow recibido.</p>
+                          <p className="text-xs text-slate-500">Clientes con mayor consumo según NetFlow recibido.</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <select
@@ -4252,12 +4252,12 @@ const MikroTikManagement: React.FC = () => {
                             <tbody>
                               {tfStats.map((row, i) => (
                                 <tr key={row.src_ip} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                                  <td className="px-4 py-3 text-slate-400 font-bold">{i + 1}</td>
+                                  <td className="px-4 py-3 text-slate-500 font-bold">{i + 1}</td>
                                   <td className="px-4 py-3 font-mono font-bold text-slate-700">{row.src_ip}</td>
                                   <td className="px-4 py-3 text-right font-black text-coral-500">{row.mb_total.toLocaleString()} MB</td>
                                   <td className="px-4 py-3 text-right text-slate-500">{(row.bytes_total || 0).toLocaleString()}</td>
                                   <td className="px-4 py-3 text-right text-slate-500">{(row.packets_total || 0).toLocaleString()}</td>
-                                  <td className="px-4 py-3 text-slate-400 font-mono text-[10px]">{row.last_seen ? new Date(row.last_seen).toLocaleString() : '-'}</td>
+                                  <td className="px-4 py-3 text-slate-500 font-mono text-[10px]">{row.last_seen ? new Date(row.last_seen).toLocaleString() : '-'}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -4293,7 +4293,7 @@ const MikroTikManagement: React.FC = () => {
 
       <div className="fixed bottom-4 right-4 z-50 space-y-2">
         {toasts.map((t) => (
-          <div key={t.id} className={`rounded px-4 py-2 text-white shadow ${t.type === 'success' ? 'bg-green-600' : t.type === 'error' ? 'bg-red-600' : 'bg-slate-700'}`}>
+          <div key={t.id} className={`rounded px-4 py-2 text-white shadow ${t.type === 'success' ? 'bg-green-600' : t.type === 'error' ? 'bg-red-600' : 'bg-gray-100'}`}>
             {t.message}
           </div>
         ))}
@@ -4301,7 +4301,7 @@ const MikroTikManagement: React.FC = () => {
 
       {confirmOpen && (
         <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setConfirmOpen(false)}></div>
+          <div className="absolute inset-0 bg-gray-100 backdrop-blur-sm" onClick={() => setConfirmOpen(false)}></div>
           <div className="absolute inset-0 flex items-center justify-center p-4">
             <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl border border-gray-100">
               <h4 className="mb-2 text-xl font-black text-slate-800">Confirmar acción</h4>

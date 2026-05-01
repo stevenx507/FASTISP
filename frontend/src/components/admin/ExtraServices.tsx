@@ -132,12 +132,12 @@ const ExtraServices: React.FC = () => {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-white">Servicios adicionales</h2>
-          <p className="text-sm text-slate-400">Catalogo comercial, precios y estado operativo de addons.</p>
+          <p className="text-sm text-slate-500">Catalogo comercial, precios y estado operativo de addons.</p>
         </div>
         <button
           onClick={load}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white disabled:opacity-60"
         >
           <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Actualizando...' : 'Actualizar'}
@@ -160,7 +160,7 @@ const ExtraServices: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <form onSubmit={createService} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
+        <form onSubmit={createService} className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
           <h3 className="mb-3 font-semibold text-white">Nuevo servicio</h3>
           <div className="space-y-3">
             <input
@@ -214,13 +214,13 @@ const ExtraServices: React.FC = () => {
           </div>
         </form>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-sm xl:col-span-2">
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-sm xl:col-span-2">
           <div className="border-b border-white/5 px-4 py-3">
             <h3 className="font-semibold text-white">Catalogo</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-white/5 text-sm">
-              <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
+              <thead className="bg-white text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3 text-left">Servicio</th>
                   <th className="px-4 py-3 text-left">Categoria</th>
@@ -235,15 +235,15 @@ const ExtraServices: React.FC = () => {
                   <tr key={item.id}>
                     <td className="px-4 py-3">
                       <p className="font-medium text-white">{item.name}</p>
-                      <p className="text-xs text-slate-400">{item.description}</p>
-                      <p className="mt-1 text-[11px] text-slate-400">
+                      <p className="text-xs text-slate-500">{item.description}</p>
+                      <p className="mt-1 text-[11px] text-slate-500">
                         creado por {item.created_by_name || 'system'} - {formatDateTime(item.created_at)}
                       </p>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-[11px] text-slate-500">
                         actualizado por {item.updated_by_name || 'system'} - {formatDateTime(item.updated_at)}
                       </p>
                     </td>
-                    <td className="px-4 py-3 text-slate-300">{item.category}</td>
+                    <td className="px-4 py-3 text-slate-600">{item.category}</td>
                     <td className="px-4 py-3 text-right">
                       <input
                         type="number"
@@ -288,13 +288,13 @@ const ExtraServices: React.FC = () => {
                         <option value="active">active</option>
                         <option value="disabled">disabled</option>
                       </select>
-                      {savingId === item.id && <span className="ml-2 text-xs text-slate-400">...</span>}
+                      {savingId === item.id && <span className="ml-2 text-xs text-slate-500">...</span>}
                     </td>
                   </tr>
                 ))}
                 {!items.length && (
                   <tr>
-                    <td className="px-4 py-8 text-center text-sm text-slate-400" colSpan={6}>
+                    <td className="px-4 py-8 text-center text-sm text-slate-500" colSpan={6}>
                       Sin servicios adicionales cargados.
                     </td>
                   </tr>

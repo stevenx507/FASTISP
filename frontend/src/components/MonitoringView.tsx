@@ -92,12 +92,12 @@ const MonitoringView: React.FC = () => {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.05 }}
-            className="rounded-xl border border-white/10 bg-slate-900/70 p-4 shadow"
+            className="rounded-xl border border-gray-200 bg-white/90 p-4 shadow"
           >
-            <p className="mb-2 text-xs font-medium text-slate-300">{metric.label}</p>
+            <p className="mb-2 text-xs font-medium text-slate-600">{metric.label}</p>
             <div className="flex items-baseline gap-1">
               <p className="text-2xl font-bold text-white">{metric.value.toFixed(1)}</p>
-              <p className="text-xs text-slate-400">{metric.unit}</p>
+              <p className="text-xs text-slate-500">{metric.unit}</p>
             </div>
             <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
               <motion.div
@@ -109,7 +109,7 @@ const MonitoringView: React.FC = () => {
         ))}
       </div>
 
-      {loading && <p className="text-sm text-slate-300">Cargando metricas...</p>}
+      {loading && <p className="text-sm text-slate-600">Cargando metricas...</p>}
       {error && <p className="text-sm text-amber-300">{error}</p>}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -117,13 +117,13 @@ const MonitoringView: React.FC = () => {
         <BarChart data={bwData} title="Throughput (rx+tx) por router" showValues={true} />
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-slate-900/70 p-6 shadow">
+      <div className="rounded-xl border border-gray-200 bg-white/90 p-6 shadow">
         <h3 className="mb-3 text-lg font-semibold text-white">Alertas</h3>
         <div className="space-y-2">
           {alerts.slice(0, 6).map((alert) => (
-            <div key={alert.id} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+            <div key={alert.id} className="rounded-lg border border-gray-200 bg-white px-3 py-2">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm text-slate-100">{alert.message}</p>
+                <p className="text-sm text-slate-800">{alert.message}</p>
                 <span
                   className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                     alert.severity === 'critical'
@@ -136,12 +136,12 @@ const MonitoringView: React.FC = () => {
                   {alert.severity}
                 </span>
               </div>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-slate-500">
                 {alert.scope || 'network'} {alert.target ? `| ${alert.target}` : ''}
               </p>
             </div>
           ))}
-          {!alerts.length && <p className="text-sm text-slate-300">Sin alertas activas.</p>}
+          {!alerts.length && <p className="text-sm text-slate-600">Sin alertas activas.</p>}
         </div>
       </div>
     </motion.div>

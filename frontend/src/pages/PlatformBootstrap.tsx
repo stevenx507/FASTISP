@@ -108,7 +108,7 @@ const PlatformBootstrap: React.FC = () => {
             </div>
 
             {loading ? (
-              <div className="py-8 text-center text-sm text-slate-400">Verificando estado bootstrap...</div>
+              <div className="py-8 text-center text-sm text-slate-500">Verificando estado bootstrap...</div>
             ) : (
               <>
                 <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs text-slate-600">

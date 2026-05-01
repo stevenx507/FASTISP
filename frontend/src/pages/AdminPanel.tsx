@@ -363,7 +363,7 @@ const AdminPanel: React.FC = () => {
                         }`}
                         style={{ width: 'calc(100% - 8px)' }}
                       >
-                        <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-coral-500' : 'text-slate-400'}`} />
+                        <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-coral-500' : 'text-slate-500'}`} />
                         <span className="truncate">{item.name}</span>
                         {isActive && (
                           <span className={`ml-auto h-1.5 w-1.5 rounded-full bg-coral-500 flex-shrink-0`} />
@@ -394,7 +394,7 @@ const AdminPanel: React.FC = () => {
           <button
             onClick={logout}
             title="Cerrar sesión"
-            className="flex-shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-coral-100 hover:text-coral-600 transition-colors"
+            className="flex-shrink-0 rounded-lg p-1.5 text-slate-500 hover:bg-coral-100 hover:text-coral-600 transition-colors"
           >
             <ArrowLeftOnRectangleIcon className="h-4 w-4" />
           </button>
@@ -440,7 +440,7 @@ const AdminPanel: React.FC = () => {
               setSelectedClientId(parsed)
               setShowPlanModal(true)
             }}
-            className="px-4 py-2 rounded-xl bg-slate-800 text-white font-semibold hover:bg-slate-700 transition-colors shadow border border-white/10"
+            className="px-4 py-2 rounded-xl bg-gray-50 text-white font-semibold hover:bg-gray-100 transition-colors shadow border border-gray-200"
           >
             Cambiar plan
           </button>
@@ -515,7 +515,7 @@ const AdminPanel: React.FC = () => {
                     onClick={() => setSidebarOpen(false)}
                     title="Cerrar menú"
                     aria-label="Cerrar menú"
-                    className="rounded-lg p-1.5 text-slate-400 hover:bg-gray-100 hover:text-slate-800"
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-gray-100 hover:text-slate-800"
                   >
                     <XMarkIcon className="h-5 w-5" />
                   </button>
@@ -565,8 +565,8 @@ const AdminPanel: React.FC = () => {
 
           {/* Breadcrumb / title */}
           <div className="flex-1 flex items-center gap-2 min-w-0">
-            <span className="text-xs text-slate-400 hidden sm:block">{branding.brand_name}</span>
-            <ChevronRightIcon className="h-3 w-3 text-slate-300 hidden sm:block" />
+            <span className="text-xs text-slate-500 hidden sm:block">{branding.brand_name}</span>
+            <ChevronRightIcon className="h-3 w-3 text-slate-600 hidden sm:block" />
             <h2 className="text-sm font-bold text-slate-800 truncate">{activeLabel}</h2>
           </div>
 
@@ -599,7 +599,7 @@ const AdminPanel: React.FC = () => {
                       <button
                         onClick={loadNotifications}
                         disabled={loadingNotifications}
-                        className="text-xs text-slate-400 hover:text-slate-600 disabled:opacity-50 transition-colors"
+                        className="text-xs text-slate-500 hover:text-slate-600 disabled:opacity-50 transition-colors"
                       >
                         {loadingNotifications ? 'Actualizando...' : 'Refrescar'}
                       </button>
@@ -613,7 +613,7 @@ const AdminPanel: React.FC = () => {
                       <button
                         onClick={handleClearAll}
                         disabled={notifications.length === 0}
-                        className="text-xs text-slate-400 hover:text-slate-600 disabled:opacity-40 transition-colors"
+                        className="text-xs text-slate-500 hover:text-slate-600 disabled:opacity-40 transition-colors"
                       >
                         Limpiar
                       </button>
@@ -635,7 +635,7 @@ const AdminPanel: React.FC = () => {
                                 )}
                                 <Icon className={`mt-0.5 h-4 w-4 flex-shrink-0 ${notifColors[n.type]} ${n.read ? 'ml-4' : ''}`} />
                                 <div className="min-w-0 flex-1">
-                                  <p className={`text-xs leading-snug ${n.read ? 'text-slate-400' : 'text-slate-800 font-medium'}`}>
+                                  <p className={`text-xs leading-snug ${n.read ? 'text-slate-500' : 'text-slate-800 font-medium'}`}>
                                     {n.message}
                                   </p>
                                   <p className="mt-0.5 text-[10px] text-slate-500">
@@ -648,7 +648,7 @@ const AdminPanel: React.FC = () => {
                         )
                       })
                     ) : (
-                      <div className="py-10 text-center text-sm text-slate-400">Sin notificaciones</div>
+                      <div className="py-10 text-center text-sm text-slate-500">Sin notificaciones</div>
                     )}
                   </div>
                 </Menu.Items>

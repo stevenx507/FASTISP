@@ -10,7 +10,7 @@ interface OverviewTabProps {
 const OverviewTab: React.FC<OverviewTabProps> = ({ routerStats }) => {
   if (!routerStats?.health) {
     return (
-      <div className="text-center py-10 text-slate-400">
+      <div className="text-center py-10 text-slate-500">
         No se pudo cargar la información de resumen del router.
       </div>
     );
@@ -63,19 +63,19 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ routerStats }) => {
           <h4 className="font-semibold text-white mb-3">Información del Router</h4>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-slate-400">Modelo:</span>
+              <span className="text-slate-500">Modelo:</span>
               <span className="font-medium">{health.router?.model}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Firmware:</span>
+              <span className="text-slate-500">Firmware:</span>
               <span className="font-medium">{health.router?.firmware}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Serial:</span>
+              <span className="text-slate-500">Serial:</span>
               <span className="font-medium">{health.router?.serial_number}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Nombre:</span>
+              <span className="text-slate-500">Nombre:</span>
               <span className="font-medium">{health.router?.identity}</span>
             </div>
           </div>
@@ -85,7 +85,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ routerStats }) => {
           <h4 className="font-semibold text-white mb-3">Métricas</h4>
           <div className="space-y-3">
             <div>
-              <div className="flex justify-between text-sm text-slate-400 mb-1">
+              <div className="flex justify-between text-sm text-slate-500 mb-1">
                 <span>Colas Activas</span>
                 <span>{health.queues}</span>
               </div>
@@ -97,7 +97,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ routerStats }) => {
               </div>
             </div>
             <div>
-              <div className="flex justify-between text-sm text-slate-400 mb-1">
+              <div className="flex justify-between text-sm text-slate-500 mb-1">
                 <span>Conexiones Activas</span>
                 <span>{health.connections}</span>
               </div>

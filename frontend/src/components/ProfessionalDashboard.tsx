@@ -241,14 +241,14 @@ const ProfessionalDashboard: React.FC = () => {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Ancho de Banda Promedio</p>
-          <p className="mt-3 text-3xl font-black text-slate-800">{avgBandwidth.toFixed(1)} <span className="text-lg font-bold text-slate-400">Mbps</span></p>
+          <p className="mt-3 text-3xl font-black text-slate-800">{avgBandwidth.toFixed(1)} <span className="text-lg font-bold text-slate-500">Mbps</span></p>
           <div className="mt-4 h-1 w-full bg-gray-50 rounded-full overflow-hidden">
              <div className="h-full bg-coral-400" style={{ width: '65%' }} />
           </div>
         </div>
         <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Throughput Total</p>
-          <p className="mt-3 text-3xl font-black text-slate-800">{totalThroughput.toFixed(1)} <span className="text-lg font-bold text-slate-400">Mbps</span></p>
+          <p className="mt-3 text-3xl font-black text-slate-800">{totalThroughput.toFixed(1)} <span className="text-lg font-bold text-slate-500">Mbps</span></p>
           <div className="mt-4 h-1 w-full bg-gray-50 rounded-full overflow-hidden">
              <div className="h-full bg-blue-400" style={{ width: '45%' }} />
           </div>
@@ -256,7 +256,7 @@ const ProfessionalDashboard: React.FC = () => {
         <div className="rounded-2xl border border-coral-100 bg-white p-6 shadow-sm ring-1 ring-coral-50">
           <p className="text-xs font-bold uppercase tracking-wider text-coral-500">Collection Rate</p>
           <p className="mt-3 text-3xl font-black text-slate-800">
-            {(financeSummary?.summary?.collection_rate ?? 0).toFixed(1)}<span className="text-lg font-bold text-slate-400">%</span>
+            {(financeSummary?.summary?.collection_rate ?? 0).toFixed(1)}<span className="text-lg font-bold text-slate-500">%</span>
           </p>
           <div className="mt-4 h-1 w-full bg-gray-50 rounded-full overflow-hidden">
              <div className="h-full bg-coral-500" style={{ width: `${financeSummary?.summary?.collection_rate ?? 0}%` }} />
@@ -287,7 +287,7 @@ const ProfessionalDashboard: React.FC = () => {
                 }`} />
                 <div>
                   <p className="text-sm font-bold text-slate-700">{item.action}</p>
-                  <p className="text-xs font-medium text-slate-400">{item.time}</p>
+                  <p className="text-xs font-medium text-slate-500">{item.time}</p>
                 </div>
               </div>
               <span
@@ -303,7 +303,7 @@ const ProfessionalDashboard: React.FC = () => {
               </span>
             </div>
           ))}
-          {!activityFeed.length && <p className="text-sm text-slate-400 text-center py-10">Sin actividad reciente.</p>}
+          {!activityFeed.length && <p className="text-sm text-slate-500 text-center py-10">Sin actividad reciente.</p>}
         </div>
       </div>
     </motion.div>

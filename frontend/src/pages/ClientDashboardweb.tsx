@@ -114,13 +114,13 @@ const RebootModal: React.FC<{
     <AnimatePresence>
       {isOpen && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-          <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-white/5 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="p-5 border-b border-white/10 flex justify-between items-center">
+          <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-white backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-bold text-white">Confirmar Reinicio</h3>
               <button onClick={onClose} className="p-2 rounded-full text-slate-500 hover:bg-white/10"><XMarkIcon className="w-6 h-6" /></button>
             </div>
             <div className="p-6">
-              <p className="text-slate-300 mb-6">¿Qué equipo deseas reiniciar? El reinicio puede tardar unos minutos.</p>
+              <p className="text-slate-600 mb-6">¿Qué equipo deseas reiniciar? El reinicio puede tardar unos minutos.</p>
               <div className="space-y-4">
                 {rebootActions.map(({ label, action }) => (
                   <button
@@ -168,10 +168,10 @@ const StatsGrid: React.FC<{ stats: DashboardStats | null; isLoading: boolean }> 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {statItems.map((stat, index) => (
-        <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="bg-white/5 backdrop-blur-md rounded-xl p-5 shadow border border-white/10">
-          <p className="text-sm text-slate-400">{stat.label}</p>
+        <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="bg-white backdrop-blur-md rounded-xl p-5 shadow border border-gray-200">
+          <p className="text-sm text-slate-500">{stat.label}</p>
           <p className="text-2xl font-bold text-white mt-1">{isLoading ? '...' : stat.value ?? '...'}</p>
-          {stat.sub && <p className="text-xs text-slate-400 mt-1">{isLoading ? '' : stat.sub}</p>}
+          {stat.sub && <p className="text-xs text-slate-500 mt-1">{isLoading ? '' : stat.sub}</p>}
         </motion.div>
       ))}
     </div>
@@ -188,13 +188,13 @@ const QuickActions: React.FC<{ onRebootClick: () => void }> = ({ onRebootClick }
   ];
 
   return (
-    <div className="bg-white/5 backdrop-blur-md rounded-xl shadow border border-white/10">
+    <div className="bg-white backdrop-blur-md rounded-xl shadow border border-gray-200">
       <div className="px-6 py-4 border-b"><h3 className="text-lg font-semibold">Acciones Rápidas</h3></div>
       <div className="p-4 space-y-2">
         {actions.map((item) => (
           <button key={item.label} onClick={item.action} className="w-full flex items-center space-x-4 p-3 text-left rounded-lg hover:bg-white/10 transition-colors">
             <span className="text-2xl w-8 text-center">{item.icon}</span>
-            <div><p className="font-medium text-slate-200">{item.label}</p></div>
+            <div><p className="font-medium text-slate-700">{item.label}</p></div>
           </button>
         ))}
       </div>
@@ -218,16 +218,16 @@ const DashboardHome: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <StatsGrid stats={stats} isLoading={isLoading} />
-          <div className="bg-white/5 backdrop-blur-md rounded-xl shadow border border-white/10 overflow-hidden">
-            <div className="px-6 py-4 border-b border-white/10"><h3 className="text-lg font-semibold text-white">Prueba de Velocidad 4K</h3></div>
+          <div className="bg-white backdrop-blur-md rounded-xl shadow border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200"><h3 className="text-lg font-semibold text-white">Prueba de Velocidad 4K</h3></div>
             <div className="p-6"><SpeedTestWidget /></div>
           </div>
         </div>
 
         <div className="space-y-6">
           <QuickActions onRebootClick={() => setIsRebootModalOpen(true)} />
-          <div className="bg-white/5 backdrop-blur-md rounded-xl shadow border border-white/10 overflow-hidden">
-            <div className="px-6 py-4 border-b border-white/10"><h3 className="text-lg font-semibold text-white">Soporte IA 24/7</h3></div>
+          <div className="bg-white backdrop-blur-md rounded-xl shadow border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200"><h3 className="text-lg font-semibold text-white">Soporte IA 24/7</h3></div>
             <div className="p-4"><SupportChat /></div>
           </div>
         </div>

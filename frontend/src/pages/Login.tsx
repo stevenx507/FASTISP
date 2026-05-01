@@ -94,11 +94,11 @@ const Login: React.FC = () => {
         </div>
 
         {/* Info Versión */}
-        <div className="absolute bottom-10 left-10 text-[11px] font-black uppercase tracking-[0.3em] text-slate-400">
+        <div className="absolute bottom-10 left-10 text-[11px] font-black uppercase tracking-[0.3em] text-slate-500">
           ISP PLATFORM v2.0
         </div>
         <div className="absolute bottom-10 right-10">
-           <a href="#" className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-[#FF6961] transition-colors">Documentación</a>
+           <a href="#" className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500 hover:text-[#FF6961] transition-colors">Documentación</a>
         </div>
       </div>
 
@@ -109,7 +109,7 @@ const Login: React.FC = () => {
         <div className="absolute top-10 right-10">
            <button 
              onClick={() => navigate('/')}
-             className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-300 hover:text-[#FF6961] transition-colors"
+             className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-600 hover:text-[#FF6961] transition-colors"
            >
              — Volver al inicio
            </button>
@@ -122,47 +122,47 @@ const Login: React.FC = () => {
             className="mb-14"
           >
             <h3 className="text-4xl lg:text-5xl font-black text-slate-900 mb-4 tracking-tight">Bienvenido</h3>
-            <p className="text-slate-400 font-bold text-sm leading-relaxed">
+            <p className="text-slate-500 font-bold text-sm leading-relaxed">
               Ingresa tus credenciales para acceder al panel administrativo.
             </p>
           </motion.div>
 
           <form onSubmit={handleLogin} className="space-y-8">
             <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-1">Email</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Email</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                  <EnvelopeIcon className="h-5 w-5 text-slate-300 group-focus-within:text-[#FF6961] transition-colors" />
+                  <EnvelopeIcon className="h-5 w-5 text-slate-600 group-focus-within:text-[#FF6961] transition-colors" />
                 </div>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-14 pr-5 py-5 bg-[#FDF5E6]/30 border border-slate-100 rounded-2xl text-slate-900 font-bold placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-[#FF6961]/5 focus:border-[#FF6961] transition-all"
+                  className="block w-full pl-14 pr-5 py-5 bg-[#FDF5E6]/30 border border-slate-100 rounded-2xl text-slate-900 font-bold placeholder:text-slate-600 focus:outline-none focus:ring-4 focus:ring-[#FF6961]/5 focus:border-[#FF6961] transition-all"
                   placeholder="plataforma@fastisp.cloud"
                 />
               </div>
             </div>
 
             <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-1">Contraseña</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-1">Contraseña</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                  <LockClosedIcon className="h-5 w-5 text-slate-300 group-focus-within:text-[#FF6961] transition-colors" />
+                  <LockClosedIcon className="h-5 w-5 text-slate-600 group-focus-within:text-[#FF6961] transition-colors" />
                 </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-14 pr-14 py-5 bg-[#FDF5E6]/30 border border-slate-100 rounded-2xl text-slate-900 font-bold placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-[#FF6961]/5 focus:border-[#FF6961] transition-all"
+                  className="block w-full pl-14 pr-14 py-5 bg-[#FDF5E6]/30 border border-slate-100 rounded-2xl text-slate-900 font-bold placeholder:text-slate-600 focus:outline-none focus:ring-4 focus:ring-[#FF6961]/5 focus:border-[#FF6961] transition-all"
                   placeholder="••••••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-300 hover:text-[#FF6961] transition-colors"
+                  className="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-600 hover:text-[#FF6961] transition-colors"
                 >
                   {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                 </button>
@@ -176,9 +176,9 @@ const Login: React.FC = () => {
                   <div className="h-5 w-5 bg-slate-50 border border-slate-200 rounded-md peer-checked:bg-[#FF6961] peer-checked:border-[#FF6961] transition-all" />
                   <CheckIcon className="absolute inset-0 h-3.5 w-3.5 text-white m-auto opacity-0 peer-checked:opacity-100 transition-opacity" />
                 </div>
-                <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-600">Recordarme</span>
+                <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest group-hover:text-slate-600">Recordarme</span>
               </label>
-              <a href="#" className="text-[11px] font-black text-slate-400 hover:text-[#FF6961] transition-colors uppercase tracking-[0.15em]">
+              <a href="#" className="text-[11px] font-black text-slate-500 hover:text-[#FF6961] transition-colors uppercase tracking-[0.15em]">
                 ¿Olvidaste tu contraseña?
               </a>
             </div>
@@ -204,7 +204,7 @@ const Login: React.FC = () => {
           </form>
 
           <div className="mt-16 flex items-center justify-between pt-10 border-t border-slate-50">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
               ¿No tienes una cuenta? <a href="#" className="text-[#FF6961] hover:underline ml-1">Contactar Soporte</a>
             </div>
             <div className="h-1.5 w-1.5 rounded-full bg-slate-100" />

@@ -2,8 +2,8 @@
  * DebtQuery – Consulta pública de deuda por número de documento
  * No requiere login. El cliente ingresa su cédula/RUC/DNI y ve su estado.
  */
-import { useState } from 'react'
-import { apiClient } from '../../lib/apiClient'
+import { useState } from'react'
+import { apiClient } from'../../lib/apiClient'
 
 interface PendingInvoice {
  id: number
@@ -16,7 +16,7 @@ interface DebtResult {
  found: boolean
  message?: string
  client_name?: string
- service_status?: 'active' | 'suspended' | 'inactive'
+ service_status?:'active' |'suspended' |'inactive'
  plan_name?: string | null
  billing_type?: string
  total_debt?: number
@@ -32,9 +32,9 @@ interface Props {
 }
 
 const statusLabels: Record<string, { label: string; color: string; icon: string }> = {
- active: { label: 'Activo', color: 'bg-emerald-100 text-emerald-800', icon: '✅' },
- suspended: { label: 'Suspendido', color: 'bg-rose-100 text-rose-800', icon: '🚫' },
- inactive: { label: 'Inactivo', color: 'bg-gray-100 text-slate-500', icon: '⚪' },
+ active: { label:'Activo', color:'bg-emerald-100 text-emerald-800', icon:'✅' },
+ suspended: { label:'Suspendido', color:'bg-rose-100 text-rose-800', icon:'🚫' },
+ inactive: { label:'Inactivo', color:'bg-gray-100 text-slate-500', icon:'⚪' },
 }
 
 export default function DebtQuery({ tenantSlug, embedded = false }: Props) {
@@ -54,13 +54,13 @@ export default function DebtQuery({ tenantSlug, embedded = false }: Props) {
  setResult(null)
  try {
  const res = await apiClient.request('/api/network/public/debt-query', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ document_number: doc, tenant_slug: tenantSlug || '' }),
+ method:'POST',
+ headers: {'Content-Type':'application/json' },
+ body: JSON.stringify({ document_number: doc, tenant_slug: tenantSlug ||'' }),
  })
  const data = await res.json()
  if (!res.ok) {
- setError(data.error || 'Error en la consulta')
+ setError(data.error ||'Error en la consulta')
  } else {
  setResult(data)
  }
@@ -88,7 +88,7 @@ export default function DebtQuery({ tenantSlug, embedded = false }: Props) {
  type="text"
  value={document}
  onChange={e => setDocument(e.target.value)}
- onKeyDown={e => e.key === 'Enter' && handleQuery()}
+ onKeyDown={e => e.key ==='Enter' && handleQuery()}
  placeholder="Ej: 1234567890"
  maxLength={30}
  className="flex-1 border-2 border-gray-100 rounded-xl px-4 py-3 text-base
@@ -105,23 +105,23 @@ export default function DebtQuery({ tenantSlug, embedded = false }: Props) {
  <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
  Buscando...
  </span>
- ) : 'Consultar'}
+ ) :'Consultar'}
  </button>
  </div>
 
  {/* Error */}
  {error && (
- <div className="bg-rose-500/10 dark:bg-red-900/20 border border-rose-500/30 dark:border-red-800 rounded-xl p-4 text-rose-400 dark:text-red-400 text-sm">
+ <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 text-rose-400 text-sm">
  ⚠️ {error}
  </div>
  )}
 
  {/* Resultado: no encontrado */}
  {result && !result.found && (
- <div className="bg-amber-500/10 dark:bg-yellow-900/20 border border-amber-500/30 dark:border-yellow-800 rounded-xl p-5 text-center">
+ <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-5 text-center">
  <div className="text-3xl mb-2">🔍</div>
- <p className="text-amber-300 dark:text-yellow-300 font-semibold">No encontrado</p>
- <p className="text-yellow-600 dark:text-yellow-400 text-sm mt-1">{result.message}</p>
+ <p className="text-amber-300 font-semibold">No encontrado</p>
+ <p className="text-yellow-600 text-sm mt-1">{result.message}</p>
  </div>
  )}
 
@@ -129,18 +129,18 @@ export default function DebtQuery({ tenantSlug, embedded = false }: Props) {
  {result && result.found && (
  <div className="flex flex-col gap-4">
  {/* Encabezado cliente */}
- <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20
+ <div className="bg-gradient-to-r from-blue-50 to-indigo-50 
  border border-blue-200 rounded-xl p-5">
  <div className="flex items-start justify-between flex-wrap gap-3">
  <div>
  <p className="text-xs text-slate-500 uppercase tracking-wide">Cliente</p>
  <p className="text-xl font-bold text-slate-800">{result.client_name}</p>
  {result.plan_name && (
- <p className="text-sm text-blue-600 dark:text-blue-400 mt-0.5">📶 Plan: {result.plan_name}</p>
+ <p className="text-sm text-blue-600 mt-0.5">📶 Plan: {result.plan_name}</p>
  )}
  {result.billing_type && (
  <p className="text-xs text-slate-500 mt-0.5 capitalize">
- Facturación: {result.billing_type === 'prepaid' ? 'Prepago' : result.billing_type === 'postpaid' ? 'Postpago' : 'Fecha a fecha'}
+ Facturación: {result.billing_type ==='prepaid' ?'Prepago' : result.billing_type ==='postpaid' ?'Postpago' :'Fecha a fecha'}
  </p>
  )}
  </div>
@@ -155,15 +155,15 @@ export default function DebtQuery({ tenantSlug, embedded = false }: Props) {
  {/* Deuda total */}
  <div className={`rounded-xl p-5 text-center ${
  (result.total_debt || 0) > 0
- ? 'bg-rose-500/10 dark:bg-red-900/20 border border-rose-500/30 dark:border-red-800'
- : 'bg-emerald-500/10 dark:bg-green-900/20 border border-emerald-500/30 dark:border-green-800'
+ ?'bg-rose-500/10 border border-rose-500/30'
+ :'bg-emerald-500/10 border border-emerald-500/30'
  }`}>
  <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Deuda Total</p>
- <p className={`text-4xl font-bold ${(result.total_debt || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+ <p className={`text-4xl font-bold ${(result.total_debt || 0) > 0 ?'text-red-600' :'text-green-600'}`}>
  {result.currency} {(result.total_debt || 0).toFixed(2)}
  </p>
  {(result.total_debt || 0) === 0 && (
- <p className="text-green-600 dark:text-green-400 text-sm mt-1">✅ ¡Estás al día!</p>
+ <p className="text-green-600 text-sm mt-1">✅ ¡Estás al día!</p>
  )}
  </div>
 
@@ -176,7 +176,7 @@ export default function DebtQuery({ tenantSlug, embedded = false }: Props) {
  <div key={inv.id}
  className="flex items-center justify-between bg-white shadow-sm border border-gray-200 rounded-lg px-4 py-3">
  <div>
- <p className="text-sm font-medium text-slate-200">Factura #{inv.id}</p>
+ <p className="text-sm font-medium text-slate-700">Factura #{inv.id}</p>
  {inv.due_date && (
  <p className="text-xs text-slate-500">Vence: {new Date(inv.due_date).toLocaleDateString('es-ES')}</p>
  )}
@@ -184,8 +184,8 @@ export default function DebtQuery({ tenantSlug, embedded = false }: Props) {
  <div className="text-right">
  <p className="font-bold text-slate-800">{result.currency} {inv.amount.toFixed(2)}</p>
  <span className={`text-xs px-2 py-0.5 rounded-full ${
- inv.status === 'pending' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
- }`}>{inv.status === 'pending' ? 'Pendiente' : 'Vencida'}</span>
+ inv.status ==='pending' ?'bg-amber-100 text-amber-800' :'bg-rose-100 text-rose-800'
+ }`}>{inv.status ==='pending' ?'Pendiente' :'Vencida'}</span>
  </div>
  </div>
  ))}
@@ -197,8 +197,8 @@ export default function DebtQuery({ tenantSlug, embedded = false }: Props) {
  {result.next_charge && (
  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
  <p className="text-xs text-slate-500">Próximo cobro</p>
- <p className="text-blue-800 dark:text-blue-800 font-semibold">
- 📅 {new Date(result.next_charge).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+ <p className="text-blue-800 font-semibold">
+ 📅 {new Date(result.next_charge).toLocaleDateString('es-ES', { day:'numeric', month:'long', year:'numeric' })}
  </p>
  </div>
  )}
@@ -206,7 +206,7 @@ export default function DebtQuery({ tenantSlug, embedded = false }: Props) {
  {/* Botón nueva consulta */}
  <button
  onClick={() => { setResult(null); setDocument('') }}
- className="text-sm text-blue-600 dark:text-blue-400 hover:underline text-center"
+ className="text-sm text-blue-600 hover:underline text-center"
  >
  ← Nueva consulta
  </button>
@@ -223,7 +223,7 @@ export default function DebtQuery({ tenantSlug, embedded = false }: Props) {
  if (embedded) return content
 
  return (
- <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+ <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
  <div className="bg-white shadow-sm rounded-2xl shadow-2xl w-full max-w-lg p-8">
  {content}
  </div>

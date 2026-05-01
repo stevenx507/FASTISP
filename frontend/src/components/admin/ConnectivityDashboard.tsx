@@ -334,7 +334,7 @@ const ConnectivityDashboard: React.FC = () => {
       {tab === 'monitor' && (
         <div className="space-y-4">
           {loadingConn && !connectivity && (
-            <div className="flex items-center justify-center py-12 text-slate-400">
+            <div className="flex items-center justify-center py-12 text-slate-500">
               <ArrowPathIcon className="mr-2 h-5 w-5 animate-spin" /> Cargando datos de conectividad...
             </div>
           )}
@@ -423,8 +423,8 @@ const ConnectivityDashboard: React.FC = () => {
                 <div className="mt-3 divide-y divide-white/5">
                   {vpnSessions.sessions.map((s, i) => (
                     <div key={i} className="flex items-center justify-between py-2 text-xs">
-                      <span className="font-mono text-slate-300">{s.username || s.name || `sesión-${i}`}</span>
-                      <span className="text-slate-400">{s.ip || '—'}</span>
+                      <span className="font-mono text-slate-600">{s.username || s.name || `sesión-${i}`}</span>
+                      <span className="text-slate-500">{s.ip || '—'}</span>
                       <span className="text-slate-500">{s.connected_at || '—'}</span>
                     </div>
                   ))}
@@ -495,7 +495,7 @@ const ConnectivityDashboard: React.FC = () => {
         <div className="space-y-4">
           <div className={`${card} border-l-4 border-l-amber-500`}>
             <p className="text-xs font-semibold uppercase text-amber-400">Pilar 3 — Seguridad de la API REST</p>
-            <p className="mt-1 text-sm text-slate-300">
+            <p className="mt-1 text-sm text-slate-600">
               Configura el MikroTik remoto para que <strong className="text-white">solo acepte conexiones API desde la IP interna del VPN</strong> (10.100.0.1).
               También aplica reglas de firewall para bloquear intentos externos de fuerza bruta.
             </p>
@@ -554,7 +554,7 @@ const ConnectivityDashboard: React.FC = () => {
             <h3 className="mb-2 text-sm font-semibold text-slate-800 flex items-center gap-2">
               <DocumentTextIcon className="h-4 w-4 text-amber-600" /> Recomendación: iptables en el servidor VPS
             </h3>
-            <p className="mb-2 text-xs text-slate-400">Ejecuta esto en el servidor Ubuntu para que nadie fuera de la VPN pueda acceder a los puertos API de los MikroTik:</p>
+            <p className="mb-2 text-xs text-slate-500">Ejecuta esto en el servidor Ubuntu para que nadie fuera de la VPN pueda acceder a los puertos API de los MikroTik:</p>
             <div className="relative rounded-lg bg-slate-950 p-3 font-mono text-xs text-emerald-300">
               <button
                 onClick={async () => {
@@ -681,14 +681,14 @@ netfilter-persistent save`}</pre>
       {/* ── Onboarding Script Modal ──────────────────────────────────────── */}
       {showScriptModal && (
         <div className="fixed inset-0 z-[150] flex items-start justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm">
-          <div className="my-4 w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+          <div className="my-4 w-full max-w-3xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
               <div>
                 <p className="text-xs font-semibold uppercase text-coral-500">Script de Onboarding</p>
                 <h3 className="text-lg font-bold text-slate-800">{showScriptModal.name}</h3>
                 <p className="text-xs text-slate-700">Copia y pega este script en Terminal del MikroTik (New Terminal)</p>
               </div>
-              <button onClick={() => setShowScriptModal(null)} className="rounded-full p-2 text-slate-400 hover:bg-white/10 hover:text-white">
+              <button onClick={() => setShowScriptModal(null)} className="rounded-full p-2 text-slate-500 hover:bg-white/10 hover:text-white">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
@@ -696,7 +696,7 @@ netfilter-persistent save`}</pre>
               <div className="relative rounded-xl bg-slate-950 p-4">
                 <button
                   onClick={async () => { if (await copyToClipboard(showScriptModal.script)) toast.success('Script copiado al portapapeles') }}
-                  className="absolute right-3 top-3 flex items-center gap-1.5 rounded-lg border border-white/10 px-2 py-1 text-xs text-slate-300 hover:bg-white/10"
+                  className="absolute right-3 top-3 flex items-center gap-1.5 rounded-lg border border-gray-200 px-2 py-1 text-xs text-slate-600 hover:bg-white/10"
                 >
                   <ClipboardDocumentIcon className="h-3.5 w-3.5" /> Copiar
                 </button>

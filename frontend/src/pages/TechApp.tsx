@@ -144,7 +144,7 @@ const TechApp: React.FC = () => {
                   }`}>
                     {t.priority}
                   </span>
-                  <p className="text-[10px] text-slate-400 font-mono">#{t.id}</p>
+                  <p className="text-[10px] text-slate-500 font-mono">#{t.id}</p>
                 </div>
                 <h2 className="text-xl font-bold text-slate-900">{t.subject}</h2>
                 <p className="text-sm text-slate-500 line-clamp-2">{t.description}</p>
@@ -217,7 +217,7 @@ const TechApp: React.FC = () => {
                <CheckCircleIcon className="w-8 h-8 text-emerald-400" />
             </div>
             <p className="text-slate-500 font-medium">Bandeja de entrada limpia.</p>
-            <p className="text-xs text-slate-400 mt-1">Buen trabajo, no hay pendientes hoy.</p>
+            <p className="text-xs text-slate-500 mt-1">Buen trabajo, no hay pendientes hoy.</p>
           </div>
         )}
       </div>

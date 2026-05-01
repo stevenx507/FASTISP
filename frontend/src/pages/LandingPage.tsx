@@ -98,9 +98,9 @@ const LandingPage: React.FC = () => {
                 { value: '∞', label: 'Escalabilidad', icon: GlobeAltIcon },
               ].map((s, i) => (
                 <div key={i} className="py-6 px-4 rounded-3xl bg-white border border-ivory-300 hover:border-coral-300 transition-all group shadow-sm">
-                  <s.icon className="h-5 w-5 text-slate-300 group-hover:text-coral-500 transition-colors mx-auto mb-3" />
+                  <s.icon className="h-5 w-5 text-slate-600 group-hover:text-coral-500 transition-colors mx-auto mb-3" />
                   <p className="text-2xl lg:text-3xl font-black text-slate-800">{s.value}</p>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">{s.label}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-1">{s.label}</p>
                 </div>
               ))}
             </motion.div>
@@ -227,7 +227,7 @@ const LandingPage: React.FC = () => {
                   <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-coral-400 to-coral-600 flex items-center justify-center text-white font-black">{t.name[0]}</div>
                   <div>
                     <p className="text-sm font-black text-slate-900 uppercase tracking-widest">{t.name}</p>
-                    <p className="text-xs font-bold text-slate-400">{t.role}</p>
+                    <p className="text-xs font-bold text-slate-500">{t.role}</p>
                   </div>
                 </div>
               </motion.div>
@@ -273,17 +273,17 @@ const LandingPage: React.FC = () => {
                 <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-6">{col.title}</h4>
                 <ul className="space-y-4">
                   {col.links.map((link) => (
-                    <li key={link}><a href="#" className="text-sm font-bold text-slate-400 hover:text-coral-500 transition-colors">{link}</a></li>
+                    <li key={link}><a href="#" className="text-sm font-bold text-slate-500 hover:text-coral-500 transition-colors">{link}</a></li>
                   ))}
                 </ul>
               </div>
             ))}
           </div>
           <div className="border-t border-ivory-300 pt-10 flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">© 2026 ISPFAST Infrastructure. Potenciado por Gemini 1.5 Flash.</p>
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">© 2026 ISPFAST Infrastructure. Potenciado por Gemini 1.5 Flash.</p>
             <div className="flex gap-8">
               {['Facebook', 'Instagram', 'X', 'LinkedIn'].map((s) => (
-                <a key={s} href="#" className="text-slate-400 hover:text-coral-500 transition-colors text-xs font-black uppercase tracking-widest">{s}</a>
+                <a key={s} href="#" className="text-slate-500 hover:text-coral-500 transition-colors text-xs font-black uppercase tracking-widest">{s}</a>
               ))}
             </div>
           </div>

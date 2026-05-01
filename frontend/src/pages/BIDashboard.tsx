@@ -198,7 +198,7 @@ const BIDashboard: React.FC = () => {
         {/* Footer info */}
         <div className="flex justify-between items-center text-slate-500 text-sm">
           <p className="text-slate-500 text-sm">Última actualización: {metrics ? new Date(metrics.timestamp).toLocaleString() : '---'}</p>
-          <p className="text-slate-400 text-sm">ISPFAST Intelligence Engine v5.0</p>
+          <p className="text-slate-500 text-sm">ISPFAST Intelligence Engine v5.0</p>
         </div>
       </div>
     </div>
@@ -219,7 +219,7 @@ const MetricCard = ({ title, value, change, trend, icon, description }: any) => 
     <div className="space-y-1">
       <h3 className="text-slate-500 text-sm font-medium">{title}</h3>
       <p className="text-2xl font-bold text-slate-900">{value}</p>
-      <p className="text-slate-400 text-xs mt-2">{description}</p>
+      <p className="text-slate-500 text-xs mt-2">{description}</p>
     </div>
   </div>
 );

@@ -49,7 +49,7 @@ const AIDiagnosis: React.FC<AIDiagnosisProps> = ({ analysis, error, isLoading })
         <SparklesIcon className="h-6 w-6 mr-3" />
         <h3 className="text-xl font-black uppercase tracking-widest">Análisis de Red por IA</h3>
       </div>
-      <div className="prose prose-slate max-w-none prose-headings:text-slate-800 prose-headings:font-black prose-p:text-slate-600 prose-p:leading-relaxed prose-strong:text-coral-600 prose-code:text-coral-500 prose-code:bg-coral-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-slate-900 prose-pre:text-coral-100">
+      <div className="prose prose-slate max-w-none prose-headings:text-slate-800 prose-headings:font-black prose-p:text-slate-600 prose-p:leading-relaxed prose-strong:text-coral-600 prose-code:text-coral-500 prose-code:bg-coral-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-white prose-pre:text-coral-100">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {analysis}
         </ReactMarkdown>

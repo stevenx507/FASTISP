@@ -363,7 +363,7 @@ const SystemSettings: React.FC = () => {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-white">Sistema</h2>
-          <p className="text-sm text-slate-400">Parametros operativos, jobs administrativos y salud general.</p>
+          <p className="text-sm text-slate-500">Parametros operativos, jobs administrativos y salud general.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -376,7 +376,7 @@ const SystemSettings: React.FC = () => {
           <button
             onClick={load}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white disabled:opacity-60"
           >
             <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Actualizando...' : 'Actualizar'}
@@ -406,14 +406,14 @@ const SystemSettings: React.FC = () => {
                 : 'border border-emerald-200 bg-emerald-50'
           }`}
         >
-          <p className="text-xs font-semibold uppercase text-slate-300">Estado</p>
+          <p className="text-xs font-semibold uppercase text-slate-600">Estado</p>
           <p className="mt-2 text-2xl font-bold text-white">{dangerLevel}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-300">Preflight Operativo</h3>
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Preflight Operativo</h3>
           <div className="mt-3 flex items-center gap-3">
             <span className="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-semibold text-blue-300">
               score {preflight?.score ?? 0}/100
@@ -426,9 +426,9 @@ const SystemSettings: React.FC = () => {
           </div>
           <div className="mt-3 space-y-2">
             {(preflight?.checks || []).slice(0, 6).map((check) => (
-              <div key={check.id} className="rounded-lg border border-white/10 px-3 py-2 text-xs">
+              <div key={check.id} className="rounded-lg border border-gray-200 px-3 py-2 text-xs">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-semibold text-slate-200">{check.id}</p>
+                  <p className="font-semibold text-slate-700">{check.id}</p>
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                       check.ok ? 'bg-emerald-100 text-emerald-700' : check.severity === 'critical' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-100 text-amber-700'
@@ -437,35 +437,35 @@ const SystemSettings: React.FC = () => {
                     {check.ok ? 'ok' : check.severity || 'warn'}
                   </span>
                 </div>
-                <p className="mt-1 text-slate-400">{check.detail}</p>
+                <p className="mt-1 text-slate-500">{check.detail}</p>
               </div>
             ))}
-            {!preflight?.checks?.length && <p className="text-xs text-slate-400">Sin datos de preflight.</p>}
+            {!preflight?.checks?.length && <p className="text-xs text-slate-500">Sin datos de preflight.</p>}
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-300">SLO Operativo</h3>
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">SLO Operativo</h3>
           <div className="mt-3 flex items-center gap-3">
             <span className="rounded-full bg-violet-500/20 px-3 py-1 text-xs font-semibold text-violet-700">
               score {slo?.score ?? 0}/100
             </span>
           </div>
           <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
-            <div className="rounded-lg border border-white/10 p-3 text-xs">
-              <p className="text-slate-400">Routers</p>
+            <div className="rounded-lg border border-gray-200 p-3 text-xs">
+              <p className="text-slate-500">Routers</p>
               <p className="mt-1 font-semibold text-white">
                 {slo?.metrics?.router_availability ?? 0}% / target {slo?.targets?.router_availability ?? 0}%
               </p>
             </div>
-            <div className="rounded-lg border border-white/10 p-3 text-xs">
-              <p className="text-slate-400">SLA Tickets</p>
+            <div className="rounded-lg border border-gray-200 p-3 text-xs">
+              <p className="text-slate-500">SLA Tickets</p>
               <p className="mt-1 font-semibold text-white">
                 {slo?.metrics?.ticket_sla ?? 0}% / target {slo?.targets?.ticket_sla ?? 0}%
               </p>
             </div>
-            <div className="rounded-lg border border-white/10 p-3 text-xs">
-              <p className="text-slate-400">Provisioning</p>
+            <div className="rounded-lg border border-gray-200 p-3 text-xs">
+              <p className="text-slate-500">Provisioning</p>
               <p className="mt-1 font-semibold text-white">
                 {slo?.metrics?.provision_success ?? 0}% / target {slo?.targets?.provision_success ?? 0}%
               </p>
@@ -474,11 +474,11 @@ const SystemSettings: React.FC = () => {
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
+      <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-300">Actualizacion VPS</h3>
-            <p className="mt-1 text-sm text-slate-400">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Actualizacion VPS</h3>
+            <p className="mt-1 text-sm text-slate-500">
               Valida si el VPS esta listo para actualizar y copia la secuencia sugerida de despliegue.
             </p>
           </div>
@@ -486,14 +486,14 @@ const SystemSettings: React.FC = () => {
             <button
               onClick={() => runJob('vps_update_preflight')}
               disabled={runningJob === 'vps_update_preflight'}
-              className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+              className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-white hover:bg-gray-50 disabled:opacity-60"
             >
               {runningJob === 'vps_update_preflight' ? 'Verificando VPS...' : 'Ejecutar preflight VPS'}
             </button>
             <button
               onClick={copyVpsCommands}
               disabled={!vpsUpdate?.deployment?.commands?.length}
-              className="rounded-lg border border-white/20 bg-white/5 backdrop-blur-md px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60"
+              className="rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-white disabled:opacity-60"
             >
               Copiar comandos
             </button>
@@ -501,20 +501,20 @@ const SystemSettings: React.FC = () => {
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
-          <div className="rounded-lg border border-white/10 p-3 text-xs">
-            <p className="text-slate-400">Score</p>
+          <div className="rounded-lg border border-gray-200 p-3 text-xs">
+            <p className="text-slate-500">Score</p>
             <p className="mt-1 text-lg font-semibold text-white">{vpsUpdate?.score ?? 0}/100</p>
           </div>
-          <div className="rounded-lg border border-white/10 p-3 text-xs">
-            <p className="text-slate-400">Estado</p>
+          <div className="rounded-lg border border-gray-200 p-3 text-xs">
+            <p className="text-slate-500">Estado</p>
             <p className="mt-1 text-lg font-semibold text-white">{vpsUpdate?.status || 'sin datos'}</p>
           </div>
-          <div className="rounded-lg border border-white/10 p-3 text-xs">
-            <p className="text-slate-400">Blockers</p>
+          <div className="rounded-lg border border-gray-200 p-3 text-xs">
+            <p className="text-slate-500">Blockers</p>
             <p className="mt-1 text-lg font-semibold text-white">{vpsUpdate?.blockers?.length ?? 0}</p>
           </div>
-          <div className="rounded-lg border border-white/10 p-3 text-xs">
-            <p className="text-slate-400">Ultimo backup</p>
+          <div className="rounded-lg border border-gray-200 p-3 text-xs">
+            <p className="text-slate-500">Ultimo backup</p>
             <p className="mt-1 text-lg font-semibold text-white">
               {typeof vpsUpdate?.artifacts?.latest_backup_age_hours === 'number'
                 ? `${vpsUpdate?.artifacts?.latest_backup_age_hours}h`
@@ -524,13 +524,13 @@ const SystemSettings: React.FC = () => {
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <div className="rounded-lg border border-white/10 p-3">
-            <p className="text-xs font-semibold uppercase text-slate-300">Checks VPS</p>
+          <div className="rounded-lg border border-gray-200 p-3">
+            <p className="text-xs font-semibold uppercase text-slate-600">Checks VPS</p>
             <div className="mt-3 space-y-2">
               {(vpsUpdate?.checks || []).slice(0, 8).map((check) => (
-                <div key={check.id} className="rounded-lg border border-white/10 px-3 py-2 text-xs">
+                <div key={check.id} className="rounded-lg border border-gray-200 px-3 py-2 text-xs">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold text-slate-200">{check.id}</p>
+                    <p className="font-semibold text-slate-700">{check.id}</p>
                     <span
                       className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                         check.ok
@@ -543,17 +543,17 @@ const SystemSettings: React.FC = () => {
                       {check.ok ? 'ok' : check.severity || 'warn'}
                     </span>
                   </div>
-                  <p className="mt-1 text-slate-400">{check.detail}</p>
+                  <p className="mt-1 text-slate-500">{check.detail}</p>
                 </div>
               ))}
-              {!vpsUpdate?.checks?.length && <p className="text-xs text-slate-400">Ejecuta el preflight para ver el detalle.</p>}
+              {!vpsUpdate?.checks?.length && <p className="text-xs text-slate-500">Ejecuta el preflight para ver el detalle.</p>}
             </div>
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-lg border border-white/10 p-3">
-              <p className="text-xs font-semibold uppercase text-slate-300">Ruta de despliegue</p>
-              <div className="mt-3 space-y-2 text-xs text-slate-400">
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs font-semibold uppercase text-slate-600">Ruta de despliegue</p>
+              <div className="mt-3 space-y-2 text-xs text-slate-500">
                 <p>
                   Project root:
                   <span className="ml-1 font-mono text-white">{vpsUpdate?.deployment?.project_root || '-'}</span>
@@ -577,30 +577,30 @@ const SystemSettings: React.FC = () => {
               </div>
             </div>
 
-            <div className="rounded-lg border border-white/10 p-3">
-              <p className="text-xs font-semibold uppercase text-slate-300">Secuencia sugerida</p>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs font-semibold uppercase text-slate-600">Secuencia sugerida</p>
               <div className="mt-3 space-y-2">
                 {(vpsUpdate?.deployment?.commands || []).map((command) => (
-                  <code key={command} className="block rounded bg-slate-950 px-3 py-2 text-xs text-slate-100">
+                  <code key={command} className="block rounded bg-slate-950 px-3 py-2 text-xs text-slate-800">
                     {command}
                   </code>
                 ))}
                 {!vpsUpdate?.deployment?.commands?.length && (
-                  <p className="text-xs text-slate-400">Sin comandos disponibles todavia.</p>
+                  <p className="text-xs text-slate-500">Sin comandos disponibles todavia.</p>
                 )}
               </div>
             </div>
 
-            <div className="rounded-lg border border-white/10 p-3">
-              <p className="text-xs font-semibold uppercase text-slate-300">Scripts locales</p>
-              <div className="mt-3 space-y-2 text-xs text-slate-400">
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs font-semibold uppercase text-slate-600">Scripts locales</p>
+              <div className="mt-3 space-y-2 text-xs text-slate-500">
                 {(vpsUpdate?.deployment?.scripts || []).map((script) => (
-                  <div key={`${script.name}-${script.path}`} className="rounded border border-white/10 px-3 py-2">
+                  <div key={`${script.name}-${script.path}`} className="rounded border border-gray-200 px-3 py-2">
                     <p className="font-semibold text-white">{script.name || 'script'}</p>
-                    <p className="mt-1 font-mono text-[11px] text-slate-400">{script.path || '-'}</p>
+                    <p className="mt-1 font-mono text-[11px] text-slate-500">{script.path || '-'}</p>
                   </div>
                 ))}
-                {!vpsUpdate?.deployment?.scripts?.length && <p className="text-xs text-slate-400">Sin scripts sugeridos.</p>}
+                {!vpsUpdate?.deployment?.scripts?.length && <p className="text-xs text-slate-500">Sin scripts sugeridos.</p>}
               </div>
             </div>
           </div>
@@ -608,23 +608,23 @@ const SystemSettings: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-300">SOP Activos</h3>
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">SOP Activos</h3>
           <div className="mt-3 space-y-2">
             {sops.slice(0, 8).map((sop) => (
-              <div key={sop.id} className="rounded-lg border border-white/10 px-3 py-2 text-xs">
+              <div key={sop.id} className="rounded-lg border border-gray-200 px-3 py-2 text-xs">
                 <p className="font-semibold text-white">{sop.title}</p>
-                <p className="text-slate-400">
+                <p className="text-slate-500">
                   {sop.category || 'general'} | owner: {sop.owner_role || 'admin'} | checklist: {sop.checklist?.length || 0}
                 </p>
               </div>
             ))}
-            {!sops.length && <p className="text-xs text-slate-400">No hay SOP configurados.</p>}
+            {!sops.length && <p className="text-xs text-slate-500">No hay SOP configurados.</p>}
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-300">Control de Cambios</h3>
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Control de Cambios</h3>
           <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
             <input
               value={newChangeTitle}
@@ -648,14 +648,14 @@ const SystemSettings: React.FC = () => {
           </div>
           <div className="mt-3 max-h-56 space-y-2 overflow-y-auto">
             {changeRequests.slice(0, 12).map((row) => (
-              <div key={row.id} className="rounded-lg border border-white/10 px-3 py-2 text-xs">
+              <div key={row.id} className="rounded-lg border border-gray-200 px-3 py-2 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-semibold text-white">{row.title}</p>
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
                     {row.status}
                   </span>
                 </div>
-                <p className="text-slate-400">
+                <p className="text-slate-500">
                   {row.id} | {row.scope || 'network'} {row.ticket_ref ? `| ${row.ticket_ref}` : ''}
                 </p>
                 <div className="mt-2 flex gap-2">
@@ -680,53 +680,53 @@ const SystemSettings: React.FC = () => {
                 </div>
               </div>
             ))}
-            {!changeRequests.length && <p className="text-xs text-slate-400">Sin cambios registrados.</p>}
+            {!changeRequests.length && <p className="text-xs text-slate-500">Sin cambios registrados.</p>}
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-300">Cobranza Operativa</h3>
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Cobranza Operativa</h3>
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-            <div className="rounded-lg border border-white/10 p-3">
-              <p className="text-slate-400">Subs activas</p>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-slate-500">Subs activas</p>
               <p className="mt-1 font-semibold text-white">{collections?.subscriptions?.active ?? 0}</p>
             </div>
-            <div className="rounded-lg border border-white/10 p-3">
-              <p className="text-slate-400">Subs mora/suspendidas</p>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-slate-500">Subs mora/suspendidas</p>
               <p className="mt-1 font-semibold text-white">
                 {(collections?.subscriptions?.past_due ?? 0) + (collections?.subscriptions?.suspended ?? 0)}
               </p>
             </div>
-            <div className="rounded-lg border border-white/10 p-3">
-              <p className="text-slate-400">Promesas pendientes</p>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-slate-500">Promesas pendientes</p>
               <p className="mt-1 font-semibold text-white">{collections?.promises?.pending ?? 0}</p>
             </div>
-            <div className="rounded-lg border border-white/10 p-3">
-              <p className="text-slate-400">Facturas pendientes</p>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-slate-500">Facturas pendientes</p>
               <p className="mt-1 font-semibold text-white">{collections?.invoices?.pending ?? 0}</p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-300">Soporte SLA</h3>
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Soporte SLA</h3>
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-            <div className="rounded-lg border border-white/10 p-3">
-              <p className="text-slate-400">Tickets abiertos</p>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-slate-500">Tickets abiertos</p>
               <p className="mt-1 font-semibold text-white">{supportSla?.open ?? 0}</p>
             </div>
-            <div className="rounded-lg border border-white/10 p-3">
-              <p className="text-slate-400">Vencidos SLA</p>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-slate-500">Vencidos SLA</p>
               <p className="mt-1 font-semibold text-white">{supportSla?.overdue ?? 0}</p>
             </div>
-            <div className="rounded-lg border border-white/10 p-3">
-              <p className="text-slate-400">Por vencer (4h)</p>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-slate-500">Por vencer (4h)</p>
               <p className="mt-1 font-semibold text-white">{supportSla?.due_soon_4h ?? 0}</p>
             </div>
-            <div className="rounded-lg border border-white/10 p-3">
-              <p className="text-slate-400">Cumplimiento estimado</p>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-slate-500">Cumplimiento estimado</p>
               <p className="mt-1 font-semibold text-white">{supportSla?.sla_compliance_estimate ?? 0}%</p>
             </div>
           </div>
@@ -734,7 +734,7 @@ const SystemSettings: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm xl:col-span-2">
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm xl:col-span-2">
           <h3 className="mb-3 font-semibold text-white">Configuracion operativa</h3>
           {settings ? (
             <div className="space-y-3">
@@ -749,7 +749,7 @@ const SystemSettings: React.FC = () => {
                   ['require_preflight_for_live', 'Preflight obligatorio (live)'],
                   ['admin_mfa_required', 'MFA obligatorio para staff/admin'],
                 ].map(([keyName, label]) => (
-                  <label key={keyName} className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm">
+                  <label key={keyName} className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm">
                     <input
                       type="checkbox"
                       checked={Boolean(settings[keyName as keyof SystemSettingsPayload])}
@@ -765,7 +765,7 @@ const SystemSettings: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-4">
-                <label className="text-sm text-slate-300">
+                <label className="text-sm text-slate-600">
                   Prioridad ticket default
                   <select
                     value={settings.default_ticket_priority}
@@ -778,7 +778,7 @@ const SystemSettings: React.FC = () => {
                     <option value="urgent">urgent</option>
                   </select>
                 </label>
-                <label className="text-sm text-slate-300">
+                <label className="text-sm text-slate-600">
                   Retencion backup (dias)
                   <input
                     type="number"
@@ -791,7 +791,7 @@ const SystemSettings: React.FC = () => {
                     className="mt-1 w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   />
                 </label>
-                <label className="text-sm text-slate-300">
+                <label className="text-sm text-slate-600">
                   Polling metricas (seg)
                   <input
                     type="number"
@@ -804,7 +804,7 @@ const SystemSettings: React.FC = () => {
                     className="mt-1 w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   />
                 </label>
-                <label className="text-sm text-slate-300">
+                <label className="text-sm text-slate-600">
                   Minimo password
                   <input
                     type="number"
@@ -817,7 +817,7 @@ const SystemSettings: React.FC = () => {
                     className="mt-1 w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   />
                 </label>
-                <label className="text-sm text-slate-300">
+                <label className="text-sm text-slate-600">
                   Drill backup (dias)
                   <input
                     type="number"
@@ -830,7 +830,7 @@ const SystemSettings: React.FC = () => {
                     className="mt-1 w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   />
                 </label>
-                <label className="text-sm text-slate-300">
+                <label className="text-sm text-slate-600">
                   SLO routers (%)
                   <input
                     type="number"
@@ -843,7 +843,7 @@ const SystemSettings: React.FC = () => {
                     className="mt-1 w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   />
                 </label>
-                <label className="text-sm text-slate-300">
+                <label className="text-sm text-slate-600">
                   SLO SLA tickets (%)
                   <input
                     type="number"
@@ -856,7 +856,7 @@ const SystemSettings: React.FC = () => {
                     className="mt-1 w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   />
                 </label>
-                <label className="text-sm text-slate-300">
+                <label className="text-sm text-slate-600">
                   SLO provision (%)
                   <input
                     type="number"
@@ -872,17 +872,17 @@ const SystemSettings: React.FC = () => {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-slate-400">Cargando configuracion...</p>
+            <p className="text-sm text-slate-500">Cargando configuracion...</p>
           )}
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-sm">
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
           <h3 className="mb-3 font-semibold text-white">Jobs</h3>
           <div className="mb-3 grid grid-cols-1 gap-2">
             <select
               value={jobTypeFilter}
               onChange={(e) => setJobTypeFilter(e.target.value as 'all' | (typeof jobs)[number])}
-              className="rounded-lg border border-white/20 px-3 py-2 text-sm text-slate-300"
+              className="rounded-lg border border-white/20 px-3 py-2 text-sm text-slate-600"
             >
               <option value="all">todos los jobs</option>
               {jobs.map((job) => (
@@ -894,7 +894,7 @@ const SystemSettings: React.FC = () => {
             <select
               value={jobStatusFilter}
               onChange={(e) => setJobStatusFilter(e.target.value as (typeof jobStatuses)[number])}
-              className="rounded-lg border border-white/20 px-3 py-2 text-sm text-slate-300"
+              className="rounded-lg border border-white/20 px-3 py-2 text-sm text-slate-600"
             >
               {jobStatuses.map((status) => (
                 <option key={status} value={status}>
@@ -920,21 +920,21 @@ const SystemSettings: React.FC = () => {
             <h4 className="mb-2 text-sm font-semibold text-white">Historial reciente</h4>
             <div className="max-h-52 space-y-2 overflow-y-auto">
               {jobHistory.map((job) => (
-                <div key={job.id} className="rounded-md border border-white/10 px-3 py-2 text-xs">
+                <div key={job.id} className="rounded-md border border-gray-200 px-3 py-2 text-xs">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold text-slate-200">{job.job}</p>
+                    <p className="font-semibold text-slate-700">{job.job}</p>
                     <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase ${statusBadgeClass(job.status)}`}>
                       {job.status}
                     </span>
                   </div>
-                  <p className="text-slate-400">
+                  <p className="text-slate-500">
                     inicio: {job.started_at?.replace('T', ' ').slice(0, 16)}
                   </p>
-                  {job.finished_at && <p className="text-slate-400">fin: {job.finished_at.replace('T', ' ').slice(0, 16)}</p>}
-                  {renderJobResult(job) && <p className="mt-1 text-slate-300">{renderJobResult(job)}</p>}
+                  {job.finished_at && <p className="text-slate-500">fin: {job.finished_at.replace('T', ' ').slice(0, 16)}</p>}
+                  {renderJobResult(job) && <p className="mt-1 text-slate-600">{renderJobResult(job)}</p>}
                 </div>
               ))}
-              {!jobHistory.length && <p className="text-xs text-slate-400">Sin jobs recientes.</p>}
+              {!jobHistory.length && <p className="text-xs text-slate-500">Sin jobs recientes.</p>}
             </div>
           </div>
         </div>

@@ -206,10 +206,10 @@ const AssetTracking: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <span className="text-sm font-mono text-slate-300 bg-white/5 px-2 py-1 rounded border border-white/5">{unit.serial_number}</span>
+                      <span className="text-sm font-mono text-slate-600 bg-white px-2 py-1 rounded border border-white/5">{unit.serial_number}</span>
                     </td>
                     <td className="px-6 py-5">
-                      <span className="text-sm font-mono text-slate-400">{unit.mac_address || '—'}</span>
+                      <span className="text-sm font-mono text-slate-500">{unit.mac_address || '—'}</span>
                       {(unit as any).total_length && (
                         <p className="text-[10px] text-blue-400 mt-1">
                           Len: {(unit as any).remaining_length}/{(unit as any).total_length}m
@@ -223,7 +223,7 @@ const AssetTracking: React.FC = () => {
                       </Badge>
                     </td>
                     <td className="px-6 py-5 text-right">
-                      <button className="p-2 rounded-lg hover:bg-white/10 text-slate-500 group-hover:text-slate-300 transition-all">
+                      <button className="p-2 rounded-lg hover:bg-white/10 text-slate-500 group-hover:text-slate-600 transition-all">
                         <EllipsisVerticalIcon className="w-5 h-5" />
                       </button>
                     </td>
@@ -253,7 +253,7 @@ const AssetTracking: React.FC = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowAddModal(false)}
-              className="absolute inset-0 bg-slate-800/50 backdrop-blur-sm"
+              className="absolute inset-0 bg-gray-50 backdrop-blur-sm"
             />
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}

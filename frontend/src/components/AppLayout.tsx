@@ -179,7 +179,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             <>
               <tab.icon
                 className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                  isActive ? 'text-coral-500' : 'text-slate-400 group-hover:text-slate-700'
+                  isActive ? 'text-coral-500' : 'text-slate-500 group-hover:text-slate-700'
                 }`}
               />
               {tab.name}
@@ -302,7 +302,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               <div className="ml-4 flex items-center md:ml-6">
                 <div className="hidden items-center space-x-2 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2 md:flex">
                   <div className={`${serviceActive ? 'h-2 w-2 animate-pulse bg-green-400' : 'h-2 w-2 bg-gray-600'} rounded-full`} />
-                  <span className={`text-sm font-bold ${serviceActive ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  <span className={`text-sm font-bold ${serviceActive ? 'text-emerald-600' : 'text-slate-500'}`}>
                     {serviceActive ? 'Servicio activo' : 'Desconectado'}
                   </span>
                 </div>
@@ -334,14 +334,14 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={loadNotifications}
-                              className="text-xs text-slate-400 hover:text-slate-600 hover:underline disabled:text-slate-300"
+                              className="text-xs text-slate-500 hover:text-slate-600 hover:underline disabled:text-slate-600"
                               disabled={loadingNotifications}
                             >
                               {loadingNotifications ? 'Actualizando...' : 'Refrescar'}
                             </button>
                             <button
                               onClick={markAllAsRead}
-                              className="text-xs text-coral-500 hover:text-coral-600 hover:underline disabled:text-slate-300"
+                              className="text-xs text-coral-500 hover:text-coral-600 hover:underline disabled:text-slate-600"
                               disabled={unreadNotifications === 0}
                             >
                               Marcar leidas
@@ -358,17 +358,17 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                                 onClick={() => handleNotificationClick(notification)}
                                 className={`${active ? 'bg-gray-50' : ''} block w-full px-4 py-3 text-left text-sm text-slate-600`}
                               >
-                                <p className={`font-medium ${!notification.read ? 'text-slate-800' : 'text-slate-400'}`}>
+                                <p className={`font-medium ${!notification.read ? 'text-slate-800' : 'text-slate-500'}`}>
                                   {notification.message}
                                 </p>
-                                <p className="mt-1 text-xs text-slate-400">{formatRelativeTime(notification.time)}</p>
+                                <p className="mt-1 text-xs text-slate-500">{formatRelativeTime(notification.time)}</p>
                               </button>
                             )}
                           </Menu.Item>
                         ))}
 
                         {!notifications.length && (
-                          <div className="px-4 py-6 text-center text-sm text-slate-400">
+                          <div className="px-4 py-6 text-center text-sm text-slate-500">
                             No hay notificaciones recientes.
                           </div>
                         )}
@@ -409,7 +409,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                                 `${active || navIsActive ? 'bg-gray-50' : ''} group flex w-full items-center px-4 py-2 text-sm font-medium text-slate-600`
                               }
                             >
-                              <UserCircleIcon className="mr-2 h-5 w-5 text-slate-400" /> Mi perfil
+                              <UserCircleIcon className="mr-2 h-5 w-5 text-slate-500" /> Mi perfil
                             </NavLink>
                           )}
                         </Menu.Item>

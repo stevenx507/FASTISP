@@ -63,7 +63,7 @@ const ClientWiFi: React.FC = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-white">Mi WiFi</h1>
-            <p className="text-slate-400">Gestiona el nombre y la clave de tu red inalámbrica</p>
+            <p className="text-slate-500">Gestiona el nombre y la clave de tu red inalámbrica</p>
           </div>
         </div>
 
@@ -72,10 +72,10 @@ const ClientWiFi: React.FC = () => {
             <ArrowPathIcon className="h-8 w-8 text-blue-500 animate-spin" />
           </div>
         ) : (
-          <form onSubmit={handleSave} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl">
+          <form onSubmit={handleSave} className="bg-white backdrop-blur-md border border-gray-200 rounded-2xl p-8 shadow-2xl">
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Nombre de la red (SSID)</label>
+                <label className="block text-sm font-medium text-slate-600 mb-2">Nombre de la red (SSID)</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <WifiIcon className="h-5 w-5 text-slate-500" />
@@ -84,14 +84,14 @@ const ClientWiFi: React.FC = () => {
                     type="text"
                     value={ssid}
                     onChange={(e) => setSsid(e.target.value)}
-                    className="block w-full pl-10 bg-black/20 border border-white/10 rounded-xl py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    className="block w-full pl-10 bg-black/20 border border-gray-200 rounded-xl py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     placeholder="Ej. MiInternet_5G"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Nueva Contraseña</label>
+                <label className="block text-sm font-medium text-slate-600 mb-2">Nueva Contraseña</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <ShieldCheckIcon className="h-5 w-5 text-slate-500" />
@@ -100,7 +100,7 @@ const ClientWiFi: React.FC = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full pl-10 pr-10 bg-black/20 border border-white/10 rounded-xl py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    className="block w-full pl-10 pr-10 bg-black/20 border border-gray-200 rounded-xl py-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     placeholder="Mínimo 8 caracteres"
                   />
                   <button

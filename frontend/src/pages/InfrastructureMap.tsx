@@ -138,7 +138,7 @@ const InfrastructureMap: React.FC = () => {
   });
 
   return (
-    <div className="relative h-[calc(100vh-100px)] w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl">
+    <div className="relative h-[calc(100vh-100px)] w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
       <MapContainer 
         center={[-12.0464, -77.0428]} 
         zoom={13} 
@@ -169,7 +169,7 @@ const InfrastructureMap: React.FC = () => {
                       style={{ width: `${(nap.used_ports/nap.capacity)*100}%` }}
                     />
                   </div>
-                  <p className="text-xs font-mono text-slate-400 mt-2">
+                  <p className="text-xs font-mono text-slate-500 mt-2">
                     {nap.latitude.toFixed(6)}, {nap.longitude.toFixed(6)}
                   </p>
                 </div>
@@ -208,7 +208,7 @@ const InfrastructureMap: React.FC = () => {
         <motion.div 
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          className="bg-slate-900/80 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl w-80"
+          className="bg-white/90 backdrop-blur-xl border border-gray-200 p-4 rounded-2xl shadow-2xl w-80"
         >
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-white flex items-center">
@@ -218,14 +218,14 @@ const InfrastructureMap: React.FC = () => {
             <div className="flex space-x-2">
                <button 
                 onClick={() => { setIsAddingNap(!isAddingNap); setIsAddingLine(false); }}
-                className={`p-2 rounded-lg transition-all ${isAddingNap ? 'bg-blue-600 text-white' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                className={`p-2 rounded-lg transition-all ${isAddingNap ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 hover:bg-white/10'}`}
                 title="Añadir NAP"
               >
                 <MapPinIcon className="w-5 h-5" />
               </button>
               <button 
                 onClick={() => { setIsAddingLine(!isAddingLine); setIsAddingNap(false); setNewLinePoints([]); }}
-                className={`p-2 rounded-lg transition-all ${isAddingLine ? 'bg-amber-600 text-white' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                className={`p-2 rounded-lg transition-all ${isAddingLine ? 'bg-amber-600 text-white' : 'bg-white text-slate-500 hover:bg-white/10'}`}
                 title="Trazar Fibra"
               >
                 <PlusIcon className="w-5 h-5" />
@@ -239,19 +239,19 @@ const InfrastructureMap: React.FC = () => {
               <input 
                 type="text" 
                 placeholder="Buscar infraestructura..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="w-full bg-white border border-gray-200 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
               />
             </div>
 
             <div className="max-h-60 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
               <div className="text-xs font-bold text-slate-500 uppercase tracking-wider px-2">Cajas NAP ({naps.length})</div>
               {naps.map(nap => (
-                <div key={nap.id} className="group flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer border border-transparent hover:border-white/5">
+                <div key={nap.id} className="group flex items-center justify-between p-2 rounded-xl hover:bg-white transition-colors cursor-pointer border border-transparent hover:border-white/5">
                   <div className="flex items-center space-x-3">
                     <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                    <span className="text-sm text-slate-300 font-medium">{nap.name}</span>
+                    <span className="text-sm text-slate-600 font-medium">{nap.name}</span>
                   </div>
-                  <div className="text-[10px] text-slate-500 group-hover:text-slate-300 transition-colors">
+                  <div className="text-[10px] text-slate-500 group-hover:text-slate-600 transition-colors">
                     {nap.used_ports}/{nap.capacity} ports
                   </div>
                 </div>
@@ -275,7 +275,7 @@ const InfrastructureMap: React.FC = () => {
 
       {/* Legend & Stats Overlay */}
       <div className="absolute bottom-6 right-6 z-[1000] flex space-x-4">
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl flex space-x-6">
+        <div className="bg-white/90 backdrop-blur-xl border border-gray-200 p-4 rounded-2xl shadow-2xl flex space-x-6">
           <div className="flex flex-col">
             <span className="text-xs text-slate-500">Cobertura Total</span>
             <span className="text-xl font-bold text-white">4.2 km</span>
