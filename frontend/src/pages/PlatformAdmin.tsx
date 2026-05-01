@@ -498,7 +498,7 @@ const PlatformAdmin: React.FC = () => {
       toast.error('Activa el tenant antes de entrar al modo Admin ISP')
       return
     }
-    setTenantContext(tenant.id)
+    setTenantContext(tenant.id, tenant.name)
     toast.success(`Modo Admin ISP activo: ${tenant.name}`)
     navigate('/admin')
   }

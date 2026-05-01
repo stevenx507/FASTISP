@@ -210,7 +210,7 @@ const AdminPanel: React.FC = () => {
     return saved ? saved === 'true' : false
   })
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ operations: true, infrastructure: true, monitoring: true })
-  const { logout, user, tenantContextId, setTenantContext } = useAuthStore()
+  const { logout, user, tenantContextId, tenantContextName, setTenantContext } = useAuthStore()
   const { branding } = useTheme()
 
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -417,7 +417,7 @@ const AdminPanel: React.FC = () => {
             <p className="truncate text-sm font-bold text-slate-800">{user?.name || 'Admin ISP'}</p>
             <p className="truncate text-xs text-slate-500">{user?.email || 'admin@ispmax.com'}</p>
             {isPlatformAdminMode && (
-              <p className="text-[10px] text-coral-600 font-bold">Tenant: {tenantContextId}</p>
+              <p className="text-[10px] text-coral-600 font-bold">Tenant: {tenantContextName || tenantContextId}</p>
             )}
           </div>
           <button
@@ -573,7 +573,7 @@ const AdminPanel: React.FC = () => {
           <div className="mx-4 mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs text-amber-800 flex items-center justify-between">
             <span>
               <span className="font-bold text-amber-700">Modo Admin ISP</span> — Tenant activo:{' '}
-              <span className="font-mono font-bold text-amber-900">{tenantContextId || 'Ninguno (Error)'}</span>
+              <span className="font-mono font-bold text-amber-900">{tenantContextName || tenantContextId || 'Ninguno (Error)'}</span>
             </span>
             <button
               onClick={handleExitTenantMode}

@@ -20,9 +20,10 @@ interface AuthState {
   token: string | null
   isAuthenticated: boolean
   tenantContextId: number | null
+  tenantContextName: string | null
   login: (email: string, password: string) => Promise<void>
   logout: () => void
-  setTenantContext: (tenantId: number | null) => void
+  setTenantContext: (tenantId: number | null, tenantName?: string | null) => void
 }
 
 const storage = {
@@ -58,6 +59,7 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
       tenantContextId: null,
+      tenantContextName: null,
       login: async (email, password) => {
         const data = await apiClient.post('/auth/login', { email, password })
         const token = data.token
@@ -80,10 +82,10 @@ export const useAuthStore = create<AuthState>()(
         })
       },
       logout: () => {
-        set({ user: null, token: null, isAuthenticated: false, tenantContextId: null })
+        set({ user: null, token: null, isAuthenticated: false, tenantContextId: null, tenantContextName: null })
       },
-      setTenantContext: (tenantId) => {
-        set({ tenantContextId: tenantId })
+      setTenantContext: (tenantId, tenantName = null) => {
+        set({ tenantContextId: tenantId, tenantContextName: tenantName })
       },
     }),
     {
