@@ -50,17 +50,17 @@ interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'size' | 'children
 }
 
 const buttonVariants = {
-  primary: 'bg-coral-500 hover:bg-coral-600 text-white shadow-md shadow-coral-500/20',
-  secondary: 'bg-gray-100 hover:bg-gray-200 text-slate-700',
-  success: 'bg-emerald-500 hover:bg-emerald-600 text-white',
-  danger: 'bg-rose-500 hover:bg-rose-600 text-white',
-  warning: 'bg-amber-500 hover:bg-amber-600 text-white'
+  primary: 'bg-coral-500 hover:bg-coral-600 text-white shadow-sm shadow-coral-500/20 focus:ring-coral-300',
+  secondary: 'bg-white hover:bg-gray-50 text-slate-700 border border-gray-200 shadow-sm focus:ring-gray-300',
+  success: 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20 focus:ring-emerald-300',
+  danger: 'bg-rose-500 hover:bg-rose-600 text-white shadow-sm shadow-rose-500/20 focus:ring-rose-300',
+  warning: 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm shadow-amber-500/20 focus:ring-amber-300'
 }
 
 const buttonSizes = {
-  sm: 'px-3 py-1 text-sm',
-  md: 'px-4 py-2 text-base',
-  lg: 'px-6 py-3 text-lg'
+  sm: 'px-3 py-1.5 text-xs',
+  md: 'px-4 py-2.5 text-sm',
+  lg: 'px-6 py-3 text-base'
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -76,11 +76,12 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   return (
     <motion.button
-      whileHover={{ scale: disabled ? 1 : 1.02 }}
+      whileHover={{ scale: disabled ? 1 : 1.02, y: disabled ? 0 : -1 }}
       whileTap={{ scale: disabled ? 1 : 0.98 }}
       disabled={loading || disabled}
       className={`
-        flex items-center justify-center gap-2 rounded-xl font-bold transition
+        inline-flex items-center justify-center gap-2 rounded-xl font-bold transition-all
+        focus:outline-none focus:ring-2 focus:ring-offset-2
         disabled:opacity-50 disabled:cursor-not-allowed
         ${buttonVariants[variant]} ${buttonSizes[size]}
         ${fullWidth ? 'w-full' : ''} ${className}

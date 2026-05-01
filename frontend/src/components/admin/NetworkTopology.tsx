@@ -21,8 +21,8 @@ const NetworkTopology: React.FC = () => {
 
   const loadTopology = async () => {
     try {
-      const res = await apiClient.get('/network/topology')
-      setData(res)
+      const res = await apiClient.get('/network/topology').catch(() => null)
+      if (res) setData(res)
     } catch (err) {
       console.error('Topology failed', err)
     } finally {
@@ -60,7 +60,7 @@ const NetworkTopology: React.FC = () => {
               className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-gray-50 border border-cyan-500/30 shadow-lg shadow-cyan-500/10"
             >
               {getNodeIcon('router')}
-              <span className="text-xs font-black text-white uppercase">{router.label}</span>
+              <span className="text-xs font-black text-slate-800 uppercase">{router.label}</span>
             </motion.div>
           </div>
 
@@ -87,7 +87,7 @@ const NetworkTopology: React.FC = () => {
                         <motion.div 
                           key={cEdge.to}
                           whileHover={{ y: -5 }}
-                          className="p-2 rounded-lg bg-white border border-white/5 flex flex-col items-center gap-1"
+                          className="p-2 rounded-lg bg-white border border-gray-100 flex flex-col items-center gap-1"
                           title={client?.label}
                         >
                           {getNodeIcon('client')}

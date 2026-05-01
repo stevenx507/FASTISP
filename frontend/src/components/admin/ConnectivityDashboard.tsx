@@ -82,12 +82,9 @@ const formatLastSeen = (val: string | null, mins: number | null) => {
   return `Hace ${Math.round(mins / 60)} h`
 }
 
-const inputCls = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-coral-500 focus:ring-2 focus:ring-coral-500/20 outline-none transition'
-const btnPrimary = 'inline-flex items-center gap-2 rounded-lg bg-coral-500 px-3 py-2 text-sm font-semibold text-white hover:bg-coral-600 disabled:opacity-50 transition focus:outline-none'
-const btnDanger = 'inline-flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50 transition focus:outline-none'
-const btnSuccess = 'inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition focus:outline-none'
-const btnSecondary = 'inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 transition focus:outline-none'
-const card = 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'
+const inputCls = 'w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-coral-500 focus:ring-4 focus:ring-coral-500/10 outline-none transition-all'
+
+const card = 'rounded-2xl border border-gray-100 bg-white p-5 shadow-sm'
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
@@ -287,7 +284,7 @@ const ConnectivityDashboard: React.FC = () => {
             />
             Auto-refresh 60s
           </label>
-          <button onClick={() => void loadConnectivity()} disabled={loadingConn} className={btnSecondary}>
+          <button onClick={() => void loadConnectivity()} disabled={loadingConn} className="btn btn-secondary btn-sm">
             <ArrowPathIcon className={`h-4 w-4 ${loadingConn ? 'animate-spin' : ''}`} />
             Refrescar
           </button>
@@ -414,7 +411,7 @@ const ConnectivityDashboard: React.FC = () => {
               <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
                 <WifiIcon className="h-4 w-4 text-coral-500" /> Servidores SSTP Nativos Activos
               </h3>
-              <button onClick={() => void loadVpnSessions()} disabled={loadingVpnSessions} className={btnSecondary}>
+              <button onClick={() => void loadVpnSessions()} disabled={loadingVpnSessions} className="btn btn-secondary btn-sm">
                 <ArrowPathIcon className={`h-3.5 w-3.5 ${loadingVpnSessions ? 'animate-spin' : ''}`} />
               </button>
             </div>
@@ -458,14 +455,14 @@ const ConnectivityDashboard: React.FC = () => {
                       <button
                         onClick={() => void provisionVpn(r.router_id)}
                         disabled={isProvisioning}
-                        className={btnPrimary}
+                        className="btn btn-primary btn-sm"
                       >
                         {isProvisioning ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <ShieldCheckIcon className="h-4 w-4" />}
                         {isProvisioning ? 'Provisionando...' : 'Provisionar SSTP'}
                       </button>
                       <button
                         onClick={() => void loadOnboardingScript(r.router_id, r.router_name)}
-                        className={btnSecondary}
+                        className="btn btn-secondary btn-sm"
                       >
                         <DocumentTextIcon className="h-4 w-4" />
                         Script RouterOS
@@ -494,9 +491,9 @@ const ConnectivityDashboard: React.FC = () => {
       {tab === 'security' && (
         <div className="space-y-4">
           <div className={`${card} border-l-4 border-l-amber-500`}>
-            <p className="text-xs font-semibold uppercase text-amber-400">Pilar 3 — Seguridad de la API REST</p>
+            <p className="text-xs font-semibold uppercase text-amber-600">Pilar 3 — Seguridad de la API REST</p>
             <p className="mt-1 text-sm text-slate-600">
-              Configura el MikroTik remoto para que <strong className="text-white">solo acepte conexiones API desde la IP interna del VPN</strong> (10.100.0.1).
+              Configura el MikroTik remoto para que <strong className="text-slate-800">solo acepte conexiones API desde la IP interna del VPN</strong> (10.100.0.1).
               También aplica reglas de firewall para bloquear intentos externos de fuerza bruta.
             </p>
           </div>
@@ -524,7 +521,7 @@ const ConnectivityDashboard: React.FC = () => {
                     <button
                       onClick={() => void secureApi(r.router_id)}
                       disabled={isSecuring || !r.vpn_ip}
-                      className={btnSuccess}
+                      className="btn btn-success btn-sm"
                       title={!r.vpn_ip ? 'Requiere SSTP nativo provisionado primero' : ''}
                     >
                       {isSecuring ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <LockClosedIcon className="h-4 w-4" />}
@@ -533,7 +530,7 @@ const ConnectivityDashboard: React.FC = () => {
                   </div>
 
                   {!r.vpn_ip && (
-                    <p className="mt-2 text-xs text-amber-400">⚠ Este router no tiene IP VPN asignada. Provisiona el VPN primero.</p>
+                    <p className="mt-2 text-xs text-amber-600">⚠ Este router no tiene IP VPN asignada. Provisiona el VPN primero.</p>
                   )}
 
                   {secRes && (
@@ -627,15 +624,15 @@ netfilter-persistent save`}</pre>
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3">
-              <button onClick={() => void runCommand('suspend')} disabled={cmdLoading} className={btnDanger}>
+              <button onClick={() => void runCommand('suspend')} disabled={cmdLoading} className="btn btn-danger btn-sm">
                 {cmdLoading ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <XCircleIcon className="h-4 w-4" />}
                 Corte por mora
               </button>
-              <button onClick={() => void runCommand('restore')} disabled={cmdLoading} className={btnSuccess}>
+              <button onClick={() => void runCommand('restore')} disabled={cmdLoading} className="btn btn-success btn-sm">
                 {cmdLoading ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <CheckCircleIcon className="h-4 w-4" />}
                 Reactivar cliente
               </button>
-              <button onClick={() => void runCommand('bandwidth')} disabled={cmdLoading} className={btnPrimary}>
+              <button onClick={() => void runCommand('bandwidth')} disabled={cmdLoading} className="btn btn-primary btn-sm">
                 {cmdLoading ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <BoltIcon className="h-4 w-4" />}
                 Cambiar velocidad
               </button>
@@ -643,7 +640,7 @@ netfilter-persistent save`}</pre>
 
             {cmdResult && (
               <div className={`mt-4 rounded-lg border px-4 py-3 text-sm ${
-                cmdResult.success ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+                cmdResult.success ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'
               }`}>
                 {cmdResult.success ? '✓' : '✗'} {cmdResult.message}
               </div>
@@ -660,7 +657,7 @@ netfilter-persistent save`}</pre>
                 { title: 'Limitar velocidad', color: 'cyan', cmd: '/queue simple add name="FASTISP-<IP>" target=<IP> max-limit=<UP>M/<DOWN>M' },
                 { title: 'Ver tráfico interface', color: 'violet', cmd: ':put [/interface monitor-traffic ether1 once as-value]' },
               ].map(item => (
-                <div key={item.title} className="rounded-lg border border-white/5 bg-slate-950/60 p-3">
+                <div key={item.title} className="rounded-lg border border-gray-100 bg-gray-50 p-3">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-semibold text-slate-600">{item.title}</p>
                     <button
@@ -670,7 +667,7 @@ netfilter-persistent save`}</pre>
                       <ClipboardDocumentIcon className="h-4 w-4" />
                     </button>
                   </div>
-                  <pre className="mt-1 overflow-x-auto text-[11px] text-emerald-400">{item.cmd}</pre>
+                  <pre className="mt-1 overflow-x-auto text-[11px] text-slate-700">{item.cmd}</pre>
                 </div>
               ))}
             </div>
@@ -704,7 +701,7 @@ netfilter-persistent save`}</pre>
                   {showScriptModal.script}
                 </pre>
               </div>
-              <div className="mt-4 rounded-lg border border-cyan-500/20 bg-cyan-500/5 px-4 py-3 text-xs text-cyan-300">
+              <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-700">
                 <strong>Instrucciones:</strong>
                 <ol className="mt-1 list-decimal pl-4 space-y-1">
                   <li>En el MikroTik: Abrir Winbox → New Terminal</li>

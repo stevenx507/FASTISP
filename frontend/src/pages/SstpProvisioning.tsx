@@ -78,9 +78,9 @@ interface SstpStatus {
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const statusColor = (status: string) => {
   switch (status) {
-    case 'active': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30'
-    case 'revoked': return 'text-red-400 bg-red-400/10 border-red-400/30'
-    default: return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30'
+    case 'active': return 'text-emerald-700 bg-emerald-50 border-emerald-200'
+    case 'revoked': return 'text-rose-700 bg-rose-50 border-rose-200'
+    default: return 'text-amber-700 bg-amber-50 border-amber-200'
   }
 }
 
@@ -142,7 +142,7 @@ const ScriptModal: React.FC<{
         {/* Info banner */}
         <div className="mx-5 mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex gap-2">
           <InformationCircleIcon className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-          <p className="text-blue-300 text-sm">
+          <p className="text-blue-700 text-sm">
             <strong>API Auto-provisioning:</strong> Si el router está online, el script se aplicará automáticamente.
             Si falla, pega este script en <strong>Winbox → New Terminal</strong> del MikroTik.
           </p>
@@ -285,9 +285,9 @@ const ProvisionModal: React.FC<{
             />
           </div>
 
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 flex gap-2">
-            <ExclamationTriangleIcon className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-            <p className="text-yellow-300 text-xs">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-2">
+            <ExclamationTriangleIcon className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <p className="text-amber-700 text-xs">
               Se configurará el MikroTik como <strong>servidor SSTP nativo</strong> con certificados propios, pool de IPs y PPP secrets. Si el router está online, se aplicará automáticamente vía API.
             </p>
           </div>
@@ -488,7 +488,7 @@ const SstpProvisioning: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold text-slate-800">Servidores SSTP Nativo MikroTik</h1>
-                <span className="px-2 py-0.5 bg-cyan-500/20 border border-cyan-500/30 rounded-full text-cyan-300 text-xs font-medium">VPN</span>
+                <span className="px-2 py-0.5 bg-cyan-50 border border-cyan-200 rounded-full text-cyan-700 text-xs font-medium">VPN</span>
               </div>
               <p className="text-slate-500 text-sm mt-0.5">Aprovisionamiento automático vía API MikroTik para routers clientes ISP</p>
             </div>
@@ -505,14 +505,14 @@ const SstpProvisioning: React.FC = () => {
 
       {/* Alerts */}
       {error && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-2 text-red-300 text-sm">
+        <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-700 text-sm">
           <XCircleIcon className="w-4 h-4 flex-shrink-0" />
           {error}
-          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-200">✕</button>
+          <button onClick={() => setError(null)} className="ml-auto text-rose-500 hover:text-rose-700">✕</button>
         </div>
       )}
       {successMsg && (
-        <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-2 text-emerald-300 text-sm">
+        <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-emerald-700 text-sm">
           <CheckCircleIcon className="w-4 h-4 flex-shrink-0" />
           {successMsg}
         </div>
@@ -562,7 +562,7 @@ const SstpProvisioning: React.FC = () => {
           <KeyIcon className="w-4 h-4 text-yellow-400 flex-shrink-0" />
           <div>
             <p className="text-slate-500 text-xs">Huella del certificado (CA MikroTik)</p>
-            <p className="text-yellow-300 font-mono text-xs break-all">{status.certificate_fingerprint}</p>
+            <p className="text-amber-700 font-mono text-xs break-all">{status.certificate_fingerprint}</p>
           </div>
         </div>
       )}
@@ -575,7 +575,7 @@ const SstpProvisioning: React.FC = () => {
             onClick={() => setFilterStatus(f)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               filterStatus === f
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                ? 'bg-coral-50 text-coral-700 border border-coral-200'
                 : 'text-slate-500 hover:text-slate-800 border border-transparent'
             }`}
           >
@@ -645,8 +645,8 @@ const SstpProvisioning: React.FC = () => {
                       {tunnel.status === 'active' && (
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
                           isRecentlySeen(tunnel.last_seen)
-                            ? 'text-cyan-400 bg-cyan-400/10 border-cyan-400/30'
-                            : 'text-slate-500 bg-gray-500/10 border-gray-500/20'
+                            ? 'text-cyan-700 bg-cyan-50 border-cyan-200'
+                            : 'text-slate-500 bg-gray-50 border-gray-200'
                         }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${
                             isRecentlySeen(tunnel.last_seen) ? 'bg-cyan-400 animate-pulse' : 'bg-gray-500'
@@ -725,8 +725,8 @@ const SstpProvisioning: React.FC = () => {
               {connectionResult[tunnel.id] && (
                 <div className={`mt-3 p-3 rounded-lg border text-xs ${
                   connectionResult[tunnel.id].success
-                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
-                    : 'bg-red-500/10 border-red-500/20 text-red-300'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    : 'bg-rose-50 border-rose-200 text-rose-700'
                 }`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -736,7 +736,7 @@ const SstpProvisioning: React.FC = () => {
                       <span className="font-medium">{connectionResult[tunnel.id].summary}</span>
                     </div>
                     {connectionResult[tunnel.id].runtime?.tcp_latency_ms != null && (
-                      <span className="px-2 py-0.5 bg-emerald-500/20 rounded-full text-emerald-300 font-mono text-[10px]">
+                      <span className="px-2 py-0.5 bg-emerald-100 rounded-full text-emerald-700 font-mono text-[10px]">
                         {connectionResult[tunnel.id].runtime!.tcp_latency_ms}ms
                       </span>
                     )}
@@ -754,7 +754,7 @@ const SstpProvisioning: React.FC = () => {
                   {connectionResult[tunnel.id].recommendations && connectionResult[tunnel.id].recommendations!.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-gray-200">
                       {connectionResult[tunnel.id].recommendations!.map((rec, i) => (
-                        <p key={i} className="text-yellow-300/80 text-[11px]">- {rec}</p>
+                        <p key={i} className="text-amber-700 text-[11px]">- {rec}</p>
                       ))}
                     </div>
                   )}
@@ -763,14 +763,14 @@ const SstpProvisioning: React.FC = () => {
 
               {/* API applied indicator per tunnel */}
               {tunnel.api_applied && (
-                <div className="mt-3 p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-                  <div className="flex items-center gap-2 text-emerald-300 text-xs font-medium">
+                <div className="mt-3 p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-emerald-700 text-xs font-medium">
                     <CheckCircleIcon className="w-3.5 h-3.5" />
                     Aplicado autom\u00e1ticamente v\u00eda API MikroTik
                   </div>
                   {tunnel.api_results && tunnel.api_results.length > 0 && (
-                    <details className="mt-1 text-emerald-400/80 text-[11px]">
-                      <summary className="cursor-pointer hover:text-emerald-300">Ver detalles ({tunnel.api_results.length})</summary>
+                    <details className="mt-1 text-emerald-600 text-[11px]">
+                      <summary className="cursor-pointer hover:text-emerald-700">Ver detalles ({tunnel.api_results.length})</summary>
                       <pre className="mt-1 text-[10px] whitespace-pre-wrap">{tunnel.api_results.join('\n')}</pre>
                     </details>
                   )}
@@ -783,14 +783,14 @@ const SstpProvisioning: React.FC = () => {
 
       {/* API Applied indicator (global, when script modal was opened) */}
       {selectedTunnel?.api_applied && !showScriptModal && (
-        <div className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
-          <div className="flex items-center gap-2 text-emerald-300 font-medium mb-2">
+        <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+          <div className="flex items-center gap-2 text-emerald-700 font-medium mb-2">
             <CheckCircleSolid className="w-5 h-5" />
             {selectedTunnel.router_name}: Configurado autom\u00e1ticamente v\u00eda API
           </div>
           {selectedTunnel.api_results && selectedTunnel.api_results.length > 0 && (
-            <details className="text-emerald-400 text-xs">
-              <summary className="cursor-pointer hover:text-emerald-300">Ver comandos aplicados ({selectedTunnel.api_results.length})</summary>
+            <details className="text-emerald-600 text-xs">
+              <summary className="cursor-pointer hover:text-emerald-700">Ver comandos aplicados ({selectedTunnel.api_results.length})</summary>
               <pre className="mt-2 bg-gray-50 rounded border border-gray-200 p-2 text-xs overflow-auto max-h-32">
                 {selectedTunnel.api_results.join('\n')}
               </pre>

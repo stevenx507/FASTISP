@@ -112,21 +112,21 @@ const FinanceView: React.FC = () => {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-white">Finanzas</h2>
+          <h2 className="text-2xl font-bold text-slate-900">Finanzas</h2>
           <p className="text-sm text-slate-500">Cartera, cobranza, aging e indicadores operativos de facturacion.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={runRecalcBalances}
             disabled={runningJob}
-            className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
+            className="btn btn-primary rounded-xl"
           >
             {runningJob ? 'Ejecutando...' : 'Recalcular balances'}
           </button>
           <button
             onClick={load}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white disabled:opacity-60"
+            className="btn btn-secondary rounded-xl"
           >
             <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Actualizando...' : 'Actualizar'}
@@ -139,19 +139,19 @@ const FinanceView: React.FC = () => {
           <p className="text-xs font-semibold uppercase text-emerald-700">MRR</p>
           <p className="mt-2 text-2xl font-bold text-emerald-900">${summary?.mrr ?? 0}</p>
         </div>
-        <div className="rounded-xl border border-blue-100 bg-blue-500/10 p-4">
-          <p className="text-xs font-semibold uppercase text-blue-300">ARR</p>
-          <p className="mt-2 text-2xl font-bold text-blue-200">${summary?.arr ?? 0}</p>
+        <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+          <p className="text-xs font-semibold uppercase text-blue-700">ARR</p>
+          <p className="mt-2 text-2xl font-bold text-blue-900">${summary?.arr ?? 0}</p>
         </div>
         <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
           <p className="text-xs font-semibold uppercase text-amber-700">Pendiente</p>
           <p className="mt-2 text-2xl font-bold text-amber-900">${summary?.pending_balance ?? 0}</p>
         </div>
-        <div className="rounded-xl border border-red-100 bg-rose-500/10 p-4">
-          <p className="text-xs font-semibold uppercase text-rose-400">Vencido</p>
-          <p className="mt-2 text-2xl font-bold text-rose-300">${summary?.overdue_balance ?? 0}</p>
+        <div className="rounded-xl border border-rose-100 bg-rose-50 p-4">
+          <p className="text-xs font-semibold uppercase text-rose-700">Vencido</p>
+          <p className="mt-2 text-2xl font-bold text-rose-900">${summary?.overdue_balance ?? 0}</p>
         </div>
-        <div className="rounded-xl border border-violet-100 bg-violet-500/10 p-4">
+        <div className="rounded-xl border border-violet-100 bg-violet-50 p-4">
           <p className="text-xs font-semibold uppercase text-violet-700">Cobranza Mes</p>
           <p className="mt-2 text-2xl font-bold text-violet-900">${summary?.paid_this_month ?? 0}</p>
         </div>
@@ -163,12 +163,12 @@ const FinanceView: React.FC = () => {
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
-          <h3 className="font-semibold text-white">Aging de cartera</h3>
+          <h3 className="font-semibold text-slate-800">Aging de cartera</h3>
           <div className="mt-4 space-y-3">
             {agingItems.map((row) => (
               <div key={row.label} className="flex items-center justify-between text-sm">
                 <span className="text-slate-500">{row.label}</span>
-                <span className="font-semibold text-white">${row.value.toFixed(2)}</span>
+                <span className="font-semibold text-slate-900">${row.value.toFixed(2)}</span>
               </div>
             ))}
             {!agingItems.length && <p className="text-sm text-slate-500">Sin datos de aging.</p>}
@@ -176,7 +176,7 @@ const FinanceView: React.FC = () => {
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm xl:col-span-2">
-          <h3 className="font-semibold text-white">Cashflow 6 meses</h3>
+          <h3 className="font-semibold text-slate-800">Cashflow 6 meses</h3>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {cashflow.map((row) => (
               <div key={row.label} className="rounded-lg border border-gray-200 p-3">
@@ -186,14 +186,14 @@ const FinanceView: React.FC = () => {
                     <span>Paid</span>
                     <span>${row.paid.toFixed(2)}</span>
                   </div>
-                  <div className="h-2 rounded-full bg-white/10">
+                  <div className="h-2 rounded-full bg-gray-100">
                     <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${(row.paid / maxCashflow) * 100}%` }} />
                   </div>
                   <div className="flex items-center justify-between text-xs text-slate-500">
                     <span>Pending</span>
                     <span>${row.pending.toFixed(2)}</span>
                   </div>
-                  <div className="h-2 rounded-full bg-white/10">
+                  <div className="h-2 rounded-full bg-gray-100">
                     <div className="h-2 rounded-full bg-amber-500" style={{ width: `${(row.pending / maxCashflow) * 100}%` }} />
                   </div>
                 </div>
@@ -206,11 +206,11 @@ const FinanceView: React.FC = () => {
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
-          <h3 className="font-semibold text-white">Top deudores</h3>
+          <h3 className="font-semibold text-slate-800">Top deudores</h3>
           <div className="mt-3 space-y-2">
             {debtors.map((debtor) => (
               <div key={debtor.subscription_id} className="rounded-md border border-gray-200 p-3">
-                <p className="font-medium text-white">{debtor.customer}</p>
+                <p className="font-medium text-slate-800">{debtor.customer}</p>
                 <p className="text-xs text-slate-500">
                   #{debtor.subscription_id} | {debtor.status} | ${debtor.amount.toFixed(2)}
                 </p>
@@ -221,11 +221,11 @@ const FinanceView: React.FC = () => {
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-sm xl:col-span-2">
-          <div className="border-b border-white/5 px-4 py-3">
-            <h3 className="font-semibold text-white">Facturas recientes</h3>
+          <div className="border-b border-gray-100 px-4 py-3">
+            <h3 className="font-semibold text-slate-800">Facturas recientes</h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-white/5 text-sm">
+            <table className="min-w-full divide-y divide-gray-100 text-sm">
               <thead className="bg-white text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3 text-left">ID</th>
@@ -235,11 +235,11 @@ const FinanceView: React.FC = () => {
                   <th className="px-4 py-3 text-left">Vence</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-gray-100">
                 {invoices.map((invoice) => (
                   <tr key={invoice.id}>
                     <td className="px-4 py-3 font-mono text-xs text-slate-500">#{invoice.id}</td>
-                    <td className="px-4 py-3 text-white">{invoice.customer || 'N/A'}</td>
+                    <td className="px-4 py-3 text-slate-800">{invoice.customer || 'N/A'}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`rounded-full px-2 py-1 text-xs font-semibold ${
@@ -247,13 +247,13 @@ const FinanceView: React.FC = () => {
                             ? 'bg-emerald-100 text-emerald-700'
                             : invoice.status === 'pending'
                               ? 'bg-amber-100 text-amber-700'
-                              : 'bg-white/10 text-slate-600'
+                              : 'bg-gray-100 text-slate-600'
                         }`}
                       >
                         {invoice.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold text-white">
+                    <td className="px-4 py-3 text-right font-semibold text-slate-900">
                       {invoice.currency} {invoice.total_amount.toFixed(2)}
                     </td>
                     <td className="px-4 py-3 text-xs text-slate-500">{invoice.due_date || '-'}</td>

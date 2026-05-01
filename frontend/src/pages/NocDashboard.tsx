@@ -67,13 +67,13 @@ const NocDashboard: React.FC = () => {
       const [s, a, t] = await Promise.all([
         apiClient.get('/network/noc-summary'),
         apiClient.get('/network/alerts'),
-        apiClient.get('/network/analytics/traffic?range=-24h')
+        apiClient.get('/network/analytics/traffic?range=-24h').catch(() => null)
       ])
       setSummary(s)
-      setAlerts(a.alerts || [])
+      setAlerts(a?.alerts || [])
       
       // Transformar datos de InfluxDB para el gráfico
-      if (t.metrics) {
+      if (t?.metrics) {
         const formatted = t.metrics.map((m: any) => ({
           label: new Date(m._time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           value: Math.round((m.download_rate || 0) / 1000000), // Mbps
@@ -296,7 +296,7 @@ const NocDashboard: React.FC = () => {
           className="rounded-3xl border border-gray-100 bg-white overflow-hidden shadow-sm"
         >
           <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white flex items-center gap-3">
+            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-3">
               <GlobeAltIcon className="h-5 w-5 text-cyan-400" />
               Sonda Externa (Grafana)
             </h2>

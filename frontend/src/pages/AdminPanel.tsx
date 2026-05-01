@@ -1,4 +1,5 @@
 import React, { useState, Fragment, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { useTheme } from '../contexts/ThemeContext'
 import { Dialog, Transition, Menu } from '@headlessui/react'
 import { useNavigate } from 'react-router-dom'
@@ -110,25 +111,49 @@ interface NavGroup {
 
 const ALL_NAV_GROUPS: NavGroup[] = [
   {
-    id: 'core',
-    label: 'Principal',
+    id: 'operations',
+    label: 'Operaciones',
     color: 'text-coral-500',
     bgColor: 'from-coral-500/10 to-coral-500/5',
     items: [
       { id: 'dashboard',   name: 'Dashboard',        icon: HomeIcon },
       { id: 'clients',     name: 'Clientes',          icon: UserGroupIcon },
+      { id: 'billing',     name: 'Facturación',       icon: CreditCardIcon },
+      { id: 'tickets',     name: 'Tickets',           icon: TicketIcon },
+    ],
+  },
+  {
+    id: 'infrastructure',
+    label: 'Infraestructura',
+    color: 'text-blue-500',
+    bgColor: 'from-blue-500/10 to-blue-500/5',
+    items: [
       { id: 'network',     name: 'MikroTik',          icon: WifiIcon },
       { id: 'olt',         name: 'OLT',               icon: ServerIcon },
       { id: 'sstp',        name: 'Túneles SSTP',      icon: ShieldCheckIcon },
       { id: 'maps',        name: 'Mapa de Red',       icon: MapIcon },
-      { id: 'gis',         name: 'Infraestructura GIS', icon: MapIcon },
-      { id: 'billing',     name: 'Facturación',       icon: CreditCardIcon },
-      { id: 'monitoring',  name: 'Monitoreo',         icon: SignalIcon },
-      { id: 'connectivity', name: 'Conectividad ISP',  icon: ServerIcon },
+      { id: 'gis',         name: 'Infraestructura GIS', icon: CubeIcon },
+    ],
+  },
+  {
+    id: 'monitoring',
+    label: 'Monitoreo & NOC',
+    color: 'text-emerald-500',
+    bgColor: 'from-emerald-500/10 to-emerald-500/5',
+    items: [
       { id: 'noc',         name: 'NOC',               icon: PresentationChartLineIcon },
+      { id: 'monitoring',  name: 'Monitoreo',         icon: SignalIcon },
+      { id: 'connectivity', name: 'Conectividad ISP', icon: FireIcon },
       { id: 'alerts',      name: 'Alertas',           icon: BellAlertIcon },
-      { id: 'tickets',     name: 'Tickets',           icon: TicketIcon },
       { id: 'backups',     name: 'Backups',           icon: CircleStackIcon },
+    ],
+  },
+  {
+    id: 'system',
+    label: 'Sistema',
+    color: 'text-purple-500',
+    bgColor: 'from-purple-500/10 to-purple-500/5',
+    items: [
       { id: 'settings',    name: 'Configuración',     icon: CogIcon },
       { id: 'academy',     name: 'Documentación',     icon: AcademicCapIcon },
     ],
@@ -136,8 +161,8 @@ const ALL_NAV_GROUPS: NavGroup[] = [
   {
     id: 'clientes',
     label: 'Gestión Clientes',
-    color: 'text-slate-600',
-    bgColor: 'from-slate-500/10 to-slate-500/5',
+    color: 'text-amber-500',
+    bgColor: 'from-amber-500/10 to-amber-500/5',
     items: [
       { id: 'clients-search', name: 'Buscar Clientes',    icon: MagnifyingGlassIcon },
       { id: 'installations',  name: 'Instalaciones',      icon: WrenchScrewdriverIcon },
@@ -151,8 +176,8 @@ const ALL_NAV_GROUPS: NavGroup[] = [
   {
     id: 'finanzas',
     label: 'Finanzas',
-    color: 'text-slate-600',
-    bgColor: 'from-slate-500/10 to-slate-500/5',
+    color: 'text-teal-500',
+    bgColor: 'from-teal-500/10 to-teal-500/5',
     items: [
       { id: 'finance',           name: 'Finanzas',          icon: BanknotesIcon },
       { id: 'billing-promises',  name: 'Promesas de Pago',  icon: CalendarDaysIcon },
@@ -160,8 +185,8 @@ const ALL_NAV_GROUPS: NavGroup[] = [
   },
   {
     id: 'sistema',
-    label: 'Sistema',
-    color: 'text-slate-600',
+    label: 'Admin Sistema',
+    color: 'text-slate-500',
     bgColor: 'from-slate-500/10 to-slate-500/5',
     items: [
       { id: 'system',      name: 'Sistema',     icon: CogIcon },
@@ -184,7 +209,7 @@ const AdminPanel: React.FC = () => {
     const saved = safeStorage.getItem('showAdvancedMenu')
     return saved ? saved === 'true' : false
   })
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ core: true })
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ operations: true, infrastructure: true, monitoring: true })
   const { logout, user, tenantContextId, setTenantContext } = useAuthStore()
   const { branding } = useTheme()
 
@@ -266,7 +291,7 @@ const AdminPanel: React.FC = () => {
   }
 
   // Grupos visibles según modo avanzado
-  const visibleGroups = showAdvancedMenu ? ALL_NAV_GROUPS : ALL_NAV_GROUPS.slice(0, 1)
+  const visibleGroups = showAdvancedMenu ? ALL_NAV_GROUPS : ALL_NAV_GROUPS.slice(0, 4)
 
   // Nombre de la vista activa
   const activeLabel = ALL_NAV_GROUPS.flatMap((g) => g.items).find((i) => i.id === activeView)?.name ?? 'Panel'
@@ -440,7 +465,7 @@ const AdminPanel: React.FC = () => {
               setSelectedClientId(parsed)
               setShowPlanModal(true)
             }}
-            className="px-4 py-2 rounded-xl bg-gray-50 text-white font-semibold hover:bg-gray-100 transition-colors shadow border border-gray-200"
+            className="px-4 py-2.5 rounded-xl bg-coral-500 text-white font-bold hover:bg-coral-600 transition-colors shadow-sm shadow-coral-500/20 border border-coral-400"
           >
             Cambiar plan
           </button>
@@ -537,14 +562,14 @@ const AdminPanel: React.FC = () => {
 
         {/* Platform admin banner */}
         {isPlatformAdminMode && (
-          <div className="mx-4 mt-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-100 flex items-center justify-between">
+          <div className="mx-4 mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs text-amber-800 flex items-center justify-between">
             <span>
-              <span className="font-bold text-amber-300">Modo Admin ISP</span> — Tenant activo:{' '}
-              <span className="font-mono font-bold">{tenantContextId}</span>
+              <span className="font-bold text-amber-700">Modo Admin ISP</span> — Tenant activo:{' '}
+              <span className="font-mono font-bold text-amber-900">{tenantContextId}</span>
             </span>
             <button
               onClick={handleExitTenantMode}
-              className="ml-4 rounded-lg border border-amber-400/40 bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-100 hover:bg-amber-500/30 transition-colors"
+              className="ml-4 rounded-lg border border-amber-400 bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-800 hover:bg-amber-200 transition-colors"
             >
               ← Volver a Admin Total
             </button>
@@ -707,11 +732,18 @@ const AdminPanel: React.FC = () => {
         {/* ── Main area ── */}
         <main className="flex-1 bg-[#FDF5E6]">
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-            {viewComponents[activeView] ?? (
-              <div className="flex items-center justify-center py-20 text-slate-500">
-                Vista no encontrada
-              </div>
-            )}
+            <motion.div
+              key={activeView}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+            >
+              {viewComponents[activeView] ?? (
+                <div className="flex items-center justify-center py-20 text-slate-500">
+                  Vista no encontrada
+                </div>
+              )}
+            </motion.div>
           </div>
         </main>
       </div>

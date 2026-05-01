@@ -200,37 +200,45 @@ const ProfessionalDashboard: React.FC = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Clientes Activos"
-          value={(dashboard?.clients ?? 0).toLocaleString()}
-          trend={8}
-          color="coral"
-          icon={<UserGroupIcon />}
-          subtitle={`${nocSummary?.tickets_open ?? 0} tickets abiertos`}
-        />
-        <StatsCard
-          title="Ingresos del Mes"
-          value={`$${paidThisMonth.toLocaleString()}`}
-          trend={6}
-          color="coral"
-          icon={<CurrencyDollarIcon />}
-          subtitle={`MRR estimado: $${mrr.toLocaleString()}`}
-        />
-        <StatsCard
-          title="Routers Activos"
-          value={dashboard?.routers?.ok ?? 0}
-          trend={0}
-          color="coral"
-          icon={<ServerIcon />}
-          subtitle={`${dashboard?.routers?.down ?? 0} caidos`}
-        />
-        <StatsCard
-          title="Uptime"
-          value={`${uptimeValue.toFixed(2)}%`}
-          color="coral"
-          icon={<SparklesIcon />}
-          subtitle={`${nocSummary?.active_alerts ?? 0} alertas activas`}
-        />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}>
+          <StatsCard
+            title="Clientes Activos"
+            value={(dashboard?.clients ?? 0).toLocaleString()}
+            trend={8}
+            color="coral"
+            icon={<UserGroupIcon />}
+            subtitle={`${nocSummary?.tickets_open ?? 0} tickets abiertos`}
+          />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+          <StatsCard
+            title="Ingresos del Mes"
+            value={`$${paidThisMonth.toLocaleString()}`}
+            trend={6}
+            color="emerald"
+            icon={<CurrencyDollarIcon />}
+            subtitle={`MRR estimado: $${mrr.toLocaleString()}`}
+          />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}>
+          <StatsCard
+            title="Routers Activos"
+            value={dashboard?.routers?.ok ?? 0}
+            trend={0}
+            color="blue"
+            icon={<ServerIcon />}
+            subtitle={`${dashboard?.routers?.down ?? 0} caidos`}
+          />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }}>
+          <StatsCard
+            title="Uptime"
+            value={`${uptimeValue.toFixed(2)}%`}
+            color="purple"
+            icon={<SparklesIcon />}
+            subtitle={`${nocSummary?.active_alerts ?? 0} alertas activas`}
+          />
+        </motion.div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
