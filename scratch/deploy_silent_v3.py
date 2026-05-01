@@ -9,9 +9,8 @@ def deploy_silent():
         
         commands = [
             'cd /root/fastisp && git pull origin codex/mikrotik-diagnostics-mainline',
-            'cd /root/fastisp && docker compose -f docker-compose.prod.yml --env-file .env.prod build frontend',
-            'cd /root/fastisp && docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --no-deps frontend',
-            'cd /root/fastisp && docker compose -f docker-compose.prod.yml --env-file .env.prod restart backend'
+            'cd /root/fastisp && docker compose -f docker-compose.prod.yml --env-file .env.prod build frontend backend',
+            'cd /root/fastisp && docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --no-deps frontend backend celery-worker celery-beat'
         ]
         
         for cmd in commands:

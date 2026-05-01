@@ -569,7 +569,7 @@ def generate_mikrotik_hub_client_script(provisioning: dict) -> str:
     username = provisioning.get("username", "admin")
     password = provisioning.get("password", "")
     server_host = provisioning.get("server_host", "fastisp.cloud")
-    server_port = provisioning.get("server_port", 443)
+    server_port = provisioning.get("server_port", 8443)
     api_port = provisioning.get("api_port", 8728)
 
     script = f"""# ========================================================
