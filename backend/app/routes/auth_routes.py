@@ -2950,7 +2950,7 @@ def _notify_client(client: Client, subject: str, body: str):
 # --- ROUTES ---
 
 @auth_bp.route('/auth/login', methods=['POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("20 per minute")
 def login():
     data = request.get_json()
     if not data or not data.get('email') or not data.get('password'):
