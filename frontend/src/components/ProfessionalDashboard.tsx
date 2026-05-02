@@ -4,6 +4,7 @@ import {
   UserGroupIcon,
   CurrencyDollarIcon,
   ServerIcon,
+  WifiIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
@@ -204,6 +205,36 @@ const ProfessionalDashboard: React.FC = () => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      {/* MikroTik Connection Alert */}
+      {dashboard?.routers?.ok === 0 && dashboard?.routers?.down === 0 && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="rounded-2xl border border-blue-200 bg-blue-50/50 p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm backdrop-blur-sm"
+        >
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-500 text-white shadow-lg shadow-blue-500/20">
+            <WifiIcon className="h-8 w-8" />
+          </div>
+          <div className="flex-1 text-center md:text-left">
+            <h4 className="text-lg font-bold text-blue-900">Conecta tu infraestructura MikroTik</h4>
+            <p className="text-sm text-blue-700/80 mt-1 max-w-2xl">
+              Aún no tienes routers vinculados. Conecta tu primer equipo para empezar a recibir métricas de tráfico, monitoreo de NOC y gestión de clientes en tiempo real.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              // Logic to navigate to routers management or open a guide
+              // For now, we'll assume the parent handles view switching or we provide a direct link
+              const btn = document.querySelector('[data-nav-id="network"]') as HTMLButtonElement
+              if (btn) btn.click()
+            }}
+            className="shrink-0 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 transition-all active:scale-95"
+          >
+            Configurar MikroTik
+          </button>
+        </motion.div>
+      )}
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}>
           <StatsCard

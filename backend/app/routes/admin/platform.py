@@ -341,3 +341,13 @@ def platform_create_tenant_admin(tenant_id):
 
 
 
+@admin_bp.route('/platform/tenants/<int:tenant_id>', methods=['DELETE'])
+@platform_admin_required()
+def platform_delete_tenant(tenant_id):
+    tenant = db.session.get(Tenant, tenant_id)
+    if not tenant:
+        return jsonify({"error": "Tenant no encontrado"}), 404
+
+    db.session.delete(tenant)
+    db.session.commit()
+    return jsonify({"success": True, "message": "Tenant eliminado correctamente"}), 200

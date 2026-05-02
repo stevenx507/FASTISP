@@ -9,6 +9,7 @@ import {
   PlusCircleIcon,
   ServerStackIcon,
   ShieldCheckIcon,
+  TrashIcon,
   UserPlusIcon,
   UsersIcon,
 } from '@heroicons/react/24/outline'
@@ -404,6 +405,24 @@ const PlatformAdmin: React.FC = () => {
     }
   }
 
+  const deleteTenant = async (tenant: PlatformTenantItem) => {
+    if (!window.confirm(`¿Estás seguro de eliminar el ISP "${tenant.name}"? Esta acción es irreversible y eliminará todos sus datos (usuarios, clientes, routers, etc).`)) {
+      return
+    }
+
+    setBusy(true)
+    try {
+      await apiClient.delete(`/platform/tenants/${tenant.id}`)
+      toast.success('ISP eliminado correctamente')
+      await loadPlatformData()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error eliminando tenant'
+      toast.error(message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const openEditTenant = (tenant: PlatformTenantItem) => {
     setEditingTenant(tenant)
     setEditForm({ name: tenant.name, slug: tenant.slug })
@@ -737,6 +756,15 @@ const PlatformAdmin: React.FC = () => {
                             className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-600 hover:bg-amber-100 disabled:opacity-60"
                           >
                             Entrar panel ISP
+                          </button>
+                          <button
+                            onClick={() => void deleteTenant(tenant)}
+                            disabled={busy}
+                            className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-500 hover:bg-rose-50 disabled:opacity-60 shadow-sm"
+                            title="Eliminar ISP permanentemente"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                            Eliminar
                           </button>
                         </div>
                       </div>
