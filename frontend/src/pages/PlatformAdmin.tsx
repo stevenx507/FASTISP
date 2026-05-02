@@ -146,10 +146,13 @@ const PlatformAdmin: React.FC = () => {
   const [adminTarget, setAdminTarget] = useState<PlatformTenantItem | null>(null)
   const [adminForm, setAdminForm] = useState({ email: '', name: 'Admin ISP', password: '' })
 
+  const [deleteTarget, setDeleteTarget] = useState<PlatformTenantItem | null>(null)
+
   const closeAllModals = useCallback(() => {
     setEditingTenant(null)
     setBillingTarget(null)
     setAdminTarget(null)
+    setDeleteTarget(null)
   }, [])
 
   const parseOptionalNumber = (raw: string, field: string): number | undefined => {
@@ -405,15 +408,14 @@ const PlatformAdmin: React.FC = () => {
     }
   }
 
-  const deleteTenant = async (tenant: PlatformTenantItem) => {
-    if (!window.confirm(`¿Estás seguro de eliminar el ISP "${tenant.name}"? Esta acción es irreversible y eliminará todos sus datos (usuarios, clientes, routers, etc).`)) {
-      return
-    }
+  const deleteTenant = async () => {
+    if (!deleteTarget) return
 
     setBusy(true)
     try {
-      await apiClient.delete(`/platform/tenants/${tenant.id}`)
+      await apiClient.delete(`/platform/tenants/${deleteTarget.id}`)
       toast.success('ISP eliminado correctamente')
+      setDeleteTarget(null)
       await loadPlatformData()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error eliminando tenant'
@@ -421,6 +423,10 @@ const PlatformAdmin: React.FC = () => {
     } finally {
       setBusy(false)
     }
+  }
+
+  const openDeleteConfirm = (tenant: PlatformTenantItem) => {
+    setDeleteTarget(tenant)
   }
 
   const openEditTenant = (tenant: PlatformTenantItem) => {
@@ -758,7 +764,7 @@ const PlatformAdmin: React.FC = () => {
                             Entrar panel ISP
                           </button>
                           <button
-                            onClick={() => void deleteTenant(tenant)}
+                            onClick={() => openDeleteConfirm(tenant)}
                             disabled={busy}
                             className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-500 hover:bg-rose-50 disabled:opacity-60 shadow-sm"
                             title="Eliminar ISP permanentemente"
@@ -1128,6 +1134,42 @@ const PlatformAdmin: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={closeAllModals}>
+          <div className="w-full max-w-md rounded-2xl border border-rose-100 bg-white p-6 shadow-2xl animate-in fade-in zoom-in duration-200" onClick={(event) => event.stopPropagation()}>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 mb-4">
+              <TrashIcon className="h-6 w-6" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900">¿Eliminar ISP?</h3>
+            <p className="mt-3 text-sm text-slate-600 leading-relaxed">
+              Estás a punto de eliminar permanentemente a <span className="font-bold text-slate-900">"{deleteTarget.name}"</span>. 
+              Esta acción <span className="text-rose-600 font-bold underline">no se puede deshacer</span> y borrará:
+            </p>
+            <ul className="mt-3 space-y-1 text-xs text-slate-500 list-disc list-inside">
+              <li>Todos los usuarios y cuentas administrativas</li>
+              <li>Historial de clientes y suscripciones</li>
+              <li>Configuraciones de routers y métricas</li>
+              <li>Reglas de red y mapas GIS</li>
+            </ul>
+            <div className="mt-6 flex flex-col gap-2">
+              <button
+                onClick={() => void deleteTenant()}
+                disabled={busy}
+                className="w-full rounded-xl bg-rose-500 py-3 text-sm font-bold text-white hover:bg-rose-600 shadow-lg shadow-rose-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
+              >
+                {busy ? 'Eliminando...' : 'Sí, eliminar ISP permanentemente'}
+              </button>
+              <button
+                onClick={closeAllModals}
+                disabled={busy}
+                className="w-full rounded-xl border border-gray-200 bg-white py-3 text-sm font-bold text-slate-600 hover:bg-gray-50 transition-all"
+              >
+                Cancelar y conservar
+              </button>
+            </div>
           </div>
         </div>
       )}
