@@ -74,6 +74,27 @@ class Tenant(db.Model):
     fiber_lines = db.relationship('FiberLine', back_populates='tenant', cascade="all, delete-orphan")
     network_nodes = db.relationship('NetworkNode', back_populates='tenant', cascade="all, delete-orphan")
 
+    # --- SaaS Data Persistence ---
+    subscriptions = db.relationship('Subscription', backref='tenant', cascade="all, delete-orphan")
+    audit_logs = db.relationship('AuditLog', back_populates='tenant', cascade="all, delete-orphan")
+    admin_installations = db.relationship('AdminInstallation', backref='tenant', cascade="all, delete-orphan")
+    admin_screen_alerts = db.relationship('AdminScreenAlert', backref='tenant', cascade="all, delete-orphan")
+    admin_extra_services = db.relationship('AdminExtraService', backref='tenant', cascade="all, delete-orphan")
+    admin_hotspot_vouchers = db.relationship('AdminHotspotVoucher', backref='tenant', cascade="all, delete-orphan")
+    admin_system_settings = db.relationship('AdminSystemSetting', backref='tenant', cascade="all, delete-orphan")
+    admin_system_jobs = db.relationship('AdminSystemJob', backref='tenant', cascade="all, delete-orphan")
+    role_permissions = db.relationship('RolePermission', backref='tenant', cascade="all, delete-orphan")
+    billing_promises = db.relationship('BillingPromise', backref='tenant', cascade="all, delete-orphan")
+    noc_maintenance_windows = db.relationship('NocMaintenanceWindow', backref='tenant', cascade="all, delete-orphan")
+    inventory_movements = db.relationship('InventoryMovement', backref='tenant', cascade="all, delete-orphan")
+    plan_bandwidth_reuses = db.relationship('PlanBandwidthReuse', backref='tenant', cascade="all, delete-orphan")
+    client_debt_queries = db.relationship('ClientDebtQuery', backref='tenant', cascade="all, delete-orphan")
+    client_network_profiles = db.relationship('ClientNetworkProfile', backref='tenant', cascade="all, delete-orphan")
+    remote_nat_rules = db.relationship('RemoteNatRule', backref='tenant', cascade="all, delete-orphan")
+    plan_discounts = db.relationship('PlanDiscount', backref='tenant', cascade="all, delete-orphan")
+    traffic_flow_stats = db.relationship('TrafficFlowStats', back_populates='tenant', cascade="all, delete-orphan")
+    sstp_tunnels = db.relationship('SstpTunnel', back_populates='tenant', cascade="all, delete-orphan")
+
 
     def to_dict(self):
         return {
@@ -508,7 +529,7 @@ class AuditLog(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     user = db.relationship('User')
-    tenant = db.relationship('Tenant')
+    tenant = db.relationship('Tenant', back_populates='audit_logs')
 
     def to_dict(self):
         return {
@@ -1461,7 +1482,7 @@ class SstpTunnel(db.Model):
     notes = db.Column(db.Text, nullable=True)
 
     router = db.relationship('MikroTikRouter', backref=db.backref('sstp_tunnel', uselist=False))
-    tenant = db.relationship('Tenant')
+    tenant = db.relationship('Tenant', back_populates='sstp_tunnels')
 
     @property
     def password(self):
@@ -1524,7 +1545,7 @@ class TrafficFlowStats(db.Model):
     created_at    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     router = db.relationship('MikroTikRouter')
-    tenant = db.relationship('Tenant')
+    tenant = db.relationship('Tenant', back_populates='traffic_flow_stats')
 
     def to_dict(self):
         mb = round(self.bytes_total / 1_048_576, 2) if self.bytes_total else 0
