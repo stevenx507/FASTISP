@@ -22,6 +22,7 @@ interface AuthState {
   tenantContextId: number | null
   tenantContextName: string | null
   login: (email: string, password: string) => Promise<void>
+  loginWithGoogle: (credential: string) => Promise<void>
   logout: () => void
   setTenantContext: (tenantId: number | null, tenantName?: string | null) => void
 }
@@ -67,6 +68,27 @@ export const useAuthStore = create<AuthState>()(
 
         if (!token || !user) {
           throw new Error('Respuesta de autenticacion invalida.')
+        }
+
+        const normalizedUser: User = {
+          ...user,
+          role: normalizeRole(user.role),
+        }
+
+        set({
+          user: normalizedUser,
+          token,
+          isAuthenticated: true,
+          tenantContextId: normalizedUser.tenant_id ?? null,
+        })
+      },
+      loginWithGoogle: async (credential) => {
+        const data = await apiClient.post('/auth/google', { credential })
+        const token = data.token
+        const user = data.user
+
+        if (!token || !user) {
+          throw new Error('Respuesta de Google invalida.')
         }
 
         const normalizedUser: User = {
