@@ -2957,7 +2957,8 @@ def login():
         return jsonify({"error": "Email y contrasena son requeridos."}), 400
 
     tenant_id = current_tenant_id()
-    query = User.query.filter_by(email=data.get('email'))
+    email = str(data.get('email') or '').strip().lower()
+    query = User.query.filter_by(email=email)
     if tenant_id is not None:
         query = query.filter_by(tenant_id=tenant_id)
 
