@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 import StatsCard from './StatsCard'
 import { LineChart, BarChart } from './Chart'
 import { apiClient } from '../lib/apiClient'
+import { useAuthStore } from '../store/authStore'
 
 interface DashboardResponse {
   clients: number
@@ -67,6 +68,8 @@ const ProfessionalDashboard: React.FC = () => {
   const [financeSummary, setFinanceSummary] = useState<FinanceSummaryResponse | null>(null)
   const [loading, setLoading] = useState(false)
 
+  const { tenantContextId } = useAuthStore()
+
   const load = useCallback(async () => {
     setLoading(true)
     try {
@@ -106,13 +109,15 @@ const ProfessionalDashboard: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tenantContextId])
 
   useEffect(() => {
-    load()
-    const timer = setInterval(load, 30000)
-    return () => clearInterval(timer)
-  }, [load])
+    if (tenantContextId) {
+      load()
+      const timer = setInterval(load, 30000)
+      return () => clearInterval(timer)
+    }
+  }, [load, tenantContextId])
 
   const totalThroughput = useMemo(
     () => routers.reduce((sum, row) => sum + Number(row.rx_mbps || 0) + Number(row.tx_mbps || 0), 0),
