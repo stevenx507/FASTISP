@@ -94,6 +94,7 @@ class Tenant(db.Model):
     plan_discounts = db.relationship('PlanDiscount', backref='tenant', cascade="all, delete-orphan")
     traffic_flow_stats = db.relationship('TrafficFlowStats', back_populates='tenant', cascade="all, delete-orphan")
     sstp_tunnels = db.relationship('SstpTunnel', back_populates='tenant', cascade="all, delete-orphan")
+    partners = db.relationship('Partner', back_populates='tenant', cascade="all, delete-orphan")
 
 
     def to_dict(self):
@@ -1674,7 +1675,7 @@ class Partner(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = db.relationship('User', backref=db.backref('partner_profile', uselist=False))
-    tenant = db.relationship('Tenant', backref='partners')
+    tenant = db.relationship('Tenant', back_populates='partners')
 
     def to_dict(self):
         return {
