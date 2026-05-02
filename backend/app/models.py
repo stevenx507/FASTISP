@@ -1164,7 +1164,7 @@ class NetworkNode(db.Model):
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     tenant = db.relationship('Tenant', back_populates='network_nodes')
-    parent = db.relationship('NetworkNode', remote_side=[id], backref='children')
+    children = db.relationship('NetworkNode', backref=db.backref('parent', remote_side=[id]), cascade="all, delete-orphan")
     router = db.relationship('MikroTikRouter')
 
     def to_dict(self):
