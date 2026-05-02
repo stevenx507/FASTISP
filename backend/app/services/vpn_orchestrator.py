@@ -30,16 +30,17 @@ VPN_IP_POOL_BASE    = "10.100"
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _vpncmd(cmd: str, timeout: int = 20) -> dict:
-    """Ejecuta un comando vpncmd en el contenedor SoftEther."""
+    """Ejecuta un comando vpncmd en el contenedor SoftEther usando stdin para el password."""
     try:
-        full_cmd = (
-            f"docker exec {SOFTETHER_CONTAINER} "
-            f"/usr/vpnserver/vpncmd localhost:{SOFTETHER_PORT} "
-            f"/SERVER /PASSWORD:{SOFTETHER_ADMIN_PW} "
-            f"/CMD {cmd}"
-        )
+        # Usamos input en subprocess.run para pasar el password de forma segura y no interactiva
+        args = [
+            "docker", "exec", "-i", SOFTETHER_CONTAINER,
+            "/usr/vpnserver/vpncmd", f"localhost:{SOFTETHER_PORT}", "/SERVER"
+        ]
+        input_str = f"{SOFTETHER_ADMIN_PW}\n{cmd}\n"
+        
         result = subprocess.run(
-            full_cmd, shell=True, capture_output=True, text=True, timeout=timeout
+            args, input=input_str, capture_output=True, text=True, timeout=timeout
         )
         success = result.returncode == 0 or "completed successfully" in result.stdout.lower()
         return {
@@ -48,26 +49,33 @@ def _vpncmd(cmd: str, timeout: int = 20) -> dict:
             "error": result.stderr.strip()
         }
     except subprocess.TimeoutExpired:
+        logger.error(f"Timeout ejecutando vpncmd: {cmd}")
         return {"success": False, "error": "Timeout", "output": ""}
     except FileNotFoundError:
         logger.warning(f"Docker no disponible, simulando: {cmd}")
         return {"success": True, "output": "simulated", "error": ""}
     except Exception as e:
+        logger.error(f"Error inesperado en _vpncmd: {str(e)}")
         return {"success": False, "error": str(e), "output": ""}
 
 
 def _vpncmd_hub(cmd: str, timeout: int = 20) -> dict:
-    """Ejecuta un comando vpncmd en el hub FASTISP."""
+    """Ejecuta un comando vpncmd en el hub FASTISP usando stdin para los passwords."""
     try:
-        full_cmd = (
-            f"docker exec {SOFTETHER_CONTAINER} "
-            f"/usr/vpnserver/vpncmd localhost:{SOFTETHER_PORT} "
-            f"/SERVER /PASSWORD:{SOFTETHER_ADMIN_PW} "
-            f"/HUB:{SOFTETHER_HUB} /PASSWORD:{SOFTETHER_HUB_PW} "
-            f"/CMD {cmd}"
-        )
+        # Para comandos de Hub, vpncmd pide primero el password de Admin Server,
+        # luego entra al hub y (si el hub tiene password) podría pedirlo.
+        # Al usar /HUB:name /PASSWORD:hub_pass en los argumentos, vpncmd suele pedir solo el de Server Admin.
+        args = [
+            "docker", "exec", "-i", SOFTETHER_CONTAINER,
+            "/usr/vpnserver/vpncmd", f"localhost:{SOFTETHER_PORT}", 
+            "/SERVER", "/HUB:" + SOFTETHER_HUB, "/PASSWORD:" + SOFTETHER_HUB_PW
+        ]
+        
+        # El primer prompt que encontraremos es el de Server Admin
+        input_str = f"{SOFTETHER_ADMIN_PW}\n{cmd}\n"
+        
         result = subprocess.run(
-            full_cmd, shell=True, capture_output=True, text=True, timeout=timeout
+            args, input=input_str, capture_output=True, text=True, timeout=timeout
         )
         success = result.returncode == 0 or "completed successfully" in result.stdout.lower()
         return {
@@ -76,11 +84,13 @@ def _vpncmd_hub(cmd: str, timeout: int = 20) -> dict:
             "error": result.stderr.strip()
         }
     except subprocess.TimeoutExpired:
+        logger.error(f"Timeout ejecutando vpncmd_hub: {cmd}")
         return {"success": False, "error": "Timeout", "output": ""}
     except FileNotFoundError:
         logger.warning(f"Docker no disponible, simulando hub cmd: {cmd}")
         return {"success": True, "output": "simulated", "error": ""}
     except Exception as e:
+        logger.error(f"Error inesperado en _vpncmd_hub: {str(e)}")
         return {"success": False, "error": str(e), "output": ""}
 
 
