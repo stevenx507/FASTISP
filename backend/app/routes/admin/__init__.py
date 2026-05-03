@@ -7,4 +7,6 @@ import app.routes.admin.staff
 import app.routes.admin.system
 import app.routes.admin.support
 import app.routes.admin.clients
+import app.routes.admin.inventory
+import app.routes.admin.installations
 import app.routes.admin.misc

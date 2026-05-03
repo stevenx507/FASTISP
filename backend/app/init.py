@@ -207,9 +207,9 @@ def create_app(config_name_or_class='development'):
     # Register blueprints (prefijo único /api/* — sin duplicados /api/v1/*)
     # FIX #3: Registrar cada blueprint UNA sola vez para evitar rutas fantasma,
     # rate-limit doble y colisiones de nombre en url_for().
-    from app.routes.auth_routes import auth_bp
+    from app.routes.auth import auth_bp
     from app.routes.billing_routes import billing_bp
-    from app.routes.client_routes import client_bp
+    from app.routes.client_portal import client_portal_bp
     from app.routes.admin import admin_bp
     from app.routes.support_routes import support_bp
     from app.routes.misc_routes import misc_bp
@@ -220,7 +220,7 @@ def create_app(config_name_or_class='development'):
     from app.routes.isp_management import bp as isp_management_bp
     app.register_blueprint(auth_bp, url_prefix='/api')
     app.register_blueprint(billing_bp, url_prefix='/api')
-    app.register_blueprint(client_bp, url_prefix='/api')
+    app.register_blueprint(client_portal_bp, url_prefix='/api')
     app.register_blueprint(admin_bp, url_prefix='/api')
     app.register_blueprint(support_bp, url_prefix='/api')
     app.register_blueprint(misc_bp, url_prefix='/api')
