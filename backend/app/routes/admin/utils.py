@@ -94,3 +94,11 @@ def _notify_incident(message: str, severity: str = "info"):
     if tg_token and tg_chat:
         try: requests.post(f"https://api.telegram.org/bot{tg_token}/sendMessage", data={"chat_id": tg_chat, "text": message[:4000]}, timeout=5)
         except Exception: pass
+def _iso_utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+def _tenant_scoped_query(model, tenant_id):
+    query = model.query
+    if tenant_id is None:
+        return query.filter(model.tenant_id.is_(None))
+    return query.filter(model.tenant_id == tenant_id)
