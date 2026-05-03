@@ -5,10 +5,7 @@ import os
 from datetime import timedelta
 
 
-def _as_bool(raw_value: str | None, default: bool = False) -> bool:
-    if raw_value is None:
-        return default
-    return raw_value.strip().lower() in {'1', 'true', 'yes', 'y', 'on'}
+from app.lib.utils import as_bool
 
 import secrets
 
@@ -58,9 +55,9 @@ class Config:
 
     # Frontend + access toggles
     FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-    ALLOW_SELF_SIGNUP = _as_bool(os.environ.get('ALLOW_SELF_SIGNUP'), default=True)
-    ALLOW_GOOGLE_LOGIN = _as_bool(os.environ.get('ALLOW_GOOGLE_LOGIN'), default=True)
-    ALLOW_INSECURE_GOOGLE_LOGIN = _as_bool(
+    ALLOW_SELF_SIGNUP = as_bool(os.environ.get('ALLOW_SELF_SIGNUP'), default=True)
+    ALLOW_GOOGLE_LOGIN = as_bool(os.environ.get('ALLOW_GOOGLE_LOGIN'), default=True)
+    ALLOW_INSECURE_GOOGLE_LOGIN = as_bool(
         os.environ.get('ALLOW_INSECURE_GOOGLE_LOGIN'), default=False
     )
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
@@ -71,7 +68,7 @@ class Config:
     TENANCY_EXCLUDED_SUBDOMAINS = _split_csv(
         os.environ.get('TENANCY_EXCLUDED_SUBDOMAINS', 'api,master,www')
     )
-    TENANCY_ENFORCE_HOST_MATCH = _as_bool(
+    TENANCY_ENFORCE_HOST_MATCH = as_bool(
         os.environ.get('TENANCY_ENFORCE_HOST_MATCH'),
         default=False,
     )
@@ -86,7 +83,7 @@ class Config:
     WONDERPUSH_APPLICATION_ID = os.environ.get('WONDERPUSH_APPLICATION_ID')
     GRAFANA_URL = os.environ.get('GRAFANA_URL') or os.environ.get('VITE_GRAFANA_URL', '')
     GRAFANA_HEALTHCHECK_PATH = os.environ.get('GRAFANA_HEALTHCHECK_PATH', '/api/health')
-    GRAFANA_VERIFY_TLS = _as_bool(os.environ.get('GRAFANA_VERIFY_TLS'), default=True)
+    GRAFANA_VERIFY_TLS = as_bool(os.environ.get('GRAFANA_VERIFY_TLS'), default=True)
     GRAFANA_TIMEOUT_SECONDS = os.environ.get('GRAFANA_TIMEOUT_SECONDS', '4')
     GRAFANA_DATASOURCE_UID = os.environ.get('GRAFANA_DATASOURCE_UID', '')
 
@@ -123,7 +120,7 @@ class Config:
     ACS_DEFAULT_HOST = os.environ.get('ACS_DEFAULT_HOST', '')
     ACS_REPROVISION_PATH = os.environ.get('ACS_REPROVISION_PATH', '/api/v1/tr069/reprovision')
     ACS_TIMEOUT_SECONDS = os.environ.get('ACS_TIMEOUT_SECONDS', '8')
-    ACS_VERIFY_TLS = _as_bool(os.environ.get('ACS_VERIFY_TLS'), default=True)
+    ACS_VERIFY_TLS = as_bool(os.environ.get('ACS_VERIFY_TLS'), default=True)
     
     # Celery
     CELERY_BROKER_URL = REDIS_URL
@@ -137,14 +134,14 @@ class Config:
     MIKROTIK_WG_ALLOWED_SUBNETS = os.environ.get('MIKROTIK_WG_ALLOWED_SUBNETS', '10.250.0.0/16,10.251.0.0/16')
     MIKROTIK_WG_VPS_SYNC_MODE = os.environ.get('MIKROTIK_WG_VPS_SYNC_MODE', 'auto')
     MIKROTIK_WG_VPS_INTERFACE = os.environ.get('MIKROTIK_WG_VPS_INTERFACE', 'wg0')
-    MIKROTIK_WG_VPS_PERSIST = _as_bool(os.environ.get('MIKROTIK_WG_VPS_PERSIST'), default=True)
+    MIKROTIK_WG_VPS_PERSIST = as_bool(os.environ.get('MIKROTIK_WG_VPS_PERSIST'), default=True)
     MIKROTIK_WG_VPS_SSH_HOST = os.environ.get('MIKROTIK_WG_VPS_SSH_HOST', '')
     MIKROTIK_WG_VPS_SSH_PORT = os.environ.get('MIKROTIK_WG_VPS_SSH_PORT', '22')
     MIKROTIK_WG_VPS_SSH_USER = os.environ.get('MIKROTIK_WG_VPS_SSH_USER', '')
     MIKROTIK_WG_VPS_SSH_PASSWORD = os.environ.get('MIKROTIK_WG_VPS_SSH_PASSWORD', '')
     MIKROTIK_WG_VPS_SSH_KEY_PATH = os.environ.get('MIKROTIK_WG_VPS_SSH_KEY_PATH', '')
     MIKROTIK_WG_VPS_SSH_TIMEOUT_SECONDS = os.environ.get('MIKROTIK_WG_VPS_SSH_TIMEOUT_SECONDS', '8')
-    MIKROTIK_WG_VPS_SSH_USE_SUDO = _as_bool(os.environ.get('MIKROTIK_WG_VPS_SSH_USE_SUDO'), default=True)
+    MIKROTIK_WG_VPS_SSH_USE_SUDO = as_bool(os.environ.get('MIKROTIK_WG_VPS_SSH_USE_SUDO'), default=True)
     MIKROTIK_MANAGEMENT_ALLOWED_CIDR = os.environ.get('MIKROTIK_MANAGEMENT_ALLOWED_CIDR', 'YOUR_PUBLIC_IP/32')
     FASTISP_VPS_IP = os.environ.get('FASTISP_VPS_IP', '')
     VPS_PUBLIC_HOST = os.environ.get('VPS_PUBLIC_HOST', '')
@@ -156,7 +153,7 @@ class Config:
     DEPLOY_SERVICES = _split_csv(os.environ.get('DEPLOY_SERVICES', 'backend,celery-worker,celery-beat,frontend'))
     VPS_UPDATE_MIN_DISK_GB = os.environ.get('VPS_UPDATE_MIN_DISK_GB', '2')
     VPS_UPDATE_MAX_BACKUP_AGE_HOURS = os.environ.get('VPS_UPDATE_MAX_BACKUP_AGE_HOURS', '24')
-    ROTATE_PASSWORDS_DRY_RUN = _as_bool(os.environ.get('ROTATE_PASSWORDS_DRY_RUN'), default=False)
+    ROTATE_PASSWORDS_DRY_RUN = as_bool(os.environ.get('ROTATE_PASSWORDS_DRY_RUN'), default=False)
     PASSWORD_ROTATION_LENGTH = os.environ.get('PASSWORD_ROTATION_LENGTH', '24')
     
     # Logging
@@ -202,9 +199,9 @@ class ProductionConfig(Config):
     CACHE_REDIS_URL = os.environ.get('CACHE_REDIS_URL', REDIS_URL)
 
     FRONTEND_URL = os.environ.get('FRONTEND_URL')
-    ALLOW_SELF_SIGNUP = _as_bool(os.environ.get('ALLOW_SELF_SIGNUP'), default=True)
-    ALLOW_GOOGLE_LOGIN = _as_bool(os.environ.get('ALLOW_GOOGLE_LOGIN'), default=True)
-    ALLOW_INSECURE_GOOGLE_LOGIN = _as_bool(
+    ALLOW_SELF_SIGNUP = as_bool(os.environ.get('ALLOW_SELF_SIGNUP'), default=True)
+    ALLOW_GOOGLE_LOGIN = as_bool(os.environ.get('ALLOW_GOOGLE_LOGIN'), default=True)
+    ALLOW_INSECURE_GOOGLE_LOGIN = as_bool(
         os.environ.get('ALLOW_INSECURE_GOOGLE_LOGIN'), default=False
     )
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
@@ -214,7 +211,7 @@ class ProductionConfig(Config):
     TENANCY_EXCLUDED_SUBDOMAINS = _split_csv(
         os.environ.get('TENANCY_EXCLUDED_SUBDOMAINS', 'api,master,www')
     )
-    TENANCY_ENFORCE_HOST_MATCH = _as_bool(
+    TENANCY_ENFORCE_HOST_MATCH = as_bool(
         os.environ.get('TENANCY_ENFORCE_HOST_MATCH'),
         default=False,
     )

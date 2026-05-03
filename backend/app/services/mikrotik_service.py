@@ -52,70 +52,79 @@ class MikroTikService:
             self.last_connection_error = str(error).strip()
     
     def connect_to_router(self, router_id: int) -> bool:
-        """Connect to specific router by ID using the connection pool"""
+        """
+        Connect to specific router by ID using Adaptive Connection:
+        1. Try Public/Local IP (ip_address)
+        2. Fallback to Private VPN IP (vpn_ip_address) if public fails
+        """
         self._clear_connection_error()
         try:
             normalized_router_id = int(router_id)
         except (TypeError, ValueError):
-            self._set_connection_error(
-                stage='validation',
-                error=f"Invalid router_id provided: {router_id}",
-                code='invalid_router_id',
-            )
-            logger.error(self.last_connection_error)
+            self._set_connection_error(stage='validation', error=f"Invalid router_id: {router_id}", code='invalid_router_id')
             return False
 
+        from app.tenancy import current_tenant_id
+        self.router_id = normalized_router_id
+        self.router = db.session.query(MikroTikRouter).filter(
+            MikroTikRouter.id == normalized_router_id,
+            MikroTikRouter.tenant_id == current_tenant_id()
+        ).first()
+        
+        if not self.router:
+            self._set_connection_error(stage='lookup', error="Router not found or access denied.", code='router_not_found')
+            return False
+
+        # --- Adaptive Connection Logic ---
+        # 1. Try Primary Route
         try:
-            from app.tenancy import current_tenant_id
-            self.router_id = normalized_router_id
-            # Enforce tenancy: only allow connecting to routers belonging to the current tenant
-            self.router = db.session.query(MikroTikRouter).filter(
-                MikroTikRouter.id == normalized_router_id,
-                MikroTikRouter.tenant_id == current_tenant_id()
-            ).first()
-            
-            if not self.router:
-                self._set_connection_error(
-                    stage='lookup',
-                    error=f"Router {normalized_router_id} not found or access denied for this tenant.",
-                    code='router_not_found',
-                )
-                logger.error(self.last_connection_error)
-                return False
-
-            self.api, self.pool_obj = mikrotik_connection_pool.get_connection(
-                normalized_router_id
-            )
+            self.api, self.pool_obj = mikrotik_connection_pool.get_connection(normalized_router_id)
             self._clear_connection_error()
-            logger.info(f"Connected to MikroTik {self.router.ip_address} using connection from pool.")
-
-            # Update last seen
-            if self.router:
-                self.router.last_seen = datetime.now(timezone.utc)
-                db.session.commit()
-
+            self.router.last_seen = datetime.now(timezone.utc)
+            db.session.commit()
             return True
-        except RuntimeError as e:
-            err_text = str(e)
-            code = 'api_pool_exhausted' if 'exhausted' in err_text.lower() else 'api_connection_failed'
-            self._set_connection_error(stage='connect', error=e, code=code)
-            logger.error(f"Pool error for router {router_id}: {e}")
-            return False
         except Exception as e:
-            err_text = str(e).lower()
-            if 'invalid user' in err_text or 'login' in err_text or 'authentication' in err_text:
-                code = 'api_auth_failed'
-            elif 'refused' in err_text:
-                code = 'api_service_disabled'
-            elif 'timed out' in err_text or 'timeout' in err_text:
-                code = 'api_timeout'
-            elif 'ssl' in err_text or 'handshake' in err_text:
-                code = 'api_tls_mismatch'
-            else:
-                code = 'api_connection_failed'
-            self._set_connection_error(stage='connect', error=e, code=code)
-            logger.error(f"Error getting connection from pool for router {router_id}: {e}")
+            # If Primary fails, check if we have a VPN fallback
+            if self.router.vpn_ip_address:
+                logger.warning(f"Primary connection to {self.router.ip_address} failed. Trying VPN fallback {self.router.vpn_ip_address}...")
+                try:
+                    # We tell the pool to try the VPN IP instead. 
+                    # Note: We need to modify the pool to support this or handle it here.
+                    # For now, let's assume we can try a direct connection if the pool fails or 
+                    # better: modify the pool to handle multiple routes.
+                    
+                    # Manual fallback if pool is tied to ip_address
+                    self.api, self.pool_obj = self._try_direct_connection(self.router, use_vpn=True)
+                    if self.api:
+                        logger.info(f"Connected to MikroTik {router_id} via VPN Tunnel.")
+                        self.router.last_seen = datetime.now(timezone.utc)
+                        db.session.commit()
+                        return True
+                except Exception as vpn_e:
+                    logger.error(f"VPN Fallback also failed for router {router_id}: {vpn_e}")
+            
+            # Final failure handling
+            self._set_connection_error(stage='connect', error=e, code='api_connection_failed')
             return False
+
+    def _try_direct_connection(self, router, use_vpn=False) -> Tuple[Optional[object], Optional[object]]:
+        """Helper for direct connection attempts (e.g., fallback)"""
+        from routeros_api import RouterOsApiPool
+        host = router.vpn_ip_address if use_vpn else router.ip_address
+        password = router.password
+        try:
+            pool = RouterOsApiPool(
+                host=host,
+                username=router.username,
+                password=password,
+                port=int(router.api_port or 8728),
+                plaintext_login=True,
+                use_ssl=False,
+                timeout=10
+            )
+            return pool.get_api(), pool
+        except Exception:
+            return None, None
     
     def provision_client(self, client: Client, plan: Plan, config: Dict = None) -> Dict:
         """

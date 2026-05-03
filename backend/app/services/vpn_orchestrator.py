@@ -100,14 +100,24 @@ def _generate_vpn_password(length: int = 16) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
-def _get_next_available_ip(tenant_id: int, router_id: int) -> str:
+def _get_next_available_ip() -> str:
     """
-    Asigna una IP fija única del pool VPN.
-    Usa tenant_id y router_id para generar una IP determinista y única.
+    Busca la siguiente IP disponible en el pool 10.100.0.0/16.
+    Itera buscando una IP que no esté asignada a ningún MikroTikRouter.
     """
-    octet3 = (tenant_id % 254) + 1      # 1-254
-    octet4 = (router_id % 240) + 10     # 10-249
-    return f"{VPN_IP_POOL_BASE}.{octet3}.{octet4}"
+    from app.models import MikroTikRouter
+    
+    # Rango de IPs de gestión: 10.100.1.10 - 10.100.254.254
+    # Evitamos colisiones usando una búsqueda en base de datos.
+    for o3 in range(1, 255):
+        for o4 in range(10, 255):
+            candidate = f"{VPN_IP_POOL_BASE}.{o3}.{o4}"
+            # Verificar si ya existe en MikroTikRouter
+            exists = MikroTikRouter.query.filter_by(vpn_ip_address=candidate).first()
+            if not exists:
+                return candidate
+                
+    raise RuntimeError("No hay IPs disponibles en el pool VPN.")
 
 
 # ── API pública ────────────────────────────────────────────────────────────────
@@ -171,7 +181,7 @@ def on_router_created(router, mode: str = "native") -> dict:
         safe_name = "".join(c for c in router.name.lower() if c.isalnum() or c == "-")[:10]
         vpn_username = f"hub-{safe_name}-{secrets.token_hex(3)}"
         vpn_password = _generate_vpn_password(16)
-        vpn_ip = _get_next_available_ip(router.tenant_id or 1, router.id)
+        vpn_ip = _get_next_available_ip()
 
         _vpncmd_hub(f"UserCreate {vpn_username} /GROUP:none /REALNAME:{router.name} /NOTE:tenant-{router.tenant_id}")
         _vpncmd_hub(f"UserPasswordSet {vpn_username} /PASSWORD:{vpn_password}")

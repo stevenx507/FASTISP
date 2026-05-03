@@ -59,471 +59,31 @@ import shlex
 from flask_mail import Message
 from flask import send_from_directory
 from pathlib import Path
+from app.lib.utils import (
+    parse_bool, parse_int, parse_float, slugify, parse_iso_datetime,
+    as_bool, mask_secret, validate_password_policy, generate_random_password,
+    is_safe_filename, calculate_sha256, get_tenant_trial_days, get_tenant_trial_ends_at,
+    verify_stripe_signature
+)
+from app.routes.admin.utils import (
+    _audit, _tenant_cache_key, _tenant_scoped_query, _system_setting_value,
+    _upsert_system_setting_value, _notify_incident, _load_cached_list,
+    _save_cached_list, _load_cached_dict, _save_cached_dict
+)
+from app.routes.admin.rbac import ROLE_BASE_PERMISSIONS, PERMISSION_CATALOG, PLATFORM_ADMIN_ROLE
 
 
 
 
 auth_bp = Blueprint('auth', __name__)
 
+
+
+
 def _current_user_id():
     identity = get_jwt_identity()
-    try:
-        return int(identity)
-    except (TypeError, ValueError):
-        return None
-
-
-def _slugify(text: str) -> str:
-    return ''.join(ch.lower() if ch.isalnum() else '-' for ch in text).strip('-')
-
-
-def _parse_iso_datetime(value) -> datetime | None:
-    if value is None:
-        return None
-    raw = str(value).strip()
-    if not raw:
-        return None
-    if raw.endswith('Z'):
-        raw = raw.replace('Z', '+00:00')
-    try:
-        return datetime.fromisoformat(raw)
-    except Exception:
-        return None
-
-
-def _metric_float(value) -> float | None:
-    try:
-        if value is None or str(value).strip() == "":
-            return None
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
-
-def _parse_int(value) -> int | None:
-    try:
-        return int(str(value))
-    except (TypeError, ValueError):
-        return None
-
-
-def _parse_bool(value) -> bool | None:
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, int):
-        if value in (0, 1):
-            return bool(value)
-        return None
-    token = str(value or '').strip().lower()
-    if token in {'1', 'true', 'yes', 'y', 'on'}:
-        return True
-    if token in {'0', 'false', 'no', 'n', 'off'}:
-        return False
-    return None
-
-
-def _tenant_default_trial_days() -> int:
-    default_days = 30
-    try:
-        configured = int(current_app.config.get('TENANT_DEFAULT_TRIAL_DAYS', default_days))
-    except (TypeError, ValueError):
-        configured = default_days
-    return max(1, min(configured, 365))
-
-
-def _tenant_default_trial_ends_at() -> datetime:
-    return datetime.now(timezone.utc) + timedelta(days=_tenant_default_trial_days())
-
-
-def _password_reset_token_ttl_seconds() -> int:
-    default_minutes = 30
-    try:
-        configured = int(current_app.config.get('PASSWORD_RESET_TOKEN_TTL_MINUTES', default_minutes))
-    except (TypeError, ValueError):
-        configured = default_minutes
-    safe_minutes = max(5, min(configured, 240))
-    return safe_minutes * 60
-
-
-def _password_reset_key(token: str) -> str:
-    return f"password_reset:{token}"
-
-
-def _password_rotation_dry_run_enabled() -> bool:
-    parsed = _parse_bool(current_app.config.get('ROTATE_PASSWORDS_DRY_RUN'))
-    if parsed is None:
-        return False
-    return parsed
-
-
-def _password_rotation_length() -> int:
-    default_length = 24
-    try:
-        configured = int(current_app.config.get('PASSWORD_ROTATION_LENGTH', default_length))
-    except (TypeError, ValueError):
-        configured = default_length
-    return max(16, min(configured, 64))
-
-
-def _effective_system_settings(tenant_id) -> dict:
-    defaults = _default_system_settings()
-    overrides = _load_system_settings_overrides_db(tenant_id)
-    if not overrides:
-        overrides = _load_cached_dict(_system_settings_key(tenant_id))
-    return {**defaults, **(overrides or {})}
-
-
-def _password_policy_min_length(tenant_id) -> int:
-    settings = _effective_system_settings(tenant_id)
-    raw_value = settings.get("password_policy_min_length", 10)
-    try:
-        parsed = int(raw_value)
-    except (TypeError, ValueError):
-        parsed = 10
-    return max(8, min(parsed, 64))
-
-
-def _validate_password_policy(password: str, tenant_id) -> tuple[bool, str]:
-    secret = str(password or "")
-    minimum = _password_policy_min_length(tenant_id)
-    if len(secret) < minimum:
-        return False, f"La contrasena debe tener al menos {minimum} caracteres."
-    has_upper = any(ch.isupper() for ch in secret)
-    has_lower = any(ch.islower() for ch in secret)
-    has_digit = any(ch.isdigit() for ch in secret)
-    has_symbol = any(not ch.isalnum() for ch in secret)
-    if not (has_upper and has_lower and has_digit and has_symbol):
-        return False, "La contrasena debe incluir mayuscula, minuscula, numero y simbolo."
-    return True, ""
-
-
-def _generate_router_password(length: int | None = None) -> str:
-    target_length = length or _password_rotation_length()
-    target_length = max(16, target_length)
-
-    lowercase = string.ascii_lowercase
-    uppercase = string.ascii_uppercase
-    digits = string.digits
-    symbols = '-_@%#'
-    all_chars = lowercase + uppercase + digits + symbols
-
-    password_chars = [
-        secrets.choice(lowercase),
-        secrets.choice(uppercase),
-        secrets.choice(digits),
-        secrets.choice(symbols),
-    ]
-    for _ in range(target_length - len(password_chars)):
-        password_chars.append(secrets.choice(all_chars))
-    secrets.SystemRandom().shuffle(password_chars)
-    return ''.join(password_chars)
-
-
-def _mask_secret(value: str | None) -> str:
-    token = str(value or '')
-    if len(token) <= 4:
-        return '*' * len(token)
-    return f"{token[:2]}***{token[-2:]}"
-
-
-def _backup_dir_path() -> Path:
-    configured = (
-        current_app.config.get('BACKUP_DIR')
-        or os.environ.get('BACKUP_DIR')
-        or '/app/backups'
-    )
-    backup_dir = str(configured).strip() or '/app/backups'
-    return Path(backup_dir).expanduser().resolve()
-
-
-def _ensure_backup_dir() -> Path:
-    base = _backup_dir_path()
-    base.mkdir(parents=True, exist_ok=True)
-    return base
-
-
-def _is_safe_backup_name(name: str | None) -> bool:
-    candidate = str(name or '').strip()
-    if not candidate:
-        return False
-    # Reject directory traversal and nested paths explicitly.
-    return Path(candidate).name == candidate and '/' not in candidate and '\\' not in candidate
-
-
-def _backup_sha256(file_path: Path) -> str:
-    digest = hashlib.sha256()
-    with file_path.open('rb') as handle:
-        while True:
-            chunk = handle.read(1024 * 1024)
-            if not chunk:
-                break
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def _backup_item_payload(file_path: Path, include_hash: bool = False) -> dict:
-    stat_info = file_path.stat()
-    payload = {
-        "name": file_path.name,
-        "size": stat_info.st_size,
-        "modified": datetime.utcfromtimestamp(stat_info.st_mtime).isoformat(),
-    }
-    if include_hash:
-        payload["sha256"] = _backup_sha256(file_path)
-    return payload
-
-
-def _normalized_retention_days(raw_value, default_days: int = 14) -> int:
-    try:
-        parsed = int(raw_value)
-    except (TypeError, ValueError):
-        parsed = default_days
-    return max(1, min(parsed, 365))
-
-
-def _retention_days_for_tenant(tenant_id) -> int:
-    defaults = {"backup_retention_days": 14}
-    try:
-        defaults = _default_system_settings()
-    except Exception:
-        pass
-    overrides = _load_system_settings_overrides_db(tenant_id)
-    if not overrides:
-        overrides = _load_cached_dict(_system_settings_key(tenant_id))
-    raw_value = overrides.get('backup_retention_days', defaults.get('backup_retention_days', 14))
-    return _normalized_retention_days(raw_value, default_days=int(defaults.get('backup_retention_days', 14)))
-
-
-def _prune_backup_directory(retention_days: int, base: Path | None = None) -> dict:
-    safe_days = _normalized_retention_days(retention_days)
-    backup_dir = base or _backup_dir_path()
-    if not backup_dir.exists():
-        return {
-            "retention_days": safe_days,
-            "cutoff": (datetime.now(timezone.utc) - timedelta(days=safe_days)).isoformat(),
-            "scanned": 0,
-            "removed": 0,
-            "failed": 0,
-            "removed_files": [],
-            "errors": [],
-        }
-
-    cutoff = datetime.now(timezone.utc) - timedelta(days=safe_days)
-    scanned = 0
-    removed = 0
-    failed = 0
-    removed_files = []
-    errors = []
-
-    for file_path in backup_dir.iterdir():
-        if not file_path.is_file() or file_path.is_symlink():
-            continue
-        scanned += 1
-        try:
-            modified = datetime.utcfromtimestamp(file_path.stat().st_mtime)
-            if modified < cutoff:
-                file_path.unlink()
-                removed += 1
-                removed_files.append(file_path.name)
-        except Exception as exc:
-            failed += 1
-            errors.append({"name": file_path.name, "error": str(exc)})
-
-    return {
-        "retention_days": safe_days,
-        "cutoff": cutoff.isoformat(),
-        "scanned": scanned,
-        "removed": removed,
-        "failed": failed,
-        "removed_files": removed_files,
-        "errors": errors,
-    }
-
-
-def _parse_stripe_signature_header(signature_header: str) -> tuple[int | None, list[str]]:
-    timestamp = None
-    signatures: list[str] = []
-    for part in str(signature_header or "").split(","):
-        key, sep, value = part.partition("=")
-        if not sep:
-            continue
-        key = key.strip()
-        value = value.strip()
-        if key == "t":
-            timestamp = _parse_int(value)
-        elif key == "v1" and value:
-            signatures.append(value)
-    return timestamp, signatures
-
-
-def _verify_stripe_signature(payload: bytes, signature_header: str, secret: str, tolerance_seconds: int = 300) -> bool:
-    timestamp, signatures = _parse_stripe_signature_header(signature_header)
-    if timestamp is None or not signatures or not secret:
-        return False
-
-    now = int(time.time())
-    if tolerance_seconds > 0 and abs(now - timestamp) > tolerance_seconds:
-        return False
-
-    try:
-        payload_text = payload.decode('utf-8')
-    except Exception:
-        return False
-
-    signed_payload = f"{timestamp}.{payload_text}".encode("utf-8")
-    expected = hmac.new(secret.encode("utf-8"), signed_payload, hashlib.sha256).hexdigest()
-    return any(hmac.compare_digest(expected, sig) for sig in signatures)
-
-
-def _extract_webhook_payment_context(event: dict) -> dict:
-    event_type = str(event.get("type") or "").strip().lower()
-    data = event.get("data")
-    obj = data.get("object") if isinstance(data, dict) else {}
-    obj = obj if isinstance(obj, dict) else {}
-    metadata = obj.get("metadata")
-    metadata = metadata if isinstance(metadata, dict) else {}
-
-    invoice_id = metadata.get("invoice_id") or event.get("invoice_id")
-    subscription_id = metadata.get("subscription_id") or event.get("subscription_id")
-    session_id = obj.get("id")
-    payment_intent = obj.get("payment_intent")
-    event_id = event.get("id")
-    event_status = str(event.get("status") or "").strip().lower()
-
-    normalized_status = event_status
-    if event_type in {"checkout.session.completed", "payment_intent.succeeded", "charge.succeeded"}:
-        normalized_status = "paid"
-    elif event_type in {"payment_intent.payment_failed", "charge.failed"}:
-        normalized_status = "failed"
-    elif normalized_status in {"succeeded", "success"}:
-        normalized_status = "paid"
-
-    candidate_references = []
-    for ref in (payment_intent, session_id, event_id):
-        token = str(ref or "").strip()
-        if token and token not in candidate_references:
-            candidate_references.append(token)
-
-    return {
-        "event_type": event_type,
-        "normalized_status": normalized_status,
-        "invoice_id": _parse_int(invoice_id),
-        "subscription_id": _parse_int(subscription_id),
-        "session_id": str(session_id or "").strip() or None,
-        "payment_intent": str(payment_intent or "").strip() or None,
-        "event_id": str(event_id or "").strip() or None,
-        "candidate_references": candidate_references,
-    }
-
-
-def _get_plan_for_request(data, tenant_id):
-    plan = None
-    if data.get('plan_id'):
-        plan = db.session.get(Plan, data['plan_id'])
-    elif data.get('plan_name'):
-        query = Plan.query.filter_by(name=data['plan_name'])
-        if tenant_id is not None:
-            query = query.filter_by(tenant_id=tenant_id)
-        plan = query.first()
-        if not plan:
-            plan = Plan(
-                name=data['plan_name'],
-                download_speed=int(data.get('download_speed') or 50),
-                upload_speed=int(data.get('upload_speed') or 10),
-                price=float(data.get('plan_cost') or 0),
-                tenant_id=tenant_id,
-            )
-    return plan
-
-
-def _client_invoice_payload(invoice: Invoice) -> dict:
-    payload = invoice.to_dict()
-    # Backward-compatible aliases consumed by existing client portal UI.
-    payload["due"] = payload.get("due_date")
-    payload["total"] = payload.get("total_amount")
-    return payload
-
-
-def _get_user_invoice_items(user: User, tenant_id) -> list[dict]:
-    query = Invoice.query.join(Subscription, Invoice.subscription_id == Subscription.id)
-    if tenant_id is not None:
-        query = query.filter(Subscription.tenant_id == tenant_id)
-
-    if user.client:
-        query = query.filter(
-            or_(
-                Subscription.client_id == user.client.id,
-                Subscription.email == user.email,
-            )
-        )
-    else:
-        query = query.filter(Subscription.email == user.email)
-
-    return [
-        _client_invoice_payload(invoice)
-        for invoice in query.order_by(Invoice.created_at.desc()).all()
-    ]
-
-
-STAFF_ALLOWED_ROLES = {"admin", "tech", "support", "billing", "noc", "operator"}
-PLATFORM_ADMIN_ROLE = "platform_admin"
-TENANT_BILLING_ALLOWED_STATUS = {"trial", "active", "past_due", "suspended", "cancelled"}
-TENANT_BILLING_ALLOWED_CYCLES = {"monthly", "quarterly", "yearly"}
-TENANT_PLAN_TEMPLATES = {
-    "starter": {
-        "monthly_price": 39.0,
-        "max_admins": 2,
-        "max_routers": 5,
-        "max_clients": 400,
-    },
-    "growth": {
-        "monthly_price": 89.0,
-        "max_admins": 5,
-        "max_routers": 20,
-        "max_clients": 2000,
-    },
-    "pro": {
-        "monthly_price": 179.0,
-        "max_admins": 10,
-        "max_routers": 60,
-        "max_clients": 8000,
-    },
-    "enterprise": {
-        "monthly_price": 399.0,
-        "max_admins": 30,
-        "max_routers": 250,
-        "max_clients": 50000,
-    },
-}
-STAFF_ALLOWED_STATUS = {"active", "on_leave", "inactive"}
-STAFF_ALLOWED_SHIFTS = {"day", "night", "mixed"}
-INSTALLATION_ALLOWED_STATUS = {"pending", "scheduled", "in_progress", "completed", "cancelled"}
-SCREEN_ALERT_ALLOWED_STATUS = {"draft", "active", "paused", "expired"}
-SCREEN_ALERT_ALLOWED_SEVERITY = {"info", "warning", "critical", "success"}
-SCREEN_ALERT_ALLOWED_AUDIENCE = {"all", "active", "overdue", "suspended"}
-EXTRA_SERVICE_ALLOWED_STATUS = {"active", "disabled"}
-HOTSPOT_VOUCHER_ALLOWED_STATUS = {"generated", "sold", "used", "expired", "cancelled"}
-SYSTEM_ALLOWED_JOBS = {
-    "backup",
-    "cleanup_leases",
-    "rotate_passwords",
-    "recalc_balances",
-    "enforce_billing",
-    "backup_restore_drill",
-    "vps_update_preflight",
-}
-TICKET_ALLOWED_PRIORITIES = {"low", "medium", "high", "urgent"}
-OPS_CHANGE_ALLOWED_STATUS = {
-    "requested",
-    "approved",
-    "scheduled",
-    "executing",
-    "done",
-    "rolled_back",
-    "rejected",
-    "cancelled",
-}
+    try: return int(identity)
+    except (TypeError, ValueError): return None
 
 ROLE_BASE_PERMISSIONS: dict[str, set[str]] = {
     PLATFORM_ADMIN_ROLE: {
@@ -879,7 +439,7 @@ def _iso_utc_now() -> str:
 
 
 def _actor_default_name(actor_id) -> str:
-    parsed = _parse_int(actor_id)
+    parsed = parse_int(actor_id)
     if parsed is None:
         return "system"
     return f"user#{parsed}"
@@ -1145,7 +705,7 @@ def _normalize_tenant_billing_cycle(value: str | None) -> str | None:
 def _parse_limit_int(value, min_value: int, max_value: int) -> int | None:
     if value is None or str(value).strip() == '':
         return None
-    parsed = _parse_int(value)
+    parsed = parse_int(value)
     if parsed is None:
         return None
     return max(min_value, min(max_value, parsed))
@@ -1210,7 +770,7 @@ def _build_network_alert_items(tenant_id) -> list[dict]:
             continue
 
         thresholds = dict(profile.get("thresholds") or {})
-        temperature_c = _metric_float(latest.get("temperature_c"))
+        temperature_c = parse_float(latest.get("temperature_c"))
         if temperature_c is not None and temperature_c >= float(thresholds.get("temperature_c", 70.0)):
             alerts.append(
                 {
@@ -1223,8 +783,8 @@ def _build_network_alert_items(tenant_id) -> list[dict]:
                 }
             )
 
-        voltage_v = _metric_float(latest.get("voltage_v"))
-        min_voltage = _metric_float(thresholds.get("voltage_v_min"))
+        voltage_v = parse_float(latest.get("voltage_v"))
+        min_voltage = parse_float(thresholds.get("voltage_v_min"))
         if voltage_v is not None and min_voltage is not None and voltage_v <= min_voltage:
             alerts.append(
                 {
@@ -1237,8 +797,8 @@ def _build_network_alert_items(tenant_id) -> list[dict]:
                 }
             )
 
-        optical_rx_dbm = _metric_float(latest.get("optical_rx_dbm"))
-        optical_min = _metric_float(thresholds.get("optical_rx_dbm_min"))
+        optical_rx_dbm = parse_float(latest.get("optical_rx_dbm"))
+        optical_min = parse_float(thresholds.get("optical_rx_dbm_min"))
         if optical_rx_dbm is not None and optical_min is not None and optical_rx_dbm <= optical_min:
             alerts.append(
                 {
@@ -1251,8 +811,8 @@ def _build_network_alert_items(tenant_id) -> list[dict]:
                 }
             )
 
-        signal_level_dbm = _metric_float(latest.get("signal_level_dbm"))
-        signal_min = _metric_float(thresholds.get("signal_level_dbm_min"))
+        signal_level_dbm = parse_float(latest.get("signal_level_dbm"))
+        signal_min = parse_float(thresholds.get("signal_level_dbm_min"))
         if signal_level_dbm is not None and signal_min is not None and signal_level_dbm <= signal_min:
             alerts.append(
                 {
@@ -1348,7 +908,7 @@ def _build_network_health_payload(tenant_id) -> dict:
                     pass
             if free_mem is not None and total_mem not in (None, 0):
                 try:
-                    usage = (float(total_mem) - float(free_mem)) / float(total_mem) * 100
+                    usage = (float(total_mem) - float(parse_float(free_mem))) / float(total_mem) * 100
                     mem_usage.append(usage)
                 except Exception:
                     pass
@@ -1403,7 +963,7 @@ def _build_client_notifications(user: User, tenant_id) -> list[dict]:
         if status not in {"pending", "overdue"}:
             continue
         pending += 1
-        due_dt = _parse_iso_datetime(invoice.get("due_date") or invoice.get("due"))
+        due_dt = parse_iso_datetime(invoice.get("due_date") or invoice.get("due"))
         if due_dt and due_dt.date() < today:
             overdue += 1
 
@@ -1551,7 +1111,7 @@ def _collect_admin_clients(tenant_id, term: str | None = None, status_filter: st
 
 
 def _resolve_plan_reference(plan_id_raw, plan_name_raw, tenant_id) -> tuple[Plan | None, str | None]:
-    plan_id = _parse_int(plan_id_raw)
+    plan_id = parse_int(plan_id_raw)
     plan_name = str(plan_name_raw or '').strip()
     plan = db.session.get(Plan, plan_id) if plan_id else None
 
@@ -1573,7 +1133,7 @@ def _resolve_plan_reference(plan_id_raw, plan_name_raw, tenant_id) -> tuple[Plan
 
 
 def _resolve_router_reference(router_id_raw, router_name_raw, tenant_id) -> tuple[MikroTikRouter | None, str | None]:
-    router_id = _parse_int(router_id_raw)
+    router_id = parse_int(router_id_raw)
     router_name = str(router_name_raw or '').strip()
     router = db.session.get(MikroTikRouter, router_id) if router_id else None
 
@@ -1626,7 +1186,7 @@ def _normalize_bulk_client_row(raw_row, tenant_id, seen_emails: set[str]) -> tup
 
     email = str(raw_row.get('email') or '').strip().lower()
     requested_password = str(raw_row.get('password') or '').strip()
-    create_portal_access = _parse_bool(raw_row.get('create_portal_access'))
+    create_portal_access = parse_bool(raw_row.get('create_portal_access'))
     if create_portal_access is None:
         create_portal_access = bool(email)
 
@@ -1643,7 +1203,7 @@ def _normalize_bulk_client_row(raw_row, tenant_id, seen_emails: set[str]) -> tup
     pppoe_username = str(raw_row.get('pppoe_username') or '').strip() or None
     pppoe_password = str(raw_row.get('pppoe_password') or '').strip() or None
     if connection_type == 'pppoe':
-        base = _slugify(name) or 'cliente'
+        base = slugify(name) or 'cliente'
         if not pppoe_username:
             pppoe_username = f"{base[:12]}{secrets.randbelow(9999):04d}"
         if not pppoe_password:
@@ -1699,7 +1259,7 @@ def _create_client_from_payload(payload: dict, tenant_id) -> tuple[Client, User 
 
 
 def _resolve_bulk_update_client(raw_row, tenant_id) -> tuple[Client | None, str | None]:
-    client_id = _parse_int(raw_row.get('client_id'))
+    client_id = parse_int(raw_row.get('client_id'))
     client = db.session.get(Client, client_id) if client_id else None
     if client is None:
         lookup_email = str(raw_row.get('client_email') or raw_row.get('email_lookup') or '').strip().lower()
@@ -1759,8 +1319,8 @@ def _normalize_bulk_update_row(raw_row, tenant_id, seen_target_emails: set[str])
 
     portal_email = str(raw_row.get('portal_email') or raw_row.get('email') or '').strip().lower()
     portal_password = str(raw_row.get('portal_password') or raw_row.get('password') or '').strip()
-    parsed_create_portal = _parse_bool(raw_row.get('create_portal_access'))
-    reset_portal_password = _parse_bool(raw_row.get('reset_portal_password'))
+    parsed_create_portal = parse_bool(raw_row.get('create_portal_access'))
+    reset_portal_password = parse_bool(raw_row.get('reset_portal_password'))
     if reset_portal_password is None:
         reset_portal_password = bool(portal_password)
 
@@ -1936,14 +1496,14 @@ def _apply_network_action_to_client(client: Client, action: str) -> tuple[bool, 
 
 
 def _installation_model_from_entry(entry: dict, tenant_id) -> AdminInstallation:
-    scheduled_for = _parse_iso_datetime(entry.get("scheduled_for"))
-    completed_at = _parse_iso_datetime(entry.get("completed_at"))
-    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
-    updated_at = _parse_iso_datetime(entry.get("updated_at")) or created_at
+    scheduled_for = parse_iso_datetime(entry.get("scheduled_for"))
+    completed_at = parse_iso_datetime(entry.get("completed_at"))
+    created_at = parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
+    updated_at = parse_iso_datetime(entry.get("updated_at")) or created_at
     return AdminInstallation(
         id=str(entry.get("id") or secrets.token_hex(8)),
         tenant_id=tenant_id,
-        client_id=_parse_int(entry.get("client_id")),
+        client_id=parse_int(entry.get("client_id")),
         client_name=str(entry.get("client_name") or "").strip() or "Cliente",
         plan=(str(entry.get("plan") or "").strip() or None),
         router=(str(entry.get("router") or "").strip() or None),
@@ -1955,12 +1515,12 @@ def _installation_model_from_entry(entry: dict, tenant_id) -> AdminInstallation:
         notes=str(entry.get("notes") or "").strip(),
         checklist=entry.get("checklist") if isinstance(entry.get("checklist"), dict) else {},
         completed_at=completed_at,
-        completed_by=_parse_int(entry.get("completed_by")),
+        completed_by=parse_int(entry.get("completed_by")),
         completed_by_name=(str(entry.get("completed_by_name") or "").strip() or None),
-        created_by=_parse_int(entry.get("created_by")),
+        created_by=parse_int(entry.get("created_by")),
         created_by_name=(str(entry.get("created_by_name") or "").strip() or None),
         created_by_email=(str(entry.get("created_by_email") or "").strip() or None),
-        updated_by=_parse_int(entry.get("updated_by")),
+        updated_by=parse_int(entry.get("updated_by")),
         updated_by_name=(str(entry.get("updated_by_name") or "").strip() or None),
         updated_by_email=(str(entry.get("updated_by_email") or "").strip() or None),
         created_at=created_at,
@@ -1969,10 +1529,10 @@ def _installation_model_from_entry(entry: dict, tenant_id) -> AdminInstallation:
 
 
 def _screen_alert_model_from_entry(entry: dict, tenant_id) -> AdminScreenAlert:
-    starts_at = _parse_iso_datetime(entry.get("starts_at"))
-    ends_at = _parse_iso_datetime(entry.get("ends_at"))
-    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
-    updated_at = _parse_iso_datetime(entry.get("updated_at")) or created_at
+    starts_at = parse_iso_datetime(entry.get("starts_at"))
+    ends_at = parse_iso_datetime(entry.get("ends_at"))
+    created_at = parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
+    updated_at = parse_iso_datetime(entry.get("updated_at")) or created_at
     return AdminScreenAlert(
         id=str(entry.get("id") or secrets.token_hex(8)),
         tenant_id=tenant_id,
@@ -1985,10 +1545,10 @@ def _screen_alert_model_from_entry(entry: dict, tenant_id) -> AdminScreenAlert:
         ends_at=ends_at,
         impressions=int(entry.get("impressions") or 0),
         acknowledged=int(entry.get("acknowledged") or 0),
-        created_by=_parse_int(entry.get("created_by")),
+        created_by=parse_int(entry.get("created_by")),
         created_by_name=(str(entry.get("created_by_name") or "").strip() or None),
         created_by_email=(str(entry.get("created_by_email") or "").strip() or None),
-        updated_by=_parse_int(entry.get("updated_by")),
+        updated_by=parse_int(entry.get("updated_by")),
         updated_by_name=(str(entry.get("updated_by_name") or "").strip() or None),
         updated_by_email=(str(entry.get("updated_by_email") or "").strip() or None),
         created_at=created_at,
@@ -1997,8 +1557,8 @@ def _screen_alert_model_from_entry(entry: dict, tenant_id) -> AdminScreenAlert:
 
 
 def _extra_service_model_from_entry(entry: dict, tenant_id) -> AdminExtraService:
-    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
-    updated_at = _parse_iso_datetime(entry.get("updated_at")) or created_at
+    created_at = parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
+    updated_at = parse_iso_datetime(entry.get("updated_at")) or created_at
     return AdminExtraService(
         id=str(entry.get("id") or secrets.token_hex(8)),
         tenant_id=tenant_id,
@@ -2009,10 +1569,10 @@ def _extra_service_model_from_entry(entry: dict, tenant_id) -> AdminExtraService
         one_time_fee=round(float(entry.get("one_time_fee") or 0), 2),
         status=str(entry.get("status") or "active").strip().lower(),
         subscribers=max(0, int(entry.get("subscribers") or 0)),
-        created_by=_parse_int(entry.get("created_by")),
+        created_by=parse_int(entry.get("created_by")),
         created_by_name=(str(entry.get("created_by_name") or "").strip() or None),
         created_by_email=(str(entry.get("created_by_email") or "").strip() or None),
-        updated_by=_parse_int(entry.get("updated_by")),
+        updated_by=parse_int(entry.get("updated_by")),
         updated_by_name=(str(entry.get("updated_by_name") or "").strip() or None),
         updated_by_email=(str(entry.get("updated_by_email") or "").strip() or None),
         created_at=created_at,
@@ -2021,10 +1581,10 @@ def _extra_service_model_from_entry(entry: dict, tenant_id) -> AdminExtraService
 
 
 def _hotspot_voucher_model_from_entry(entry: dict, tenant_id) -> AdminHotspotVoucher:
-    expires_at = _parse_iso_datetime(entry.get("expires_at"))
-    used_at = _parse_iso_datetime(entry.get("used_at"))
-    created_at = _parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
-    updated_at = _parse_iso_datetime(entry.get("updated_at")) or created_at
+    expires_at = parse_iso_datetime(entry.get("expires_at"))
+    used_at = parse_iso_datetime(entry.get("used_at"))
+    created_at = parse_iso_datetime(entry.get("created_at")) or datetime.now(timezone.utc)
+    updated_at = parse_iso_datetime(entry.get("updated_at")) or created_at
     return AdminHotspotVoucher(
         id=str(entry.get("id") or secrets.token_hex(8)),
         tenant_id=tenant_id,
@@ -2037,10 +1597,10 @@ def _hotspot_voucher_model_from_entry(entry: dict, tenant_id) -> AdminHotspotVou
         assigned_to=(str(entry.get("assigned_to") or "").strip() or None),
         expires_at=expires_at,
         used_at=used_at,
-        created_by=_parse_int(entry.get("created_by")),
+        created_by=parse_int(entry.get("created_by")),
         created_by_name=(str(entry.get("created_by_name") or "").strip() or None),
         created_by_email=(str(entry.get("created_by_email") or "").strip() or None),
-        updated_by=_parse_int(entry.get("updated_by")),
+        updated_by=parse_int(entry.get("updated_by")),
         updated_by_name=(str(entry.get("updated_by_name") or "").strip() or None),
         updated_by_email=(str(entry.get("updated_by_email") or "").strip() or None),
         created_at=created_at,
@@ -3063,7 +2623,7 @@ def reset_password():
     if not isinstance(token_data, dict):
         return jsonify({"error": "Token invalido o expirado."}), 400
 
-    user_id = _parse_int(token_data.get('user_id'))
+    user_id = parse_int(token_data.get('user_id'))
     if not user_id:
         cache.delete(key)
         return jsonify({"error": "Token invalido o expirado."}), 400
@@ -3074,7 +2634,7 @@ def reset_password():
         return jsonify({"error": "Token invalido o expirado."}), 400
 
     tenant_id = current_tenant_id()
-    token_tenant = _parse_int(token_data.get('tenant_id'))
+    token_tenant = parse_int(token_data.get('tenant_id'))
     if tenant_id is not None and token_tenant not in (None, tenant_id):
         return jsonify({"error": "Token invalido o expirado."}), 400
 
