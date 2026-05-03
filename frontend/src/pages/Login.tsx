@@ -12,11 +12,7 @@ import {
 import { useAuthStore } from '../store/authStore'
 import toast from 'react-hot-toast'
 
-declare global {
-  interface Window {
-    google: any
-  }
-}
+
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('')

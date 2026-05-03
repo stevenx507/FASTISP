@@ -38,17 +38,17 @@ services:
     env_file:
       - .env.prod
     environment:
-      - CACHE_TYPE=SimpleCache
-      - CACHE_REDIS_URL=
+      - CACHE_TYPE=RedisCache
+      - CACHE_REDIS_URL=redis://redis:6379/0
       - GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
       - ALLOW_GOOGLE_LOGIN=true
       - ALLOW_INSECURE_GOOGLE_LOGIN=${ALLOW_INSECURE_GOOGLE_LOGIN:-false}
-    command: ["/bin/sh","-c","CACHE_TYPE=SimpleCache CACHE_REDIS_URL= gunicorn --bind 0.0.0.0:5000 --workers 2 --worker-class gevent --timeout 120 wsgi:app"]
+    command: ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--worker-class", "gevent", "--timeout", "120", "wsgi:app"]
     depends_on:
       - postgres
       - redis
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -118,8 +118,8 @@ services:
     env_file:
       - .env.prod
     environment:
-      - CACHE_TYPE=SimpleCache
-      - CACHE_REDIS_URL=
+      - CACHE_TYPE=RedisCache
+      - CACHE_REDIS_URL=redis://redis:6379/0
     command: ["celery", "-A", "app.tasks", "worker", "--loglevel=info", "--concurrency=2"]
     depends_on:
       - backend
@@ -136,8 +136,8 @@ services:
     env_file:
       - .env.prod
     environment:
-      - CACHE_TYPE=SimpleCache
-      - CACHE_REDIS_URL=
+      - CACHE_TYPE=RedisCache
+      - CACHE_REDIS_URL=redis://redis:6379/0
     command: ["celery", "-A", "app.tasks", "beat", "--loglevel=info"]
     depends_on:
       - backend

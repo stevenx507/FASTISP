@@ -1,6 +1,6 @@
 from flask import request, jsonify
 from flask_jwt_extended import jwt_required
-from app.routes.auth_routes import admin_required
+# auth_routes removed
 from app import db
 from app.models import MikroTikRouter, TrafficFlowStats
 from app.tenancy import current_tenant_id, tenant_access_allowed
@@ -10,8 +10,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import func
 
-from . import mikrotik_bp
-from .utils import as_bool, to_int
+from .utils import mikrotik_bp, admin_required, staff_required, as_bool, to_int
 
 logger = logging.getLogger(__name__)
 

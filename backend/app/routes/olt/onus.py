@@ -4,7 +4,7 @@ from flask_jwt_extended import get_jwt_identity
 from sqlalchemy.orm import joinedload
 from app import db
 from app.models import AdminInstallation, Client, ClientNetworkProfile, User
-from app.routes.auth_routes import admin_required
+from app.tenancy import admin_required
 from app.tenancy import current_tenant_id
 from .utils import (
     _service, _audit, _parse_run_mode, _validate_live_confirm, _parse_int,

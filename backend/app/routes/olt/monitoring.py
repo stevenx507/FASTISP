@@ -2,7 +2,7 @@ import time
 import socket
 import ipaddress
 from flask import Blueprint, jsonify, request, current_app
-from app.routes.auth_routes import admin_required
+from app.tenancy import admin_required
 from app.services.snmp_service import snmp_service
 from app.services.monitoring_service import monitoring_service
 from .utils import _service, _audit, _sanitize_olt_device, _as_bool, _resolve_olt_credentials, _parse_run_mode, _validate_live_confirm, _resolve_actor_identity

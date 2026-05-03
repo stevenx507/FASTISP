@@ -1,10 +1,29 @@
-from datetime import datetime, timezone
-from flask import request, current_app
-from flask_jwt_extended import get_jwt_identity
+from datetime import datetime, timezone, timedelta
+from flask import request, current_app, jsonify, Blueprint, Response
+from flask_jwt_extended import get_jwt_identity, jwt_required
+import secrets
+import time
+from sqlalchemy import or_
+
 from app import db, cache
-from app.models import AdminSystemSetting, AuditLog, User, AdminSystemJob, RolePermission, Ticket
-from app.tenancy import current_tenant_id
+from app.models import (
+    AdminSystemSetting, AuditLog, User, AdminSystemJob, 
+    RolePermission, Ticket, Tenant, Client, MikroTikRouter, 
+    Subscription, Invoice, BillingPromise, NapBox, FiberLine,
+    AdminExtraService, AdminHotspotVoucher
+)
+from app.tenancy import (
+    current_tenant_id, 
+    admin_required, 
+    staff_required, 
+    platform_admin_required, 
+    permission_required,
+    _current_user_id
+)
 from app.lib.utils import parse_int, parse_bool
+
+# Definición central del Blueprint administrativo
+admin_bp = Blueprint("admin", __name__)
 
 # --- Cache Keys ---
 def _tenant_cache_key(prefix: str, tenant_id) -> str:

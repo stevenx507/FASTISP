@@ -1,15 +1,12 @@
 from flask import request, jsonify
 from flask_jwt_extended import jwt_required
-from app.routes.auth_routes import admin_required
+from .utils import mikrotik_bp, admin_required, staff_required, as_bool, to_int, pick_value
 from app import db
 from app.models import MikroTikRouter
 from app.services.mikrotik_service import MikroTikService
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-
-from . import mikrotik_bp
-from .utils import as_bool, to_int, pick_value
 
 logger = logging.getLogger(__name__)
 

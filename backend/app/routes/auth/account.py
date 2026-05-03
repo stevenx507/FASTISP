@@ -7,7 +7,7 @@ from app.routes.admin.utils import _audit
 
 account_bp = Blueprint("auth_account", __name__)
 
-@account_bp.route('/profile', methods=['GET'])
+@account_bp.route('/auth/profile', methods=['GET'])
 @jwt_required()
 def get_profile():
     user_id = get_jwt_identity()
@@ -15,7 +15,7 @@ def get_profile():
     if not user: return jsonify({"error": "No encontrado"}), 404
     return jsonify(user.to_dict()), 200
 
-@account_bp.route('/change-password', methods=['POST'])
+@account_bp.route('/auth/password', methods=['POST'])
 @jwt_required()
 def change_password():
     user_id = get_jwt_identity()

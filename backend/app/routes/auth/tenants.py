@@ -6,7 +6,7 @@ from app.routes.admin.utils import _audit
 
 tenants_bp = Blueprint("auth_tenants", __name__)
 
-@tenants_bp.route('/register-tenant', methods=['POST'])
+@tenants_bp.route('/auth/register', methods=['POST'])
 def register_tenant():
     data = request.get_json() or {}
     name = data.get('name')

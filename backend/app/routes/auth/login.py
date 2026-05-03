@@ -25,7 +25,7 @@ def _verify_google_credential(credential: str) -> dict:
         raise BadRequest("Token aud mismatch.")
     return {"email": payload.get('email', '').lower(), "name": payload.get('name', 'Usuario Google')}
 
-@login_bp.route('/login', methods=['POST'])
+@login_bp.route('/auth/login', methods=['POST'])
 @limiter.limit("10 per minute")
 def login():
     data = request.get_json() or {}
@@ -54,5 +54,31 @@ def login():
     _audit("login_success", metadata={"user_id": user.id})
     return jsonify({
         "access_token": access_token,
+        "token": access_token, # Compatibilidad con authStore.ts que busca .token
         "user": user.to_dict()
     }), 200
+
+@login_bp.route('/auth/google', methods=['POST'])
+def login_google():
+    data = request.get_json() or {}
+    credential = data.get('credential') or data.get('google_credential')
+    if not credential:
+        return jsonify({"error": "Credential es requerida"}), 400
+    try:
+        google_data = _verify_google_credential(credential)
+        email = google_data['email']
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            return jsonify({"error": "Usuario Google no registrado"}), 404
+        if not user.is_active:
+            return jsonify({"error": "Cuenta suspendida"}), 403
+        
+        access_token = create_access_token(identity=str(user.id))
+        _audit("login_google_success", metadata={"user_id": user.id})
+        return jsonify({
+            "token": access_token,
+            "access_token": access_token,
+            "user": user.to_dict()
+        }), 200
+    except BadRequest as e:
+        return jsonify({"error": str(e)}), 400

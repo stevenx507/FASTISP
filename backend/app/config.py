@@ -244,7 +244,7 @@ class ProductionConfig(Config):
                 "CORS_ORIGINS must be set in production and contain at least one origin."
             )
 
-        if _as_bool(os.environ.get('ALLOW_GOOGLE_LOGIN'), default=True) and not os.environ.get('GOOGLE_CLIENT_ID'):
+        if as_bool(os.environ.get('ALLOW_GOOGLE_LOGIN'), default=True) and not os.environ.get('GOOGLE_CLIENT_ID'):
             raise ValueError(
                 "GOOGLE_CLIENT_ID must be set when ALLOW_GOOGLE_LOGIN=true in production."
             )

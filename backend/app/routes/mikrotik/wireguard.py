@@ -1,25 +1,9 @@
 from flask import request, jsonify, current_app
 from flask_jwt_extended import jwt_required
-from app.routes.auth_routes import admin_required
-from app import db, cache
-from app.models import AdminSystemSetting, MikroTikRouter, Tenant
-from app.services.mikrotik_service import MikroTikService
-import logging
-import re
-import base64
-import binascii
-import ipaddress
-import zipfile
-import io
-import shlex
-import subprocess
-import paramiko
-from urllib.parse import parse_qs, unquote, urlparse
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-
-from . import mikrotik_bp
 from .utils import (
+    mikrotik_bp, 
+    admin_required, 
+    staff_required,
     TENANT_SETTING_SENTINEL,
     WG_VPS_INTERFACE_DEFAULT,
     WG_PROFILE_ALLOWED_SUBNETS_DEFAULT,
@@ -38,6 +22,22 @@ from .utils import (
     pick_value,
     as_bool,
 )
+from app import db, cache
+from app.models import AdminSystemSetting, MikroTikRouter, Tenant
+from app.services.mikrotik_service import MikroTikService
+import logging
+import re
+import base64
+import binascii
+import ipaddress
+import zipfile
+import io
+import shlex
+import subprocess
+import paramiko
+from urllib.parse import parse_qs, unquote, urlparse
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

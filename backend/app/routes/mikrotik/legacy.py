@@ -3,7 +3,7 @@ MikroTik API endpoints
 """
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import get_jwt_identity, jwt_required
-from app.routes.auth_routes import admin_required
+from .utils import mikrotik_bp, admin_required, staff_required
 from app import db
 from app.models import AdminSystemSetting, MikroTikRouter, Client, Plan, Tenant, User
 from app.services.mikrotik_service import MikroTikService
@@ -4114,7 +4114,10 @@ def apply_enterprise_hardening(router_id):
             'site_profile': site_profile,
             'commands': commands,
             'rollback_commands': rollback_commands,
-# TODO: Fragmentar las rutas de gestión de colas, interfaces e IP-Services que quedan aquí.
+        })
+    except Exception as e:
+        logger.error(f"Error applying enterprise hardening to router {router_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @mikrotik_bp.route('/routers/<router_id>/services', methods=['GET'])
 @admin_required()

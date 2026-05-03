@@ -16,11 +16,7 @@ import toast from 'react-hot-toast'
 import { apiClient } from '../lib/apiClient'
 import config from '../lib/config'
 
-declare global {
-  interface Window {
-    google?: any
-  }
-}
+
 
 delete (L.Icon.Default.prototype as any)._getIconUrl
 L.Icon.Default.mergeOptions({

@@ -1,6 +1,4 @@
-from flask import Blueprint
-
-mikrotik_bp = Blueprint('mikrotik', __name__)
+from .utils import mikrotik_bp
 
 # Import modules to register routes on the blueprint
 from . import legacy

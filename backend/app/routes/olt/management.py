@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from app import cache
-from app.routes.auth_routes import admin_required
+from app.tenancy import admin_required
 from app.services.olt_script_service import OLTScriptService, SUPPORTED_VENDORS
 from app.services.snmp_service import snmp_service
 from .utils import _audit, _tenant_key, _tenant_allows_record, _service, _sanitize_olt_device
