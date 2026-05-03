@@ -71,7 +71,7 @@ def login_google():
         user = User.query.filter_by(email=email).first()
         if not user:
             return jsonify({"error": "Usuario Google no registrado"}), 404
-        if not user.is_active:
+        if not getattr(user, 'is_active', True):
             return jsonify({"error": "Cuenta suspendida"}), 403
         
         access_token = create_access_token(identity=str(user.id))
