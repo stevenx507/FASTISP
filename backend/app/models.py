@@ -1161,7 +1161,7 @@ class NetworkNode(db.Model):
     # status: active | inactive | maintenance | fault
     notes = db.Column(db.Text, nullable=True)
     # installed_at = db.Column(db.DateTime, nullable=True)
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    # created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
@@ -1187,7 +1187,7 @@ class NetworkNode(db.Model):
             'status': self.status,
             'notes': self.notes or '',
             'installed_at': _iso_datetime(getattr(self, 'installed_at', None)),
-            'created_by': self.created_by,
+            'created_by': getattr(self, 'created_by', None),
             'created_at': _iso_datetime(self.created_at),
             'updated_at': _iso_datetime(self.updated_at),
         }
