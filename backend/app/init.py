@@ -59,12 +59,15 @@ def create_app(config_name_or_class='development'):
     metrics.init_app(app)
     
     # Force explicit cache config to avoid RedisCache attribute error
+    cache_type = app.config.get('CACHE_TYPE', 'simple')
     cache_config = {
-        'CACHE_TYPE': app.config.get('CACHE_TYPE', 'RedisCache'),
-        'CACHE_REDIS_URL': app.config.get('CACHE_REDIS_URL') or app.config.get('REDIS_URL'),
+        'CACHE_TYPE': cache_type,
         'CACHE_DEFAULT_TIMEOUT': app.config.get('CACHE_DEFAULT_TIMEOUT', 300),
         'CACHE_KEY_PREFIX': 'ispfast_'
     }
+    if cache_type in ('redis', 'RedisCache', 'rediscache'):
+        cache_config['CACHE_REDIS_URL'] = app.config.get('CACHE_REDIS_URL') or app.config.get('REDIS_URL')
+        
     cache.init_app(app, config=cache_config)
     socketio.init_app(app)
 
