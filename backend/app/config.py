@@ -182,41 +182,41 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    # Use environment variables in production
-    # Tokens con expiración razonable para producción:
-    # Access token: 4 horas (balance entre seguridad y usabilidad)
-    # Refresh token: 30 días (para re-autenticación automática)
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=4)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
 
-    # Environment-provided production values (validated at runtime)
+    # Database
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+
+    # Redis and Cache
     REDIS_URL = os.environ.get('REDIS_URL')
-    CORS_ORIGINS = _split_csv(os.environ.get('CORS_ORIGINS', ''))
+    CACHE_TYPE = os.environ.get('CACHE_TYPE', 'RedisCache')
+    CACHE_REDIS_URL = os.environ.get('CACHE_REDIS_URL', REDIS_URL)
+    CACHE_KEY_PREFIX = 'ispfast_cache_'
+    
+    # Rate Limit
     RATELIMIT_STORAGE_URI = REDIS_URL
     RATELIMIT_STORAGE_URL = REDIS_URL
-    CACHE_TYPE = os.environ.get('CACHE_TYPE', 'SimpleCache')
-    CACHE_REDIS_URL = os.environ.get('CACHE_REDIS_URL', REDIS_URL)
 
+    # CORS
+    CORS_ORIGINS = _split_csv(os.environ.get('CORS_ORIGINS', ''))
+
+    # Security & Access
     FRONTEND_URL = os.environ.get('FRONTEND_URL')
     ALLOW_SELF_SIGNUP = as_bool(os.environ.get('ALLOW_SELF_SIGNUP'), default=True)
     ALLOW_GOOGLE_LOGIN = as_bool(os.environ.get('ALLOW_GOOGLE_LOGIN'), default=True)
-    ALLOW_INSECURE_GOOGLE_LOGIN = as_bool(
-        os.environ.get('ALLOW_INSECURE_GOOGLE_LOGIN'), default=False
-    )
+    ALLOW_INSECURE_GOOGLE_LOGIN = as_bool(os.environ.get('ALLOW_INSECURE_GOOGLE_LOGIN'), default=False)
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+    
+    # Tenancy
     TENANCY_ROOT_DOMAIN = (os.environ.get('TENANCY_ROOT_DOMAIN') or '').strip().lower()
     TENANCY_MASTER_HOST = (os.environ.get('TENANCY_MASTER_HOST') or '').strip().lower()
     TENANCY_API_HOST = (os.environ.get('TENANCY_API_HOST') or '').strip().lower()
-    TENANCY_EXCLUDED_SUBDOMAINS = _split_csv(
-        os.environ.get('TENANCY_EXCLUDED_SUBDOMAINS', 'api,master,www')
-    )
-    TENANCY_ENFORCE_HOST_MATCH = as_bool(
-        os.environ.get('TENANCY_ENFORCE_HOST_MATCH'),
-        default=False,
-    )
+    TENANCY_EXCLUDED_SUBDOMAINS = _split_csv(os.environ.get('TENANCY_EXCLUDED_SUBDOMAINS', 'api,master,www'))
+    TENANCY_ENFORCE_HOST_MATCH = as_bool(os.environ.get('TENANCY_ENFORCE_HOST_MATCH'), default=False)
     PLATFORM_BOOTSTRAP_TOKEN = (os.environ.get('PLATFORM_BOOTSTRAP_TOKEN') or '').strip()
 
+    # MikroTik
     MIKROTIK_DEFAULT_USERNAME = os.environ.get('MIKROTIK_DEFAULT_USERNAME')
     MIKROTIK_DEFAULT_PASSWORD = os.environ.get('MIKROTIK_DEFAULT_PASSWORD')
 
