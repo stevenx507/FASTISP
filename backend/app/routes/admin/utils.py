@@ -5,7 +5,7 @@ import secrets
 import time
 from sqlalchemy import or_
 
-from app import db, cache
+from app import db, cache, limiter
 from app.models import (
     AdminSystemSetting, AuditLog, User, AdminSystemJob, 
     RolePermission, Ticket, Tenant, Client, MikroTikRouter, 
