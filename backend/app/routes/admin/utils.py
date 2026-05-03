@@ -94,11 +94,92 @@ def _notify_incident(message: str, severity: str = "info"):
     if tg_token and tg_chat:
         try: requests.post(f"https://api.telegram.org/bot{tg_token}/sendMessage", data={"chat_id": tg_chat, "text": message[:4000]}, timeout=5)
         except Exception: pass
+from app.lib.route_helpers import (
+    PLATFORM_ADMIN_ROLE, TENANT_PLAN_TEMPLATES, 
+    STAFF_ALLOWED_ROLES, ROLE_BASE_PERMISSIONS
+)
+
+# --- Serialization Helpers ---
+def _serialize_tenant_platform_item(tenant: Tenant) -> dict:
+    users_total = User.query.filter_by(tenant_id=tenant.id).count()
+    admin_total = User.query.filter_by(tenant_id=tenant.id, role='admin').count()
+    clients_total = Client.query.filter_by(tenant_id=tenant.id).count()
+    routers_total = MikroTikRouter.query.filter_by(tenant_id=tenant.id).count()
+    subs_total = Subscription.query.filter_by(tenant_id=tenant.id).count()
+    active_subs = Subscription.query.filter_by(tenant_id=tenant.id, status='active').count()
+    suspended_subs = Subscription.query.filter_by(tenant_id=tenant.id, status='suspended').count()
+    root_domain = str(current_app.config.get('TENANCY_ROOT_DOMAIN') or '').strip().lower()
+    tenant_host = f"{tenant.slug}.{root_domain}" if root_domain else tenant.slug
+    return {
+        "id": tenant.id, "slug": tenant.slug, "name": tenant.name,
+        "is_active": bool(tenant.is_active),
+        "created_at": tenant.created_at.isoformat() if tenant.created_at else None,
+        "host": tenant_host, "plan_code": tenant.plan_code,
+        "billing_status": tenant.billing_status, "billing_cycle": tenant.billing_cycle,
+        "monthly_price": float(tenant.monthly_price or 0),
+        "max_admins": int(tenant.max_admins or 0),
+        "max_routers": int(tenant.max_routers or 0),
+        "max_clients": int(tenant.max_clients or 0),
+        "trial_ends_at": tenant.trial_ends_at.isoformat() if tenant.trial_ends_at else None,
+        "users_total": users_total, "admins_total": admin_total,
+        "clients_total": clients_total, "routers_total": routers_total,
+        "subscriptions_total": subs_total, "subscriptions_active": active_subs,
+        "subscriptions_suspended": suspended_subs,
+    }
+
+def _platform_admin_exists() -> bool:
+    return User.query.filter_by(role=PLATFORM_ADMIN_ROLE).first() is not None
+
+# --- Normalization Helpers ---
+def _normalize_tenant_plan_code(value: str | None) -> str | None:
+    candidate = str(value or '').strip().lower()
+    return candidate if candidate in TENANT_PLAN_TEMPLATES else None
+
+def _normalize_tenant_billing_status(value: str | None) -> str | None:
+    candidate = str(value or '').strip().lower()
+    allowed = {'trial', 'active', 'past_due', 'suspended', 'cancelled'}
+    return candidate if candidate in allowed else None
+
+def _normalize_tenant_billing_cycle(value: str | None) -> str | None:
+    candidate = str(value or '').strip().lower()
+    allowed = {'monthly', 'quarterly', 'yearly'}
+    return candidate if candidate in allowed else None
+
+# --- Parsing Helpers ---
+def _parse_limit_int(value, min_value: int, max_value: int) -> int | None:
+    try:
+        iv = int(value)
+        return max(min_value, min(iv, max_value))
+    except (TypeError, ValueError): return None
+
+def _parse_money_value(value) -> float | None:
+    try: return float(value)
+    except (TypeError, ValueError): return None
+
+def _parse_bool(value) -> bool | None:
+    from app.lib.utils import parse_bool
+    return parse_bool(value)
+
+def _parse_iso_datetime(value) -> datetime | None:
+    from app.lib.utils import parse_iso_datetime
+    return parse_iso_datetime(value)
+
+def _slugify(text: str) -> str:
+    from app.lib.utils import slugify
+    return slugify(text)
+
+def _generate_router_password(length: int = 24) -> str:
+    import secrets, string
+    alphabet = string.ascii_letters + string.digits + "-_@#"
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
+def _validate_password_policy(password: str, tenant_id=None) -> tuple[bool, str]:
+    from app.lib.route_helpers import validate_password_policy
+    return validate_password_policy(password, tenant_id)
+
+def _tenant_default_trial_ends_at() -> datetime:
+    from app.lib.route_helpers import tenant_default_trial_ends_at
+    return tenant_default_trial_ends_at()
+
 def _iso_utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
-
-def _tenant_scoped_query(model, tenant_id):
-    query = model.query
-    if tenant_id is None:
-        return query.filter(model.tenant_id.is_(None))
-    return query.filter(model.tenant_id == tenant_id)
