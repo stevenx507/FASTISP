@@ -6,6 +6,7 @@ from .utils import (
     staff_required, platform_admin_required, permission_required,
     User, db, Tenant, MikroTikRouter, Client
 )
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services.branding_service import BrandingService
 from flask import request, jsonify, current_app
 

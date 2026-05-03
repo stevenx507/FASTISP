@@ -7,6 +7,7 @@ from .utils import (
     _parse_money_value, _parse_limit_int, _parse_iso_datetime, 
     _tenant_default_trial_ends_at, _generate_router_password
 )
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask import request, jsonify, current_app
 import hmac
 
