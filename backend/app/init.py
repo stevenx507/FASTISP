@@ -57,7 +57,15 @@ def create_app(config_name_or_class='development'):
     mail.init_app(app)
     limiter.init_app(app)
     metrics.init_app(app)
-    cache.init_app(app)
+    
+    # Force explicit cache config to avoid RedisCache attribute error
+    cache_config = {
+        'CACHE_TYPE': app.config.get('CACHE_TYPE', 'RedisCache'),
+        'CACHE_REDIS_URL': app.config.get('CACHE_REDIS_URL') or app.config.get('REDIS_URL'),
+        'CACHE_DEFAULT_TIMEOUT': app.config.get('CACHE_DEFAULT_TIMEOUT', 300),
+        'CACHE_KEY_PREFIX': 'ispfast_'
+    }
+    cache.init_app(app, config=cache_config)
     socketio.init_app(app)
 
     # CORS Configuration

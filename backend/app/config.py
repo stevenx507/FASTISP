@@ -190,7 +190,7 @@ class ProductionConfig(Config):
 
     # Redis and Cache
     REDIS_URL = os.environ.get('REDIS_URL')
-    CACHE_TYPE = os.environ.get('CACHE_TYPE', 'RedisCache')
+    CACHE_TYPE = os.environ.get('CACHE_TYPE', 'redis')
     CACHE_REDIS_URL = os.environ.get('CACHE_REDIS_URL', REDIS_URL)
     CACHE_KEY_PREFIX = 'ispfast_cache_'
     
