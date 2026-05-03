@@ -1143,7 +1143,7 @@ class NetworkNode(db.Model):
     __tablename__ = 'network_nodes'
 
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True, nullable=True)
+    tenant_id = db.Column(db.String(64), db.ForeignKey('tenants.id'), index=True, nullable=True)
     name = db.Column(db.String(120), nullable=False)
     node_type = db.Column(db.String(30), nullable=False, default='nap')
     # node_type: nap | mufa | splitter | antenna | olt | router | caja | poste | otro
