@@ -37,7 +37,7 @@ def _vpncmd(cmd: str, timeout: int = 20) -> dict:
             "docker", "exec", "-i", SOFTETHER_CONTAINER,
             "/usr/vpnserver/vpncmd", f"localhost:{SOFTETHER_PORT}", "/SERVER"
         ]
-        input_str = f"{SOFTETHER_ADMIN_PW}\n{cmd}\n"
+        input_str = f"{SOFTETHER_ADMIN_PW}\n{cmd}\nexit\n"
         
         result = subprocess.run(
             args, input=input_str, capture_output=True, text=True, timeout=timeout
@@ -72,7 +72,7 @@ def _vpncmd_hub(cmd: str, timeout: int = 20) -> dict:
         ]
         
         # El primer prompt que encontraremos es el de Server Admin
-        input_str = f"{SOFTETHER_ADMIN_PW}\n{cmd}\n"
+        input_str = f"{SOFTETHER_ADMIN_PW}\n{cmd}\nexit\n"
         
         result = subprocess.run(
             args, input=input_str, capture_output=True, text=True, timeout=timeout

@@ -134,6 +134,7 @@ class User(db.Model):
 
     # Relationship to Client
     client = db.relationship('Client', back_populates='user', uselist=False, cascade="all, delete-orphan")
+    partner_profile = db.relationship('Partner', back_populates='user', uselist=False, cascade="all, delete-orphan")
     tenant = db.relationship('Tenant', back_populates='users')
     tickets = db.relationship('Ticket', back_populates='user')
 
@@ -1674,8 +1675,9 @@ class Partner(db.Model):
     status = db.Column(db.String(20), default='active')
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    user = db.relationship('User', backref=db.backref('partner_profile', uselist=False))
+    user = db.relationship('User', back_populates='partner_profile')
     tenant = db.relationship('Tenant', back_populates='partners')
+    commissions = db.relationship('PartnerCommission', back_populates='partner', cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
@@ -1698,7 +1700,7 @@ class PartnerCommission(db.Model):
     status = db.Column(db.String(20), default='pending') # pending, paid
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    partner = db.relationship('Partner', backref='commissions')
+    partner = db.relationship('Partner', back_populates='commissions')
     client = db.relationship('Client')
     invoice = db.relationship('Invoice')
 

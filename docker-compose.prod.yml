@@ -40,8 +40,8 @@ services:
     environment:
       - CACHE_TYPE=SimpleCache
       - CACHE_REDIS_URL=
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - ALLOW_GOOGLE_LOGIN=false
+      - GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+      - ALLOW_GOOGLE_LOGIN=true
       - ALLOW_INSECURE_GOOGLE_LOGIN=${ALLOW_INSECURE_GOOGLE_LOGIN:-false}
     command: ["/bin/sh","-c","CACHE_TYPE=SimpleCache CACHE_REDIS_URL= gunicorn --bind 0.0.0.0:5000 --workers 2 --worker-class gevent --timeout 120 wsgi:app"]
     depends_on:
