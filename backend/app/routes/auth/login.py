@@ -47,7 +47,8 @@ def login():
             _audit("login_failed", metadata={"email": email})
             return jsonify({"error": "Credenciales inválidas"}), 401
 
-    if not user.is_active:
+    # Use getattr to prevent AttributeError if migration hasn't been run yet
+    if not getattr(user, 'is_active', True):
         return jsonify({"error": "Cuenta suspendida"}), 403
 
     access_token = create_access_token(identity=str(user.id))

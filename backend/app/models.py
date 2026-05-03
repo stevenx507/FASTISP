@@ -131,6 +131,7 @@ class User(db.Model):
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True)
     mfa_enabled = db.Column(db.Boolean, default=False, nullable=False)
     mfa_secret = db.Column(db.String(128))
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
 
     # Relationship to Client
     client = db.relationship('Client', back_populates='user', uselist=False, cascade="all, delete-orphan")
