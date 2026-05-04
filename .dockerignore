@@ -1,0 +1,12 @@
+node_modules
+frontend/node_modules
+backend/venv
+.venv
+venv
+*.pyc
+__pycache__
+.git
+.github
+.vscode
+.pytest_cache
+.ruff_cache
