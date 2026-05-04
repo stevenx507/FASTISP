@@ -287,6 +287,7 @@ def get_connectivity_dashboard() -> dict:
             "tenant_id": router.tenant_id,
             "status": status,
             "vpn_ip": vpn_ip,
+            "vpn_mode": "hub" if (getattr(router, 'vpn_username', None) or '').startswith("hub-") else "native",
             "last_seen": last_seen.isoformat() if last_seen else None,
             "minutes_since_seen": round((now - last_seen).total_seconds() / 60, 1) if last_seen else None,
             "is_active": router.is_active,

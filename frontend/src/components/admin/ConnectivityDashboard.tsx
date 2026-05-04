@@ -27,6 +27,7 @@ interface RouterStatus {
   tenant_id: number
   status: 'online' | 'offline' | 'warning' | 'never_connected'
   vpn_ip: string | null
+  vpn_mode?: 'native' | 'hub'
   last_seen: string | null
   minutes_since_seen: number | null
   is_active: boolean
@@ -369,7 +370,14 @@ const ConnectivityDashboard: React.FC = () => {
                   </div>
 
                   <div className="mt-3 space-y-1 text-xs text-slate-700">
-                    <p>IP VPN: <span className="font-mono text-slate-700">{r.vpn_ip || 'No asignada'}</span></p>
+                    <p className="flex items-center gap-2">
+                      IP VPN: <span className="font-mono text-slate-700">{r.vpn_ip || 'No asignada'}</span>
+                      {r.vpn_mode && (
+                        <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${r.vpn_mode === 'hub' ? 'bg-violet-100 text-violet-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                          {r.vpn_mode}
+                        </span>
+                      )}
+                    </p>
                     <p>API Port: <span className="text-slate-600">{r.api_port || 8728}</span></p>
                     <p>Último contacto: <span className="text-slate-600">{formatLastSeen(r.last_seen, r.minutes_since_seen)}</span></p>
                   </div>
@@ -443,7 +451,14 @@ const ConnectivityDashboard: React.FC = () => {
                 <div key={r.router_id} className={card}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-bold text-slate-800">{r.router_name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-slate-800">{r.router_name}</p>
+                        {r.vpn_mode && (
+                          <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${r.vpn_mode === 'hub' ? 'bg-violet-100 text-violet-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                            {r.vpn_mode}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-slate-700">
                         IP VPN: <span className="font-mono text-coral-500">{vpnRes?.vpn_ip || r.vpn_ip || 'Por asignar'}</span>
                         {vpnRes?.vpn_username && (

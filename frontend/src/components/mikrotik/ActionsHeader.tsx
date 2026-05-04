@@ -7,7 +7,7 @@ import {
   SparklesIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
-import { RouterItem } from './types';
+import { RouterItem } from '../types';
 
 interface ActionsHeaderProps {
   actionLoading: boolean;

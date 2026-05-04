@@ -9,506 +9,78 @@ import {
   SparklesIcon,
   DocumentTextIcon,
 } from '@heroicons/react/24/outline'
-import AIDiagnosis from './AIDiagnosis'
-import ActionsHeader from './ActionsHeader'
-import ConnectionsTab from './ConnectionsTab'
-import OverviewTab from './OverviewTab'
-import QueuesTab from './QueuesTab'
-import SidePanels from './SidePanels'
+import AIDiagnosis from './mikrotik/AIDiagnosis'
+import ActionsHeader from './mikrotik/ActionsHeader'
+import ConnectionsTab from './mikrotik/ConnectionsTab'
+import OverviewTab from './mikrotik/OverviewTab'
+import QueuesTab from './mikrotik/QueuesTab'
+import LogsTab from './mikrotik/LogsTab'
+import SidePanels from './mikrotik/SidePanels'
 import config from '../lib/config'
 import { useAuthStore } from '../store/authStore'
-import { RouterItem, RouterStats, Toast } from './types'
+import { 
+  RouterItem, 
+  RouterStats, 
+  Toast, 
+  RouterFormState, 
+  RouterSnmpFormState,
+  RouterQuickConnectResponse,
+  EnterpriseProfilesPayload,
+  EnterpriseHardeningResult,
+  EnterpriseFailoverResult,
+  EnterpriseChangeLogEntry,
+  RouterBackToHomeBootstrapData,
+  RouterConnectionDiagnosticsPayload,
+  RouterReadinessPayload,
+  RouterSnmpProfilePayload,
+  RouterSnmpPollResponse,
+  RouterQuickScripts,
+  RouterQuickGuidance,
+  RouterConnectionPlan,
+  RouterConnectionPlanAction,
+  ExpressStepState,
+  RouterAccessProfile,
+  RouterBackToHomeUser,
+  RouterBackToHomeScripts,
+  RouterBackToHomeStatus,
+  RouterWireGuardProfile,
+  RouterWireGuardRegisterAttempt,
+  RouterWireGuardRegisterVpsSync,
+  RouterWireGuardRegisterResponse,
+  RouterBackToHomeBootstrapResponse,
+  EnterpriseProfileOption,
+  EnterpriseProfilesResponse,
+  EnterpriseHardeningResponse,
+  EnterpriseFailoverTarget,
+  EnterpriseFailoverReport,
+  EnterpriseFailoverResponse,
+  EnterpriseChangeLogResponse,
+  WireGuardImportData,
+  WireGuardImportSuggestions,
+  WireGuardImportResponse,
+  RouterReadinessCheck,
+  RouterReadinessBlocker,
+  RouterReadinessResponse,
+  WireGuardOnboardResponse,
+  TenantScopePayload,
+  RouterOnboardingProfile,
+  RouterOnboardingProfileResponse,
+  LogItem,
+  RouterListResponse,
+  RouterCreateResponse,
+  SstpTunnelData,
+  RememberConnectionDiagnosticsOptions,
+  RouterConnectionActionResponse,
+  RouterSnmpProfileResponse,
+  RouterConnectionSnapshot
+} from './mikrotik/types'
 
-interface RouterListResponse {
-  success: boolean
-  routers: unknown[]
-}
-
-interface RouterCreateResponse {
-  success: boolean
-  router?: unknown
-  connection_tested?: boolean
-  reachable?: boolean | null
-  diagnostics?: RouterConnectionDiagnosticsPayload | null
-  onboarding_profile?: RouterOnboardingProfile | null
-  tenant_scope?: TenantScopePayload | null
-  error?: string
-}
-
-interface RouterConnectionDiagnosticsPayload {
-  success?: boolean
-  status?: string
-  summary?: string
-  host?: string
-  api_port?: number
-  host_scope?: string
-  transport_hint?: string
-  checks?: RouterReadinessCheck[]
-  recommendations?: string[]
-  runtime?: Record<string, unknown>
-}
-
-interface RouterConnectionActionResponse {
-  success?: boolean
-  error?: string
-  diagnostics?: RouterConnectionDiagnosticsPayload | null
-}
-
-interface RouterSnmpProfilePayload {
-  enabled?: boolean
-  label?: string
-  host?: string
-  port?: number
-  version?: string
-  community?: string
-  community_configured?: boolean
-  community_preview?: string
-  timeout_seconds?: number
-  retries?: number
-  poll_interfaces?: boolean
-  interface_names?: string[]
-  scalar_oids?: Record<string, string | { oid?: string; scale?: number }>
-  thresholds?: Record<string, number>
-  trap_enabled?: boolean
-  trap_port?: number
-  configured?: boolean
-}
-
-interface RouterSnmpProfileResponse {
-  success?: boolean
-  error?: string
-  profile?: RouterSnmpProfilePayload | null
-  runtime_available?: boolean
-}
-
-interface RouterSnmpPollInterface {
-  index?: number | null
-  name?: string
-  alias?: string | null
-  rx_bytes?: number
-  tx_bytes?: number
-  oper_status?: number
-}
-
-interface RouterSnmpPollResponse {
-  success?: boolean
-  error?: string
-  persisted?: boolean
-  polled_at?: string
-  runtime_available?: boolean
-  health_metrics?: Record<string, unknown>
-  interfaces?: RouterSnmpPollInterface[]
-}
-
-interface SstpTunnelData {
-  id: number
-  router_id: number
-  username: string
-  password?: string
-  server_host: string
-  server_port: number
-  server_ip: string
-  client_ip: string
-  status: string
-  script?: string
-  verification_script?: string
-  created_at?: string
-  router_name?: string
-  error?: string
-}
-
-interface RouterConnectionSnapshot {
-  diagnostics: RouterConnectionDiagnosticsPayload
-  checkedAt: number
-}
-
-interface RememberConnectionDiagnosticsOptions {
-  notifyOnChange?: boolean
-  routerName?: string
-}
-
-interface RouterQuickScripts {
-  direct_api_script: string
-  wireguard_site_to_vps_script: string
-  bth_enable_minimal_script?: string
-  windows_login: string
-  linux_login: string
-}
-
-interface RouterQuickGuidance {
-  back_to_home: string[]
-  notes: string[]
-}
-
-interface RouterConnectionPlanAction {
-  id: string
-  label: string
-  description?: string
-  script_key?: string
-  requires_local_access?: boolean
-  auto_available?: boolean
-}
-
-interface RouterConnectionPlan {
-  status?: string
-  title?: string
-  summary?: string
-  recommended_transport?: string
-  actions?: RouterConnectionPlanAction[]
-}
-
-interface ExpressStepState {
-  id: string
-  label: string
-  status: 'pending' | 'running' | 'success' | 'failed' | 'skipped'
-  detail?: string
-}
-
-interface RouterAccessProfile {
-  requested_scope?: string
-  detected_scope?: string
-  effective_scope?: string
-  is_ip?: boolean
-  host?: string
-  allows_direct_inbound?: boolean
-  recommended_transport?: string
-  reason?: string
-}
-
-interface RouterBackToHomeUser {
-  name: string
-  allow_lan: boolean
-  disabled: boolean
-  expires: string
-}
-
-interface RouterBackToHomeScripts {
-  enable_script: string
-  add_vps_user_script: string
-  generate_private_key_hint: string
-}
-
-interface RouterBackToHomeStatus {
-  reachable?: boolean
-  routeros_version?: string | null
-  supported?: boolean | null
-  bth_users_supported?: boolean | null
-  ddns_enabled?: boolean | null
-  back_to_home_vpn?: string | null
-  vpn_status?: string | null
-  vpn_dns_name?: string | null
-  vpn_interface?: string | null
-  vpn_port?: string | null
-  users?: RouterBackToHomeUser[]
-  users_error?: string
-  scripts?: RouterBackToHomeScripts
-  managed_identity?: {
-    enabled?: boolean
-    source?: string
-    key_source?: string
-    user_name?: string
-    public_key?: string | null
-    tenant_id?: number | null
-    created_now?: boolean
-    error?: string | null
-  }
-  limitations?: string[]
-  error?: string
-}
-
-interface RouterWireGuardProfile {
-  endpoint?: string
-  endpoint_host?: string
-  endpoint_port?: number
-  server_public_key?: string
-  server_public_key_valid?: boolean
-  allowed_subnets?: string
-  ready?: boolean
-  issues?: string[]
-  source?: {
-    endpoint?: string
-    server_public_key?: string
-    allowed_subnets?: string
-  }
-}
-
-interface RouterQuickConnectResponse {
-  success: boolean
-  access_profile?: RouterAccessProfile
-  connection_plan?: RouterConnectionPlan
-  wireguard_profile?: RouterWireGuardProfile
-  onboarding_profile?: RouterOnboardingProfile | null
-  tenant_scope?: TenantScopePayload | null
-  scripts?: RouterQuickScripts
-  guidance?: RouterQuickGuidance
-  back_to_home?: RouterBackToHomeStatus
-}
-
-interface RouterWireGuardRegisterAttempt {
-  transport?: string
-  success?: boolean
-  mode?: string
-  message?: string
-}
-
-interface RouterWireGuardRegisterVpsSync {
-  success?: boolean
-  mode?: string
-  message?: string
-  manual_required?: boolean
-  manual_command?: string
-  attempts?: RouterWireGuardRegisterAttempt[]
-}
-
-interface RouterWireGuardRegisterResponse {
-  success?: boolean
-  error?: string
-  vps_sync?: RouterWireGuardRegisterVpsSync
-}
-
-interface RouterBackToHomeBootstrapData {
-  success?: boolean
-  error?: string
-  user_name?: string
-  allow_lan?: boolean
-  user_visible_after_run?: boolean
-  operational?: boolean
-  state?: string
-  message?: string
-  missing?: string[]
-  next_steps?: string[]
-}
-
-interface RouterBackToHomeBootstrapResponse {
-  success?: boolean
-  error?: string
-  bootstrap?: RouterBackToHomeBootstrapData
-  vps_sync?: RouterWireGuardRegisterVpsSync
-}
-
-interface EnterpriseProfileOption {
-  id: string
-  label: string
-  description?: string
-}
-
-interface EnterpriseProfilesPayload {
-  router_profiles?: EnterpriseProfileOption[]
-  site_profiles?: EnterpriseProfileOption[]
-}
-
-interface EnterpriseProfilesResponse {
-  success?: boolean
-  profiles?: EnterpriseProfilesPayload
-  error?: string
-}
-
-interface EnterpriseHardeningResponse {
-  success?: boolean
-  dry_run?: boolean
-  profile?: string
-  site_profile?: string
-  change_id?: string
-  message?: string
-  error?: string
-  commands?: string[]
-  rollback_commands?: string[]
-  result?: string
-  rollback_result?: Record<string, unknown> | null
-}
-
-interface EnterpriseFailoverTarget {
-  target: string
-  total_probes: number
-  success_probes: number
-  packet_loss: number
-  avg_latency_ms: number | null
-  status: 'ok' | 'warning' | 'critical'
-  error?: string
-}
-
-interface EnterpriseFailoverReport {
-  generated_at?: string
-  overall_status?: 'ok' | 'warning' | 'critical'
-  targets?: EnterpriseFailoverTarget[]
-}
-
-interface EnterpriseFailoverResponse {
-  success?: boolean
-  report?: EnterpriseFailoverReport
-  error?: string
-}
-
-interface EnterpriseChangeLogEntry {
-  change_id: string
-  status: string
-  category?: string
-  actor?: string
-  profile?: string
-  site_profile?: string
-  created_at?: string
-  rolled_back_at?: string
-}
-
-interface EnterpriseChangeLogResponse {
-  success?: boolean
-  changes?: EnterpriseChangeLogEntry[]
-  error?: string
-}
-
-interface WireGuardImportData {
-  endpoint?: string
-  endpoint_host?: string
-  endpoint_port?: number | null
-  interface_addresses?: string[]
-  interface_private_key?: string
-  peer_allowed_ips?: string[]
-}
-
-interface WireGuardImportSuggestions {
-  router_name?: string
-  router_ip_or_host?: string
-  api_port?: number
-  default_username?: string
-  bth_private_key?: string
-  bth_user_name?: string
-  router_tunnel_ip?: string | null
-  router_management_ip_required?: boolean
-  account_label?: string
-}
-
-interface WireGuardImportResponse {
-  success?: boolean
-  error?: string
-  source_file?: string
-  wireguard?: WireGuardImportData
-  suggestions?: WireGuardImportSuggestions
-  onboarding_profile?: RouterOnboardingProfile | null
-  tenant_scope?: TenantScopePayload | null
-}
-
-interface RouterReadinessCheck {
-  id: string
-  ok: boolean
-  detail?: string
-  severity?: string
-}
-
-interface RouterReadinessBlocker {
-  id: string
-  detail?: string
-}
-
-interface RouterReadinessPayload {
-  score?: number
-  checks?: RouterReadinessCheck[]
-  blockers?: RouterReadinessBlocker[]
-  recommendations?: string[]
-  write_probe_enabled?: boolean
-}
-
-interface RouterReadinessResponse {
-  success?: boolean
-  error?: string
-  readiness?: RouterReadinessPayload
-}
-
-interface WireGuardOnboardResponse {
-  success?: boolean
-  error?: string
-  created?: boolean
-  reused_existing?: boolean
-  updated_existing?: boolean
-  source_file?: string
-  wireguard?: WireGuardImportData
-  router?: unknown
-  readiness?: RouterReadinessPayload
-  bootstrap?: RouterBackToHomeBootstrapData
-  vps_sync?: RouterWireGuardRegisterVpsSync
-  onboarding_profile?: RouterOnboardingProfile | null
-  tenant_scope?: TenantScopePayload | null
-}
-
-interface TenantScopePayload {
-  tenant_id?: number | null
-  tenant_slug?: string | null
-  tenant_name?: string | null
-  actor_email?: string | null
-  actor_name?: string | null
-}
-
-interface RouterOnboardingProfile {
-  account_label?: string
-  account_slug?: string
-  router_name_prefix?: string
-  default_username?: string
-  default_api_port?: number
-  default_bth_user_name?: string
-  default_allow_lan?: boolean
-  auto_vps_link?: boolean
-  auto_bootstrap_bth?: boolean
-  comment_prefix?: string
-  tenant_scope?: TenantScopePayload | null
-}
-
-interface RouterOnboardingProfileResponse {
-  success?: boolean
-  error?: string
-  profile?: RouterOnboardingProfile | null
-  tenant_scope?: TenantScopePayload | null
-}
-
-interface RouterFormState {
-  name: string
-  ip_address: string
-  username: string
-  password: string
-  api_port: string
-  // Campos extendidos
-  wan_port: string
-  lan_interface: string
-  ip_ranges: string
-  ros_version: '6' | '7'
-  coordinates: string
-  comments: string
-  use_sstp_script: boolean
-  historial_trafico: boolean
-  control_pppoe: boolean
-  control_queue: boolean
-  control_ap: boolean
-  control_dhcp: boolean
-  control_hotspot: boolean
-  traffic_flow_enabled: boolean
-}
-
-interface RouterSnmpFormState {
-  enabled: boolean
-  host: string
-  port: string
-  community: string
-  timeout_seconds: string
-  retries: string
-  poll_interfaces: boolean
-  interface_names: string
-  trap_enabled: boolean
-  trap_port: string
-  cpu_oid: string
-  mem_oid: string
-  temperature_oid: string
-  temperature_scale: string
-  voltage_oid: string
-  voltage_scale: string
-  signal_oid: string
-  signal_scale: string
-  optical_oid: string
-  optical_scale: string
-  onu_online_oid: string
-  onu_offline_oid: string
-  threshold_temperature: string
-  threshold_voltage_min: string
-  threshold_signal_min: string
-  threshold_optical_min: string
-}
+import RoutersTable from './mikrotik/RoutersTable'
+import RouterFormModal from './mikrotik/RouterFormModal'
+import ConfigTab from './mikrotik/ConfigTab'
+import SecurityTab from './mikrotik/SecurityTab'
+import TrafficFlowTab from './mikrotik/TrafficFlowTab'
+import VpnTab from './mikrotik/VpnTab'
 
 const CONNECTION_POLL_INTERVAL_MS = 60000
 
@@ -766,7 +338,7 @@ const MikroTikManagement: React.FC = () => {
   const [routers, setRouters] = useState<RouterItem[]>([])
   const [selectedRouter, setSelectedRouter] = useState<RouterItem | null>(null)
   const [routerStats, setRouterStats] = useState<RouterStats | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'queues' | 'connections' | 'config' | 'security' | 'traffic_flow' | 'ai_diagnosis' | 'logs'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'queues' | 'connections' | 'config' | 'security' | 'traffic_flow' | 'ai_diagnosis' | 'logs' | 'vpn'>('overview')
 
   const [isLoading, setIsLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
@@ -782,7 +354,7 @@ const MikroTikManagement: React.FC = () => {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null)
   const [aiError, setAiError] = useState<string | null>(null)
   const [isAiLoading, setIsAiLoading] = useState(false)
-  const [logs, setLogs] = useState<any[]>([])
+  const [logs, setLogs] = useState<LogItem[]>([])
   const [logsLoading, setLogsLoading] = useState(false)
 
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -2403,7 +1975,7 @@ const MikroTikManagement: React.FC = () => {
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow">
-        <h3 className="mb-3 text-lg font-semibold text-white">Alta rapida de MikroTik</h3>
+        <h3 className="mb-3 text-lg font-semibold text-slate-800">Alta rapida de MikroTik</h3>
         <p className="mb-3 text-sm text-slate-500">
           Agrega routers nuevos con sus credenciales de API. Luego usa la pestana Configuracion para provisionar el servidor SSTP nativo.
         </p>
@@ -2493,381 +2065,27 @@ const MikroTikManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Editor Router Modal (Premium Redesign) ── */}
-      {showRouterModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-white/80 backdrop-blur-sm py-10 px-4 sm:px-6">
-          <div 
-            className="w-full max-w-3xl rounded-3xl bg-white backdrop-blur-md shadow-2xl ring-1 ring-white/10 overflow-hidden transform transition-all" 
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header Moderno con Gradiente */}
-            <div className="flex items-center justify-between bg-gradient-to-r from-emerald-600 to-teal-600 px-8 py-5">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-md">
-                  <ServerIcon className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white tracking-tight">
-                    {editingRouter ? `Editar Router — ${editingRouter.name}` : 'Añadir Nuevo Router'}
-                  </h3>
-                  <p className="text-emerald-100 text-xs font-medium opacity-80">
-                    Integra tu equipo a ISPMAX para gestión centralizada
-                  </p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowRouterModal(false)} 
-                className="rounded-full p-2 text-emerald-100 hover:bg-white/10 hover:text-white transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Pestañas (Tabs) Estilizadas */}
-            <div className="flex border-b border-white/5 bg-slate-50/50 px-6 pt-2">
-              {[
-                { id: 'general', label: '1. Parámetros Básicos' },
-                { id: 'sstp',    label: '2. Equipos NAT / VPN' },
-                { id: 'traffic', label: '3. Integración NetFlow' },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setRouterModalTab(t.id as typeof routerModalTab)}
-                  className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
-                    routerModalTab === t.id
-                      ? 'border-teal-500 text-teal-700 bg-white backdrop-blur-md shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] rounded-t-xl'
-                      : 'border-transparent text-slate-500 hover:text-slate-600 hover:bg-white/10/50 rounded-t-xl'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
-              {/* ─── Tab: Parámetros Básicos ─── */}
-              {routerModalTab === 'general' && (
-                <div className="space-y-8">
-                  {/* Sección: Identificación y Acceso */}
-                  <div className="space-y-4">
-                    <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-teal-700">
-                      <span className="h-px flex-1 bg-teal-100"></span>
-                      Identidad y Acceso
-                      <span className="h-px flex-1 bg-teal-100"></span>
-                    </h4>
-                    
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Nombre del Router *</label>
-                        <input
-                          value={routerForm.name}
-                          onChange={(e) => setRouterForm((p) => ({ ...p, name: e.target.value }))}
-                          placeholder="Ej. Torre Principal"
-                          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-white focus:border-teal-500 focus:bg-white backdrop-blur-md focus:ring-2 focus:ring-teal-200 transition-all outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1.5">IP Pública (WAN) *</label>
-                        <input
-                          value={routerForm.ip_address}
-                          onChange={(e) => setRouterForm((p) => ({ ...p, ip_address: e.target.value }))}
-                          placeholder="Si tienes NAT, déjalo vacío"
-                          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-mono text-white focus:border-teal-500 focus:bg-white backdrop-blur-md focus:ring-2 focus:ring-teal-200 transition-all outline-none placeholder:font-sans placeholder:text-slate-500"
-                        />
-                        <p className="mt-1.5 text-[10px] text-slate-500 font-medium">
-                          ¿No tienes IP Pública? Usa la pestaña <strong className="text-teal-600">Equipos NAT / VPN</strong> para conectar.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Usuario API *</label>
-                        <input
-                          value={routerForm.username}
-                          onChange={(e) => setRouterForm((p) => ({ ...p, username: e.target.value }))}
-                          placeholder="admin"
-                          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-white focus:border-teal-500 focus:bg-white backdrop-blur-md focus:ring-2 focus:ring-teal-200 transition-all outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Contraseña API *</label>
-                        <input
-                          type="password"
-                          value={routerForm.password}
-                          onChange={(e) => setRouterForm((p) => ({ ...p, password: e.target.value }))}
-                          placeholder="••••••••"
-                          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-white focus:border-teal-500 focus:bg-white backdrop-blur-md focus:ring-2 focus:ring-teal-200 transition-all outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Sección: Puertos y Red */}
-                  <div className="space-y-4">
-                    <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-teal-700">
-                      <span className="h-px flex-1 bg-teal-100"></span>
-                      Configuración de Red
-                      <span className="h-px flex-1 bg-teal-100"></span>
-                    </h4>
-
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Puerto API</label>
-                        <input
-                          value={routerForm.api_port}
-                          onChange={(e) => setRouterForm((p) => ({ ...p, api_port: e.target.value }))}
-                          placeholder="8728"
-                          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-mono text-white focus:border-teal-500 focus:bg-white backdrop-blur-md transition-all outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Versión ROS</label>
-                        <select
-                          value={routerForm.ros_version}
-                          onChange={(e) => setRouterForm((p) => ({ ...p, ros_version: e.target.value as '6' | '7' }))}
-                          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-white focus:border-teal-500 focus:bg-white backdrop-blur-md transition-all outline-none appearance-none"
-                        >
-                          <option value="7">v7 o superior</option>
-                          <option value="6">v6 o inferior</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Interfaz LAN</label>
-                        <input
-                          value={routerForm.lan_interface}
-                          onChange={(e) => setRouterForm((p) => ({ ...p, lan_interface: e.target.value }))}
-                          placeholder="ether1"
-                          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-mono text-white focus:border-teal-500 focus:bg-white backdrop-blur-md transition-all outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Feature toggles modernizados */}
-                  <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/50 to-teal-50/50 p-5">
-                    <p className="mb-4 text-xs font-bold text-emerald-800 uppercase tracking-wide">Módulos Activos en ISPMAX</p>
-                    <div className="grid grid-cols-2 gap-y-4 gap-x-6 sm:grid-cols-3">
-                      {[
-                        { key: 'use_sstp_script',     label: 'Túnel SSTP/VPN' },
-                        { key: 'control_pppoe',        label: 'Gestión PPPoE' },
-                        { key: 'control_queue',        label: 'Simple Queues' },
-                        { key: 'control_dhcp',         label: 'DHCP Leases' },
-                        { key: 'control_hotspot',      label: 'Portal HotSpot' },
-                        { key: 'traffic_flow_enabled', label: 'Monitor NetFlow' },
-                      ].map(({ key, label }) => {
-                        const val = routerForm[key as keyof RouterFormState] as boolean
-                        return (
-                          <label key={key} className="flex cursor-pointer items-center gap-3 group">
-                            <div className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-all duration-300 ease-in-out ${
-                                val ? 'bg-teal-500 shadow-inner' : 'bg-slate-300'
-                              }`}
-                              onClick={() => setRouterForm((p) => ({ ...p, [key]: !val }))}
-                            >
-                              <span className={`inline-block h-5 w-5 transform rounded-full bg-white backdrop-blur-md shadow-md transition-transform duration-300 ease-in-out ${
-                                val ? 'translate-x-5' : 'translate-x-0'
-                              }`} />
-                            </div>
-                            <span className={`text-sm font-semibold transition-colors duration-200 ${ val ? 'text-teal-800' : 'text-slate-500 group-hover:text-slate-700'}`}>{label}</span>
-                          </label>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ─── Tab: Script de Conexión (Rediseñado) ─── */}
-              {routerModalTab === 'sstp' && (
-                <div className="space-y-6">
-                  <div className="rounded-2xl border border-blue-500/30 bg-gradient-to-r from-blue-50 to-indigo-50 p-5 shadow-sm">
-                    <div className="flex items-start gap-3">
-                      <div className="mt-0.5 shrink-0 rounded-full bg-blue-500/20 p-1">
-                        <ShieldCheckIcon className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-blue-200">Solución para CGNAT e IPs Privadas</h4>
-                        <p className="mt-1 text-xs text-blue-300/80 leading-relaxed">
-                          Si tu MikroTik no es accesible directamente desde internet, ISPMAX puede crear un túnel reverso. 
-                          Guarda el router y luego ve a la pestaña <strong>Script de Conexión</strong> del router seleccionado para obtener el comando que debes pegar en el New Terminal de tu equipo.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="rounded-2xl border border-white/5 bg-white backdrop-blur-md p-5 shadow-sm ring-1 ring-white/10">
-                    <label className="flex cursor-pointer items-center gap-4 group">
-                      <div className={`relative inline-flex h-7 w-12 shrink-0 rounded-full border-2 border-transparent transition-all duration-300 ease-in-out ${
-                          routerForm.use_sstp_script ? 'bg-teal-500 shadow-inner' : 'bg-slate-300'
-                        }`}
-                        onClick={() => setRouterForm((p) => ({ ...p, use_sstp_script: !p.use_sstp_script }))}
-                      >
-                        <span className={`inline-block h-6 w-6 transform rounded-full bg-white backdrop-blur-md shadow-md transition-transform duration-300 ease-in-out ${
-                          routerForm.use_sstp_script ? 'translate-x-5' : 'translate-x-0'
-                        }`} />
-                      </div>
-                      <div>
-                        <span className="text-base font-bold text-slate-800">Habilitar Auto-Aprovisionamiento de VPN</span>
-                        <p className="text-xs text-slate-500 mt-0.5">ISPMAX preparará la IP de túnel y credenciales automáticamente.</p>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              {/* ─── Tab: Script de Traffic Flow ─── */}
-              {routerModalTab === 'traffic' && (
-                <div className="space-y-6">
-                  <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 shadow-sm">
-                    <div className="flex items-start gap-3">
-                      <div className="mt-0.5 shrink-0 rounded-full bg-amber-500/20 p-1 border border-amber-500/30">
-                        <ChartBarIcon className="h-5 w-5 text-amber-400" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-amber-400">Monitor de Tráfico Avanzado</h4>
-                        <p className="mt-1 text-xs text-amber-200/70 leading-relaxed">
-                          Analiza el tráfico detallado de tus clientes. Guarda el router primero y luego obtén los scripts NetFlow en el panel de gestión del router.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/5 bg-white backdrop-blur-md p-5 shadow-sm ring-1 ring-white/10">
-                    <label className="flex cursor-pointer items-center gap-4 group">
-                      <div className={`relative inline-flex h-7 w-12 shrink-0 rounded-full border-2 border-transparent transition-all duration-300 ease-in-out ${
-                          routerForm.traffic_flow_enabled ? 'bg-teal-500 shadow-inner' : 'bg-slate-300'
-                        }`}
-                        onClick={() => setRouterForm((p) => ({ ...p, traffic_flow_enabled: !p.traffic_flow_enabled }))}
-                      >
-                        <span className={`inline-block h-6 w-6 transform rounded-full bg-white backdrop-blur-md shadow-md transition-transform duration-300 ease-in-out ${
-                          routerForm.traffic_flow_enabled ? 'translate-x-5' : 'translate-x-0'
-                        }`} />
-                      </div>
-                      <div>
-                        <span className="text-base font-bold text-slate-800">Recopilar Estadísticas NetFlow</span>
-                        <p className="text-xs text-slate-500 mt-0.5">Compatible con RouterOS {routerForm.ros_version === '6' ? 'v6' : 'v7'} de forma nativa.</p>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Footer Moderno */}
-            <div className="flex items-center justify-between rounded-b-3xl border-t border-white/5 bg-slate-50 px-8 py-5">
-              <button
-                onClick={() => setShowRouterModal(false)}
-                className="rounded-xl border border-gray-200 bg-white backdrop-blur-md px-5 py-2.5 text-sm font-bold text-slate-500 shadow-sm hover:bg-white hover:text-white transition-all"
-              >
-                Cancelar
-              </button>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    if (routerModalTab === 'general') setRouterModalTab('sstp')
-                    else if (routerModalTab === 'sstp') setRouterModalTab('traffic')
-                  }}
-                  disabled={routerModalTab === 'traffic'}
-                  className="rounded-xl px-5 py-2.5 text-sm font-bold text-teal-600 hover:bg-teal-50 disabled:opacity-40 transition-colors"
-                >
-                  Siguiente Paso ➔
-                </button>
-                <button
-                  onClick={() => void createRouter()}
-                  disabled={creatingRouter}
-                  className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 hover:scale-105 hover:shadow-emerald-500/50 disabled:opacity-60 disabled:hover:scale-100 transition-all duration-300"
-                >
-                  {creatingRouter ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Conectando...
-                    </span>
-                  ) : (
-                    '✔ Guardar Router'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <RouterFormModal
+        isOpen={showRouterModal}
+        onClose={() => setShowRouterModal(false)}
+        editingRouter={editingRouter}
+        routerForm={routerForm}
+        setRouterForm={setRouterForm}
+        routerModalTab={routerModalTab}
+        setRouterModalTab={setRouterModalTab}
+        onSubmit={createRouter}
+        isSaving={creatingRouter}
+      />
 
       <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm mb-6">
         <h3 className="mb-4 text-sm font-black text-slate-800 uppercase tracking-widest">Lista de Routers</h3>
 
-        {/* Tabla de routers */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/50 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                <th className="px-4 py-3 text-left">Nombre</th>
-                <th className="px-4 py-3 text-left">IP de Gestión</th>
-                <th className="px-4 py-3 text-left">Usuario</th>
-                <th className="px-4 py-3 text-center">API</th>
-                <th className="px-4 py-3 text-center">Puerto</th>
-                <th className="px-4 py-3 text-center">SSTP</th>
-                <th className="px-4 py-3 text-center">VPN IP</th>
-                <th className="px-4 py-3 text-right">Gestión</th>
-              </tr>
-            </thead>
-            <tbody>
-              {routers.map((router) => {
-                const snapshot = routerConnectionSnapshots[router.id]
-                const diagnostics = snapshot?.diagnostics || null
-                const isSelected = selectedRouter?.id === router.id
-                const apiOk = diagnostics?.success === true
-                return (
-                  <tr
-                    key={router.id}
-                    onClick={() => setSelectedRouter(router)}
-                    className={`cursor-pointer border-b border-gray-50 transition-all ${
-                      isSelected ? 'bg-coral-50/50' : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${apiOk ? 'bg-emerald-50 text-emerald-600' : 'bg-coral-50 text-coral-600'}`}>
-                          <ServerIcon className="h-5 w-5" />
-                        </div>
-                        <span className="font-bold text-slate-700">{router.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 font-mono text-slate-700 text-xs">{router.ip_address}</td>
-                    <td className="px-4 py-4 text-slate-700 text-xs font-bold">{router.username || '-'}</td>
-                    <td className="px-4 py-4 text-center">
-                      <div className={`mx-auto h-2 w-2 rounded-full ${apiOk ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-coral-500 shadow-[0_0_8px_rgba(255,105,97,0.5)]'}`} />
-                    </td>
-                    <td className="px-4 py-4 text-center text-xs font-bold text-slate-700">{router.api_port || 8728}</td>
-                    <td className="px-4 py-4 text-center">
-                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-tighter ${
-                        router.sstp_active 
-                          ? 'bg-blue-50 text-blue-600 border border-blue-100' 
-                          : 'bg-gray-100 text-slate-500'
-                      }`}>
-                        {router.sstp_active ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 text-center font-mono text-[10px] font-bold text-slate-700">
-                      {router.vpn_ip || '-'}
-                    </td>
-                    <td className="px-4 py-4 text-right">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setSelectedRouter(router) }}
-                        className="rounded-xl bg-gray-50 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white hover:bg-gray-100 transition-all shadow-sm"
-                      >
-                        Gestionar
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-        {!routers.length && <p className="mt-6 text-sm text-slate-500 text-center font-bold">No hay routers registrados todavía.</p>}
+        <RoutersTable
+          routers={routers}
+          selectedRouter={selectedRouter}
+          setSelectedRouter={setSelectedRouter}
+          routerConnectionSnapshots={routerConnectionSnapshots}
+        />
       </div>
 
       {selectedRouter && (
@@ -2959,7 +2177,7 @@ const MikroTikManagement: React.FC = () => {
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setHerramientasModal(null)}>
               <div className="w-full max-w-3xl rounded-xl bg-white backdrop-blur-md p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
                 <div className="mb-3 flex items-center justify-between">
-                  <h3 className="font-bold text-white">
+                  <h3 className="font-bold text-slate-800">
                     {herramientasModal === 'arp' ? '📍 Lista ARP' : '📶 PPP Active Connections'} — {selectedRouter.name}
                   </h3>
                   <button onClick={() => setHerramientasModal(null)} className="text-slate-500 hover:text-slate-500 text-lg">✕</button>
@@ -2997,22 +2215,23 @@ const MikroTikManagement: React.FC = () => {
 
           <div className="mb-8 overflow-x-auto pb-2">
             <nav className="flex space-x-2">
-              {[
+              {([
                 { id: 'overview', name: 'Resumen', icon: ChartBarIcon },
                 { id: 'queues', name: 'Colas', icon: UserGroupIcon },
                 { id: 'connections', name: 'Conexiones', icon: WifiIcon },
                 { id: 'config', name: 'Configuracion', icon: CogIcon },
+                { id: 'vpn', name: 'VPN', icon: ShieldCheckIcon },
                 { id: 'security', name: 'Seguridad', icon: ShieldCheckIcon },
                 { id: 'traffic_flow', name: 'Traffic Flow', icon: ChartBarIcon },
                 { id: 'ai_diagnosis', name: 'IA Diagnosis', icon: SparklesIcon },
                 { id: 'logs', name: 'Logs', icon: DocumentTextIcon },
-              ].map((tab) => {
+              ] as const).map((tab) => {
                 const isActive = activeTab === tab.id
                 return (
                   <button
                     key={tab.id}
                     onClick={() => {
-                      setActiveTab(tab.id as any)
+                      setActiveTab(tab.id)
                       if (tab.id === 'logs') void loadLogs()
                       if (tab.id === 'ai_diagnosis' && !aiAnalysis) void runAiDiagnosis()
                     }}
@@ -3038,7 +2257,20 @@ const MikroTikManagement: React.FC = () => {
               </div>
             ) : (
               <>
-                {activeTab === 'overview' && <OverviewTab routerStats={routerStats} />}
+                {activeTab === 'overview' && selectedRouter && (
+                  <OverviewTab
+                    selectedRouter={selectedRouter}
+                    routerConnectionSnapshots={routerConnectionSnapshots}
+                    diagnostics={activeConnectionDiagnostics}
+                    testConnection={testConnection}
+                    backupRouter={backupRouter}
+                    runAiDiagnosis={runAiDiagnosis}
+                    isAiLoading={isAiLoading}
+                    rebootRouter={rebootRouter}
+                    actionLoading={actionLoading}
+                    openConfirm={openConfirm}
+                  />
+                )}
                 {activeTab === 'queues' && (
                   <QueuesTab
                     routerStats={routerStats}
@@ -3060,1222 +2292,133 @@ const MikroTikManagement: React.FC = () => {
                   />
                 )}
                 {activeTab === 'ai_diagnosis' && (
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h4 className="text-sm font-medium text-slate-700">Diagnóstico Inteligente (AI)</h4>
-                      <button 
-                        onClick={runAiDiagnosis} 
-                        disabled={isAiLoading}
-                        className="text-xs bg-blue-600/20 text-blue-400 px-3 py-1 rounded-full border border-blue-500/30 hover:bg-blue-600/30"
-                      >
-                        {isAiLoading ? 'Analizando...' : 'Refrescar Análisis'}
-                      </button>
-                    </div>
-                    <AIDiagnosis analysis={aiAnalysis} error={aiError} isLoading={isAiLoading} />
-                  </div>
+                  <AIDiagnosis analysis={aiAnalysis} isLoading={isAiLoading} error={aiError} onRetry={runAiDiagnosis} />
                 )}
                 {activeTab === 'logs' && (
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h4 className="text-sm font-medium text-slate-700">Logs del Router (RouterOS)</h4>
-                      <button 
-                        onClick={loadLogs} 
-                        disabled={logsLoading}
-                        className="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200 hover:bg-slate-200"
-                      >
-                        {logsLoading ? 'Cargando...' : 'Actualizar Logs'}
-                      </button>
-                    </div>
-                    <div className="max-h-[500px] overflow-y-auto rounded-lg bg-black/40 p-4 font-mono text-xs">
-                      {logsLoading ? (
-                        <div className="py-10 text-center text-slate-500">Cargando logs...</div>
-                      ) : logs.length === 0 ? (
-                        <div className="py-10 text-center text-slate-500">No hay logs recientes.</div>
-                      ) : (
-                        <div className="space-y-1">
-                          {logs.map((log, idx) => (
-                            <div key={idx} className="flex gap-2">
-                              <span className="text-slate-500 shrink-0">{log.time}</span>
-                              <span className={`shrink-0 ${log.topics?.includes('error') ? 'text-rose-600' : 'text-cyan-600'}`}>
-                                [{log.topics}]
-                              </span>
-                              <span className="text-slate-600">{log.message}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <LogsTab
+                    logs={logs}
+                    logsLoading={logsLoading}
+                    loadLogs={loadLogs}
+                  />
                 )}
                 {activeTab === 'config' && (
-                  <div className="space-y-4">
-                    <h4 className="text-lg font-semibold text-slate-800">Conexion remota guiada</h4>
-                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-semibold text-emerald-800">Aislamiento por cuenta ISP</p>
-                          <p className="text-xs text-emerald-700">
-                            Perfil activo: <strong>{quickConnect?.onboarding_profile?.account_label || onboardingProfile?.account_label || user?.email || 'Cuenta actual'}</strong>
-                            {' '}| prefijo routers: <strong>{quickConnect?.onboarding_profile?.router_name_prefix || onboardingProfile?.router_name_prefix || '-'}</strong>
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-400 border border-emerald-500/30">
-                            {selectedRouter.status === 'reachable' ? 'En línea' : 'Desconectado'}
-                          </span>
-                          <span className="rounded-full bg-blue-500/20 px-2 py-1 text-xs font-semibold text-blue-300 border border-blue-500/30">
-                            tenant {quickConnect?.tenant_scope?.tenant_slug || onboardingProfile?.tenant_scope?.tenant_slug || tenantContextId || 'global'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-700">Perfil de acceso WAN</p>
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={quickConnectScope}
-                            onChange={(e) => setQuickConnectScope(e.target.value as 'auto' | 'public' | 'private')}
-                            className="rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-800"
-                          >
-                            <option value="auto">Auto detectar</option>
-                            <option value="public">Forzar publica</option>
-                            <option value="private">Forzar privada</option>
-                          </select>
-                          <button
-                            onClick={() => selectedRouter && void loadQuickConnect(selectedRouter.id, quickConnectScope)}
-                            disabled={quickLoading}
-                            className="rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-white hover:bg-gray-50 disabled:opacity-60"
-                          >
-                            Aplicar
-                          </button>
-                        </div>
-                      </div>
-                      {quickConnect?.access_profile && (
-                        <div className="mt-2 space-y-1 text-xs text-slate-600">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-600 border border-slate-200">
-                              detectado: {quickConnect.access_profile.detected_scope || 'unknown'}
-                            </span>
-                            <span className="rounded-full bg-blue-50 px-2 py-1 font-semibold text-blue-600 border border-blue-100">
-                              efectivo: {quickConnect.access_profile.effective_scope || 'unknown'}
-                            </span>
-                            <span className="rounded-full bg-emerald-50 px-2 py-1 font-semibold text-emerald-600 border border-emerald-100">
-                              recomendado: {quickConnect.access_profile.recommended_transport || '-'}
-                            </span>
-                          </div>
-                          <p className="text-slate-600">{quickConnect.access_profile.reason || '-'}</p>
-                        </div>
-                      )}
-                    </div>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                      <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-700">Diagnostico de conexion API</p>
-                          <p className="text-xs text-slate-600">Muestra la causa real del ultimo test: DNS, puerto, login API y ruta sugerida para el operador.</p>
-                          <p className="text-[11px] text-slate-600">
-                            Monitoreo automatico cada {Math.round(CONNECTION_POLL_INTERVAL_MS / 1000)}s mientras esta abierta esta pestaña.
-                            Ultimo check: {formatConnectionCheckedAt(activeConnectionSnapshot?.checkedAt)}
-                          </p>
-                        </div>
-                        {activeConnectionDiagnostics && (
-                          <span
-                            className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                              getConnectionStatusTone(activeConnectionDiagnostics)
-                            }`}
-                          >
-                            {getConnectionStatusLabel(activeConnectionDiagnostics)}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* NAT Warning */}
-                      {quickConnect?.access_profile?.effective_scope === 'private' && (
-                        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                          <div className="flex gap-2">
-                            <span className="text-amber-500 font-bold">⚠️ NAT detectado:</span>
-                            <div className="text-xs text-amber-800 space-y-1">
-                              <p>El router tiene una IP privada o está tras CGNAT. El acceso directo por puerto 8728 fallará.</p>
-                              <p className="font-semibold">Solución recomendada:</p>
-                              <ul className="list-disc list-inside">
-                                <li>Usa <strong>SSTP Nativo</strong> (más fácil) o <strong>WireGuard</strong>.</li>
-                                <li>Si el router soporta <strong>Back To Home (BTH)</strong>, es la opción más robusta.</li>
-                              </ul>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {!activeConnectionDiagnostics && (
-                        <p className="text-xs text-slate-600">Todavia no hay un diagnostico guardado para este router. Usa "Probar conexion" o la validacion del wizard.</p>
-                      )}
-                      {activeConnectionDiagnostics && (
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                             <span
-                              className={`rounded-full px-2 py-1 text-xs font-semibold border ${
-                                activeConnectionDiagnostics.success 
-                                  ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
-                                  : 'bg-amber-50 text-amber-600 border-amber-200'
-                              }`}
-                            >
-                              {activeConnectionDiagnostics.summary || 'Sin resumen'}
-                            </span>
-                            {activeConnectionDiagnostics.transport_hint && (
-                              <span className="rounded-full bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-600 border border-sky-200">
-                                Ruta sugerida: {activeConnectionDiagnostics.transport_hint}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-700">
-                            Host <strong>{activeConnectionDiagnostics.host || selectedRouter.ip_address}</strong>:{' '}
-                            <strong>{activeConnectionDiagnostics.api_port || '-'}</strong> | tipo:{' '}
-                            <strong>{describeHostScope(activeConnectionDiagnostics.host_scope)}</strong>
-                          </p>
-                          <ul className="space-y-1 text-xs text-slate-800">
-                            {(activeConnectionDiagnostics.checks || []).map((check) => {
-                              const severity = check.severity || (check.ok ? 'ok' : 'warning')
-                              const toneClass =
-                                severity === 'critical'
-                                  ? 'bg-rose-50 text-rose-600 border-rose-200'
-                                  : severity === 'warning'
-                                    ? 'bg-amber-50 text-amber-600 border-amber-200'
-                                    : 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                              return (
-                                <li key={check.id} className="flex flex-wrap items-center gap-2">
-                                  <span className={`rounded px-2 py-0.5 font-semibold ${toneClass}`}>{check.id}</span>
-                                  <span>{check.detail || '-'}</span>
-                                </li>
-                              )
-                            })}
-                          </ul>
-                          {(activeConnectionDiagnostics.recommendations || []).length > 0 && (
-                            <div className="rounded border border-sky-200 bg-sky-50 p-2">
-                              <p className="text-xs font-semibold uppercase text-sky-700">Mejoras sugeridas</p>
-                              <ul className="mt-1 space-y-1 text-xs text-sky-800">
-                                {(activeConnectionDiagnostics.recommendations || []).map((item, idx) => (
-                                  <li key={`${item}-${idx}`}>- {item}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-700">Monitoreo SNMP</p>
-                          <p className="text-xs text-slate-600">
-                            Configura sondeo para CPU, memoria, temperatura, voltaje, senal u optica desde esta misma vista.
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span
-                            className={`rounded-full px-2 py-1 text-xs font-semibold border ${
-                              routerSnmpProfile?.enabled 
-                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
-                                : 'bg-slate-100 text-slate-500 border-slate-200'
-                            }`}
-                          >
-                            {routerSnmpProfile?.enabled ? 'SNMP activo' : 'SNMP inactivo'}
-                          </span>
-                          <span
-                            className={`rounded-full px-2 py-1 text-xs font-semibold border ${
-                              routerSnmpRuntimeAvailable === false 
-                                ? 'bg-amber-50 text-amber-600 border-amber-200' 
-                                : 'bg-blue-50 text-blue-600 border-blue-200'
-                            }`}
-                          >
-                            {routerSnmpRuntimeAvailable === false ? 'Backend sin runtime SNMP' : 'Backend listo'}
-                          </span>
-                        </div>
-                      </div>
-                      {routerSnmpLoading ? (
-                        <p className="text-xs text-slate-500">Cargando perfil SNMP...</p>
-                      ) : (
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-1 gap-3 xl:grid-cols-4">
-                            <label className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
-                              <span className="mb-1 block font-semibold text-slate-700">Host</span>
-                              <input
-                                value={routerSnmpForm.host}
-                                onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, host: e.target.value }))}
-                                placeholder={selectedRouter.ip_address}
-                                className="w-full rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
-                              />
-                            </label>
-                            <label className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
-                              <span className="mb-1 block font-semibold text-slate-700">Community</span>
-                              <input
-                                value={routerSnmpForm.community}
-                                onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, community: e.target.value }))}
-                                placeholder={routerSnmpProfile?.community_preview || 'public'}
-                                className="w-full rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
-                              />
-                              <span className="mt-1 block text-[11px] text-slate-600">
-                                {routerSnmpProfile?.community_configured ? `Actual: ${routerSnmpProfile.community_preview || 'configurada'}` : 'Escribe una nueva para guardarla.'}
-                              </span>
-                            </label>
-                            <label className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
-                              <span className="mb-1 block font-semibold text-slate-700">Puerto / timeout / retries</span>
-                              <div className="grid grid-cols-3 gap-2">
-                                <input
-                                  value={routerSnmpForm.port}
-                                  onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, port: e.target.value }))}
-                                  className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
-                                />
-                                <input
-                                  value={routerSnmpForm.timeout_seconds}
-                                  onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, timeout_seconds: e.target.value }))}
-                                  className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
-                                />
-                                <input
-                                  value={routerSnmpForm.retries}
-                                  onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, retries: e.target.value }))}
-                                  className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
-                                />
-                              </div>
-                            </label>
-                            <div className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
-                              <span className="mb-2 block font-semibold text-slate-700">Switches</span>
-                              <div className="space-y-2">
-                                <label className="flex items-center justify-between gap-2">
-                                  <span>SNMP habilitado</span>
-                                  <input
-                                    type="checkbox"
-                                    checked={routerSnmpForm.enabled}
-                                    onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, enabled: e.target.checked }))}
-                                  />
-                                </label>
-                                <label className="flex items-center justify-between gap-2">
-                                  <span>Leer interfaces</span>
-                                  <input
-                                    type="checkbox"
-                                    checked={routerSnmpForm.poll_interfaces}
-                                    onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, poll_interfaces: e.target.checked }))}
-                                  />
-                                </label>
-                                <label className="flex items-center justify-between gap-2">
-                                  <span>Esperar traps</span>
-                                  <input
-                                    type="checkbox"
-                                    checked={routerSnmpForm.trap_enabled}
-                                    onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, trap_enabled: e.target.checked }))}
-                                  />
-                                </label>
-                              </div>
-                            </div>
-                          </div>
-
-                          <label className="block rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
-                            <span className="mb-1 block font-semibold text-slate-700">Interfaces a graficar</span>
-                            <input
-                              value={routerSnmpForm.interface_names}
-                              onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, interface_names: e.target.value }))}
-                              placeholder="ether1, sfp1, bridge"
-                              className="w-full rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
-                            />
-                            <span className="mt-1 block text-[11px] text-slate-600">
-                              Dejalo vacio para leer todas las interfaces expuestas por SNMP.
-                            </span>
-                          </label>
-
-                          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-                            {[
-                              { key: 'cpu_oid', label: 'CPU %', scaleKey: '' },
-                              { key: 'mem_oid', label: 'Memoria %', scaleKey: '' },
-                              { key: 'temperature_oid', label: 'Temperatura C', scaleKey: 'temperature_scale' },
-                              { key: 'voltage_oid', label: 'Voltaje V', scaleKey: 'voltage_scale' },
-                              { key: 'signal_oid', label: 'Senal dBm', scaleKey: 'signal_scale' },
-                              { key: 'optical_oid', label: 'Optica RX dBm', scaleKey: 'optical_scale' },
-                              { key: 'onu_online_oid', label: 'ONU online', scaleKey: '' },
-                              { key: 'onu_offline_oid', label: 'ONU offline', scaleKey: '' },
-                            ].map((field) => {
-                              const currentValue = routerSnmpForm[field.key as keyof RouterSnmpFormState] as string
-                              const currentScale = field.scaleKey
-                                ? (routerSnmpForm[field.scaleKey as keyof RouterSnmpFormState] as string)
-                                : ''
-                              return (
-                                <div key={field.key} className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
-                                  <span className="mb-1 block font-semibold text-slate-700">{field.label}</span>
-                                  <div className={`grid gap-2 ${field.scaleKey ? 'grid-cols-[minmax(0,1fr)_88px]' : 'grid-cols-1'}`}>
-                                    <input
-                                      value={currentValue}
-                                      onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                                      placeholder="OID"
-                                      className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
-                                    />
-                                    {field.scaleKey && (
-                                      <input
-                                        value={currentScale}
-                                        onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, [field.scaleKey]: e.target.value }))}
-                                        placeholder="scale"
-                                        className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
-                                      />
-                                    )}
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-
-                          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-                            <label className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
-                              <span className="mb-1 block font-semibold text-slate-700">Temp. critica C</span>
-                              <input
-                                value={routerSnmpForm.threshold_temperature}
-                                onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, threshold_temperature: e.target.value }))}
-                                className="w-full rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
-                              />
-                            </label>
-                            <label className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
-                              <span className="mb-1 block font-semibold text-slate-700">Voltaje minimo</span>
-                              <input
-                                value={routerSnmpForm.threshold_voltage_min}
-                                onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, threshold_voltage_min: e.target.value }))}
-                                className="w-full rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
-                              />
-                            </label>
-                            <label className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
-                              <span className="mb-1 block font-semibold text-slate-700">Senal minima dBm</span>
-                              <input
-                                value={routerSnmpForm.threshold_signal_min}
-                                onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, threshold_signal_min: e.target.value }))}
-                                className="w-full rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
-                              />
-                            </label>
-                            <label className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
-                              <span className="mb-1 block font-semibold text-slate-700">Optica minima dBm</span>
-                              <input
-                                value={routerSnmpForm.threshold_optical_min}
-                                onChange={(e) => setRouterSnmpForm((prev) => ({ ...prev, threshold_optical_min: e.target.value }))}
-                                className="w-full rounded border border-slate-200 px-2 py-1 text-xs text-slate-800"
-                              />
-                            </label>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              onClick={() => void saveRouterSnmpProfile()}
-                              disabled={routerSnmpSaving}
-                              className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
-                            >
-                              {routerSnmpSaving ? 'Guardando...' : 'Guardar perfil SNMP'}
-                            </button>
-                            <button
-                              onClick={() => void runRouterSnmpPoll(false)}
-                              disabled={routerSnmpPolling}
-                              className="rounded bg-gray-50 px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-100 disabled:opacity-60"
-                            >
-                              {routerSnmpPolling ? 'Consultando...' : 'Probar SNMP'}
-                            </button>
-                            <button
-                              onClick={() => void runRouterSnmpPoll(true)}
-                              disabled={routerSnmpPolling}
-                              className="rounded border border-sky-300 px-3 py-1.5 text-xs font-semibold text-sky-800 hover:bg-sky-50 disabled:opacity-60"
-                            >
-                              Probar + persistir
-                            </button>
-                          </div>
-
-                          {routerSnmpPollResult && (
-                            <div className="rounded border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900">
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <p className="font-semibold">Ultima lectura SNMP</p>
-                                <span>{routerSnmpPollResult.polled_at || '-'}</span>
-                              </div>
-                              <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-4">
-                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">CPU: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.cpu_percent, '%')}</strong></div>
-                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">Mem: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.mem_percent, '%')}</strong></div>
-                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">Temp: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.temperature_c, ' C')}</strong></div>
-                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">Volt: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.voltage_v, ' V')}</strong></div>
-                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">Senal: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.signal_level_dbm, ' dBm')}</strong></div>
-                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">Optica: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.optical_rx_dbm, ' dBm')}</strong></div>
-                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">ONU on: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.onu_online)}</strong></div>
-                                <div className="rounded bg-white backdrop-blur-md px-2 py-2">ONU off: <strong>{formatSnmpMetric(routerSnmpPollResult.health_metrics?.onu_offline)}</strong></div>
-                              </div>
-                              {(routerSnmpPollResult.interfaces || []).length > 0 && (
-                                <div className="mt-2 rounded border border-sky-100 bg-white backdrop-blur-md p-2">
-                                  <p className="font-semibold text-sky-800">Interfaces leidas</p>
-                                  <div className="mt-1 grid grid-cols-1 gap-1 text-[11px] text-sky-900">
-                                    {(routerSnmpPollResult.interfaces || []).slice(0, 4).map((iface) => (
-                                      <div key={`${iface.name}-${iface.index ?? 'idx'}`} className="rounded bg-sky-50 px-2 py-1">
-                                        <strong>{iface.name || 'if'}</strong> | RX {formatSnmpMetric(iface.rx_bytes)} | TX {formatSnmpMetric(iface.tx_bytes)} | estado {formatSnmpMetric(iface.oper_status)}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div className="rounded-lg border border-gray-200 bg-white p-3">
-                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-700">Readiness remoto del router</p>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button
-                            onClick={() => selectedRouter && void loadRouterReadiness(selectedRouter.id)}
-                            disabled={readinessLoading}
-                            className="rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-white hover:bg-gray-50 disabled:opacity-60"
-                          >
-                            Refrescar
-                          </button>
-                          <button
-                            onClick={() => selectedRouter && void loadRouterReadiness(selectedRouter.id, true)}
-                            disabled={readinessLoading}
-                            className="rounded bg-indigo-600 px-2 py-1 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
-                          >
-                            Refrescar + write probe
-                          </button>
-                        </div>
-                      </div>
-                      {readinessLoading && <p className="text-xs text-slate-500">Evaluando readiness...</p>}
-                      {!readinessLoading && !routerReadiness && (
-                        <p className="text-xs text-slate-500">Sin datos de readiness para este router.</p>
-                      )}
-                      {!readinessLoading && routerReadiness && (
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-blue-500/20 px-2 py-1 text-xs font-semibold text-blue-300">
-                              Score {routerReadiness.score ?? 0}%
-                            </span>
-                            <span className="rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700">
-                              Blockers {(routerReadiness.blockers || []).length}
-                            </span>
-                          </div>
-                          <ul className="space-y-1 text-xs text-slate-600">
-                            {(routerReadiness.checks || []).map((check) => {
-                              const severity = check.severity || (check.ok ? 'ok' : 'warning')
-                              const toneClass =
-                                severity === 'critical'
-                                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                                  : severity === 'warning'
-                                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                                    : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                              return (
-                                <li key={check.id} className="flex flex-wrap items-center gap-2">
-                                  <span className={`rounded px-2 py-0.5 font-semibold ${toneClass}`}>{check.id}</span>
-                                  <span>{check.detail || '-'}</span>
-                                </li>
-                              )
-                            })}
-                          </ul>
-                          {(routerReadiness.recommendations || []).length > 0 && (
-                            <div className="rounded border border-amber-500/30 bg-amber-500/10 p-2">
-                              <p className="text-xs font-semibold uppercase text-amber-400">Recomendaciones</p>
-                              <ul className="mt-1 space-y-1 text-xs text-amber-200/80">
-                                {(routerReadiness.recommendations || []).map((item, idx) => (
-                                  <li key={`${item}-${idx}`}>- {item}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {quickLoading && <p className="text-sm text-slate-500">Cargando scripts...</p>}
-                    {!quickLoading && !quickConnect?.scripts && (
-                      <p className="text-sm text-rose-600">No se pudieron cargar scripts para este router.</p>
-                    )}
-                    {quickConnect?.scripts && (
-                      <>
-                        {quickConnect.connection_plan && (
-                          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
-                            <div className="flex flex-wrap items-start justify-between gap-2">
-                              <div>
-                                <p className="text-sm font-semibold text-emerald-400">
-                                  {quickConnect.connection_plan.title || 'Conexion Express'}
-                                </p>
-                                <p className="text-xs text-emerald-300/80">
-                                  {quickConnect.connection_plan.summary || 'Sigue los pasos recomendados.'}
-                                </p>
-                              </div>
-                              <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-400 border border-emerald-500/30">
-                                {quickConnect.connection_plan.recommended_transport || '-'}
-                              </span>
-                            </div>
-                            {/* ── VPN Connection Mode Selector ── */}
-                            <div className="mt-2 space-y-4">
-                              <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
-                                <button
-                                  onClick={() => setVpnMode('hub')}
-                                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                                    vpnMode === 'hub'
-                                      ? 'bg-white text-emerald-600 shadow-sm border border-emerald-100'
-                                      : 'text-slate-500 hover:bg-white/50'
-                                  }`}
-                                >
-                                  Túnel Hub (Estilo WispHub)
-                                </button>
-                                <button
-                                  onClick={() => setVpnMode('native')}
-                                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                                    vpnMode === 'native'
-                                      ? 'bg-white text-blue-600 shadow-sm border border-blue-100'
-                                      : 'text-slate-500 hover:bg-white/50'
-                                  }`}
-                                >
-                                  Servidor Nativo (Router con IP)
-                                </button>
-                              </div>
-
-                              {/* Loading Common */}
-                              {sstpLoadingForRouter === String(selectedRouter?.id) && (
-                                <div className="py-8 text-center">
-                                  <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-emerald-600"></div>
-                                  <p className="mt-2 text-xs text-slate-500">Verificando estado del túnel...</p>
-                                </div>
-                              )}
-
-                              {!sstpLoadingForRouter && (
-                                <>
-                                  {/* MODE: HUB (WispHub Style) */}
-                                  {vpnMode === 'hub' && (
-                                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                                      {!hubScript ? (
-                                        <div className="text-center py-6 px-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
-                                          <div className="mx-auto w-14 h-14 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-emerald-100">
-                                            <ServerIcon className="w-7 h-7 text-emerald-500" />
-                                          </div>
-                                          <p className="text-sm font-bold text-slate-800">Túnel Centralizado (Recomendado)</p>
-                                          <p className="text-xs text-slate-500 mt-2 max-w-xs mx-auto leading-relaxed">
-                                            Ideal para routers con <strong>NAT</strong> o sin IP pública. 
-                                            El MikroTik se conecta a tu VPS automáticamente.
-                                          </p>
-                                          <button
-                                            onClick={() => void provisionHubForRouter()}
-                                            disabled={hubProvisioning}
-                                            className="mt-6 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-8 py-3 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-60 transition shadow-lg shadow-emerald-600/20"
-                                          >
-                                            {hubProvisioning ? (
-                                              <><svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Generando...</>
-                                            ) : (
-                                              <>⚡ Generar Script de Conexión</>
-                                            )}
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <div className="space-y-4">
-                                          <div className="flex items-center justify-between px-1">
-                                            <div className="flex items-center gap-2">
-                                              <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                              <p className="text-sm font-bold text-emerald-800 uppercase tracking-tight">Túnel Hub Configurado</p>
-                                            </div>
-                                            <button 
-                                              onClick={() => void provisionHubForRouter()}
-                                              className="text-[10px] text-slate-500 font-bold hover:text-emerald-600 transition"
-                                            >
-                                              Regenerar
-                                            </button>
-                                          </div>
-                                          
-                                          <div className="grid grid-cols-2 gap-3 p-4 bg-white border border-emerald-100 rounded-2xl shadow-sm text-xs">
-                                             <div className="flex flex-col gap-0.5">
-                                               <span className="text-slate-500 font-medium">VPN Management IP</span>
-                                               <strong className="text-emerald-700 font-mono text-sm">{hubData?.vpn_ip || 'Pendiente'}</strong>
-                                             </div>
-                                             <div className="flex flex-col gap-0.5">
-                                               <span className="text-slate-500 font-medium">PPP User</span>
-                                               <strong className="text-emerald-700 font-mono text-sm">{hubData?.vpn_username || 'admin'}</strong>
-                                             </div>
-                                          </div>
-
-                                          <div className="rounded-2xl border border-gray-200 bg-slate-950 overflow-hidden shadow-xl ring-1 ring-white/5">
-                                            <div className="flex items-center justify-between px-4 py-3 bg-gray-100 border-b border-gray-200">
-                                              <div className="flex items-center gap-2">
-                                                <div className="flex gap-1">
-                                                  <div className="w-2.5 h-2.5 rounded-full bg-rose-500/20 border border-rose-500/40" />
-                                                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20 border border-amber-500/40" />
-                                                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500/40" />
-                                                </div>
-                                                <span className="text-[10px] font-bold text-slate-500 ml-2 uppercase tracking-widest">RouterOS Terminal</span>
-                                              </div>
-                                              <button
-                                                onClick={async () => {
-                                                  await copyToClipboard(hubScript)
-                                                  addToast('success', 'Script copiado al portapapeles!')
-                                                }}
-                                                className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg text-[11px] font-bold transition shadow-sm"
-                                              >
-                                                Copiar Script
-                                              </button>
-                                            </div>
-                                            <div className="p-5 font-mono text-[11px] leading-relaxed overflow-x-auto">
-                                              <pre className="text-emerald-400/90 whitespace-pre scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent max-h-[300px]">
-                                                {hubScript}
-                                              </pre>
-                                            </div>
-                                          </div>
-                                          
-                                          <div className="flex gap-2">
-                                            <button
-                                              onClick={() => void runWizardValidation()}
-                                              className="flex-1 rounded-xl bg-gray-50 py-2.5 text-xs font-bold text-white hover:bg-gray-100 transition shadow-sm"
-                                            >
-                                              Validar Conexión
-                                            </button>
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-
-                                  {/* MODE: NATIVE (Router as Server) */}
-                                  {vpnMode === 'native' && (
-                                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                                      {!sstpTunnel ? (
-                                        <div className="text-center py-6 px-4 bg-blue-50/50 rounded-2xl border border-blue-100">
-                                          <div className="mx-auto w-14 h-14 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-blue-100">
-                                            <CogIcon className="w-7 h-7 text-blue-500" />
-                                          </div>
-                                          <p className="text-sm font-bold text-slate-800">Servidor SSTP en MikroTik</p>
-                                          <p className="text-xs text-slate-500 mt-2 max-w-xs mx-auto leading-relaxed">
-                                            El MikroTik actúa como servidor. Requiere <strong>IP Pública</strong> y puerto 443/8443 abierto.
-                                          </p>
-                                          <button
-                                            onClick={() => void provisionSstpForRouter()}
-                                            disabled={sstpProvisioning}
-                                            className="mt-6 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-60 transition shadow-lg shadow-blue-600/20"
-                                          >
-                                            {sstpProvisioning ? 'Provisionando...' : '⚡ Configurar Servidor'}
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <div className="space-y-4">
-                                          <div className="flex items-center justify-between px-1">
-                                            <div className="flex items-center gap-2">
-                                              <span className="inline-block h-2.5 w-2.5 rounded-full bg-blue-400 animate-pulse shadow-lg shadow-blue-400/50" />
-                                              <p className="text-sm font-bold text-blue-800 uppercase tracking-tight">Servidor Nativo Activo</p>
-                                            </div>
-                                            <button 
-                                              onClick={() => void provisionSstpForRouter()}
-                                              className="text-[10px] text-slate-500 font-bold hover:text-blue-600 transition"
-                                            >
-                                              Regenerar
-                                            </button>
-                                          </div>
-
-                                          <div className="grid grid-cols-2 gap-3 p-4 bg-white border border-blue-100 rounded-2xl shadow-sm text-xs">
-                                             <div className="flex flex-col gap-0.5">
-                                               <span className="text-slate-500 font-medium">User</span>
-                                               <strong className="text-blue-700 font-mono text-sm">{sstpTunnel.username}</strong>
-                                             </div>
-                                             <div className="flex flex-col gap-0.5">
-                                               <span className="text-slate-500 font-medium">Server Host</span>
-                                               <strong className="text-blue-700 font-mono text-sm">{sstpTunnel.server_host}</strong>
-                                             </div>
-                                          </div>
-
-                                          {sstpScript && (
-                                            <div className="rounded-2xl border border-gray-200 bg-slate-950 overflow-hidden shadow-xl ring-1 ring-white/5">
-                                              <div className="flex items-center justify-between px-4 py-3 bg-gray-100 border-b border-gray-200">
-                                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">RouterOS Terminal</span>
-                                                <button
-                                                  onClick={async () => {
-                                                    await copyToClipboard(sstpScript)
-                                                    addToast('success', 'Script copiado!')
-                                                  }}
-                                                  className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-[11px] font-bold transition shadow-sm"
-                                                >
-                                                  Copiar Script
-                                                </button>
-                                              </div>
-                                              <div className="p-5 font-mono text-[11px] leading-relaxed overflow-x-auto">
-                                                <pre className="text-blue-400/90 whitespace-pre scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent max-h-[300px]">
-                                                  {sstpScript}
-                                                </pre>
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </>
-                              )}
-                            </div>
-
-                            {expressSteps.length > 0 && (
-                              <div className="mt-2 space-y-1">
-                                {expressSteps.map((step) => {
-                                  const toneClass =
-                                    step.status === 'success'
-                                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                      : step.status === 'failed'
-                                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                                        : step.status === 'running'
-                                          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                                          : step.status === 'skipped'
-                                            ? 'bg-slate-500/20 text-slate-500 border border-slate-500/30'
-                                            : 'bg-white backdrop-blur-md text-slate-500'
-                                  return (
-                                    <div key={step.id} className={`rounded px-2 py-1 text-xs border ${toneClass}`}>
-                                      <strong>{step.label}</strong>
-                                      {step.detail ? `: ${step.detail}` : ''}
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            )}
-
-                            <div className="mt-2 flex items-center justify-between rounded border border-emerald-200 bg-white backdrop-blur-md p-2">
-                              <p className="text-xs text-emerald-800">Modo avanzado (scripts/manual)</p>
-                              <button
-                                onClick={() => setShowAdvancedScripts((prev) => !prev)}
-                                className="rounded bg-emerald-700 px-2 py-1 text-xs font-semibold text-white hover:bg-emerald-800"
-                              >
-                                {showAdvancedScripts ? 'Ocultar avanzado' : 'Mostrar avanzado'}
-                              </button>
-                            </div>
-
-                            {(quickConnect.connection_plan.actions || []).length > 0 && (
-                              <div className="mt-2 space-y-2">
-                                {(quickConnect.connection_plan.actions || []).map((action) => {
-                                  const scriptValue = resolveQuickScript(quickConnect.scripts, action.script_key)
-                                  return (
-                                    <div key={action.id} className="rounded border border-emerald-200 bg-white backdrop-blur-md p-2">
-                                      <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <div>
-                                          <p className="text-xs font-semibold text-emerald-900">{action.label}</p>
-                                          <p className="text-xs text-emerald-800">{action.description || '-'}</p>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          {action.requires_local_access && (
-                                            <span className="rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-400 border border-amber-500/30">
-                                              vía script local
-                                            </span>
-                                          )}
-                                          {action.auto_available && (
-                                            <span className="rounded bg-blue-500/20 px-2 py-0.5 text-[10px] font-semibold text-blue-300 border border-blue-500/30">
-                                              auto
-                                            </span>
-                                          )}
-                                          {scriptValue && (
-                                            <button
-                                              onClick={() => copyScript(`script ${action.label}`, scriptValue)}
-                                              className="rounded bg-emerald-700 px-2 py-1 text-[10px] font-semibold text-white hover:bg-emerald-800"
-                                            >
-                                              Copiar script
-                                            </button>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        {showAdvancedScripts && (
-                          <>
-                        <div className="rounded-lg border border-gray-200 bg-white p-3">
-                          <div className="mb-2 flex items-center justify-between">
-                            <p className="text-sm font-semibold text-slate-700">Script acceso directo API/SSH</p>
-                            <button
-                              onClick={() => copyScript('script API', quickConnect.scripts?.direct_api_script || '')}
-                              className="rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-gray-200"
-                            >
-                              Copiar
-                            </button>
-                          </div>
-                          <pre className="max-h-52 overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-800">
-                            {quickConnect.scripts.direct_api_script}
-                          </pre>
-                        </div>
-                        <div className="rounded-lg border border-gray-200 p-3">
-                          <p className="text-xs font-semibold uppercase text-slate-500">Login Windows/Linux</p>
-                          <p className="mt-2 rounded bg-white px-2 py-1 text-xs text-slate-800">{quickConnect.scripts.windows_login}</p>
-                          <p className="mt-2 rounded bg-white px-2 py-1 text-xs text-slate-800">{quickConnect.scripts.linux_login}</p>
-                        </div>
-
-                        </>
-                        )}
-                      </>
-                    )}
-                  </div>
+                  <ConfigTab
+                    selectedRouter={selectedRouter}
+                    quickConnect={quickConnect}
+                    onboardingProfile={onboardingProfile}
+                    tenantContextId={tenantContextId}
+                    quickConnectScope={quickConnectScope}
+                    setQuickConnectScope={setQuickConnectScope}
+                    loadQuickConnect={loadQuickConnect}
+                    quickLoading={quickLoading}
+                    activeConnectionSnapshot={activeConnectionSnapshot}
+                    activeConnectionDiagnostics={activeConnectionDiagnostics}
+                    CONNECTION_POLL_INTERVAL_MS={CONNECTION_POLL_INTERVAL_MS}
+                    routerReadiness={routerReadiness}
+                    readinessLoading={readinessLoading}
+                    loadRouterReadiness={loadRouterReadiness}
+                    routerSnmpProfile={routerSnmpProfile}
+                    routerSnmpLoading={routerSnmpLoading}
+                    routerSnmpForm={routerSnmpForm}
+                    setRouterSnmpForm={setRouterSnmpForm}
+                    routerSnmpRuntimeAvailable={routerSnmpRuntimeAvailable}
+                    saveRouterSnmpProfile={saveRouterSnmpProfile}
+                    routerSnmpSaving={routerSnmpSaving}
+                    runRouterSnmpPoll={runRouterSnmpPoll}
+                    routerSnmpPolling={routerSnmpPolling}
+                    routerSnmpPollResult={routerSnmpPollResult}
+                    vpnMode={vpnMode}
+                    setVpnMode={setVpnMode}
+                    hubScript={hubScript}
+                    hubData={hubData}
+                    hubProvisioning={hubProvisioning}
+                    provisionHubForRouter={provisionHubForRouter}
+                    runWizardValidation={runWizardValidation}
+                    sstpTunnel={sstpTunnel}
+                    sstpProvisioning={sstpProvisioning}
+                    provisionSstpForRouter={provisionSstpForRouter}
+                    sstpScript={sstpScript}
+                    sstpLoadingForRouter={sstpLoadingForRouter}
+                    expressSteps={expressSteps}
+                    showAdvancedScripts={showAdvancedScripts}
+                    setShowAdvancedScripts={setShowAdvancedScripts}
+                    copyScript={copyScript}
+                    copyToClipboard={copyToClipboard}
+                    resolveQuickScript={resolveQuickScript}
+                    addToast={addToast}
+                  />
+                )}
+                {activeTab === 'vpn' && selectedRouter && (
+                  <VpnTab
+                    selectedRouter={selectedRouter}
+                    quickConnect={quickConnect}
+                    bthActionLoading={bthActionLoading}
+                    bthUserName={bthUserName}
+                    setBthUserName={setBthUserName}
+                    bthAllowLan={bthAllowLan}
+                    setBthAllowLan={setBthAllowLan}
+                    bootstrapResult={bootstrapResult}
+                    confirmEnableBackToHome={confirmEnableBackToHome}
+                    confirmCreateBackToHomeUser={confirmCreateBackToHomeUser}
+                    confirmBootstrapBackToHome={confirmBootstrapBackToHome}
+                    confirmRemoveBackToHomeUser={confirmRemoveBackToHomeUser}
+                  />
                 )}
                 {activeTab === 'security' && (
-                  <div className="space-y-4 text-sm text-slate-600">
-                    <div className="rounded-lg border border-gray-200 bg-white p-3">
-                      <h4 className="text-lg font-semibold text-white">Operacion enterprise y seguridad</h4>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Acciones live requieren ticket de cambio cuando la politica `change_control_required_for_live` esta activa.
-                      </p>
-                      {(quickConnect?.guidance?.notes || []).map((note, idx) => (
-                        <p key={idx} className="mt-2 text-xs text-slate-600">
-                          - {note}
-                        </p>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                      <div className="rounded-lg border border-gray-200 bg-white backdrop-blur-md p-4">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-white">Hardening runbook</p>
-                          <span className={`rounded px-2 py-1 text-xs font-semibold border ${hardeningDryRun ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'}`}>
-                            {hardeningDryRun ? 'dry-run' : 'live'}
-                          </span>
-                        </div>
-                        <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-                          <label className="text-xs text-slate-600">
-                            Perfil router
-                            <select
-                              value={hardeningProfile}
-                              onChange={(e) => setHardeningProfile(e.target.value)}
-                              className="mt-1 w-full rounded border border-white/20 px-2 py-1 text-xs text-white"
-                            >
-                              {(enterpriseProfiles?.router_profiles || [{ id: 'baseline', label: 'Baseline' }]).map((item) => (
-                                <option key={item.id} value={item.id}>
-                                  {item.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <label className="text-xs text-slate-600">
-                            Perfil sitio
-                            <select
-                              value={hardeningSiteProfile}
-                              onChange={(e) => setHardeningSiteProfile(e.target.value)}
-                              className="mt-1 w-full rounded border border-white/20 px-2 py-1 text-xs text-white"
-                            >
-                              {(enterpriseProfiles?.site_profiles || [{ id: 'access', label: 'Access' }]).map((item) => (
-                                <option key={item.id} value={item.id}>
-                                  {item.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        </div>
-
-                        <div className="mt-3 flex flex-wrap gap-3">
-                          <label className="flex items-center gap-2 text-xs text-slate-600">
-                            <input
-                              type="checkbox"
-                              checked={hardeningDryRun}
-                              onChange={(e) => setHardeningDryRun(e.target.checked)}
-                              className="rounded border-white/20"
-                            />
-                            Ejecutar dry-run
-                          </label>
-                          <label className="flex items-center gap-2 text-xs text-slate-600">
-                            <input
-                              type="checkbox"
-                              checked={hardeningAutoRollback}
-                              onChange={(e) => setHardeningAutoRollback(e.target.checked)}
-                              className="rounded border-white/20"
-                            />
-                            Auto rollback si falla live
-                          </label>
-                        </div>
-
-                        <div className="mt-3 flex items-center gap-2">
-                          <button
-                            onClick={applyEnterpriseHardening}
-                            disabled={securityBusy}
-                            className="rounded bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
-                          >
-                            {securityBusy ? 'Procesando...' : hardeningDryRun ? 'Ejecutar hardening dry-run' : 'Aplicar hardening live'}
-                          </button>
-                          <button
-                            onClick={() => selectedRouter && loadEnterpriseProfiles(selectedRouter.id)}
-                            disabled={securityBusy}
-                            className="rounded bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-300 disabled:opacity-60"
-                          >
-                            Refrescar perfiles
-                          </button>
-                        </div>
-
-                        {hardeningResult && (
-                          <div className="mt-3 rounded border border-white/20 bg-white p-2">
-                            <p className="text-xs font-semibold uppercase text-slate-600">Resultado hardening</p>
-                            <p className="mt-1 text-xs text-slate-600">
-                              change_id: <strong>{hardeningResult.change_id || '-'}</strong> | modo:{' '}
-                              <strong>{hardeningResult.dry_run ? 'dry-run' : 'live'}</strong>
-                            </p>
-                            {hardeningResult.message && <p className="mt-1 text-xs text-slate-600">{hardeningResult.message}</p>}
-                            {hardeningResult.error && <p className="mt-1 text-xs text-rose-700">{hardeningResult.error}</p>}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="rounded-lg border border-gray-200 bg-white backdrop-blur-md p-4">
-                        <p className="text-sm font-semibold text-white">Failover test</p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Ejecuta probes desde el router para validar perdida de paquetes y latencia.
-                        </p>
-                        <textarea
-                          value={failoverTargets}
-                          onChange={(e) => setFailoverTargets(e.target.value)}
-                          rows={3}
-                          placeholder="1.1.1.1,8.8.8.8,9.9.9.9"
-                          className="mt-2 w-full rounded border border-white/20 px-2 py-1 text-xs text-white"
-                        />
-                        <div className="mt-2 flex items-center gap-2">
-                          <input
-                            value={failoverCount}
-                            onChange={(e) => setFailoverCount(e.target.value)}
-                            className="w-20 rounded border border-white/20 px-2 py-1 text-xs text-white"
-                          />
-                          <button
-                            onClick={runEnterpriseFailoverTest}
-                            disabled={securityBusy}
-                            className="rounded bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-                          >
-                            {securityBusy ? 'Procesando...' : 'Ejecutar failover test'}
-                          </button>
-                        </div>
-
-                        {failoverResult && (
-                          <div className="mt-3 rounded border border-white/20 bg-white p-2">
-                            <p className="text-xs font-semibold uppercase text-slate-600">
-                              Estado general: <span className="font-bold">{failoverResult.overall_status || 'unknown'}</span>
-                            </p>
-                            <div className="mt-2 max-h-44 overflow-auto">
-                              {(failoverResult.targets || []).map((item, idx) => (
-                                <p key={`${item.target}-${idx}`} className="text-xs text-slate-600">
-                                  {item.target} | loss {item.packet_loss}% | avg {item.avg_latency_ms ?? '-'} ms | {item.status}
-                                </p>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="rounded-lg border border-gray-200 bg-white backdrop-blur-md p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-white">Change log y rollback</p>
-                        <button
-                          onClick={() => selectedRouter && loadEnterpriseChangeLog(selectedRouter.id)}
-                          disabled={securityBusy}
-                          className="rounded bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-300 disabled:opacity-60"
-                        >
-                          Refrescar log
-                        </button>
-                      </div>
-                      {!enterpriseChangeLog.length && <p className="mt-2 text-xs text-slate-500">No hay cambios registrados.</p>}
-                      <div className="mt-2 space-y-2">
-                        {enterpriseChangeLog.map((entry) => (
-                          <div key={entry.change_id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 px-2 py-2">
-                            <div className="text-xs text-slate-600">
-                              <p>
-                                <strong>{entry.change_id}</strong> | {entry.category || '-'} | {entry.status}
-                              </p>
-                              <p>
-                                actor: {entry.actor || '-'} | profile: {entry.profile || '-'} | site: {entry.site_profile || '-'}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() =>
-                                openConfirm(`Ejecutar rollback del cambio ${entry.change_id}?`, () => {
-                                  void rollbackEnterpriseChange(entry.change_id)
-                                })
-                              }
-                              disabled={securityBusy || entry.status !== 'applied'}
-                              className="rounded bg-rose-600 px-3 py-1 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
-                            >
-                              Rollback
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+                  <SecurityTab
+                    selectedRouter={selectedRouter}
+                    quickConnect={quickConnect}
+                    enterpriseProfiles={enterpriseProfiles}
+                    hardeningProfile={hardeningProfile}
+                    setHardeningProfile={setHardeningProfile}
+                    hardeningSiteProfile={hardeningSiteProfile}
+                    setHardeningSiteProfile={setHardeningSiteProfile}
+                    hardeningDryRun={hardeningDryRun}
+                    setHardeningDryRun={setHardeningDryRun}
+                    hardeningAutoRollback={hardeningAutoRollback}
+                    setHardeningAutoRollback={setHardeningAutoRollback}
+                    applyEnterpriseHardening={applyEnterpriseHardening}
+                    securityBusy={securityBusy}
+                    loadEnterpriseProfiles={loadEnterpriseProfiles}
+                    hardeningResult={hardeningResult}
+                    failoverTargets={failoverTargets}
+                    setFailoverTargets={setFailoverTargets}
+                    failoverCount={failoverCount}
+                    setFailoverCount={setFailoverCount}
+                    runEnterpriseFailoverTest={runEnterpriseFailoverTest}
+                    failoverResult={failoverResult}
+                    loadEnterpriseChangeLog={loadEnterpriseChangeLog}
+                    enterpriseChangeLog={enterpriseChangeLog}
+                    openConfirm={openConfirm}
+                    rollbackEnterpriseChange={rollbackEnterpriseChange}
+                  />
                 )}
 
                 {activeTab === 'traffic_flow' && (
-                  <div className="space-y-5">
-                    {/* Header */}
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <h4 className="text-lg font-bold text-white">📊 Script de Traffic Flow</h4>
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          Habilita NetFlow v5 en el MikroTik para enviar métricas de consumo por cliente a FASTISP.
-                        </p>
-                        {tfCollector && (
-                          <p className="mt-1 text-xs text-emerald-700 font-mono">
-                            Colector: <strong>{tfCollector.ip}:{tfCollector.port}</strong>
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        onClick={async () => {
-                          setTfLoading(true)
-                          try {
-                            const params = new URLSearchParams()
-                            if (tfLanGw) params.set('lan_gateways', tfLanGw)
-                            if (tfWanGw) params.set('wan_gateways', tfWanGw)
-                            const r = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/traffic-flow/script?${params}`)
-                            const d = await r.json().catch(() => ({})) as {success?: boolean; scripts?: {ros6: string; ros7_lan: string; ros7_wan: string}; collector_ip?: string; collector_port?: number}
-                            if (d.success && d.scripts) {
-                              setTfScripts(d.scripts)
-                              setTfCollector({ ip: d.collector_ip || '', port: d.collector_port || 2055 })
-                            } else {
-                              addToast('error', 'Error generando script de Traffic Flow')
-                            }
-                          } catch { addToast('error', 'Error de red') }
-                          setTfLoading(false)
-                        }}
-                        disabled={tfLoading}
-                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60 transition"
-                      >
-                        {tfLoading ? 'Generando...' : '⚡ Generar scripts'}
-                      </button>
-                    </div>
-
-                    {/* Gateway inputs */}
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 rounded-lg border border-gray-200 bg-white p-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-600 mb-1">
-                          IPs Puerta de Enlace LAN (separadas por coma)
-                        </label>
-                        <input
-                          type="text"
-                          value={tfLanGw}
-                          onChange={(e) => setTfLanGw(e.target.value)}
-                          placeholder="192.168.1.1, 192.168.2.1"
-                          className="w-full rounded border border-white/20 px-2 py-1 text-xs font-mono text-white"
-                        />
-                        <p className="mt-0.5 text-[10px] text-slate-500">Solo RouterOS 7 — Opción 1 (LAN gateway)</p>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-600 mb-1">
-                          IPs Puerta de Enlace WAN (separadas por coma)
-                        </label>
-                        <input
-                          type="text"
-                          value={tfWanGw}
-                          onChange={(e) => setTfWanGw(e.target.value)}
-                          placeholder="203.0.113.1"
-                          className="w-full rounded border border-white/20 px-2 py-1 text-xs font-mono text-white"
-                        />
-                        <p className="mt-0.5 text-[10px] text-slate-500">Solo RouterOS 7 — Opción 2 (WAN gateway)</p>
-                      </div>
-                    </div>
-
-                    {/* Scripts */}
-                    {tfScripts && (
-                      <div className="space-y-4">
-                        {[
-                          { key: 'ros6', label: '📋 RouterOS 6.x o inferior', desc: 'Un solo target sin src-address' },
-                          { key: 'ros7_lan', label: '📋 RouterOS 7.x — Opción 1 (LAN gateways)', desc: 'Un target por IP de puerta de enlace LAN' },
-                          { key: 'ros7_wan', label: '📋 RouterOS 7.x — Opción 2 (WAN gateways)', desc: 'Un target por IP de puerta de enlace WAN' },
-                        ].map((item) => {
-                          const script = tfScripts[item.key as keyof typeof tfScripts]
-                          return (
-                            <div key={item.key} className="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm">
-                              <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 bg-white">
-                                <div>
-                                  <p className="text-xs font-black text-slate-700 uppercase tracking-widest">{item.label}</p>
-                                  <p className="text-[10px] font-bold text-slate-500 mt-1">{item.desc}</p>
-                                </div>
-                                <button
-                                  onClick={async () => {
-                                    await copyToClipboard(script)
-                                    setTfCopied(item.key)
-                                    setTimeout(() => setTfCopied(null), 2500)
-                                  }}
-                                  className="rounded-xl bg-coral-500 px-4 py-2 text-[11px] font-black text-white hover:bg-coral-600 transition-all shadow-lg shadow-coral-500/20"
-                                >
-                                  {tfCopied === item.key ? '✅ Copiado' : '📋 Copiar Código'}
-                                </button>
-                              </div>
-                              <pre className="overflow-x-auto p-6 text-[11px] leading-relaxed text-coral-100 font-mono whitespace-pre-wrap">{script}</pre>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-
-                    {/* Stats: top consumers */}
-                    <div className="rounded-lg border border-gray-200 bg-white backdrop-blur-md p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                        <div>
-                          <h5 className="font-semibold text-white">📈 Top Consumidores</h5>
-                          <p className="text-xs text-slate-500">Clientes con mayor consumo según NetFlow recibido.</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={tfHours}
-                            onChange={(e) => setTfHours(Number(e.target.value))}
-                            className="rounded border border-white/20 px-2 py-1 text-xs text-white"
-                          >
-                            {[1, 6, 12, 24, 48, 168].map((h) => (
-                              <option key={h} value={h}>{h === 168 ? '7 días' : `${h}h`}</option>
-                            ))}
-                          </select>
-                          <button
-                            onClick={async () => {
-                              setTfStatsLoading(true)
-                              try {
-                                const r = await apiFetch(`/api/mikrotik/traffic-flow/stats/router/${selectedRouter.id}?hours=${tfHours}&limit=50`)
-                                const d = await r.json().catch(() => ({})) as {success?: boolean; stats?: typeof tfStats}
-                                if (d.success) setTfStats(d.stats || [])
-                                else addToast('error', 'Error cargando estadísticas de Traffic Flow')
-                              } catch { addToast('error', 'Error de red') }
-                              setTfStatsLoading(false)
-                            }}
-                            disabled={tfStatsLoading}
-                            className="rounded bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
-                          >
-                            {tfStatsLoading ? 'Cargando...' : '🔄 Actualizar'}
-                          </button>
-                        </div>
-                      </div>
-
-                      {tfStats.length === 0 && !tfStatsLoading && (
-                        <div className="py-6 text-center">
-                          <p className="text-sm text-slate-500">Sin datos de tráfico aún.</p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            Aplica el script en el MikroTik, espera 1-2 minutos y presiona Actualizar.
-                          </p>
-                        </div>
-                      )}
-
-                      {tfStats.length > 0 && (
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full text-xs">
-                            <thead>
-                              <tr className="border-b border-gray-100 bg-gray-50/50 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                                <th className="px-4 py-3 text-left">#</th>
-                                <th className="px-4 py-3 text-left">IP Cliente</th>
-                                <th className="px-4 py-3 text-right">MB Total</th>
-                                <th className="px-4 py-3 text-right">Bytes</th>
-                                <th className="px-4 py-3 text-right">Paquetes</th>
-                                <th className="px-4 py-3 text-left">Último flujo</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {tfStats.map((row, i) => (
-                                <tr key={row.src_ip} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                                  <td className="px-4 py-3 text-slate-500 font-bold">{i + 1}</td>
-                                  <td className="px-4 py-3 font-mono font-bold text-slate-700">{row.src_ip}</td>
-                                  <td className="px-4 py-3 text-right font-black text-coral-500">{row.mb_total.toLocaleString()} MB</td>
-                                  <td className="px-4 py-3 text-right text-slate-500">{(row.bytes_total || 0).toLocaleString()}</td>
-                                  <td className="px-4 py-3 text-right text-slate-500">{(row.packets_total || 0).toLocaleString()}</td>
-                                  <td className="px-4 py-3 text-slate-500 font-mono text-[10px]">{row.last_seen ? new Date(row.last_seen).toLocaleString() : '-'}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Instructions */}
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 space-y-1">
-                      <p className="font-semibold">📌 Instrucciones:</p>
-                      <p>1. Genera los scripts con el botón de arriba.</p>
-                      <p>2. Copia el script correspondiente a tu versión de RouterOS.</p>
-                      <p>3. En Winbox → New Terminal → pega el script → Enter.</p>
-                      <p>4. Espera 5-10 minutos para ver el primer consumo en la tabla de Top Consumidores.</p>
-                      <p>5. Si en 24h no aparecen datos, usa la Opción 2 (WAN gateway) para RouterOS 7.</p>
-                    </div>
-                  </div>
+                  <TrafficFlowTab
+                    selectedRouter={selectedRouter}
+                    apiFetch={apiFetch}
+                    addToast={addToast}
+                    tfCollector={tfCollector}
+                    setTfCollector={setTfCollector}
+                    tfLanGw={tfLanGw}
+                    setTfLanGw={setTfLanGw}
+                    tfWanGw={tfWanGw}
+                    setTfWanGw={setTfWanGw}
+                    tfScripts={tfScripts}
+                    setTfScripts={setTfScripts}
+                    tfLoading={tfLoading}
+                    setTfLoading={setTfLoading}
+                    tfCopied={tfCopied}
+                    setTfCopied={setTfCopied}
+                    tfHours={tfHours}
+                    setTfHours={setTfHours}
+                    tfStats={tfStats}
+                    setTfStats={setTfStats}
+                    tfStatsLoading={tfStatsLoading}
+                    setTfStatsLoading={setTfStatsLoading}
+                    copyToClipboard={copyToClipboard}
+                  />
                 )}
               </>
             )}
