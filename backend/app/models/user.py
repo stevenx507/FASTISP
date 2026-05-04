@@ -12,6 +12,7 @@ class User(db.Model):
     name = db.Column(db.String(120), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), index=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
     mfa_enabled = db.Column(db.Boolean, default=False, nullable=False)
     mfa_secret = db.Column(db.String(128))
 
@@ -37,6 +38,7 @@ class User(db.Model):
             'email': self.email,
             'role': self.role,
             'tenant_id': self.tenant_id,
+            'is_active': self.is_active,
             'mfa_enabled': self.mfa_enabled,
         }
         if self.role == 'client' and self.client and self.client.plan:
