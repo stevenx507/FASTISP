@@ -2,13 +2,10 @@ from datetime import timezone
 from .utils import *
 
 @admin_bp.route('/admin/payments/manual', methods=['POST'])
-@jwt_required()
+@admin_required()
 def manual_payment():
     """Registra un pago manual (Yape/Nequi/transferencia) contra una factura."""
-    user_id = _current_user_id()
-    user = db.session.get(User, user_id)
-    if not user or user.role != 'admin':
-        return jsonify({"error": "Solo administradores pueden registrar pagos"}), 403
+    # Manual check removed since @admin_required handles it
 
     data = request.get_json() or {}
     invoice_id = data.get('invoice_id')

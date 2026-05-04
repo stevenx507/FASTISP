@@ -15,14 +15,20 @@ import json
 import secrets
 import string
 import time
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
+import uuid
+from datetime import datetime, timedelta, timezone, date
 
-from flask import current_app
+from flask import current_app, request
 from sqlalchemy import or_
 
 from app import cache, db
-from app.models import AdminSystemSetting, Invoice, Subscription, User
+from app.models import (
+    User, Ticket, Client, MikroTikRouter, Subscription,
+    AdminScreenAlert, NocMaintenanceWindow, AdminInstallation,
+    AdminExtraService, AdminHotspotVoucher, AuditLog, AdminSystemSetting, Invoice
+)
+from app.services.monitoring_service import MonitoringService
+from app.services.snmp_service import snmp_service
 
 
 # ─── Constantes de dominio ────────────────────────────────────────────────────

@@ -48,6 +48,18 @@ from app.services.monitoring_service import MonitoringService
 from app.services.snmp_service import snmp_service
 from app.lib.messaging import MessagingManager
 from app.tenancy import current_tenant_id, tenant_access_allowed
+from app.lib.route_helpers import (
+    load_staff_meta, save_staff_meta, ticket_assignee_counts,
+    serialize_staff_member, metric_float, iso_utc_now, actor_default_name,
+    current_actor_snapshot, ensure_operational_entry_metadata,
+    apply_operational_entry_create_metadata,
+    apply_operational_entry_update_metadata,
+    notifications_history_key, screen_alerts_key,
+    load_notification_history, save_notification_history,
+    default_screen_alerts, screen_alert_model_from_entry,
+    build_network_alert_items, build_network_health_payload,
+    sync_user_active_status
+)
 from datetime import date
 from werkzeug.exceptions import BadRequest
 from sqlalchemy.orm import joinedload
@@ -90,14 +102,6 @@ def _parse_iso_datetime(value) -> datetime | None:
     except Exception:
         return None
 
-
-def _metric_float(value) -> float | None:
-    try:
-        if value is None or str(value).strip() == "":
-            return None
-        return float(value)
-    except (TypeError, ValueError):
-        return None
 
 
 
@@ -664,20 +668,15 @@ def _ops_change_requests_key(tenant_id) -> str:
     return _tenant_cache_key("admin_ops_change_requests", tenant_id)
 
 
-def _load_staff_meta(tenant_id) -> dict:
-    return cache.get(_staff_meta_key(tenant_id)) or {}
 
-
-def _save_staff_meta(tenant_id, metadata: dict) -> None:
-    cache.set(_staff_meta_key(tenant_id), metadata, timeout=86400 * 30)
 
 
 def _load_notification_history(tenant_id) -> list[dict]:
-    return cache.get(_notifications_history_key(tenant_id)) or []
+    return load_notification_history(tenant_id)
 
 
 def _save_notification_history(tenant_id, history: list[dict]) -> None:
-    cache.set(_notifications_history_key(tenant_id), history[:200], timeout=86400 * 30)
+    save_notification_history(tenant_id, history)
 
 
 def _load_cached_list(key: str) -> list[dict]:
@@ -848,107 +847,35 @@ def _load_system_jobs_db(tenant_id, status_filter: str = '', job_filter: str = '
 
 
 def _role_permissions_with_overrides(role: str, tenant_id) -> set[str]:
-    normalized_role = str(role or '').strip().lower()
-    base_permissions = set(ROLE_BASE_PERMISSIONS.get(normalized_role, set()))
-    if "*" in base_permissions:
-        return {"*"}
-
-    overrides = (
-        _tenant_scoped_query(RolePermission, tenant_id)
-        .filter_by(role=normalized_role)
-        .all()
-    )
-    resolved = set(base_permissions)
-    for entry in overrides:
-        if entry.allowed:
-            resolved.add(entry.permission)
-        else:
-            resolved.discard(entry.permission)
-    return resolved
+    return role_permissions_with_overrides(role, tenant_id)
 
 
 def _is_permission_allowed(user: User | None, permission: str, tenant_id) -> bool:
-    if not user:
-        return False
-    permissions = _role_permissions_with_overrides(user.role, tenant_id)
-    return "*" in permissions or permission in permissions
+    return is_permission_allowed(user, permission, tenant_id)
 
 
 def _iso_utc_now() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat() + "Z"
+    return iso_utc_now()
 
 
 def _actor_default_name(actor_id) -> str:
-    parsed = _parse_int(actor_id)
-    if parsed is None:
-        return "system"
-    return f"user#{parsed}"
+    return actor_default_name(actor_id)
 
 
 def _current_actor_snapshot() -> dict:
-    actor_id = _current_user_id()
-    if actor_id is None:
-        return {"id": None, "name": "system", "email": None}
-    user = db.session.get(User, actor_id)
-    if not user:
-        return {"id": actor_id, "name": _actor_default_name(actor_id), "email": None}
-    display_name = (user.name or user.email or _actor_default_name(user.id)).strip()
-    return {"id": user.id, "name": display_name, "email": user.email}
+    return current_actor_snapshot(_current_user_id)
 
 
 def _ensure_operational_entry_metadata(entry: dict) -> bool:
-    changed = False
-    if not entry.get("created_at"):
-        entry["created_at"] = _iso_utc_now()
-        changed = True
-    if not entry.get("updated_at"):
-        entry["updated_at"] = entry["created_at"]
-        changed = True
-
-    if "created_by" not in entry:
-        entry["created_by"] = None
-        changed = True
-    if "updated_by" not in entry:
-        entry["updated_by"] = entry.get("created_by")
-        changed = True
-
-    if not entry.get("created_by_name"):
-        entry["created_by_name"] = _actor_default_name(entry.get("created_by"))
-        changed = True
-    if not entry.get("updated_by_name"):
-        entry["updated_by_name"] = _actor_default_name(entry.get("updated_by"))
-        changed = True
-    return changed
+    return ensure_operational_entry_metadata(entry)
 
 
 def _apply_operational_entry_create_metadata(entry: dict, actor: dict | None = None) -> None:
-    actor = actor or _current_actor_snapshot()
-    now = _iso_utc_now()
-    actor_name = str(actor.get("name") or _actor_default_name(actor.get("id")))
-    actor_email = actor.get("email")
-
-    entry["created_at"] = now
-    entry["updated_at"] = now
-    entry["created_by"] = actor.get("id")
-    entry["updated_by"] = actor.get("id")
-    entry["created_by_name"] = actor_name
-    entry["updated_by_name"] = actor_name
-    if actor_email:
-        entry["created_by_email"] = actor_email
-        entry["updated_by_email"] = actor_email
+    apply_operational_entry_create_metadata(entry, actor)
 
 
 def _apply_operational_entry_update_metadata(entry: dict, actor: dict | None = None) -> None:
-    actor = actor or _current_actor_snapshot()
-    _ensure_operational_entry_metadata(entry)
-    actor_name = str(actor.get("name") or _actor_default_name(actor.get("id")))
-    actor_email = actor.get("email")
-
-    entry["updated_at"] = _iso_utc_now()
-    entry["updated_by"] = actor.get("id")
-    entry["updated_by_name"] = actor_name
-    if actor_email:
-        entry["updated_by_email"] = actor_email
+    apply_operational_entry_update_metadata(entry, actor)
 
 
 def _normalize_operational_items_metadata(items: list[dict]) -> bool:
@@ -959,44 +886,10 @@ def _normalize_operational_items_metadata(items: list[dict]) -> bool:
     return changed
 
 
-def _ticket_assignee_counts(tenant_id) -> dict[str, int]:
-    query = Ticket.query.filter(Ticket.status.in_(("open", "in_progress")))
-    if tenant_id is not None:
-        query = query.filter_by(tenant_id=tenant_id)
-    counts: dict[str, int] = {}
-    for ticket in query.all():
-        assigned = (ticket.assigned_to or "").strip().lower()
-        if not assigned:
-            continue
-        counts[assigned] = counts.get(assigned, 0) + 1
-    return counts
 
 
-def _serialize_staff_member(user: User, metadata: dict, assigned_counts: dict[str, int]) -> dict:
-    zone = str(metadata.get("zone") or "general")
-    status = str(metadata.get("status") or "active")
-    shift = str(metadata.get("shift") or "day")
-    phone = str(metadata.get("phone") or "")
-    last_seen = metadata.get("last_seen_at") or (user.created_at.isoformat() if user.created_at else None)
-    email_key = (user.email or "").strip().lower()
-    name_key = (user.name or "").strip().lower()
-    open_tickets = assigned_counts.get(email_key, 0)
-    if name_key and name_key != email_key:
-        open_tickets += assigned_counts.get(name_key, 0)
-    return {
-        "id": user.id,
-        "name": user.name,
-        "email": user.email,
-        "role": user.role,
-        "mfa_enabled": bool(user.mfa_enabled),
-        "zone": zone,
-        "status": status if status in STAFF_ALLOWED_STATUS else "active",
-        "shift": shift if shift in STAFF_ALLOWED_SHIFTS else "day",
-        "phone": phone,
-        "open_tickets": open_tickets,
-        "last_seen_at": last_seen,
-        "created_at": user.created_at.isoformat() if user.created_at else None,
-    }
+
+
 
 
 def _audit(action: str, entity_type: str = None, entity_id: str = None, metadata=None):
@@ -1172,214 +1065,11 @@ def _parse_money_value(value) -> float | None:
 
 
 def _build_network_alert_items(tenant_id) -> list[dict]:
-    routers_q = MikroTikRouter.query
-    subs_q = Subscription.query
-    if tenant_id is not None:
-        routers_q = routers_q.filter_by(tenant_id=tenant_id)
-        subs_q = subs_q.filter_by(tenant_id=tenant_id)
-
-    alerts: list[dict] = []
-    now_iso = _iso_utc_now()
-
-    for router in routers_q.filter_by(is_active=False).all():
-        alerts.append(
-            {
-                "id": f"AL-R-{router.id}",
-                "severity": "critical",
-                "scope": "router",
-                "target": router.name,
-                "message": "Router sin respuesta",
-                "since": now_iso,
-            }
-        )
-
-    for sub in subs_q.filter_by(status='past_due').all():
-        alerts.append(
-            {
-                "id": f"AL-S-{sub.id}",
-                "severity": "warning",
-                "scope": "billing",
-                "target": sub.customer,
-                "message": "Suscripcion vencida",
-                "since": now_iso,
-            }
-        )
-
-    monitoring = None
-    for router in routers_q.filter_by(is_active=True).all():
-        profile = snmp_service.router_profile(router)
-        if not profile.get("enabled"):
-            continue
-        try:
-            if monitoring is None:
-                monitoring = MonitoringService()
-            latest = monitoring.latest_point('snmp_device_health', tags={'router_id': str(router.id)})
-        except Exception:
-            latest = {}
-        if not latest:
-            continue
-
-        thresholds = dict(profile.get("thresholds") or {})
-        temperature_c = _metric_float(latest.get("temperature_c"))
-        if temperature_c is not None and temperature_c >= float(thresholds.get("temperature_c", 70.0)):
-            alerts.append(
-                {
-                    "id": f"AL-SNMP-TEMP-{router.id}",
-                    "severity": "critical",
-                    "scope": "snmp",
-                    "target": router.name,
-                    "message": f"Temperatura alta por SNMP: {temperature_c:.1f} C",
-                    "since": str(latest.get("_time") or now_iso),
-                }
-            )
-
-        voltage_v = _metric_float(latest.get("voltage_v"))
-        min_voltage = _metric_float(thresholds.get("voltage_v_min"))
-        if voltage_v is not None and min_voltage is not None and voltage_v <= min_voltage:
-            alerts.append(
-                {
-                    "id": f"AL-SNMP-VOLT-{router.id}",
-                    "severity": "warning",
-                    "scope": "snmp",
-                    "target": router.name,
-                    "message": f"Voltaje bajo por SNMP: {voltage_v:.2f} V",
-                    "since": str(latest.get("_time") or now_iso),
-                }
-            )
-
-        optical_rx_dbm = _metric_float(latest.get("optical_rx_dbm"))
-        optical_min = _metric_float(thresholds.get("optical_rx_dbm_min"))
-        if optical_rx_dbm is not None and optical_min is not None and optical_rx_dbm <= optical_min:
-            alerts.append(
-                {
-                    "id": f"AL-SNMP-OPTICS-{router.id}",
-                    "severity": "warning",
-                    "scope": "fiber",
-                    "target": router.name,
-                    "message": f"Potencia optica degradada: {optical_rx_dbm:.1f} dBm",
-                    "since": str(latest.get("_time") or now_iso),
-                }
-            )
-
-        signal_level_dbm = _metric_float(latest.get("signal_level_dbm"))
-        signal_min = _metric_float(thresholds.get("signal_level_dbm_min"))
-        if signal_level_dbm is not None and signal_min is not None and signal_level_dbm <= signal_min:
-            alerts.append(
-                {
-                    "id": f"AL-SNMP-SIGNAL-{router.id}",
-                    "severity": "warning",
-                    "scope": "wireless",
-                    "target": router.name,
-                    "message": f"Senal degradada por SNMP: {signal_level_dbm:.1f} dBm",
-                    "since": str(latest.get("_time") or now_iso),
-                }
-            )
-
-    for trap in snmp_service.list_recent_traps(tenant_id, limit=10):
-        alerts.append(
-            {
-                "id": str(trap.get("id") or f"AL-SNMP-TRAP-{uuid.uuid4().hex[:8]}"),
-                "severity": str(trap.get("severity") or "warning"),
-                "scope": str(trap.get("scope") or "snmp"),
-                "target": str(trap.get("target") or trap.get("source") or "SNMP"),
-                "message": str(trap.get("message") or "Trap SNMP recibido"),
-                "since": str(trap.get("received_at") or now_iso),
-            }
-        )
-
-    now_dt = datetime.now(timezone.utc)
-    active_windows = (
-        _tenant_scoped_query(NocMaintenanceWindow, tenant_id)
-        .filter(
-            NocMaintenanceWindow.mute_alerts.is_(True),
-            NocMaintenanceWindow.starts_at <= now_dt,
-            NocMaintenanceWindow.ends_at >= now_dt,
-        )
-        .all()
-    )
-    muted_scopes = {str(window.scope or 'all').strip().lower() for window in active_windows}
-    if muted_scopes:
-        if 'all' in muted_scopes:
-            alerts = []
-        else:
-            alerts = [alert for alert in alerts if str(alert.get("scope") or "").strip().lower() not in muted_scopes]
-
-    if not alerts:
-        alerts.append(
-            {
-                "id": "AL-OK",
-                "severity": "info",
-                "scope": "network",
-                "target": "Red",
-                "message": "Sin alertas criticas" if not muted_scopes else "Alertas silenciadas por ventana de mantenimiento activa",
-                "since": now_iso,
-            }
-        )
-    return alerts
+    return build_network_alert_items(tenant_id)
 
 
 def _build_network_health_payload(tenant_id) -> dict:
-    routers_q = MikroTikRouter.query
-    if tenant_id is not None:
-        routers_q = routers_q.filter_by(tenant_id=tenant_id)
-    routers_ok = routers_q.filter_by(is_active=True).count()
-    routers_down = routers_q.filter_by(is_active=False).count()
-
-    clients_q = Client.query
-    if tenant_id is not None:
-        clients_q = clients_q.filter_by(tenant_id=tenant_id)
-    clients_total = clients_q.count()
-
-    health = {
-        "routers_ok": routers_ok,
-        "routers_down": routers_down,
-        "clients_total": clients_total,
-        "olt_ok": 4,
-        "olt_alert": 1,
-        "latency_ms": 12 + routers_down,
-        "packet_loss": round(0.2 + routers_down * 0.3, 2),
-        "last_updated": datetime.now(timezone.utc).isoformat(),
-        "source": "fallback",
-    }
-
-    try:
-        monitoring = MonitoringService()
-        resources = monitoring.query_metrics('system_resources', time_range='-30m')
-        cpu_samples = []
-        mem_usage = []
-        for point in resources:
-            cpu = point.get('cpu_load')
-            free_mem = point.get('free_memory')
-            total_mem = point.get('total_memory')
-            if cpu is not None:
-                try:
-                    cpu_samples.append(float(str(cpu).replace('%', '').strip()))
-                except Exception:
-                    pass
-            if free_mem is not None and total_mem not in (None, 0):
-                try:
-                    usage = (float(total_mem) - float(free_mem)) / float(total_mem) * 100
-                    mem_usage.append(usage)
-                except Exception:
-                    pass
-
-        score = 95 - (routers_down * 8)
-        if cpu_samples:
-            cpu_avg = sum(cpu_samples) / len(cpu_samples)
-            health["cpu_avg"] = round(cpu_avg, 1)
-            score -= max(0, cpu_avg - 70) * 0.2
-        if mem_usage:
-            mem_avg = sum(mem_usage) / len(mem_usage)
-            health["memory_avg"] = round(mem_avg, 1)
-            score -= max(0, mem_avg - 80) * 0.15
-
-        health["score"] = max(35, min(100, round(score, 1)))
-        health["source"] = "influxdb"
-    except Exception as exc:
-        current_app.logger.info("Network health using fallback: %s", exc)
-        health["score"] = max(40, min(100, 95 - routers_down * 5))
-
-    return health
+    return build_network_health_payload(tenant_id)
 
 
 def _build_client_notifications(user: User, tenant_id) -> list[dict]:

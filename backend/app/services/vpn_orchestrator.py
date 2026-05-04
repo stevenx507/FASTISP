@@ -103,18 +103,19 @@ def _generate_vpn_password(length: int = 16) -> str:
 def _get_next_available_ip() -> str:
     """
     Busca la siguiente IP disponible en el pool 10.100.0.0/16.
-    Itera buscando una IP que no esté asignada a ningún MikroTikRouter.
+    Optimizado para evitar múltiples consultas a la base de datos (evita N+1).
     """
     from app.models import MikroTikRouter
     
+    # Obtener todas las IPs ya asignadas en una sola consulta
+    # Usamos un set para búsqueda O(1)
+    used_ips = {r.vpn_ip_address for r in MikroTikRouter.query.with_entities(MikroTikRouter.vpn_ip_address).filter(MikroTikRouter.vpn_ip_address != None).all()}
+    
     # Rango de IPs de gestión: 10.100.1.10 - 10.100.254.254
-    # Evitamos colisiones usando una búsqueda en base de datos.
     for o3 in range(1, 255):
         for o4 in range(10, 255):
             candidate = f"{VPN_IP_POOL_BASE}.{o3}.{o4}"
-            # Verificar si ya existe en MikroTikRouter
-            exists = MikroTikRouter.query.filter_by(vpn_ip_address=candidate).first()
-            if not exists:
+            if candidate not in used_ips:
                 return candidate
                 
     raise RuntimeError("No hay IPs disponibles en el pool VPN.")

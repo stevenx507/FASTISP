@@ -5,6 +5,7 @@ from app.tenancy import current_tenant_id
 from sqlalchemy.orm import joinedload
 
 @admin_bp.route('/admin/inventory/summary', methods=['GET'])
+@admin_required()
 def admin_inventory_summary():
     tenant_id = current_tenant_id()
     clients = _tenant_scoped_query(Client, tenant_id).options(joinedload(Client.plan)).all()

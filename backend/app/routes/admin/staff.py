@@ -10,13 +10,13 @@ def admin_staff_list():
         query = query.filter_by(tenant_id=tenant_id)
     users = query.order_by(User.name.asc()).all()
 
-    metadata_map = _load_staff_meta(tenant_id)
-    assigned_counts = _ticket_assignee_counts(tenant_id)
+    metadata_map = load_staff_meta(tenant_id)
+    assigned_counts = ticket_assignee_counts(tenant_id)
 
     items = []
     for user in users:
         meta = metadata_map.get(str(user.id), {})
-        items.append(_serialize_staff_member(user, meta, assigned_counts))
+        items.append(serialize_staff_member(user, meta, assigned_counts))
 
     role_filter = (request.args.get('role') or '').strip().lower()
     status_filter = (request.args.get('status') or '').strip().lower()
@@ -81,7 +81,7 @@ def admin_staff_create():
 
     status = str(data.get('status') or 'active').strip().lower()
     shift = str(data.get('shift') or 'day').strip().lower()
-    metadata_map = _load_staff_meta(tenant_id)
+    metadata_map = load_staff_meta(tenant_id)
     metadata_map[str(user.id)] = {
         "zone": str(data.get('zone') or 'general').strip() or 'general',
         "phone": str(data.get('phone') or '').strip(),
@@ -89,9 +89,10 @@ def admin_staff_create():
         "shift": shift if shift in STAFF_ALLOWED_SHIFTS else "day",
         "last_seen_at": _iso_utc_now(),
     }
-    _save_staff_meta(tenant_id, metadata_map)
+    save_staff_meta(tenant_id, metadata_map)
+    sync_user_active_status(user, metadata_map[str(user.id)]['status'])
 
-    item = _serialize_staff_member(user, metadata_map[str(user.id)], {})
+    item = serialize_staff_member(user, metadata_map[str(user.id)], {})
     response = {"staff": item, "success": True}
     if not supplied_password:
         response["temporary_password"] = temporary_password
@@ -140,7 +141,7 @@ def admin_staff_update(staff_id):
             return jsonify({"error": password_error}), 400
         user.set_password(proposed_password)
 
-    metadata_map = _load_staff_meta(tenant_id)
+    metadata_map = load_staff_meta(tenant_id)
     current_meta = metadata_map.get(str(user.id), {})
     if 'zone' in data:
         current_meta['zone'] = str(data.get('zone') or '').strip() or 'general'
@@ -160,12 +161,13 @@ def admin_staff_update(staff_id):
         current_meta['last_seen_at'] = _iso_utc_now()
 
     metadata_map[str(user.id)] = current_meta
-    _save_staff_meta(tenant_id, metadata_map)
+    save_staff_meta(tenant_id, metadata_map)
+    sync_user_active_status(user, current_meta['status'])
 
     db.session.add(user)
     db.session.commit()
 
-    item = _serialize_staff_member(user, current_meta, _ticket_assignee_counts(tenant_id))
+    item = serialize_staff_member(user, current_meta, ticket_assignee_counts(tenant_id))
     _audit("staff_update", entity_type="staff", entity_id=user.id, metadata={"changes": list(data.keys())})
     return jsonify({"staff": item, "success": True}), 200
 
@@ -177,7 +179,7 @@ def admin_permissions_list():
     tenant_id = current_tenant_id()
     current_user_id = _current_user_id()
     current_user = db.session.get(User, current_user_id) if current_user_id else None
-    if not _is_permission_allowed(current_user, 'security.permissions.read', tenant_id):
+    if not is_permission_allowed(current_user, 'security.permissions.read', tenant_id):
         return jsonify({"error": "Permiso insuficiente: security.permissions.read"}), 403
 
     rows = (
@@ -189,7 +191,7 @@ def admin_permissions_list():
     roles = sorted(set(STAFF_ALLOWED_ROLES | {"admin", "client", PLATFORM_ADMIN_ROLE}))
     role_matrix = []
     for role in roles:
-        resolved = _role_permissions_with_overrides(role, tenant_id)
+        resolved = role_permissions_with_overrides(role, tenant_id)
         role_matrix.append(
             {
                 "role": role,
@@ -215,7 +217,7 @@ def admin_permissions_upsert():
     tenant_id = current_tenant_id()
     actor_id = _current_user_id()
     actor = db.session.get(User, actor_id) if actor_id else None
-    if not _is_permission_allowed(actor, 'security.permissions.write', tenant_id):
+    if not is_permission_allowed(actor, 'security.permissions.write', tenant_id):
         return jsonify({"error": "Permiso insuficiente: security.permissions.write"}), 403
 
     data = request.get_json() or {}
@@ -248,7 +250,7 @@ def admin_permissions_upsert():
     db.session.add(row)
     db.session.commit()
 
-    resolved = _role_permissions_with_overrides(role, tenant_id)
+    resolved = role_permissions_with_overrides(role, tenant_id)
     payload = row.to_dict()
     payload["resolved_permissions"] = sorted(permission_name for permission_name in resolved if permission_name != "*")
     payload["wildcard"] = "*" in resolved

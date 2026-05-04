@@ -333,6 +333,6 @@ def router_remote_script(router_id):
     }), 200
 
 
-# ==================== INVENTORY MANAGEMENT ====================
+
 
 

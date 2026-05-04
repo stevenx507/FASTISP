@@ -21,6 +21,19 @@ from app.tenancy import (
     _current_user_id
 )
 from app.lib.utils import parse_int, parse_bool
+from app.lib.route_helpers import (
+    load_staff_meta, save_staff_meta, ticket_assignee_counts,
+    serialize_staff_member, sync_user_active_status,
+    role_permissions_with_overrides, is_permission_allowed,
+    metric_float, iso_utc_now, actor_default_name,
+    current_actor_snapshot, ensure_operational_entry_metadata,
+    apply_operational_entry_create_metadata,
+    apply_operational_entry_update_metadata,
+    notifications_history_key, screen_alerts_key,
+    load_notification_history, save_notification_history,
+    default_screen_alerts, screen_alert_model_from_entry,
+    build_network_alert_items, build_network_health_payload
+)
 
 # Definición central del Blueprint administrativo
 admin_bp = Blueprint("admin", __name__)
@@ -182,4 +195,46 @@ def _tenant_default_trial_ends_at() -> datetime:
     return tenant_default_trial_ends_at()
 
 def _iso_utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return iso_utc_now()
+
+def _metric_float(value) -> float | None:
+    return metric_float(value)
+
+def _actor_default_name(actor_id) -> str:
+    return actor_default_name(actor_id)
+
+def _current_actor_snapshot() -> dict:
+    return current_actor_snapshot(_current_user_id)
+
+def _ensure_operational_entry_metadata(entry: dict) -> bool:
+    return ensure_operational_entry_metadata(entry)
+
+def _apply_operational_entry_create_metadata(entry: dict, actor: dict | None = None) -> None:
+    apply_operational_entry_create_metadata(entry, actor)
+
+def _apply_operational_entry_update_metadata(entry: dict, actor: dict | None = None) -> None:
+    apply_operational_entry_update_metadata(entry, actor)
+
+def _notifications_history_key(tenant_id) -> str:
+    return notifications_history_key(tenant_id)
+
+def _screen_alerts_key(tenant_id) -> str:
+    return screen_alerts_key(tenant_id)
+
+def _load_notification_history(tenant_id) -> list[dict]:
+    return load_notification_history(tenant_id)
+
+def _save_notification_history(tenant_id, history: list[dict]) -> None:
+    save_notification_history(tenant_id, history)
+
+def _default_screen_alerts() -> list[dict]:
+    return default_screen_alerts()
+
+def _screen_alert_model_from_entry(entry: dict, tenant_id) -> AdminScreenAlert:
+    return screen_alert_model_from_entry(entry, tenant_id)
+
+def _build_network_alert_items(tenant_id) -> list[dict]:
+    return build_network_alert_items(tenant_id)
+
+def _build_network_health_payload(tenant_id) -> dict:
+    return build_network_health_payload(tenant_id)

@@ -357,7 +357,8 @@ const SstpProvisioning: React.FC = () => {
         apiClient.get('/routers') as Promise<Router[]>,
         apiClient.get('/sstp/status') as Promise<SstpStatus>,
       ])
-      setTunnels(Array.isArray(tunnelsData) ? tunnelsData : [])
+      const tunnelsRes = tunnelsData as unknown as { items: SstpTunnel[]; count: number }
+      setTunnels(Array.isArray(tunnelsRes.items) ? tunnelsRes.items : [])
       setRouters(Array.isArray(routersData) ? routersData : [])
       setStatus(statusData)
     } catch (e: unknown) {

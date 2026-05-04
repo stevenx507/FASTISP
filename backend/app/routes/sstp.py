@@ -57,7 +57,8 @@ def list_tunnels():
         query = query.filter_by(tenant_id=tid)
 
     tunnels = query.order_by(SstpTunnel.created_at.desc()).all()
-    return jsonify([t.to_dict() for t in tunnels])
+    items = [t.to_dict() for t in tunnels]
+    return jsonify({"items": items, "count": len(items)})
 
 
 # ── POST /api/sstp/tunnels ─────────────────────────────────────────────────────
