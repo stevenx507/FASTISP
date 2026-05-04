@@ -20,9 +20,18 @@ RUN pip wheel --no-cache-dir --wheel-dir=/wheels -r requirements.txt
 # Stage 2: Production
 FROM python:3.11-slim-bookworm as production
 
-# Install only runtime system dependencies
+# Install only runtime system dependencies (incl. docker-cli for SoftEther exec)
 RUN apt-get update && apt-get install -y \
     postgresql-client \
+    curl \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt-get update \
+    && apt-get install -y docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -35,8 +44,10 @@ RUN pip install --no-cache-dir --find-links=/wheels /wheels/*
 # Copy application code
 COPY . .
 
-# Create non-root user
-RUN useradd -m -u 1000 ispmax && chown -R ispmax:ispmax /app
+# Create non-root user (add to docker group for socket access)
+RUN groupadd -g 988 docker 2>/dev/null || true && \
+    useradd -m -u 1000 -G docker ispmax && \
+    chown -R ispmax:ispmax /app
 USER ispmax
 
 # Expose port
@@ -46,4 +57,4 @@ EXPOSE 5000
 ENV GUNICORN_WORKERS=4
 
 # Run application
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "${GUNICORN_WORKERS}", "--worker-class", "gevent", "wsgi:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:5000 --workers ${GUNICORN_WORKERS:-4} --worker-class gevent wsgi:app"]

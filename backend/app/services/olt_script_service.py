@@ -12,7 +12,7 @@ import random
 import socket
 import telnetlib
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 try:
@@ -139,20 +139,21 @@ class OLTScriptService:
                         vendor = str(item.get("vendor", "")).strip().lower()
                         if vendor not in SUPPORTED_VENDORS:
                             continue
-                        normalized.append(
-                            {
-                                "id": str(item.get("id") or f"OLT-{vendor.upper()}-{index+1:03d}"),
-                                "name": str(item.get("name") or f"{SUPPORTED_VENDORS[vendor]['label']} OLT {index+1}"),
-                                "vendor": vendor,
-                                "model": str(item.get("model") or "N/D"),
-                                "host": str(item.get("host") or ""),
-                                "transport": str(item.get("transport") or SUPPORTED_VENDORS[vendor]["default_transport"]),
-                                "port": int(item.get("port") or SUPPORTED_VENDORS[vendor]["default_port"]),
-                                "username": str(item.get("username") or "admin"),
-                                "site": str(item.get("site") or "N/D"),
-                                "origin": str(item.get("origin") or "catalog"),
-                            }
-                        )
+                        normalized_item = {
+                            "id": str(item.get("id") or f"OLT-{vendor.upper()}-{index+1:03d}"),
+                            "name": str(item.get("name") or f"{SUPPORTED_VENDORS[vendor]['label']} OLT {index+1}"),
+                            "vendor": vendor,
+                            "model": str(item.get("model") or "N/D"),
+                            "host": str(item.get("host") or ""),
+                            "transport": str(item.get("transport") or SUPPORTED_VENDORS[vendor]["default_transport"]),
+                            "port": int(item.get("port") or SUPPORTED_VENDORS[vendor]["default_port"]),
+                            "username": str(item.get("username") or "admin"),
+                            "site": str(item.get("site") or "N/D"),
+                            "origin": str(item.get("origin") or "catalog"),
+                        }
+                        if isinstance(item.get("snmp"), dict):
+                            normalized_item["snmp"] = dict(item.get("snmp") or {})
+                        normalized.append(normalized_item)
                     if normalized:
                         base_devices = normalized
             except Exception:
@@ -178,7 +179,7 @@ class OLTScriptService:
             item_id = str(item.get("id") or f"OLT-{vendor.upper()}-CUSTOM-{index + 1:03d}").strip()
             if not item_id:
                 continue
-            merged[item_id] = {
+            normalized_item = {
                 "id": item_id,
                 "name": str(item.get("name") or f"{SUPPORTED_VENDORS[vendor]['label']} OLT"),
                 "vendor": vendor,
@@ -190,6 +191,9 @@ class OLTScriptService:
                 "site": str(item.get("site") or "N/D"),
                 "origin": "custom",
             }
+            if isinstance(item.get("snmp"), dict):
+                normalized_item["snmp"] = dict(item.get("snmp") or {})
+            merged[item_id] = normalized_item
 
         return list(merged.values())
 
@@ -224,7 +228,7 @@ class OLTScriptService:
         return next((item for item in self.devices if item.get("id") == device_id), None)
 
     def _utcnow_iso(self) -> str:
-        return datetime.utcnow().isoformat() + "Z"
+        return datetime.now(timezone.utc).isoformat() + "Z"
 
     def _to_bool(self, value: Any, default: bool = False) -> bool:
         if isinstance(value, bool):
@@ -609,35 +613,54 @@ class OLTScriptService:
             ),
         }
 
+    def run_action(
+        self,
+        device_id: str,
+        action: str,
+        payload: Optional[Dict[str, Any]] = None,
+        run_mode: str = "simulate",
+        actor: Optional[str] = None,
+        source_ip: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Generates and executes a script for a given action."""
+        generated = self.generate_script(device_id, action, payload)
+        if not generated.get("success"):
+            return generated
+
+        return self.execute_script(
+            device_id=device_id,
+            commands=generated["commands"],
+            run_mode=run_mode,
+            actor=actor,
+            source_ip=source_ip,
+        )
+
     def get_snapshot(self, device_id: str) -> Dict[str, Any]:
         device = self.get_device(device_id)
         if not device:
             return {"success": False, "error": "OLT not found"}
 
-        seed_key = f"{device_id}:{datetime.utcnow().strftime('%Y-%m-%d-%H')}"
-        seed_int = int(hashlib.sha256(seed_key.encode("utf-8")).hexdigest()[:8], 16)
-        rng = random.Random(seed_int)
-
-        pon_total = rng.randint(8, 16)
-        pon_alert = rng.randint(0, 3)
-        onu_online = rng.randint(320, 620)
-        onu_offline = rng.randint(10, 80)
-        cpu_load = rng.randint(18, 74)
-        mem_use = rng.randint(32, 81)
-        temp = rng.randint(35, 62)
+        # Realizamos un test de conectividad rápido para saber si la OLT está viva
+        conn_test = self.test_connection(device_id, timeout_seconds=2.0)
+        
+        # En el futuro, aquí se puede integrar una llamada a snmp_service.poll_scalar_metrics(device['snmp'])
+        # para extraer carga real. Por ahora, evitamos devolver datos falsos.
+        latency = conn_test.get('latency_ms') if conn_test.get('reachable') else None
 
         return {
             "success": True,
             "snapshot": {
                 "device_id": device_id,
-                "generated_at": datetime.utcnow().isoformat() + "Z",
-                "pon_total": pon_total,
-                "pon_alert": pon_alert,
-                "onu_online": onu_online,
-                "onu_offline": onu_offline,
-                "cpu_load": cpu_load,
-                "memory_usage": mem_use,
-                "temperature_c": temp,
+                "generated_at": datetime.now(timezone.utc).isoformat() + "Z",
+                "pon_total": None,
+                "pon_alert": None,
+                "onu_online": None,
+                "onu_offline": None,
+                "cpu_load": None,
+                "memory_usage": None,
+                "temperature_c": None,
+                "latency_ms": latency,
+                "reachable": conn_test.get('reachable', False)
             },
         }
 

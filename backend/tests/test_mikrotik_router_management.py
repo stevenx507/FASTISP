@@ -1,6 +1,7 @@
 import app.routes.mikrotik as mikrotik_routes
 
 import io
+import socket
 import zipfile
 
 
@@ -118,6 +119,128 @@ def test_router_crud_and_quick_connect(client, app):
     assert delete_response.status_code == 200
     delete_payload = delete_response.get_json()
     assert delete_payload['success'] is True
+
+
+def test_router_create_returns_connection_diagnostics_when_requested(client, app, monkeypatch):
+    headers = _admin_headers(client, app)
+    monkeypatch.setattr(
+        mikrotik_routes,
+        '_build_router_connection_diagnostics',
+        lambda _router: {
+            'success': False,
+            'status': 'tcp_unreachable',
+            'summary': 'El puerto 8728 no es alcanzable desde el backend.',
+            'host': '10.10.10.9',
+            'api_port': 8728,
+            'host_scope': 'private',
+            'transport_hint': 'Usa WireGuard o Back To Home como canal principal de gestion.',
+            'checks': [
+                {'id': 'dns_resolution', 'ok': True, 'severity': 'ok'},
+                {'id': 'tcp_port', 'ok': False, 'severity': 'critical'},
+            ],
+            'recommendations': ['Permite 8728/TCP desde la IP del backend o desde el tunel de gestion.'],
+            'runtime': {'resolved_addresses': ['10.10.10.9']},
+        },
+    )
+
+    create_response = client.post(
+        '/api/mikrotik/routers',
+        json={
+            'name': 'Nodo-Diagnostics',
+            'ip_address': '10.10.10.9',
+            'username': 'api-admin',
+            'password': 'router-pass',
+            'api_port': 8728,
+            'test_connection': True,
+        },
+        headers=headers,
+    )
+    assert create_response.status_code == 201
+    payload = create_response.get_json()
+    assert payload['success'] is True
+    assert payload['reachable'] is False
+    assert payload['diagnostics']['status'] == 'tcp_unreachable'
+    assert payload['diagnostics']['summary'] == 'El puerto 8728 no es alcanzable desde el backend.'
+
+
+def test_router_test_connection_returns_diagnostics_payload(client, app, monkeypatch):
+    headers = _admin_headers(client, app)
+    create_response = client.post(
+        '/api/mikrotik/routers',
+        json={
+            'name': 'Nodo-Test-Connection',
+            'ip_address': '10.10.10.10',
+            'username': 'api-admin',
+            'password': 'router-pass',
+            'api_port': 8728,
+            'test_connection': False,
+        },
+        headers=headers,
+    )
+    assert create_response.status_code == 201
+    router_id = str(create_response.get_json()['router']['id'])
+
+    monkeypatch.setattr(
+        mikrotik_routes,
+        '_build_router_connection_diagnostics',
+        lambda _router: {
+            'success': False,
+            'status': 'api_auth_failed',
+            'summary': 'El puerto responde, pero el login API fue rechazado por el router.',
+            'host': '10.10.10.10',
+            'api_port': 8728,
+            'host_scope': 'private',
+            'transport_hint': 'Usa WireGuard o Back To Home como canal principal de gestion.',
+            'checks': [
+                {'id': 'dns_resolution', 'ok': True, 'severity': 'ok'},
+                {'id': 'tcp_port', 'ok': True, 'severity': 'ok'},
+                {'id': 'api_login', 'ok': False, 'severity': 'critical'},
+            ],
+            'recommendations': ['Valida usuario, password y permisos del usuario API.'],
+            'runtime': {'tcp_latency_ms': 11.4},
+        },
+    )
+
+    response = client.get(f'/api/mikrotik/routers/{router_id}/test-connection', headers=headers)
+    assert response.status_code == 502
+    payload = response.get_json()
+    assert payload['success'] is False
+    assert payload['error'] == 'El puerto responde, pero el login API fue rechazado por el router.'
+    assert payload['diagnostics']['status'] == 'api_auth_failed'
+    assert payload['diagnostics']['checks'][2]['id'] == 'api_login'
+
+
+def test_build_router_connection_diagnostics_recommends_tunnel_for_private_ip(app, monkeypatch):
+    with app.app_context():
+        router = mikrotik_routes.MikroTikRouter(
+            name='Nodo-Privado-Diag',
+            ip_address='10.20.30.40',
+            username='api-admin',
+            api_port=8728,
+        )
+        router.password = 'router-pass'
+        db.session.add(router)
+        db.session.commit()
+
+        monkeypatch.setattr(
+            mikrotik_routes.socket,
+            'getaddrinfo',
+            lambda *args, **kwargs: [
+                (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, '', ('10.20.30.40', 8728))
+            ],
+        )
+
+        def _raise_timeout(*args, **kwargs):
+            raise OSError('timed out')
+
+        monkeypatch.setattr(mikrotik_routes.socket, 'create_connection', _raise_timeout)
+
+        diagnostics = mikrotik_routes._build_router_connection_diagnostics(router)
+        assert diagnostics['success'] is False
+        assert diagnostics['status'] == 'tcp_unreachable'
+        assert diagnostics['host_scope'] == 'private'
+        assert 'WireGuard o Back To Home' in str(diagnostics['transport_hint'])
+        assert any('WireGuard o Back To Home' in item for item in diagnostics['recommendations'])
 
 
 def test_quick_connect_marks_private_ip_for_tunnel_first(client, app, monkeypatch):
@@ -1045,6 +1168,53 @@ def test_wireguard_zip_import_returns_onboarding_suggestions(client, app):
     assert payload['suggestions']['bth_private_key'] == 'AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE='
 
 
+def test_onboarding_profile_routes_and_import_use_account_defaults(client, app):
+    headers = _admin_headers(client, app)
+
+    update_response = client.post(
+        '/api/mikrotik/onboarding/profile',
+        json={
+            'account_label': 'ISP Norte',
+            'account_slug': 'isp-norte',
+            'router_name_prefix': 'ispnorte',
+            'default_username': 'tenant-api',
+            'default_api_port': 8729,
+            'default_bth_user_name': 'ispnorte-noc',
+            'default_allow_lan': False,
+            'auto_vps_link': False,
+            'auto_bootstrap_bth': False,
+            'comment_prefix': 'ISP Norte NOC',
+        },
+        headers=headers,
+    )
+    assert update_response.status_code == 200
+    update_payload = update_response.get_json()
+    assert update_payload['success'] is True
+    assert update_payload['profile']['account_label'] == 'ISP Norte'
+    assert update_payload['profile']['default_api_port'] == 8729
+
+    get_response = client.get('/api/mikrotik/onboarding/profile', headers=headers)
+    assert get_response.status_code == 200
+    get_payload = get_response.get_json()
+    assert get_payload['success'] is True
+    assert get_payload['profile']['router_name_prefix'] == 'ispnorte'
+
+    response = client.post(
+        '/api/mikrotik/wireguard/import',
+        data={'archive': (_build_wireguard_archive(), 'wireguard-export.zip')},
+        headers=headers,
+        content_type='multipart/form-data',
+    )
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload['success'] is True
+    assert payload['suggestions']['router_name'].startswith('ispnorte-')
+    assert payload['suggestions']['api_port'] == 8729
+    assert payload['suggestions']['default_username'] == 'tenant-api'
+    assert payload['suggestions']['bth_user_name'] == 'ispnorte-noc'
+    assert payload['onboarding_profile']['account_label'] == 'ISP Norte'
+
+
 def test_wireguard_import_supports_qr_config_text_payload(client, app):
     headers = _admin_headers(client, app)
     response = client.post(
@@ -1255,6 +1425,65 @@ def test_wireguard_onboard_updates_existing_router(client, app, monkeypatch):
     assert payload['reused_existing'] is True
     assert payload['updated_existing'] is True
     assert payload['router']['name'] == 'Nodo-Actualizado'
+
+
+def test_wireguard_onboard_uses_onboarding_profile_defaults_for_account_isolation(client, app, monkeypatch):
+    headers = _admin_headers(client, app)
+    monkeypatch.setattr(mikrotik_routes, 'MikroTikService', _DummyMikrotikOnboardNoApiService)
+    monkeypatch.setattr(
+        mikrotik_routes,
+        '_build_router_readiness_payload',
+        lambda _service, run_write_probe=False: {
+            'score': 28,
+            'checks': [{'id': 'api_connectivity', 'ok': False, 'severity': 'critical'}],
+            'blockers': [{'id': 'api_connectivity', 'detail': 'unreachable'}],
+            'recommendations': ['Completa conectividad API antes de live.'],
+            'runtime': {'reachable': False},
+            'write_probe_enabled': bool(run_write_probe),
+        },
+    )
+
+    profile_response = client.post(
+        '/api/mikrotik/onboarding/profile',
+        json={
+            'account_label': 'ISP Caribe',
+            'account_slug': 'isp-caribe',
+            'router_name_prefix': 'caribe',
+            'default_username': 'api-tenant',
+            'default_api_port': 8729,
+            'default_bth_user_name': 'caribe-noc',
+            'default_allow_lan': False,
+            'auto_vps_link': False,
+            'auto_bootstrap_bth': False,
+            'comment_prefix': 'ISP Caribe NOC',
+        },
+        headers=headers,
+    )
+    assert profile_response.status_code == 200
+
+    response = client.post(
+        '/api/mikrotik/wireguard/onboard',
+        data={
+            'archive': (_build_wireguard_archive(), 'wireguard-export.zip'),
+            'password': 'router-pass',
+        },
+        headers=headers,
+        content_type='multipart/form-data',
+    )
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload['success'] is True
+    assert payload['onboarding_profile']['account_label'] == 'ISP Caribe'
+    assert payload['tenant_scope']['actor_email'] == 'mk-admin@test.local'
+    assert payload['vps_sync']['success'] is False
+    assert payload['vps_sync']['message'] == 'No ejecutado'
+
+    with app.app_context():
+        router = mikrotik_routes.MikroTikRouter.query.filter_by(ip_address='10.66.66.2').first()
+        assert router is not None
+        assert router.name.startswith('caribe-')
+        assert router.username == 'api-tenant'
+        assert router.api_port == 8729
 
 
 def test_wireguard_onboard_auto_links_vps_from_config_without_api(client, app, monkeypatch):

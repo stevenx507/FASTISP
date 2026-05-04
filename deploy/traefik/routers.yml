@@ -9,7 +9,7 @@ http:
         stsIncludeSubdomains: true
         stsPreload: true
     ipwhitelist:
-      ipWhiteList:
+      ipAllowList:
         sourceRange:
           - 0.0.0.0/0
 
@@ -23,6 +23,19 @@ http:
       middlewares:
         - secure-headers
         - ipwhitelist
+      tls:
+        certResolver: myresolver
+
+    api-path:
+      rule: Host(`fastisp.cloud`) && PathPrefix(`/api`)
+      entryPoints:
+        - web
+        - websecure
+      service: api
+      middlewares:
+        - secure-headers
+        - ipwhitelist
+      priority: 100
       tls:
         certResolver: myresolver
 

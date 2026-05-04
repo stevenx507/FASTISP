@@ -5,12 +5,11 @@ import os
 from datetime import timedelta
 
 
-def _as_bool(raw_value: str | None, default: bool = False) -> bool:
-    if raw_value is None:
-        return default
-    return raw_value.strip().lower() in {'1', 'true', 'yes', 'y', 'on'}
+from app.lib.utils import as_bool
 
-DEV_ENCRYPTION_KEY = "itTQ-n1WYoDTC_iw8glZpwkfxAknjNtz85t-6xeUkso="
+import secrets
+
+DEV_ENCRYPTION_KEY = secrets.token_urlsafe(32)
 
 
 def _split_csv(raw_value: str) -> list[str]:
@@ -56,9 +55,9 @@ class Config:
 
     # Frontend + access toggles
     FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-    ALLOW_SELF_SIGNUP = _as_bool(os.environ.get('ALLOW_SELF_SIGNUP'), default=True)
-    ALLOW_GOOGLE_LOGIN = _as_bool(os.environ.get('ALLOW_GOOGLE_LOGIN'), default=True)
-    ALLOW_INSECURE_GOOGLE_LOGIN = _as_bool(
+    ALLOW_SELF_SIGNUP = as_bool(os.environ.get('ALLOW_SELF_SIGNUP'), default=True)
+    ALLOW_GOOGLE_LOGIN = as_bool(os.environ.get('ALLOW_GOOGLE_LOGIN'), default=True)
+    ALLOW_INSECURE_GOOGLE_LOGIN = as_bool(
         os.environ.get('ALLOW_INSECURE_GOOGLE_LOGIN'), default=False
     )
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
@@ -69,7 +68,7 @@ class Config:
     TENANCY_EXCLUDED_SUBDOMAINS = _split_csv(
         os.environ.get('TENANCY_EXCLUDED_SUBDOMAINS', 'api,master,www')
     )
-    TENANCY_ENFORCE_HOST_MATCH = _as_bool(
+    TENANCY_ENFORCE_HOST_MATCH = as_bool(
         os.environ.get('TENANCY_ENFORCE_HOST_MATCH'),
         default=False,
     )
@@ -84,7 +83,7 @@ class Config:
     WONDERPUSH_APPLICATION_ID = os.environ.get('WONDERPUSH_APPLICATION_ID')
     GRAFANA_URL = os.environ.get('GRAFANA_URL') or os.environ.get('VITE_GRAFANA_URL', '')
     GRAFANA_HEALTHCHECK_PATH = os.environ.get('GRAFANA_HEALTHCHECK_PATH', '/api/health')
-    GRAFANA_VERIFY_TLS = _as_bool(os.environ.get('GRAFANA_VERIFY_TLS'), default=True)
+    GRAFANA_VERIFY_TLS = as_bool(os.environ.get('GRAFANA_VERIFY_TLS'), default=True)
     GRAFANA_TIMEOUT_SECONDS = os.environ.get('GRAFANA_TIMEOUT_SECONDS', '4')
     GRAFANA_DATASOURCE_UID = os.environ.get('GRAFANA_DATASOURCE_UID', '')
 
@@ -110,13 +109,18 @@ class Config:
     # OpenAI
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
+    # Stripe (Payments)
+    STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
+    STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
+    STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
+
     # ACS / TR-069
     ACS_BASE_URL = os.environ.get('ACS_BASE_URL', '')
     ACS_API_KEY = os.environ.get('ACS_API_KEY', '')
     ACS_DEFAULT_HOST = os.environ.get('ACS_DEFAULT_HOST', '')
     ACS_REPROVISION_PATH = os.environ.get('ACS_REPROVISION_PATH', '/api/v1/tr069/reprovision')
     ACS_TIMEOUT_SECONDS = os.environ.get('ACS_TIMEOUT_SECONDS', '8')
-    ACS_VERIFY_TLS = _as_bool(os.environ.get('ACS_VERIFY_TLS'), default=True)
+    ACS_VERIFY_TLS = as_bool(os.environ.get('ACS_VERIFY_TLS'), default=True)
     
     # Celery
     CELERY_BROKER_URL = REDIS_URL
@@ -130,15 +134,26 @@ class Config:
     MIKROTIK_WG_ALLOWED_SUBNETS = os.environ.get('MIKROTIK_WG_ALLOWED_SUBNETS', '10.250.0.0/16,10.251.0.0/16')
     MIKROTIK_WG_VPS_SYNC_MODE = os.environ.get('MIKROTIK_WG_VPS_SYNC_MODE', 'auto')
     MIKROTIK_WG_VPS_INTERFACE = os.environ.get('MIKROTIK_WG_VPS_INTERFACE', 'wg0')
-    MIKROTIK_WG_VPS_PERSIST = _as_bool(os.environ.get('MIKROTIK_WG_VPS_PERSIST'), default=True)
+    MIKROTIK_WG_VPS_PERSIST = as_bool(os.environ.get('MIKROTIK_WG_VPS_PERSIST'), default=True)
     MIKROTIK_WG_VPS_SSH_HOST = os.environ.get('MIKROTIK_WG_VPS_SSH_HOST', '')
     MIKROTIK_WG_VPS_SSH_PORT = os.environ.get('MIKROTIK_WG_VPS_SSH_PORT', '22')
     MIKROTIK_WG_VPS_SSH_USER = os.environ.get('MIKROTIK_WG_VPS_SSH_USER', '')
     MIKROTIK_WG_VPS_SSH_PASSWORD = os.environ.get('MIKROTIK_WG_VPS_SSH_PASSWORD', '')
     MIKROTIK_WG_VPS_SSH_KEY_PATH = os.environ.get('MIKROTIK_WG_VPS_SSH_KEY_PATH', '')
     MIKROTIK_WG_VPS_SSH_TIMEOUT_SECONDS = os.environ.get('MIKROTIK_WG_VPS_SSH_TIMEOUT_SECONDS', '8')
-    MIKROTIK_WG_VPS_SSH_USE_SUDO = _as_bool(os.environ.get('MIKROTIK_WG_VPS_SSH_USE_SUDO'), default=True)
-    ROTATE_PASSWORDS_DRY_RUN = _as_bool(os.environ.get('ROTATE_PASSWORDS_DRY_RUN'), default=False)
+    MIKROTIK_WG_VPS_SSH_USE_SUDO = as_bool(os.environ.get('MIKROTIK_WG_VPS_SSH_USE_SUDO'), default=True)
+    MIKROTIK_MANAGEMENT_ALLOWED_CIDR = os.environ.get('MIKROTIK_MANAGEMENT_ALLOWED_CIDR', 'YOUR_PUBLIC_IP/32')
+    FASTISP_VPS_IP = os.environ.get('FASTISP_VPS_IP', '')
+    VPS_PUBLIC_HOST = os.environ.get('VPS_PUBLIC_HOST', '')
+    VPS_PUBLIC_SSH_USER = os.environ.get('VPS_PUBLIC_SSH_USER', 'noc')
+    VPS_PUBLIC_SSH_PORT = int(os.environ.get('VPS_PUBLIC_SSH_PORT', '22') or 22)
+    DEPLOY_PROJECT_ROOT = os.environ.get('DEPLOY_PROJECT_ROOT', '/root/fastisp')
+    DEPLOY_COMPOSE_FILE = os.environ.get('DEPLOY_COMPOSE_FILE', 'docker-compose.prod.yml')
+    DEPLOY_ENV_FILE = os.environ.get('DEPLOY_ENV_FILE', '.env.prod')
+    DEPLOY_SERVICES = _split_csv(os.environ.get('DEPLOY_SERVICES', 'backend,celery-worker,celery-beat,frontend'))
+    VPS_UPDATE_MIN_DISK_GB = os.environ.get('VPS_UPDATE_MIN_DISK_GB', '2')
+    VPS_UPDATE_MAX_BACKUP_AGE_HOURS = os.environ.get('VPS_UPDATE_MAX_BACKUP_AGE_HOURS', '24')
+    ROTATE_PASSWORDS_DRY_RUN = as_bool(os.environ.get('ROTATE_PASSWORDS_DRY_RUN'), default=False)
     PASSWORD_ROTATION_LENGTH = os.environ.get('PASSWORD_ROTATION_LENGTH', '24')
     
     # Logging
@@ -167,39 +182,41 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    # Use environment variables in production
-    # Tokens más longevos para evitar expiraciones frecuentes en portal admin
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=7)
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=4)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
 
-    # Environment-provided production values (validated at runtime)
+    # Database
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+
+    # Redis and Cache
     REDIS_URL = os.environ.get('REDIS_URL')
-    CORS_ORIGINS = _split_csv(os.environ.get('CORS_ORIGINS', ''))
+    CACHE_TYPE = os.environ.get('CACHE_TYPE', 'simple')
+    CACHE_REDIS_URL = os.environ.get('CACHE_REDIS_URL', REDIS_URL)
+    CACHE_KEY_PREFIX = 'ispfast_cache_'
+    
+    # Rate Limit
     RATELIMIT_STORAGE_URI = REDIS_URL
     RATELIMIT_STORAGE_URL = REDIS_URL
-    CACHE_TYPE = os.environ.get('CACHE_TYPE', 'SimpleCache')
-    CACHE_REDIS_URL = os.environ.get('CACHE_REDIS_URL', REDIS_URL)
 
+    # CORS
+    CORS_ORIGINS = _split_csv(os.environ.get('CORS_ORIGINS', ''))
+
+    # Security & Access
     FRONTEND_URL = os.environ.get('FRONTEND_URL')
-    ALLOW_SELF_SIGNUP = _as_bool(os.environ.get('ALLOW_SELF_SIGNUP'), default=True)
-    ALLOW_GOOGLE_LOGIN = _as_bool(os.environ.get('ALLOW_GOOGLE_LOGIN'), default=True)
-    ALLOW_INSECURE_GOOGLE_LOGIN = _as_bool(
-        os.environ.get('ALLOW_INSECURE_GOOGLE_LOGIN'), default=False
-    )
+    ALLOW_SELF_SIGNUP = as_bool(os.environ.get('ALLOW_SELF_SIGNUP'), default=True)
+    ALLOW_GOOGLE_LOGIN = as_bool(os.environ.get('ALLOW_GOOGLE_LOGIN'), default=True)
+    ALLOW_INSECURE_GOOGLE_LOGIN = as_bool(os.environ.get('ALLOW_INSECURE_GOOGLE_LOGIN'), default=False)
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+    
+    # Tenancy
     TENANCY_ROOT_DOMAIN = (os.environ.get('TENANCY_ROOT_DOMAIN') or '').strip().lower()
     TENANCY_MASTER_HOST = (os.environ.get('TENANCY_MASTER_HOST') or '').strip().lower()
     TENANCY_API_HOST = (os.environ.get('TENANCY_API_HOST') or '').strip().lower()
-    TENANCY_EXCLUDED_SUBDOMAINS = _split_csv(
-        os.environ.get('TENANCY_EXCLUDED_SUBDOMAINS', 'api,master,www')
-    )
-    TENANCY_ENFORCE_HOST_MATCH = _as_bool(
-        os.environ.get('TENANCY_ENFORCE_HOST_MATCH'),
-        default=False,
-    )
+    TENANCY_EXCLUDED_SUBDOMAINS = _split_csv(os.environ.get('TENANCY_EXCLUDED_SUBDOMAINS', 'api,master,www'))
+    TENANCY_ENFORCE_HOST_MATCH = as_bool(os.environ.get('TENANCY_ENFORCE_HOST_MATCH'), default=False)
     PLATFORM_BOOTSTRAP_TOKEN = (os.environ.get('PLATFORM_BOOTSTRAP_TOKEN') or '').strip()
 
+    # MikroTik
     MIKROTIK_DEFAULT_USERNAME = os.environ.get('MIKROTIK_DEFAULT_USERNAME')
     MIKROTIK_DEFAULT_PASSWORD = os.environ.get('MIKROTIK_DEFAULT_PASSWORD')
 
@@ -227,7 +244,7 @@ class ProductionConfig(Config):
                 "CORS_ORIGINS must be set in production and contain at least one origin."
             )
 
-        if _as_bool(os.environ.get('ALLOW_GOOGLE_LOGIN'), default=True) and not os.environ.get('GOOGLE_CLIENT_ID'):
+        if as_bool(os.environ.get('ALLOW_GOOGLE_LOGIN'), default=True) and not os.environ.get('GOOGLE_CLIENT_ID'):
             raise ValueError(
                 "GOOGLE_CLIENT_ID must be set when ALLOW_GOOGLE_LOGIN=true in production."
             )

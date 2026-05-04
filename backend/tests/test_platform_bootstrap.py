@@ -25,7 +25,7 @@ def test_platform_bootstrap_creates_first_platform_admin(client, app):
             'token': 'bootstrap-secret',
             'name': 'Root Platform',
             'email': 'root@platform.local',
-            'password': 'SuperSecure123',
+            'password': 'SuperSecure123!',
         },
     )
     assert create_response.status_code == 201
@@ -39,7 +39,7 @@ def test_platform_bootstrap_creates_first_platform_admin(client, app):
             'token': 'bootstrap-secret',
             'name': 'Another Root',
             'email': 'root2@platform.local',
-            'password': 'SuperSecure123',
+            'password': 'SuperSecure123!',
         },
     )
     assert second_response.status_code == 409
@@ -65,7 +65,7 @@ def test_platform_bootstrap_rejects_invalid_token(client, app):
             'token': 'wrong-token',
             'name': 'Root Platform',
             'email': 'root@platform.local',
-            'password': 'SuperSecure123',
+            'password': 'SuperSecure123!',
         },
     )
     assert response.status_code == 403
@@ -81,7 +81,7 @@ def test_platform_bootstrap_rejects_tenant_scoped_context(client, app):
             'token': 'bootstrap-secret',
             'name': 'Root Platform',
             'email': 'root@platform.local',
-            'password': 'SuperSecure123',
+            'password': 'SuperSecure123!',
         },
         headers={'X-Tenant-ID': '44'},
     )

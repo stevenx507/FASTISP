@@ -146,7 +146,7 @@ const BackupsView: React.FC = () => {
   const statusPill = (item: BackupFile) => {
     const verified = verificationByName[item.name]
     if (!verified) {
-      return <span className="text-xs font-medium text-slate-300">Sin verificar</span>
+      return <span className="text-xs font-medium text-slate-600">Sin verificar</span>
     }
     if (verified.valid) {
       return <span className="text-xs font-medium text-emerald-300">Integridad OK</span>
@@ -159,7 +159,7 @@ const BackupsView: React.FC = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">Backups</h2>
         <div className="flex gap-2">
-          <span className="inline-flex items-center rounded-lg border border-white/20 px-3 py-2 text-xs font-medium text-slate-200">
+          <span className="inline-flex items-center rounded-lg border border-white/20 px-3 py-2 text-xs font-medium text-slate-700">
             Retencion: {retentionDays} dias
           </span>
           <button
@@ -184,16 +184,16 @@ const BackupsView: React.FC = () => {
           </button>
           <button
             onClick={load}
-            className="px-3 py-2 rounded-lg bg-white/10 text-slate-100 hover:bg-white/20"
+            className="px-3 py-2 rounded-lg bg-white/10 text-slate-800 hover:bg-white/20"
           >
             <ArrowPathIcon className="w-5 h-5" />
           </button>
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-slate-900/70 shadow-xl overflow-x-auto">
-        <table className="w-full text-slate-100 min-w-[760px]">
-          <thead className="bg-white/5 border-b border-white/10">
+      <div className="rounded-xl border border-gray-200 bg-white/90 shadow-xl overflow-x-auto">
+        <table className="w-full text-slate-800 min-w-[760px]">
+          <thead className="bg-white border-b border-gray-200">
             <tr>
               <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide">Nombre</th>
               <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide">Tamano</th>
@@ -205,14 +205,14 @@ const BackupsView: React.FC = () => {
           <tbody className="divide-y divide-white/5">
             {loading && (
               <tr>
-                <td colSpan={5} className="px-4 py-4 text-sm text-slate-300">
+                <td colSpan={5} className="px-4 py-4 text-sm text-slate-600">
                   Cargando...
                 </td>
               </tr>
             )}
             {!loading && items.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-sm text-slate-300 text-center">
+                <td colSpan={5} className="px-4 py-6 text-sm text-slate-600 text-center">
                   No hay backups aun.
                 </td>
               </tr>
@@ -249,7 +249,7 @@ const BackupsView: React.FC = () => {
                       </button>
                     </div>
                     {verificationByName[f.name]?.sha256 && (
-                      <div className="mt-1 text-[11px] text-slate-400" title={verificationByName[f.name].sha256}>
+                      <div className="mt-1 text-[11px] text-slate-500" title={verificationByName[f.name].sha256}>
                         SHA256: {verificationByName[f.name].sha256!.slice(0, 16)}...
                       </div>
                     )}

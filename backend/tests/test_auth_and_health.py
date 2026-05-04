@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 import hashlib
 import hmac
 import json
@@ -119,6 +119,31 @@ def test_login_rejects_tenant_mismatch(client, app):
     assert response.status_code == 401
 
 
+def test_api_health_rejects_invalid_jwt_with_401(client):
+    response = client.get(
+        '/api/v1/health',
+        headers={'Authorization': 'Bearer definitely-not-a-real-jwt'},
+    )
+
+    assert response.status_code == 401
+    payload = response.get_json()
+    assert payload['error'] == 'Invalid JWT token'
+
+
+def test_api_health_rejects_expired_jwt_with_401(client, app):
+    with app.app_context():
+        expired_token = create_access_token(identity='123', expires_delta=timedelta(seconds=-1))
+
+    response = client.get(
+        '/api/v1/health',
+        headers={'Authorization': f'Bearer {expired_token}'},
+    )
+
+    assert response.status_code == 401
+    payload = response.get_json()
+    assert payload['error'] == 'JWT token expired'
+
+
 def test_update_password_success(client, app):
     with app.app_context():
         user = User(email='password@test.local', role='admin', name='Password Admin')
@@ -132,7 +157,7 @@ def test_update_password_success(client, app):
 
     response = client.post(
         '/api/auth/password',
-        json={'current_password': 'oldpassword123', 'new_password': 'newpassword123'},
+        json={'current_password': 'oldpassword123', 'new_password': 'NewPassword123!'},
         headers={'Authorization': f'Bearer {auth_token}'},
     )
 
@@ -143,7 +168,7 @@ def test_update_password_success(client, app):
     with app.app_context():
         updated = db.session.get(User, user_id)
         assert updated is not None
-        assert updated.check_password('newpassword123')
+        assert updated.check_password('NewPassword123!')
 
 
 def test_update_password_rejects_wrong_current_password(client, app):

@@ -1,13 +1,15 @@
 import { useAuthStore } from '../store/authStore'
 import config from './config'
 
-class ApiError extends Error {
+export class ApiError extends Error {
   status: number
+  payload?: unknown
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, payload?: unknown) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.payload = payload
   }
 }
 
@@ -42,15 +44,22 @@ export const apiClient = {
 
     // Add timeout to prevent indefinite hanging
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000) // 5s timeout
+    const timeoutId = setTimeout(() => controller.abort(new DOMException('Request timeout after 30s', 'TimeoutError')), 30000) // 30s timeout
 
     let response: Response
     try {
       response = await fetch(buildUrl(endpoint), {
         ...options,
         headers,
-        signal: controller.signal,
+        signal: options.signal ?? controller.signal,
       })
+    } catch (fetchError) {
+      clearTimeout(timeoutId)
+      const abortName = (fetchError as { name?: string })?.name
+      if (abortName === 'AbortError' || abortName === 'TimeoutError') {
+        throw new ApiError('El servidor no respondió a tiempo. Verifica tu conexión o intenta de nuevo.', 0)
+      }
+      throw fetchError
     } finally {
       clearTimeout(timeoutId)
     }
@@ -66,7 +75,7 @@ export const apiClient = {
         try {
           const errorData = await response.json()
           const message = errorData?.error || errorData?.message || `HTTP Error: ${response.status}`
-          throw new ApiError(String(message), response.status)
+          throw new ApiError(String(message), response.status, errorData)
         } catch (jsonError) {
           if (jsonError instanceof ApiError) {
             throw jsonError

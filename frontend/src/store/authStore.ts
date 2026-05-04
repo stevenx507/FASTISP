@@ -12,6 +12,7 @@ interface User {
   plan?: string
   client_id?: number
   mfa_enabled?: boolean
+  tenant_id?: number | null
 }
 
 interface AuthState {
@@ -19,9 +20,11 @@ interface AuthState {
   token: string | null
   isAuthenticated: boolean
   tenantContextId: number | null
+  tenantContextName: string | null
   login: (email: string, password: string) => Promise<void>
+  loginWithGoogle: (credential: string) => Promise<void>
   logout: () => void
-  setTenantContext: (tenantId: number | null) => void
+  setTenantContext: (tenantId: number | null, tenantName?: string | null) => void
 }
 
 const storage = {
@@ -57,6 +60,7 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
       tenantContextId: null,
+      tenantContextName: null,
       login: async (email, password) => {
         const data = await apiClient.post('/auth/login', { email, password })
         const token = data.token
@@ -71,13 +75,39 @@ export const useAuthStore = create<AuthState>()(
           role: normalizeRole(user.role),
         }
 
-        set({ user: normalizedUser, token, isAuthenticated: true, tenantContextId: null })
+        set({
+          user: normalizedUser,
+          token,
+          isAuthenticated: true,
+          tenantContextId: normalizedUser.tenant_id ?? null,
+        })
+      },
+      loginWithGoogle: async (credential) => {
+        const data = await apiClient.post('/auth/google', { credential })
+        const token = data.token
+        const user = data.user
+
+        if (!token || !user) {
+          throw new Error('Respuesta de Google invalida.')
+        }
+
+        const normalizedUser: User = {
+          ...user,
+          role: normalizeRole(user.role),
+        }
+
+        set({
+          user: normalizedUser,
+          token,
+          isAuthenticated: true,
+          tenantContextId: normalizedUser.tenant_id ?? null,
+        })
       },
       logout: () => {
-        set({ user: null, token: null, isAuthenticated: false, tenantContextId: null })
+        set({ user: null, token: null, isAuthenticated: false, tenantContextId: null, tenantContextName: null })
       },
-      setTenantContext: (tenantId) => {
-        set({ tenantContextId: tenantId })
+      setTenantContext: (tenantId, tenantName = null) => {
+        set({ tenantContextId: tenantId, tenantContextName: tenantName })
       },
     }),
     {

@@ -6,6 +6,7 @@ export const config = {
   APP_NAME: 'ISPMAX',
   APP_VERSION: '1.0.0',
   GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
+  GOOGLE_MAPS_API_KEY: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
   GRAFANA_URL: import.meta.env.VITE_GRAFANA_URL || '',
   WONDERPUSH_WEBKEY: import.meta.env.VITE_WONDERPUSH_WEBKEY || '',
   
@@ -31,10 +32,10 @@ export const config = {
       HISTORY: (id: number) => `/clients/${id}/history`,
     },
     ADMIN: {
-      ROUTERS: '/mikrotik/routers',
+      ROUTERS: '/routers',
       CLIENTS: '/admin/clients',
       PLANS: '/admin/plans',
-      METRICS: (routerId: string) => `/mikrotik/routers/${routerId}/metrics`,
+      METRICS: (routerId: string) => `/routers/${routerId}/metrics`,
     },
   },
 }

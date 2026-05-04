@@ -67,6 +67,7 @@ services:
     environment:
       - VITE_API_URL=http://localhost:5000/api
       - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+      - VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
     volumes:
       - ./frontend:/app
       - /app/node_modules

@@ -35,7 +35,7 @@ interface StaffItem {
 
 const statusPill: Record<TicketStatus, string> = {
   open: 'bg-amber-100 text-amber-700',
-  in_progress: 'bg-blue-100 text-blue-700',
+  in_progress: 'bg-blue-500/20 text-blue-300',
   resolved: 'bg-emerald-100 text-emerald-700',
   closed: 'bg-slate-100 text-slate-700',
 }
@@ -156,13 +156,13 @@ const TechSupport: React.FC = () => {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Soporte Tecnico</h2>
-          <p className="text-sm text-gray-600">Cola operativa de tickets, SLA y seguimiento de comentarios.</p>
+          <h2 className="text-2xl font-bold text-white">Soporte Tecnico</h2>
+          <p className="text-sm text-slate-500">Cola operativa de tickets, SLA y seguimiento de comentarios.</p>
         </div>
         <button
           onClick={loadBase}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white disabled:opacity-60"
         >
           <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Actualizando...' : 'Actualizar'}
@@ -174,13 +174,13 @@ const TechSupport: React.FC = () => {
           <p className="text-xs font-semibold uppercase text-amber-700">Open</p>
           <p className="mt-2 text-2xl font-bold text-amber-900">{stats.open}</p>
         </div>
-        <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-          <p className="text-xs font-semibold uppercase text-blue-700">In Progress</p>
-          <p className="mt-2 text-2xl font-bold text-blue-900">{stats.inProgress}</p>
+        <div className="rounded-xl border border-blue-100 bg-blue-500/10 p-4">
+          <p className="text-xs font-semibold uppercase text-blue-300">In Progress</p>
+          <p className="mt-2 text-2xl font-bold text-blue-200">{stats.inProgress}</p>
         </div>
-        <div className="rounded-xl border border-red-100 bg-red-50 p-4">
-          <p className="text-xs font-semibold uppercase text-red-700">SLA Vencido</p>
-          <p className="mt-2 text-2xl font-bold text-red-900">{stats.overdue}</p>
+        <div className="rounded-xl border border-red-100 bg-rose-500/10 p-4">
+          <p className="text-xs font-semibold uppercase text-rose-400">SLA Vencido</p>
+          <p className="mt-2 text-2xl font-bold text-rose-300">{stats.overdue}</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
           <p className="text-xs font-semibold uppercase text-slate-700">Total</p>
@@ -189,12 +189,12 @@ const TechSupport: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm xl:col-span-1">
-          <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-3">
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-sm xl:col-span-1">
+          <div className="flex flex-wrap items-center gap-2 border-b border-white/5 px-4 py-3">
             <select
               value={filters.status}
               onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
-              className="rounded-lg border border-gray-300 px-2 py-1 text-xs"
+              className="rounded-lg border border-white/20 px-2 py-1 text-xs"
             >
               <option value="all">Todos estados</option>
               <option value="open">open</option>
@@ -205,7 +205,7 @@ const TechSupport: React.FC = () => {
             <select
               value={filters.priority}
               onChange={(e) => setFilters((prev) => ({ ...prev, priority: e.target.value }))}
-              className="rounded-lg border border-gray-300 px-2 py-1 text-xs"
+              className="rounded-lg border border-white/20 px-2 py-1 text-xs"
             >
               <option value="all">Todas prioridades</option>
               <option value="low">low</option>
@@ -214,48 +214,48 @@ const TechSupport: React.FC = () => {
               <option value="urgent">urgent</option>
             </select>
           </div>
-          <div className="max-h-[560px] divide-y divide-gray-100 overflow-y-auto">
+          <div className="max-h-[560px] divide-y divide-white/5 overflow-y-auto">
             {filteredTickets.map((ticket) => (
               <button
                 key={ticket.id}
                 onClick={() => setSelectedTicketId(ticket.id)}
                 className={`w-full px-4 py-3 text-left transition ${
-                  selectedTicketId === ticket.id ? 'bg-blue-50' : 'hover:bg-gray-50'
+                  selectedTicketId === ticket.id ? 'bg-blue-500/10' : 'hover:bg-white'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-medium text-gray-900">#{ticket.id} {ticket.subject}</p>
+                  <p className="font-medium text-white">#{ticket.id} {ticket.subject}</p>
                   <span className={`rounded-full px-2 py-1 text-xs font-semibold ${statusPill[ticket.status]}`}>
                     {ticket.status}
                   </span>
                 </div>
-                <p className="mt-1 line-clamp-2 text-xs text-gray-600">{ticket.description}</p>
-                <p className="mt-1 text-[11px] text-gray-500">Prioridad: {ticket.priority}</p>
+                <p className="mt-1 line-clamp-2 text-xs text-slate-500">{ticket.description}</p>
+                <p className="mt-1 text-[11px] text-slate-500">Prioridad: {ticket.priority}</p>
               </button>
             ))}
             {!filteredTickets.length && (
-              <div className="px-4 py-8 text-center text-sm text-gray-500">Sin tickets para estos filtros.</div>
+              <div className="px-4 py-8 text-center text-sm text-slate-500">Sin tickets para estos filtros.</div>
             )}
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm xl:col-span-2">
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm xl:col-span-2">
           {selectedTicket ? (
             <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-white">
                   Ticket #{selectedTicket.id} - {selectedTicket.subject}
                 </h3>
-                <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">{selectedTicket.description}</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{selectedTicket.description}</p>
               </div>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
                 <div>
-                  <label className="mb-1 block text-xs text-gray-600">Estado</label>
+                  <label className="mb-1 block text-xs text-slate-500">Estado</label>
                   <select
                     value={selectedTicket.status}
                     onChange={(e) => updateTicket({ status: e.target.value as TicketStatus })}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   >
                     <option value="open">open</option>
                     <option value="in_progress">in_progress</option>
@@ -264,11 +264,11 @@ const TechSupport: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-gray-600">Prioridad</label>
+                  <label className="mb-1 block text-xs text-slate-500">Prioridad</label>
                   <select
                     value={selectedTicket.priority}
                     onChange={(e) => updateTicket({ priority: e.target.value as TicketPriority })}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   >
                     <option value="low">low</option>
                     <option value="medium">medium</option>
@@ -277,11 +277,11 @@ const TechSupport: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-gray-600">Asignado</label>
+                  <label className="mb-1 block text-xs text-slate-500">Asignado</label>
                   <select
                     value={selectedTicket.assigned_to || ''}
                     onChange={(e) => updateTicket({ assigned_to: e.target.value || undefined })}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   >
                     <option value="">Sin asignar</option>
                     {activeStaff.map((member) => (
@@ -292,29 +292,29 @@ const TechSupport: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-gray-600">SLA</label>
+                  <label className="mb-1 block text-xs text-slate-500">SLA</label>
                   <input
                     value={selectedTicket.sla_due_at || ''}
                     onChange={(e) => updateTicket({ sla_due_at: e.target.value })}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                     placeholder="2026-03-01T10:00:00"
                   />
                 </div>
               </div>
 
               <div className="rounded-lg border border-gray-200 p-3">
-                <h4 className="mb-2 font-semibold text-gray-900">Comentarios</h4>
+                <h4 className="mb-2 font-semibold text-white">Comentarios</h4>
                 <div className="max-h-48 space-y-2 overflow-y-auto">
                   {(comments[selectedTicket.id] || []).map((comment) => (
                     <div key={comment.id} className="rounded-md border border-gray-200 px-3 py-2 text-sm">
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-slate-500">
                         {comment.author || 'usuario'} - {comment.created_at?.replace('T', ' ').slice(0, 16) || '-'}
                       </p>
-                      <p className="mt-1 text-gray-800">{comment.comment}</p>
+                      <p className="mt-1 text-slate-700">{comment.comment}</p>
                     </div>
                   ))}
                   {!comments[selectedTicket.id]?.length && (
-                    <p className="text-sm text-gray-500">Sin comentarios.</p>
+                    <p className="text-sm text-slate-500">Sin comentarios.</p>
                   )}
                 </div>
                 <div className="mt-3 flex gap-2">
@@ -322,7 +322,7 @@ const TechSupport: React.FC = () => {
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     placeholder="Agregar comentario"
-                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    className="flex-1 rounded-lg border border-white/20 px-3 py-2 text-sm"
                   />
                   <button
                     onClick={addComment}
@@ -335,7 +335,7 @@ const TechSupport: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="py-10 text-center text-sm text-gray-500">Selecciona un ticket para comenzar.</div>
+            <div className="py-10 text-center text-sm text-slate-500">Selecciona un ticket para comenzar.</div>
           )}
         </div>
       </div>

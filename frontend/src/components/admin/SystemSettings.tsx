@@ -20,6 +20,10 @@ interface SystemSettingsPayload {
   slo_router_availability_target: number
   slo_ticket_sla_target: number
   slo_provision_success_target: number
+  whatsapp_token?: string
+  whatsapp_instance_id?: string
+  telegram_bot_token?: string
+  telegram_noc_chat_id?: string
 }
 
 interface SystemHealth {
@@ -59,6 +63,40 @@ interface OpsSloResponse {
   }
 }
 
+interface VpsUpdateCheck {
+  id: string
+  ok: boolean
+  detail: string
+  severity?: string
+}
+
+interface VpsUpdateSummary {
+  status?: string
+  score?: number
+  passed?: boolean
+  checks?: VpsUpdateCheck[]
+  blockers?: Array<{ id: string; detail: string }>
+  deployment?: {
+    project_root?: string
+    compose_file?: string
+    env_file?: string
+    services?: string[]
+    docker_available?: boolean
+    docker_runtime_ok?: boolean
+    commands?: string[]
+    scripts?: Array<{ name?: string; path?: string }>
+  }
+  artifacts?: {
+    backup_dir?: string
+    latest?: { name?: string; modified_at?: string }
+    db_backups?: number
+    latest_backup_age_hours?: number | null
+  }
+  health?: {
+    score?: number
+  }
+}
+
 interface OpsSop {
   id: string
   title: string
@@ -90,7 +128,7 @@ interface OpsSupportSlaSummary {
   sla_compliance_estimate?: number
 }
 
-const jobs = ['backup', 'cleanup_leases', 'enforce_billing', 'rotate_passwords', 'recalc_balances', 'backup_restore_drill'] as const
+const jobs = ['backup', 'cleanup_leases', 'enforce_billing', 'rotate_passwords', 'recalc_balances', 'backup_restore_drill', 'vps_update_preflight'] as const
 const jobStatuses = ['all', 'completed', 'completed_with_errors', 'skipped', 'failed'] as const
 
 const SystemSettings: React.FC = () => {
@@ -106,6 +144,7 @@ const SystemSettings: React.FC = () => {
   const [creatingChange, setCreatingChange] = useState(false)
   const [collections, setCollections] = useState<OpsCollectionsSummary | null>(null)
   const [supportSla, setSupportSla] = useState<OpsSupportSlaSummary | null>(null)
+  const [vpsUpdate, setVpsUpdate] = useState<VpsUpdateSummary | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [runningJob, setRunningJob] = useState<string | null>(null)
@@ -143,6 +182,7 @@ const SystemSettings: React.FC = () => {
       setChangeRequests(((changesResp?.items || []) as OpsChangeRequest[]).slice(0, 200))
       setCollections((collectionsResp || null) as OpsCollectionsSummary | null)
       setSupportSla((supportResp || null) as OpsSupportSlaSummary | null)
+      setVpsUpdate((response.vps_update || null) as VpsUpdateSummary | null)
       await loadJobHistory()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'No se pudieron cargar ajustes del sistema'
@@ -184,6 +224,9 @@ const SystemSettings: React.FC = () => {
       const response = await apiClient.post('/admin/system/jobs/run', { job })
       const completedJob = response.job as JobEntry
       setJobHistory((prev) => [completedJob, ...prev.filter((item) => item.id !== completedJob.id)])
+      if (job === 'vps_update_preflight') {
+        setVpsUpdate((completedJob.result || null) as VpsUpdateSummary | null)
+      }
       await loadJobHistory()
       const status = String(completedJob.status || 'completed')
       const human = status === 'completed_with_errors' ? 'completado con errores' : status
@@ -193,6 +236,20 @@ const SystemSettings: React.FC = () => {
       toast.error(msg)
     } finally {
       setRunningJob(null)
+    }
+  }
+
+  const copyVpsCommands = async () => {
+    const commands = Array.isArray(vpsUpdate?.deployment?.commands) ? vpsUpdate?.deployment?.commands || [] : []
+    if (!commands.length) {
+      toast.error('No hay comandos de actualizacion para copiar')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(commands.join('\n'))
+      toast.success('Comandos de actualizacion copiados')
+    } catch {
+      toast.error('No se pudieron copiar los comandos')
     }
   }
 
@@ -287,6 +344,11 @@ const SystemSettings: React.FC = () => {
       const checks = Array.isArray(result.checks) ? result.checks.length : 0
       return `drill ${passed ? 'ok' : 'con alertas'} | checks: ${checks}`
     }
+    if (job.job === 'vps_update_preflight') {
+      const score = Number(result.score || 0)
+      const blockers = Array.isArray(result.blockers) ? result.blockers.length : 0
+      return `score ${score}/100 | blockers: ${blockers}`
+    }
     if (typeof result.message === 'string' && result.message) {
       return result.message
     }
@@ -297,15 +359,15 @@ const SystemSettings: React.FC = () => {
     if (status === 'completed') return 'border-emerald-200 bg-emerald-50 text-emerald-700'
     if (status === 'skipped') return 'border-slate-200 bg-slate-50 text-slate-700'
     if (status === 'completed_with_errors') return 'border-amber-200 bg-amber-50 text-amber-700'
-    return 'border-red-200 bg-red-50 text-red-700'
+    return 'border-rose-500/30 bg-rose-500/10 text-rose-400'
   }
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Sistema</h2>
-          <p className="text-sm text-gray-600">Parametros operativos, jobs administrativos y salud general.</p>
+          <h2 className="text-2xl font-bold text-white">Sistema</h2>
+          <p className="text-sm text-slate-500">Parametros operativos, jobs administrativos y salud general.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -318,7 +380,7 @@ const SystemSettings: React.FC = () => {
           <button
             onClick={load}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white disabled:opacity-60"
           >
             <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Actualizando...' : 'Actualizar'}
@@ -331,9 +393,9 @@ const SystemSettings: React.FC = () => {
           <p className="text-xs font-semibold uppercase text-emerald-700">Routers UP</p>
           <p className="mt-2 text-2xl font-bold text-emerald-900">{health?.routers_up ?? 0}</p>
         </div>
-        <div className="rounded-xl border border-red-100 bg-red-50 p-4">
-          <p className="text-xs font-semibold uppercase text-red-700">Routers DOWN</p>
-          <p className="mt-2 text-2xl font-bold text-red-900">{health?.routers_down ?? 0}</p>
+        <div className="rounded-xl border border-red-100 bg-rose-500/10 p-4">
+          <p className="text-xs font-semibold uppercase text-rose-400">Routers DOWN</p>
+          <p className="mt-2 text-2xl font-bold text-rose-300">{health?.routers_down ?? 0}</p>
         </div>
         <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
           <p className="text-xs font-semibold uppercase text-amber-700">Tickets Open</p>
@@ -342,26 +404,26 @@ const SystemSettings: React.FC = () => {
         <div
           className={`rounded-xl p-4 ${
             dangerLevel === 'critical'
-              ? 'border border-red-200 bg-red-50'
+              ? 'border border-rose-500/30 bg-rose-500/10'
               : dangerLevel === 'warning'
                 ? 'border border-amber-200 bg-amber-50'
                 : 'border border-emerald-200 bg-emerald-50'
           }`}
         >
-          <p className="text-xs font-semibold uppercase text-gray-700">Estado</p>
-          <p className="mt-2 text-2xl font-bold text-gray-900">{dangerLevel}</p>
+          <p className="text-xs font-semibold uppercase text-slate-600">Estado</p>
+          <p className="mt-2 text-2xl font-bold text-white">{dangerLevel}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">Preflight Operativo</h3>
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Preflight Operativo</h3>
           <div className="mt-3 flex items-center gap-3">
-            <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+            <span className="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-semibold text-blue-300">
               score {preflight?.score ?? 0}/100
             </span>
             {!!preflight?.blockers?.length && (
-              <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+              <span className="rounded-full bg-rose-500/20 px-3 py-1 text-xs font-semibold text-rose-400">
                 blockers {preflight.blockers.length}
               </span>
             )}
@@ -370,45 +432,45 @@ const SystemSettings: React.FC = () => {
             {(preflight?.checks || []).slice(0, 6).map((check) => (
               <div key={check.id} className="rounded-lg border border-gray-200 px-3 py-2 text-xs">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-semibold text-gray-800">{check.id}</p>
+                  <p className="font-semibold text-slate-700">{check.id}</p>
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                      check.ok ? 'bg-emerald-100 text-emerald-700' : check.severity === 'critical' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                      check.ok ? 'bg-emerald-100 text-emerald-700' : check.severity === 'critical' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-100 text-amber-700'
                     }`}
                   >
                     {check.ok ? 'ok' : check.severity || 'warn'}
                   </span>
                 </div>
-                <p className="mt-1 text-gray-600">{check.detail}</p>
+                <p className="mt-1 text-slate-500">{check.detail}</p>
               </div>
             ))}
-            {!preflight?.checks?.length && <p className="text-xs text-gray-500">Sin datos de preflight.</p>}
+            {!preflight?.checks?.length && <p className="text-xs text-slate-500">Sin datos de preflight.</p>}
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">SLO Operativo</h3>
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">SLO Operativo</h3>
           <div className="mt-3 flex items-center gap-3">
-            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700">
+            <span className="rounded-full bg-violet-500/20 px-3 py-1 text-xs font-semibold text-violet-700">
               score {slo?.score ?? 0}/100
             </span>
           </div>
           <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
             <div className="rounded-lg border border-gray-200 p-3 text-xs">
-              <p className="text-gray-500">Routers</p>
-              <p className="mt-1 font-semibold text-gray-900">
+              <p className="text-slate-500">Routers</p>
+              <p className="mt-1 font-semibold text-white">
                 {slo?.metrics?.router_availability ?? 0}% / target {slo?.targets?.router_availability ?? 0}%
               </p>
             </div>
             <div className="rounded-lg border border-gray-200 p-3 text-xs">
-              <p className="text-gray-500">SLA Tickets</p>
-              <p className="mt-1 font-semibold text-gray-900">
+              <p className="text-slate-500">SLA Tickets</p>
+              <p className="mt-1 font-semibold text-white">
                 {slo?.metrics?.ticket_sla ?? 0}% / target {slo?.targets?.ticket_sla ?? 0}%
               </p>
             </div>
             <div className="rounded-lg border border-gray-200 p-3 text-xs">
-              <p className="text-gray-500">Provisioning</p>
-              <p className="mt-1 font-semibold text-gray-900">
+              <p className="text-slate-500">Provisioning</p>
+              <p className="mt-1 font-semibold text-white">
                 {slo?.metrics?.provision_success ?? 0}% / target {slo?.targets?.provision_success ?? 0}%
               </p>
             </div>
@@ -416,36 +478,169 @@ const SystemSettings: React.FC = () => {
         </div>
       </div>
 
+      <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Actualizacion VPS</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Valida si el VPS esta listo para actualizar y copia la secuencia sugerida de despliegue.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => runJob('vps_update_preflight')}
+              disabled={runningJob === 'vps_update_preflight'}
+              className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-white hover:bg-gray-50 disabled:opacity-60"
+            >
+              {runningJob === 'vps_update_preflight' ? 'Verificando VPS...' : 'Ejecutar preflight VPS'}
+            </button>
+            <button
+              onClick={copyVpsCommands}
+              disabled={!vpsUpdate?.deployment?.commands?.length}
+              className="rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-white disabled:opacity-60"
+            >
+              Copiar comandos
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
+          <div className="rounded-lg border border-gray-200 p-3 text-xs">
+            <p className="text-slate-500">Score</p>
+            <p className="mt-1 text-lg font-semibold text-white">{vpsUpdate?.score ?? 0}/100</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 p-3 text-xs">
+            <p className="text-slate-500">Estado</p>
+            <p className="mt-1 text-lg font-semibold text-white">{vpsUpdate?.status || 'sin datos'}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 p-3 text-xs">
+            <p className="text-slate-500">Blockers</p>
+            <p className="mt-1 text-lg font-semibold text-white">{vpsUpdate?.blockers?.length ?? 0}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 p-3 text-xs">
+            <p className="text-slate-500">Ultimo backup</p>
+            <p className="mt-1 text-lg font-semibold text-white">
+              {typeof vpsUpdate?.artifacts?.latest_backup_age_hours === 'number'
+                ? `${vpsUpdate?.artifacts?.latest_backup_age_hours}h`
+                : 'sin dato'}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <div className="rounded-lg border border-gray-200 p-3">
+            <p className="text-xs font-semibold uppercase text-slate-600">Checks VPS</p>
+            <div className="mt-3 space-y-2">
+              {(vpsUpdate?.checks || []).slice(0, 8).map((check) => (
+                <div key={check.id} className="rounded-lg border border-gray-200 px-3 py-2 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-semibold text-slate-700">{check.id}</p>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        check.ok
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : check.severity === 'critical'
+                            ? 'bg-rose-500/20 text-rose-400'
+                            : 'bg-amber-100 text-amber-700'
+                      }`}
+                    >
+                      {check.ok ? 'ok' : check.severity || 'warn'}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-slate-500">{check.detail}</p>
+                </div>
+              ))}
+              {!vpsUpdate?.checks?.length && <p className="text-xs text-slate-500">Ejecuta el preflight para ver el detalle.</p>}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs font-semibold uppercase text-slate-600">Ruta de despliegue</p>
+              <div className="mt-3 space-y-2 text-xs text-slate-500">
+                <p>
+                  Project root:
+                  <span className="ml-1 font-mono text-white">{vpsUpdate?.deployment?.project_root || '-'}</span>
+                </p>
+                <p>
+                  Compose:
+                  <span className="ml-1 font-mono text-white">{vpsUpdate?.deployment?.compose_file || '-'}</span>
+                </p>
+                <p>
+                  Env:
+                  <span className="ml-1 font-mono text-white">{vpsUpdate?.deployment?.env_file || '-'}</span>
+                </p>
+                <p>
+                  Servicios:
+                  <span className="ml-1 text-white">{(vpsUpdate?.deployment?.services || []).join(', ') || '-'}</span>
+                </p>
+                <p>
+                  Docker runtime:
+                  <span className="ml-1 text-white">{vpsUpdate?.deployment?.docker_runtime_ok ? 'ok' : 'pendiente / no visible'}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs font-semibold uppercase text-slate-600">Secuencia sugerida</p>
+              <div className="mt-3 space-y-2">
+                {(vpsUpdate?.deployment?.commands || []).map((command) => (
+                  <code key={command} className="block rounded bg-slate-950 px-3 py-2 text-xs text-slate-800">
+                    {command}
+                  </code>
+                ))}
+                {!vpsUpdate?.deployment?.commands?.length && (
+                  <p className="text-xs text-slate-500">Sin comandos disponibles todavia.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs font-semibold uppercase text-slate-600">Scripts locales</p>
+              <div className="mt-3 space-y-2 text-xs text-slate-500">
+                {(vpsUpdate?.deployment?.scripts || []).map((script) => (
+                  <div key={`${script.name}-${script.path}`} className="rounded border border-gray-200 px-3 py-2">
+                    <p className="font-semibold text-white">{script.name || 'script'}</p>
+                    <p className="mt-1 font-mono text-[11px] text-slate-500">{script.path || '-'}</p>
+                  </div>
+                ))}
+                {!vpsUpdate?.deployment?.scripts?.length && <p className="text-xs text-slate-500">Sin scripts sugeridos.</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">SOP Activos</h3>
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">SOP Activos</h3>
           <div className="mt-3 space-y-2">
             {sops.slice(0, 8).map((sop) => (
               <div key={sop.id} className="rounded-lg border border-gray-200 px-3 py-2 text-xs">
-                <p className="font-semibold text-gray-900">{sop.title}</p>
-                <p className="text-gray-600">
+                <p className="font-semibold text-white">{sop.title}</p>
+                <p className="text-slate-500">
                   {sop.category || 'general'} | owner: {sop.owner_role || 'admin'} | checklist: {sop.checklist?.length || 0}
                 </p>
               </div>
             ))}
-            {!sops.length && <p className="text-xs text-gray-500">No hay SOP configurados.</p>}
+            {!sops.length && <p className="text-xs text-slate-500">No hay SOP configurados.</p>}
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">Control de Cambios</h3>
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Control de Cambios</h3>
           <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
             <input
               value={newChangeTitle}
               onChange={(e) => setNewChangeTitle(e.target.value)}
               placeholder="Titulo del cambio"
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
             <input
               value={newChangeTicket}
               onChange={(e) => setNewChangeTicket(e.target.value)}
               placeholder="Ticket ref (opcional)"
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
             <button
               onClick={createChangeRequest}
@@ -459,12 +654,12 @@ const SystemSettings: React.FC = () => {
             {changeRequests.slice(0, 12).map((row) => (
               <div key={row.id} className="rounded-lg border border-gray-200 px-3 py-2 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold text-gray-900">{row.title}</p>
+                  <p className="font-semibold text-white">{row.title}</p>
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
                     {row.status}
                   </span>
                 </div>
-                <p className="text-gray-600">
+                <p className="text-slate-500">
                   {row.id} | {row.scope || 'network'} {row.ticket_ref ? `| ${row.ticket_ref}` : ''}
                 </p>
                 <div className="mt-2 flex gap-2">
@@ -476,7 +671,7 @@ const SystemSettings: React.FC = () => {
                   </button>
                   <button
                     onClick={() => updateChangeStatus(row.id, 'executing')}
-                    className="rounded bg-blue-100 px-2 py-1 text-[10px] font-semibold text-blue-700"
+                    className="rounded bg-blue-500/20 px-2 py-1 text-[10px] font-semibold text-blue-300"
                   >
                     ejecutar
                   </button>
@@ -489,62 +684,62 @@ const SystemSettings: React.FC = () => {
                 </div>
               </div>
             ))}
-            {!changeRequests.length && <p className="text-xs text-gray-500">Sin cambios registrados.</p>}
+            {!changeRequests.length && <p className="text-xs text-slate-500">Sin cambios registrados.</p>}
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">Cobranza Operativa</h3>
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Cobranza Operativa</h3>
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
             <div className="rounded-lg border border-gray-200 p-3">
-              <p className="text-gray-500">Subs activas</p>
-              <p className="mt-1 font-semibold text-gray-900">{collections?.subscriptions?.active ?? 0}</p>
+              <p className="text-slate-500">Subs activas</p>
+              <p className="mt-1 font-semibold text-white">{collections?.subscriptions?.active ?? 0}</p>
             </div>
             <div className="rounded-lg border border-gray-200 p-3">
-              <p className="text-gray-500">Subs mora/suspendidas</p>
-              <p className="mt-1 font-semibold text-gray-900">
+              <p className="text-slate-500">Subs mora/suspendidas</p>
+              <p className="mt-1 font-semibold text-white">
                 {(collections?.subscriptions?.past_due ?? 0) + (collections?.subscriptions?.suspended ?? 0)}
               </p>
             </div>
             <div className="rounded-lg border border-gray-200 p-3">
-              <p className="text-gray-500">Promesas pendientes</p>
-              <p className="mt-1 font-semibold text-gray-900">{collections?.promises?.pending ?? 0}</p>
+              <p className="text-slate-500">Promesas pendientes</p>
+              <p className="mt-1 font-semibold text-white">{collections?.promises?.pending ?? 0}</p>
             </div>
             <div className="rounded-lg border border-gray-200 p-3">
-              <p className="text-gray-500">Facturas pendientes</p>
-              <p className="mt-1 font-semibold text-gray-900">{collections?.invoices?.pending ?? 0}</p>
+              <p className="text-slate-500">Facturas pendientes</p>
+              <p className="mt-1 font-semibold text-white">{collections?.invoices?.pending ?? 0}</p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">Soporte SLA</h3>
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Soporte SLA</h3>
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
             <div className="rounded-lg border border-gray-200 p-3">
-              <p className="text-gray-500">Tickets abiertos</p>
-              <p className="mt-1 font-semibold text-gray-900">{supportSla?.open ?? 0}</p>
+              <p className="text-slate-500">Tickets abiertos</p>
+              <p className="mt-1 font-semibold text-white">{supportSla?.open ?? 0}</p>
             </div>
             <div className="rounded-lg border border-gray-200 p-3">
-              <p className="text-gray-500">Vencidos SLA</p>
-              <p className="mt-1 font-semibold text-gray-900">{supportSla?.overdue ?? 0}</p>
+              <p className="text-slate-500">Vencidos SLA</p>
+              <p className="mt-1 font-semibold text-white">{supportSla?.overdue ?? 0}</p>
             </div>
             <div className="rounded-lg border border-gray-200 p-3">
-              <p className="text-gray-500">Por vencer (4h)</p>
-              <p className="mt-1 font-semibold text-gray-900">{supportSla?.due_soon_4h ?? 0}</p>
+              <p className="text-slate-500">Por vencer (4h)</p>
+              <p className="mt-1 font-semibold text-white">{supportSla?.due_soon_4h ?? 0}</p>
             </div>
             <div className="rounded-lg border border-gray-200 p-3">
-              <p className="text-gray-500">Cumplimiento estimado</p>
-              <p className="mt-1 font-semibold text-gray-900">{supportSla?.sla_compliance_estimate ?? 0}%</p>
+              <p className="text-slate-500">Cumplimiento estimado</p>
+              <p className="mt-1 font-semibold text-white">{supportSla?.sla_compliance_estimate ?? 0}%</p>
             </div>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm xl:col-span-2">
-          <h3 className="mb-3 font-semibold text-gray-900">Configuracion operativa</h3>
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm xl:col-span-2">
+          <h3 className="mb-3 font-semibold text-white">Configuracion operativa</h3>
           {settings ? (
             <div className="space-y-3">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -574,12 +769,12 @@ const SystemSettings: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-4">
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-slate-600">
                   Prioridad ticket default
                   <select
                     value={settings.default_ticket_priority}
                     onChange={(e) => setSettings((prev) => (prev ? { ...prev, default_ticket_priority: e.target.value } : prev))}
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   >
                     <option value="low">low</option>
                     <option value="medium">medium</option>
@@ -587,7 +782,7 @@ const SystemSettings: React.FC = () => {
                     <option value="urgent">urgent</option>
                   </select>
                 </label>
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-slate-600">
                   Retencion backup (dias)
                   <input
                     type="number"
@@ -597,10 +792,10 @@ const SystemSettings: React.FC = () => {
                         prev ? { ...prev, backup_retention_days: Number(e.target.value) } : prev
                       )
                     }
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   />
                 </label>
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-slate-600">
                   Polling metricas (seg)
                   <input
                     type="number"
@@ -610,10 +805,10 @@ const SystemSettings: React.FC = () => {
                         prev ? { ...prev, metrics_poll_interval_sec: Number(e.target.value) } : prev
                       )
                     }
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   />
                 </label>
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-slate-600">
                   Minimo password
                   <input
                     type="number"
@@ -623,10 +818,10 @@ const SystemSettings: React.FC = () => {
                         prev ? { ...prev, password_policy_min_length: Number(e.target.value) } : prev
                       )
                     }
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   />
                 </label>
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-slate-600">
                   Drill backup (dias)
                   <input
                     type="number"
@@ -636,10 +831,10 @@ const SystemSettings: React.FC = () => {
                         prev ? { ...prev, backup_restore_drill_days: Number(e.target.value) } : prev
                       )
                     }
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   />
                 </label>
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-slate-600">
                   SLO routers (%)
                   <input
                     type="number"
@@ -649,10 +844,10 @@ const SystemSettings: React.FC = () => {
                         prev ? { ...prev, slo_router_availability_target: Number(e.target.value) } : prev
                       )
                     }
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   />
                 </label>
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-slate-600">
                   SLO SLA tickets (%)
                   <input
                     type="number"
@@ -662,10 +857,10 @@ const SystemSettings: React.FC = () => {
                         prev ? { ...prev, slo_ticket_sla_target: Number(e.target.value) } : prev
                       )
                     }
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   />
                 </label>
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-slate-600">
                   SLO provision (%)
                   <input
                     type="number"
@@ -675,23 +870,85 @@ const SystemSettings: React.FC = () => {
                         prev ? { ...prev, slo_provision_success_target: Number(e.target.value) } : prev
                       )
                     }
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
                   />
                 </label>
               </div>
+
+              <div className="mt-6 rounded-lg border border-gray-200 p-4">
+                <h4 className="mb-3 font-semibold text-slate-700">Mensajeria y Alertas (Automations)</h4>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="text-sm text-slate-600">
+                    WhatsApp Token (UltraMsg)
+                    <input
+                      type="password"
+                      value={settings.whatsapp_token || ''}
+                      onChange={(e) =>
+                        setSettings((prev) =>
+                          prev ? { ...prev, whatsapp_token: e.target.value } : prev
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-slate-800"
+                      placeholder="Token"
+                    />
+                  </label>
+                  <label className="text-sm text-slate-600">
+                    WhatsApp Instance ID
+                    <input
+                      type="text"
+                      value={settings.whatsapp_instance_id || ''}
+                      onChange={(e) =>
+                        setSettings((prev) =>
+                          prev ? { ...prev, whatsapp_instance_id: e.target.value } : prev
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-slate-800"
+                      placeholder="instance12345"
+                    />
+                  </label>
+                  <label className="text-sm text-slate-600">
+                    Telegram Bot Token
+                    <input
+                      type="password"
+                      value={settings.telegram_bot_token || ''}
+                      onChange={(e) =>
+                        setSettings((prev) =>
+                          prev ? { ...prev, telegram_bot_token: e.target.value } : prev
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-slate-800"
+                      placeholder="bot123456:ABC-DEF1234ghIkl..."
+                    />
+                  </label>
+                  <label className="text-sm text-slate-600">
+                    Telegram NOC Chat ID
+                    <input
+                      type="text"
+                      value={settings.telegram_noc_chat_id || ''}
+                      onChange={(e) =>
+                        setSettings((prev) =>
+                          prev ? { ...prev, telegram_noc_chat_id: e.target.value } : prev
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-slate-800"
+                      placeholder="-1001234567890"
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-500">Cargando configuracion...</p>
+            <p className="text-sm text-slate-500">Cargando configuracion...</p>
           )}
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-3 font-semibold text-gray-900">Jobs</h3>
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
+          <h3 className="mb-3 font-semibold text-white">Jobs</h3>
           <div className="mb-3 grid grid-cols-1 gap-2">
             <select
               value={jobTypeFilter}
               onChange={(e) => setJobTypeFilter(e.target.value as 'all' | (typeof jobs)[number])}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+              className="rounded-lg border border-white/20 px-3 py-2 text-sm text-slate-600"
             >
               <option value="all">todos los jobs</option>
               {jobs.map((job) => (
@@ -703,7 +960,7 @@ const SystemSettings: React.FC = () => {
             <select
               value={jobStatusFilter}
               onChange={(e) => setJobStatusFilter(e.target.value as (typeof jobStatuses)[number])}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+              className="rounded-lg border border-white/20 px-3 py-2 text-sm text-slate-600"
             >
               {jobStatuses.map((status) => (
                 <option key={status} value={status}>
@@ -718,32 +975,32 @@ const SystemSettings: React.FC = () => {
                 key={job}
                 onClick={() => runJob(job)}
                 disabled={runningJob === job}
-                className="w-full rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-100 disabled:opacity-60"
+                className="w-full rounded-lg border border-violet-200 bg-violet-500/10 px-3 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-500/20 disabled:opacity-60"
               >
                 {runningJob === job ? `Ejecutando ${job}...` : job}
               </button>
             ))}
           </div>
 
-          <div className="mt-4 border-t border-gray-100 pt-3">
-            <h4 className="mb-2 text-sm font-semibold text-gray-900">Historial reciente</h4>
+          <div className="mt-4 border-t border-white/5 pt-3">
+            <h4 className="mb-2 text-sm font-semibold text-white">Historial reciente</h4>
             <div className="max-h-52 space-y-2 overflow-y-auto">
               {jobHistory.map((job) => (
                 <div key={job.id} className="rounded-md border border-gray-200 px-3 py-2 text-xs">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold text-gray-800">{job.job}</p>
+                    <p className="font-semibold text-slate-700">{job.job}</p>
                     <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase ${statusBadgeClass(job.status)}`}>
                       {job.status}
                     </span>
                   </div>
-                  <p className="text-gray-500">
+                  <p className="text-slate-500">
                     inicio: {job.started_at?.replace('T', ' ').slice(0, 16)}
                   </p>
-                  {job.finished_at && <p className="text-gray-500">fin: {job.finished_at.replace('T', ' ').slice(0, 16)}</p>}
-                  {renderJobResult(job) && <p className="mt-1 text-gray-700">{renderJobResult(job)}</p>}
+                  {job.finished_at && <p className="text-slate-500">fin: {job.finished_at.replace('T', ' ').slice(0, 16)}</p>}
+                  {renderJobResult(job) && <p className="mt-1 text-slate-600">{renderJobResult(job)}</p>}
                 </div>
               ))}
-              {!jobHistory.length && <p className="text-xs text-gray-500">Sin jobs recientes.</p>}
+              {!jobHistory.length && <p className="text-xs text-slate-500">Sin jobs recientes.</p>}
             </div>
           </div>
         </div>

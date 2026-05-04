@@ -35,7 +35,7 @@ def test_platform_tenants_crud_and_admin_creation(client, app):
             'trial_ends_at': '2030-01-10T00:00:00Z',
             'admin_email': 'admin@ispnorte.local',
             'admin_name': 'Admin Norte',
-            'admin_password': 'supersecret123',
+            'admin_password': 'SuperSecret123!',
         },
         headers=headers,
     )
@@ -80,7 +80,7 @@ def test_platform_tenants_crud_and_admin_creation(client, app):
 
     create_admin_res = client.post(
         f'/api/platform/tenants/{tenant_id}/admins',
-        json={'email': 'ops@ispnorte.local', 'name': 'Ops Norte', 'password': 'ops-secret-123'},
+        json={'email': 'ops@ispnorte.local', 'name': 'Ops Norte', 'password': 'OpsSecret123!'},
         headers=headers,
     )
     assert create_admin_res.status_code == 201
@@ -114,7 +114,7 @@ def test_platform_tenant_admin_limit_enforced(client, app):
             'max_admins': 1,
             'admin_email': 'admin@isplimite.local',
             'admin_name': 'Admin Limite',
-            'admin_password': 'supersecret123',
+            'admin_password': 'SuperSecret123!',
         },
         headers=headers,
     )
@@ -123,7 +123,7 @@ def test_platform_tenant_admin_limit_enforced(client, app):
 
     second_admin_res = client.post(
         f'/api/platform/tenants/{tenant_id}/admins',
-        json={'email': 'ops@isplimite.local', 'name': 'Ops Limite', 'password': 'ops-secret-123'},
+        json={'email': 'ops@isplimite.local', 'name': 'Ops Limite', 'password': 'OpsSecret123!'},
         headers=headers,
     )
     assert second_admin_res.status_code == 409

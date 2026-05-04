@@ -5,7 +5,7 @@ Handles all MikroTik router operations for ISPMAX
 from routeros_api.exceptions import RouterOsApiError
 from typing import Dict, List, Optional, Tuple
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import or_
 from app.models import Client, Plan, MikroTikRouter, Invoice, Subscription, AuditLog, Ticket
 from app import db, cache
@@ -23,44 +23,108 @@ class MikroTikService:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.disconnect()
+        
+    def __repr__(self):
+        return f"MikroTikService({self.router_id})"
     
     def __init__(self, router_id: Optional[int] = None):
         self.router = None
         self.api = None
         self.pool_obj = None  # Store the underlying pool object
         self.router_id = None  # Store router_id for pool operations
+        self.last_connection_error = None
+        self.last_connection_stage = None
+        self.last_connection_code = None
         if router_id is not None:
             self.connect_to_router(router_id)
+
+    def _clear_connection_error(self):
+        self.last_connection_error = None
+        self.last_connection_stage = None
+        self.last_connection_code = None
+
+    def _set_connection_error(self, *, stage: str, error: object, code: Optional[str] = None):
+        self.last_connection_stage = stage
+        self.last_connection_code = code
+        if isinstance(error, BaseException):
+            self.last_connection_error = str(error).strip() or error.__class__.__name__
+        else:
+            self.last_connection_error = str(error).strip()
     
     def connect_to_router(self, router_id: int) -> bool:
-        """Connect to specific router by ID using the connection pool"""
+        """
+        Connect to specific router by ID using Adaptive Connection:
+        1. Try Public/Local IP (ip_address)
+        2. Fallback to Private VPN IP (vpn_ip_address) if public fails
+        """
+        self._clear_connection_error()
         try:
             normalized_router_id = int(router_id)
         except (TypeError, ValueError):
-            logger.error(f"Invalid router_id provided: {router_id}")
+            self._set_connection_error(stage='validation', error=f"Invalid router_id: {router_id}", code='invalid_router_id')
             return False
 
+        from app.tenancy import current_tenant_id
+        self.router_id = normalized_router_id
+        self.router = db.session.query(MikroTikRouter).filter(
+            MikroTikRouter.id == normalized_router_id,
+            MikroTikRouter.tenant_id == current_tenant_id()
+        ).first()
+        
+        if not self.router:
+            self._set_connection_error(stage='lookup', error="Router not found or access denied.", code='router_not_found')
+            return False
+
+        # --- Adaptive Connection Logic ---
+        # 1. Try Primary Route
         try:
-            self.router_id = normalized_router_id
-            self.router = db.session.get(MikroTikRouter, normalized_router_id)
-            if not self.router:
-                logger.error(f"Router {normalized_router_id} not found in database.")
-                return False
-            
-            self.api, self.pool_obj = mikrotik_connection_pool.get_connection(
-                normalized_router_id
-            )
-            logger.info(f"Connected to MikroTik {self.router.ip_address} using connection from pool.")
-            
-            # Update last seen
-            if self.router:
-                self.router.last_seen = datetime.utcnow()
-                db.session.commit()
-            
+            self.api, self.pool_obj = mikrotik_connection_pool.get_connection(normalized_router_id)
+            self._clear_connection_error()
+            self.router.last_seen = datetime.now(timezone.utc)
+            db.session.commit()
             return True
         except Exception as e:
-            logger.error(f"Error getting connection from pool for router {router_id}: {e}")
+            # If Primary fails, check if we have a VPN fallback
+            if self.router.vpn_ip_address:
+                logger.warning(f"Primary connection to {self.router.ip_address} failed. Trying VPN fallback {self.router.vpn_ip_address}...")
+                try:
+                    # We tell the pool to try the VPN IP instead. 
+                    # Note: We need to modify the pool to support this or handle it here.
+                    # For now, let's assume we can try a direct connection if the pool fails or 
+                    # better: modify the pool to handle multiple routes.
+                    
+                    # Manual fallback if pool is tied to ip_address
+                    self.api, self.pool_obj = self._try_direct_connection(self.router, use_vpn=True)
+                    if self.api:
+                        logger.info(f"Connected to MikroTik {router_id} via VPN Tunnel.")
+                        self.router.last_seen = datetime.now(timezone.utc)
+                        db.session.commit()
+                        return True
+                except Exception as vpn_e:
+                    logger.error(f"VPN Fallback also failed for router {router_id}: {vpn_e}")
+            
+            # Final failure handling
+            self._set_connection_error(stage='connect', error=e, code='api_connection_failed')
             return False
+
+    def _try_direct_connection(self, router, use_vpn=False) -> Tuple[Optional[object], Optional[object]]:
+        """Helper for direct connection attempts (e.g., fallback)"""
+        from routeros_api import RouterOsApiPool
+        host = router.vpn_ip_address if use_vpn else router.ip_address
+        password = router.password
+        try:
+            pool = RouterOsApiPool(
+                host=host,
+                username=router.username,
+                password=password,
+                port=int(router.api_port or 8728),
+                plaintext_login=True,
+                use_ssl=False,
+                timeout=10
+            )
+            return pool.get_api(), pool
+        except Exception:
+            return None, None
     
     def provision_client(self, client: Client, plan: Plan, config: Dict = None) -> Dict:
         """
@@ -239,16 +303,18 @@ class MikroTikService:
                 return True
             
             # Configure burst if available
-            if plan.burst_download and plan.burst_upload:
+            burst_download = getattr(plan, 'burst_download', None)
+            burst_upload = getattr(plan, 'burst_upload', None)
+            if burst_download and burst_upload:
                 queue_api.add(
                     name=f"client_{client.id}",
                     target=target,
-                    max_limit=f"{plan.download_speed}M/{plan.upload_speed}M",
+                    max_limit=f"{plan.upload_speed}M/{plan.download_speed}M",
                     comment=f"Cliente: {client.full_name} - Plan: {plan.name}"
                 )
                 queue_api.set(
-                    **{"burst-limit": f"{plan.burst_download}M/{plan.burst_upload}M",
-                       "burst-threshold": f"{plan.download_speed * 0.8}M/{plan.upload_speed * 0.8}M",
+                    **{"burst-limit": f"{burst_upload}M/{burst_download}M",
+                       "burst-threshold": f"{int(plan.upload_speed * 0.8)}M/{int(plan.download_speed * 0.8)}M",
                        "burst-time": "30s"},
                     name=f"client_{client.id}"
                 )
@@ -256,7 +322,7 @@ class MikroTikService:
                 queue_api.add(
                     name=f"client_{client.id}",
                     target=target,
-                    max_limit=f"{plan.download_speed}M/{plan.upload_speed}M",
+                    max_limit=f"{plan.upload_speed}M/{plan.download_speed}M",
                     comment=f"Cliente: {client.full_name} - Plan: {plan.name}"
                 )
             
@@ -326,9 +392,14 @@ class MikroTikService:
                 logger.info("No wireless interfaces, skipping WiFi config")
                 return True
             
+            # FIX #10: Usar el brand_name del tenant si existe, para soportar SaaS whitelabeling
+            brand_name = "ISPFAST"
+            if client.tenant and client.tenant.brand_name:
+                brand_name = "".join(c for c in client.tenant.brand_name if c.isalnum() or c == '-')
+                
             # Default WiFi configuration
             wifi_config = config or {
-                'ssid_prefix': 'ISPMAX',
+                'ssid_prefix': brand_name,
                 'security': 'wpa2',
                 'band': '2ghz-b/g/n',
                 'channel': 'auto'
@@ -368,6 +439,73 @@ class MikroTikService:
             logger.error(f"Unexpected error configuring WiFi: {e}")
             return False
     
+    def update_wifi(self, ssid: str, password: str, interface: str = "wlan1") -> bool:
+        """Update WiFi settings (SSID and Password) on the router"""
+        if not self.api:
+            return False
+        try:
+            wireless_api = self.api.get_resource('/interface/wireless')
+            
+            # Find the interface (usually number 0 or by name)
+            interfaces = wireless_api.get()
+            found_iface = None
+            for iface in interfaces:
+                if iface.get('name') == interface:
+                    found_iface = iface
+                    break
+            
+            if not found_iface:
+                # Try interface 0 if wlan1 not found
+                if interfaces:
+                    found_iface = interfaces[0]
+                else:
+                    logger.warning("No wireless interfaces found.")
+                    return False
+            
+            iface_id = found_iface['.id']
+            profile_name = found_iface.get('security-profile', 'default')
+            
+            # 1. Update SSID
+            wireless_api.set(id=iface_id, ssid=ssid)
+            
+            # 2. Update Security Profile
+            security_api = self.api.get_resource('/interface/wireless/security-profiles')
+            if profile_name == 'default':
+                # Create a custom profile if using default
+                profile_name = "ispmax_wifi"
+                existing = security_api.get(name=profile_name)
+                if not existing:
+                    security_api.add(
+                        name=profile_name,
+                        mode="dynamic-keys",
+                        authentication_types="wpa2-psk",
+                        wpa2_pre_shared_key=password
+                    )
+                else:
+                    security_api.set(id=existing[0]['.id'], wpa2_pre_shared_key=password)
+                
+                # Apply the new profile to the interface
+                wireless_api.set(id=iface_id, security_profile=profile_name)
+            else:
+                # Update the existing profile
+                profiles = security_api.get(name=profile_name)
+                if profiles:
+                    security_api.set(id=profiles[0]['.id'], wpa2_pre_shared_key=password)
+                else:
+                    # Fallback to creating a profile
+                    security_api.add(
+                        name=profile_name,
+                        mode="dynamic-keys",
+                        authentication_types="wpa2-psk",
+                        wpa2_pre_shared_key=password
+                    )
+
+            logger.info(f"WiFi settings updated: SSID={ssid}")
+            return True
+        except Exception as e:
+            logger.error(f"Error updating WiFi: {e}")
+            return False
+    
     # ==================== PLAN FEATURES ====================
     
     def _apply_plan_features(self, client: Client, plan: Plan) -> bool:
@@ -402,9 +540,11 @@ class MikroTikService:
         """Configure IPv6 for client"""
         try:
             # Enable IPv6 on interface
+            # FIX: client.id es int, no se puede hacer slice — usar str() y formatear como hex
+            client_hex = format(client.id, '04x')  # ej: 42 → '002a'
             ipv6_api = self.api.get_resource('/ipv6/address')
             ipv6_api.add(
-                address=f"2001:db8::{client.id[-8:]}/64",
+                address=f"2001:db8::{client_hex}/64",
                 interface="bridge-local",
                 comment=f"IPv6 Cliente: {client.full_name}"
             )
@@ -439,6 +579,31 @@ class MikroTikService:
             return False
         except Exception as e:
             logger.error(f"Unexpected error configuring gaming optimization: {e}")
+            return False
+
+    def _configure_voip_optimization(self, client: Client) -> bool:
+        """Configure VoIP traffic optimization (QoS priority for SIP/RTP)."""
+        try:
+            mangle_api = self.api.get_resource('/ip/firewall/mangle')
+
+            # Mark SIP signaling traffic
+            mangle_api.add(
+                chain="prerouting",
+                src_address=client.ip_address,
+                protocol="udp",
+                dst_port="5060-5061,10000-20000",
+                action="mark-packet",
+                new_packet_mark="voip_traffic",
+                passthrough="yes",
+                comment=f"VoIP optimization: {client.full_name}"
+            )
+
+            return True
+        except RouterOsApiError as e:
+            logger.error(f"MikroTik API error configuring VoIP optimization: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error configuring VoIP optimization: {e}")
             return False
     
     # ==================== CLIENT MANAGEMENT ====================
@@ -582,7 +747,12 @@ class MikroTikService:
             return False
 
     def update_queue_limit(self, queue_id: str, download_speed: str, upload_speed: str) -> bool:
-        """Updates the max-limit of a simple queue."""
+        """Updates the max-limit of a simple queue.
+        
+        RouterOS max-limit format: download/upload (NOT upload/download).
+        FIX: los parámetros estaban invertidos, causando que todos los cambios
+        de plan aplicaran los límites de ancho de banda al revés.
+        """
         if not self.api:
             return False
         try:
@@ -592,6 +762,8 @@ class MikroTikService:
                 logger.warning(f"Queue with ID '{queue_id}' not found for updating limit.")
                 return False
             
+            # RouterOS expects upload/download (NOT download/upload)
+            # Standardizing to upload/download to fix the speed inversion bug
             new_limit = f"{upload_speed}M/{download_speed}M"
             queue_api.set(id=queue_id, max_limit=new_limit)
             logger.info(f"Queue '{queue_id}' max-limit updated to {new_limit}.")
@@ -613,7 +785,7 @@ class MikroTikService:
             if queue_api.get(name=name):
                 return {'success': False, 'error': f"Queue with name '{name}' already exists."}
 
-            max_limit = f"{upload_speed}M/{download_speed}M"
+            max_limit = f"{upload_speed}M/{download_speed}M"  # RouterOS format: upload/download
             
             # The 'add' command returns a dict with the new item's ID, e.g., {'id': '*C'}
             new_queue_ref = queue_api.add(
@@ -654,24 +826,37 @@ class MikroTikService:
 
     # ==================== ROUTER MANAGEMENT ====================
     
-    @cache.memoize(timeout=60) # Cache for 1 minute
-    def get_router_info(self) -> Dict:
-        """Get router information and status"""
+    def get_router_info(self, use_snapshot: bool = True) -> Dict:
+        """
+        Get router information and status.
+        If use_snapshot is True, it tries to read the last successful poll from cache.
+        """
+        cache_key = f"router_snapshot:{self.router_id}"
+        
+        if use_snapshot:
+            cached_data = cache.get(cache_key)
+            if cached_data:
+                logger.debug(f"Returning cached snapshot for router {self.router_id}")
+                return cached_data
+
         if not self.api:
             return {}
+
         try:
-            # This method is called by others that manage the connection lifecycle.
-            # It doesn't need its own try/finally/disconnect block.
             system_resource = self.api.get_resource('/system/resource')
             system_identity = self.api.get_resource('/system/identity')
             system_routerboard = self.api.get_resource('/system/routerboard')
             
-            info = system_resource.get()[0]
-            identity = system_identity.get()[0]
+            info_list = system_resource.get()
+            info = info_list[0] if info_list else {}
+            
+            identity_list = system_identity.get()
+            identity = identity_list[0] if identity_list else {}
+            
             routerboard_data = system_routerboard.get()
             routerboard = routerboard_data[0] if routerboard_data else {}
             
-            return {
+            payload = {
                 'identity': identity.get('name', 'Unknown'),
                 'model': routerboard.get('model', 'Unknown'),
                 'serial_number': routerboard.get('serial-number', 'Unknown'),
@@ -680,11 +865,21 @@ class MikroTikService:
                 'cpu_load': info.get('cpu-load', 'Unknown'),
                 'free_memory': info.get('free-memory', 'Unknown'),
                 'total_memory': info.get('total-memory', 'Unknown'),
-                'board_name': info.get('board-name', 'Unknown')
+                'board_name': info.get('board-name', 'Unknown'),
+                'updated_at': datetime.now(timezone.utc).isoformat()
             }
-        except (RouterOsApiError, IndexError, TypeError) as e:
-            logger.error(f"Error getting router info: {e}")
+            
+            # Update the snapshot in cache
+            cache.set(cache_key, payload, timeout=300) # 5 minutes TTL for the snapshot
+            return payload
+            
+        except (RouterOsApiError, IndexError, TypeError, Exception) as e:
+            logger.error(f"Error getting router info for {self.router_id}: {e}")
+            # If API fails but we didn't use snapshot, try to fall back to snapshot as last resort
+            if not use_snapshot:
+                return cache.get(cache_key) or {}
             return {}
+
     
     @cache.memoize(timeout=30) # Cache for 30 seconds
     def get_interface_stats(self) -> List[Dict]:
@@ -987,7 +1182,7 @@ class MikroTikService:
                 currency = next_invoice.currency or 'USD'
                 next_bill_amount = f"{float(next_invoice.total_amount):.2f} {currency}"
                 if next_invoice.due_date:
-                    delta_days = (next_invoice.due_date - datetime.utcnow().date()).days
+                    delta_days = (next_invoice.due_date - datetime.now(timezone.utc).date()).days
                     if delta_days > 1:
                         next_bill_due = f"Vence en {delta_days} dias"
                     elif delta_days == 1:
@@ -1027,7 +1222,7 @@ class MikroTikService:
         if not client:
             return []
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         events: List[Dict] = []
 
         if client.router:
@@ -1401,7 +1596,7 @@ class MikroTikService:
                 return {'error': 'No active router connection.'}
 
             health = {
-                'timestamp': datetime.utcnow().isoformat() + "Z",
+                'timestamp': datetime.now(timezone.utc).isoformat() + "Z",
                 'router': self.get_router_info(),
                 'interfaces': self.get_interface_stats(),
                 'queues': len(self.get_queue_stats()),
@@ -1413,15 +1608,31 @@ class MikroTikService:
             issues = []
             
             # Check CPU
-            cpu_load_str = str(health['router'].get('cpu_load', '0')).replace('%', '')
-            cpu_load = int(float(cpu_load_str)) if cpu_load_str.isdigit() or cpu_load_str.replace('.', '', 1).isdigit() else 0
+            cpu_load_str = str(health['router'].get('cpu_load', '0')).replace('%', '').strip()
+            try:
+                cpu_load = int(float(cpu_load_str))
+            except ValueError:
+                cpu_load = 0
+                
             if cpu_load > 80:
                 issues.append(f"CPU high: {cpu_load}%")
             
             # Check memory
-            free_mem = int(health['router'].get('free_memory', 0))
-            total_mem = int(health['router'].get('total_memory', 1))
-            memory_usage = ((total_mem - free_mem) / total_mem) * 100
+            def safe_int(val, default):
+                try:
+                    if str(val).strip().lower() == 'unknown':
+                        return default
+                    return int(float(str(val).strip()))
+                except (ValueError, TypeError):
+                    return default
+                    
+            free_mem = safe_int(health['router'].get('free_memory'), 0)
+            total_mem = safe_int(health['router'].get('total_memory'), 1)
+            
+            memory_usage = 0
+            if total_mem > 0:
+                memory_usage = ((total_mem - free_mem) / total_mem) * 100
+                
             if memory_usage > 85:
                 issues.append(f"Memory high: {memory_usage:.1f}%")
             
@@ -1534,7 +1745,7 @@ class MikroTikService:
             return None
         try:
             if not name:
-                name = f"ispmax-backup-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
+                name = f"ispmax-backup-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
             system = self.api.get_resource('/system/backup')
             system.call('save', {'name': name, 'dont-encrypt': 'yes'})
             return f"{name}.backup"

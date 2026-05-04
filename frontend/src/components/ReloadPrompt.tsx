@@ -32,15 +32,15 @@ function ReloadPrompt() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 10, scale: 0.95 }}
           role="alert"
-          className="fixed bottom-4 right-4 z-[10000] p-4 bg-white rounded-lg shadow-2xl border border-gray-200 w-full max-w-sm"
+          className="fixed bottom-4 right-4 z-[10000] p-4 bg-white backdrop-blur-md rounded-lg shadow-2xl border border-gray-200 w-full max-w-sm"
         >
           <div className="flex items-start">
             <div className="flex-shrink-0 pt-0.5">
               <InformationCircleIcon className="w-6 h-6 text-blue-500" />
             </div>
             <div className="ml-3 flex-1">
-              <p className="text-sm font-medium text-gray-900">Nueva versión disponible</p>
-              <p className="mt-1 text-sm text-gray-600">Recarga la aplicación para obtener las últimas mejoras y correcciones.</p>
+              <p className="text-sm font-medium text-white">Nueva versión disponible</p>
+              <p className="mt-1 text-sm text-slate-500">Recarga la aplicación para obtener las últimas mejoras y correcciones.</p>
               <div className="mt-3 flex space-x-3">
                 <button
                   onClick={handleReload}
@@ -48,7 +48,7 @@ function ReloadPrompt() {
                 >
                   Recargar
                 </button>
-                <button onClick={handleClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200">
+                <button onClick={handleClose} className="px-4 py-2 text-sm font-medium text-slate-600 bg-white/10 border border-white/20 rounded-md hover:bg-white/15">
                   Más tarde
                 </button>
               </div>

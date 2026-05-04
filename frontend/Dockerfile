@@ -4,9 +4,11 @@ FROM node:20-alpine as builder
 # Build-time env for Vite
 ARG VITE_API_URL
 ARG VITE_GOOGLE_CLIENT_ID
+ARG VITE_GOOGLE_MAPS_API_KEY
 ARG VITE_GRAFANA_URL
 ENV VITE_API_URL=${VITE_API_URL}
 ENV VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+ENV VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
 ENV VITE_GRAFANA_URL=${VITE_GRAFANA_URL}
 
 WORKDIR /app
@@ -14,8 +16,13 @@ WORKDIR /app
 # Copy package.json and optionally yarn.lock/package-lock.json for dependency caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies (with retries for slow VPS networks)
+ARG NPM_CONFIG_REGISTRY=https://registry.npmjs.org
+RUN npm config set registry ${NPM_CONFIG_REGISTRY} && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm install
 
 # Copy the rest of the application code
 COPY . .

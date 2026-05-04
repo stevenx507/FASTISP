@@ -64,4 +64,8 @@ def test_remote_options_returns_commands(client, app):
     assert 'recommendations' in payload['options']
     assert 'readiness' in payload
     assert isinstance(payload['readiness'].get('checks'), list)
+    assert payload['readiness'].get('status') in {'ready', 'degraded', 'blocked'}
+    assert payload['readiness'].get('management_path', {}).get('label')
+    assert payload['readiness'].get('host_analysis', {}).get('label')
+    assert payload['readiness'].get('checked_at')
     assert 'grafana' in payload

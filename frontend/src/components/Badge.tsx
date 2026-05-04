@@ -9,12 +9,12 @@ interface BadgeProps {
 }
 
 const variantStyles = {
-  default: 'bg-gray-100 text-gray-800',
-  primary: 'bg-blue-100 text-blue-800',
-  success: 'bg-green-100 text-green-800',
-  warning: 'bg-yellow-100 text-yellow-800',
-  danger: 'bg-red-100 text-red-800',
-  info: 'bg-cyan-100 text-cyan-800'
+  default: 'bg-gray-100 text-slate-600',
+  primary: 'bg-coral-50 text-coral-600',
+  success: 'bg-emerald-50 text-emerald-700',
+  warning: 'bg-amber-50 text-amber-700',
+  danger: 'bg-rose-50 text-rose-700',
+  info: 'bg-cyan-50 text-cyan-700'
 }
 
 const sizeStyles = {
@@ -33,7 +33,7 @@ export const Badge: React.FC<BadgeProps> = ({
     <motion.span
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      className={`inline-block rounded-full font-medium ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      className={`inline-block rounded-full font-bold ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
     >
       {children}
     </motion.span>
@@ -50,17 +50,17 @@ interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'size' | 'children
 }
 
 const buttonVariants = {
-  primary: 'bg-blue-600 hover:bg-blue-700 text-white',
-  secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-900',
-  success: 'bg-green-600 hover:bg-green-700 text-white',
-  danger: 'bg-red-600 hover:bg-red-700 text-white',
-  warning: 'bg-yellow-600 hover:bg-yellow-700 text-white'
+  primary: 'bg-coral-500 hover:bg-coral-600 text-white shadow-sm shadow-coral-500/20 focus:ring-coral-300',
+  secondary: 'bg-white hover:bg-gray-50 text-slate-700 border border-gray-200 shadow-sm focus:ring-gray-300',
+  success: 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20 focus:ring-emerald-300',
+  danger: 'bg-rose-500 hover:bg-rose-600 text-white shadow-sm shadow-rose-500/20 focus:ring-rose-300',
+  warning: 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm shadow-amber-500/20 focus:ring-amber-300'
 }
 
 const buttonSizes = {
-  sm: 'px-3 py-1 text-sm',
-  md: 'px-4 py-2 text-base',
-  lg: 'px-6 py-3 text-lg'
+  sm: 'px-3 py-1.5 text-xs',
+  md: 'px-4 py-2.5 text-sm',
+  lg: 'px-6 py-3 text-base'
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -76,11 +76,12 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   return (
     <motion.button
-      whileHover={{ scale: disabled ? 1 : 1.02 }}
+      whileHover={{ scale: disabled ? 1 : 1.02, y: disabled ? 0 : -1 }}
       whileTap={{ scale: disabled ? 1 : 0.98 }}
       disabled={loading || disabled}
       className={`
-        flex items-center justify-center gap-2 rounded-lg font-medium transition
+        inline-flex items-center justify-center gap-2 rounded-xl font-bold transition-all
+        focus:outline-none focus:ring-2 focus:ring-offset-2
         disabled:opacity-50 disabled:cursor-not-allowed
         ${buttonVariants[variant]} ${buttonSizes[size]}
         ${fullWidth ? 'w-full' : ''} ${className}

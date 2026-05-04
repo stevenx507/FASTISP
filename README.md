@@ -1,6 +1,6 @@
 # FASTISP – Plataforma ISP lista para producción
 
-Suite integral para operar un ISP (MikroTik/OLT) con facturación, cobranzas locales, soporte con SLA y NOC operativo. Pensado para competir con Wisphub/Wispro pero autocontenida en Docker + Traefik.
+Suite integral para operar un ISP (MikroTik/OLT) con facturación, cobranzas locales, soporte con SLA y NOC operativo. Autocontenida en Docker + Traefik.
 
 ## Qué incluye
 - Panel admin y portal cliente (React/Vite/PWA) con login Google opcional.
@@ -71,7 +71,7 @@ GEOIP_ALLOWLIST=   # ej. CO,PE,CL si quieres filtrar países
 - E2E: `cd frontend && npm run test:e2e` (Playwright, arranca `vite preview`).
 - Carga: `k6 run tests/load/smoke.js` (base `https://httpbin.org`, cambia `BASE_URL` para tu API).
 
-## Diferenciales frente a Wisphub/Wispro
+## Diferenciales
 - Grafana/NOC embebido y listo, con métricas reales por cliente.
 - Backups automáticos de DB y equipos (MikroTik/OLT).
 - WAF/GeoIP en el proxy sin depender de servicios externos.

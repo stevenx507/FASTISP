@@ -9,6 +9,7 @@ import {
   PlusCircleIcon,
   ServerStackIcon,
   ShieldCheckIcon,
+  TrashIcon,
   UserPlusIcon,
   UsersIcon,
 } from '@heroicons/react/24/outline'
@@ -71,7 +72,7 @@ interface TenantPlanTemplatesResponse {
 }
 
 const defaultPlanTemplates: Record<string, TenantPlanTemplate> = {
-  starter: { monthly_price: 39, max_admins: 2, max_routers: 5, max_clients: 400 },
+  starter: { monthly_price: 8, max_admins: 2, max_routers: 5, max_clients: 400 },
   growth: { monthly_price: 89, max_admins: 5, max_routers: 20, max_clients: 2000 },
   pro: { monthly_price: 179, max_admins: 10, max_routers: 60, max_clients: 8000 },
   enterprise: { monthly_price: 399, max_admins: 30, max_routers: 250, max_clients: 50000 },
@@ -111,9 +112,9 @@ const PlatformAdmin: React.FC = () => {
     slug: '',
     is_active: true,
     plan_code: 'starter',
-    billing_status: 'active',
+    billing_status: 'trial',
     billing_cycle: 'monthly',
-    monthly_price: '',
+    monthly_price: '8',
     max_admins: '',
     max_routers: '',
     max_clients: '',
@@ -144,6 +145,15 @@ const PlatformAdmin: React.FC = () => {
 
   const [adminTarget, setAdminTarget] = useState<PlatformTenantItem | null>(null)
   const [adminForm, setAdminForm] = useState({ email: '', name: 'Admin ISP', password: '' })
+
+  const [deleteTarget, setDeleteTarget] = useState<PlatformTenantItem | null>(null)
+
+  const closeAllModals = useCallback(() => {
+    setEditingTenant(null)
+    setBillingTarget(null)
+    setAdminTarget(null)
+    setDeleteTarget(null)
+  }, [])
 
   const parseOptionalNumber = (raw: string, field: string): number | undefined => {
     const token = raw.trim()
@@ -225,6 +235,56 @@ const PlatformAdmin: React.FC = () => {
   useEffect(() => {
     void loadPlatformData()
   }, [loadPlatformData])
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeAllModals()
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [closeAllModals])
+
+  useEffect(() => {
+    const body = document.body
+    const html = document.documentElement
+
+    body.style.overflow = ''
+    body.style.pointerEvents = 'auto'
+    html.style.overflow = ''
+
+    const staleSelectors = [
+      '[data-headlessui-portal]',
+      '[id^="headlessui-portal-root"]',
+      '[data-radix-portal]',
+    ]
+
+    staleSelectors.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((node) => {
+        if (node instanceof HTMLElement) {
+          node.style.pointerEvents = 'none'
+        }
+      })
+    })
+
+    document.querySelectorAll('body > div').forEach((node) => {
+      if (!(node instanceof HTMLDivElement)) return
+      if (node.querySelector('[role="dialog"], [aria-modal="true"]')) return
+
+      const styles = window.getComputedStyle(node)
+      const isFullscreen = styles.position === 'fixed'
+        && styles.inset === '0px'
+      const hasDarkBackdrop = styles.backgroundColor === 'rgba(0, 0, 0, 0.6)'
+        || styles.backgroundColor === 'rgba(2, 6, 23, 0.7)'
+        || styles.backgroundColor === 'rgba(15, 23, 42, 0.7)'
+
+      if (isFullscreen || hasDarkBackdrop) {
+        node.style.pointerEvents = 'none'
+      }
+    })
+  }, [])
 
   const planCodes = useMemo(() => Object.keys(planTemplates), [planTemplates])
 
@@ -348,6 +408,27 @@ const PlatformAdmin: React.FC = () => {
     }
   }
 
+  const deleteTenant = async () => {
+    if (!deleteTarget) return
+
+    setBusy(true)
+    try {
+      await apiClient.delete(`/platform/tenants/${deleteTarget.id}`)
+      toast.success('ISP eliminado correctamente')
+      setDeleteTarget(null)
+      await loadPlatformData()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error eliminando tenant'
+      toast.error(message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const openDeleteConfirm = (tenant: PlatformTenantItem) => {
+    setDeleteTarget(tenant)
+  }
+
   const openEditTenant = (tenant: PlatformTenantItem) => {
     setEditingTenant(tenant)
     setEditForm({ name: tenant.name, slug: tenant.slug })
@@ -442,7 +523,7 @@ const PlatformAdmin: React.FC = () => {
       toast.error('Activa el tenant antes de entrar al modo Admin ISP')
       return
     }
-    setTenantContext(tenant.id)
+    setTenantContext(tenant.id, tenant.name)
     toast.success(`Modo Admin ISP activo: ${tenant.name}`)
     navigate('/admin')
   }
@@ -483,23 +564,23 @@ const PlatformAdmin: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#112347_0%,#0b1020_40%,#070b15_100%)] text-slate-100">
-      <header className="border-b border-white/10 bg-slate-950/40 backdrop-blur">
+    <div className="min-h-screen bg-[#FDF5E6] text-slate-800">
+      <header className="border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-5">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">FastISP Master</p>
-            <h1 className="text-2xl font-black text-white">Admin Total de Plataforma</h1>
-            <p className="text-sm text-slate-300">Control de tenants, cuentas admin y salud global del SaaS.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-coral-500">FastISP Master</p>
+            <h1 className="text-2xl font-black text-slate-900">Admin Total de Plataforma</h1>
+            <p className="text-sm text-slate-700">Control de usuarios, cuentas admin y salud global del SaaS.</p>
           </div>
-          <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2">
-            <ShieldCheckIcon className="h-5 w-5 text-emerald-300" />
+          <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2">
+            <ShieldCheckIcon className="h-5 w-5 text-emerald-500" />
             <div>
-              <p className="text-sm font-semibold text-white">{user?.name || 'Platform Admin'}</p>
-              <p className="text-xs text-slate-300">{user?.email}</p>
+              <p className="text-sm font-semibold text-slate-900">{user?.name || 'Platform Admin'}</p>
+              <p className="text-xs text-slate-500">{user?.email}</p>
             </div>
             <button
               onClick={logout}
-              className="ml-3 rounded-lg border border-rose-400/40 bg-rose-500/20 px-3 py-1 text-xs font-semibold text-rose-100 hover:bg-rose-500/30"
+              className="ml-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-100"
             >
               Salir
             </button>
@@ -512,7 +593,7 @@ const PlatformAdmin: React.FC = () => {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
             {[
               {
-                label: 'Tenants',
+                label: 'Usuarios ISP',
                 value: overview.tenants_total,
                 meta: `Activos ${overview.tenants_active} | Inactivos ${overview.tenants_inactive}`,
                 icon: BuildingOffice2Icon,
@@ -549,28 +630,28 @@ const PlatformAdmin: React.FC = () => {
             ].map((card) => (
               <div
                 key={card.label}
-                className={`rounded-2xl border border-white/10 bg-gradient-to-br ${card.tone} p-4 shadow-[0_16px_38px_-28px_rgba(15,23,42,0.95)]`}
+                className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
               >
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-200">{card.label}</p>
-                  <card.icon className="h-5 w-5 text-white/80" />
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">{card.label}</p>
+                  <card.icon className="h-5 w-5 text-coral-500" />
                 </div>
-                <p className="mt-3 text-3xl font-black text-white">{card.value}</p>
-                <p className="mt-1 text-xs text-slate-300">{card.meta}</p>
+                <p className="mt-3 text-3xl font-black text-slate-900">{card.value}</p>
+                <p className="mt-1 text-xs text-slate-600">{card.meta}</p>
               </div>
             ))}
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-slate-900/55 p-5 shadow-[0_20px_50px_-35px_rgba(15,23,42,1)]">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-bold text-white">Tenants registrados</h2>
-                <p className="text-sm text-slate-300">Aislamiento por subdominio y control operativo centralizado.</p>
+                <h2 className="text-lg font-bold text-slate-900">Usuarios ISP registrados</h2>
+                <p className="text-sm text-slate-700">Aislamiento por subdominio y control operativo centralizado.</p>
               </div>
               <button
                 onClick={() => void loadPlatformData()}
                 disabled={loading || busy}
-                className="inline-flex items-center gap-2 rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-400 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg bg-coral-500 px-3 py-2 text-sm font-semibold text-white hover:bg-coral-600 disabled:opacity-60 shadow-lg shadow-coral-500/20"
               >
                 <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 Refrescar
@@ -582,12 +663,12 @@ const PlatformAdmin: React.FC = () => {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Buscar por nombre o slug"
-                className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none"
+                className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
               />
               <select
                 value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value as 'all' | 'active' | 'inactive')}
-                className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
               >
                 <option value="all">Todos</option>
                 <option value="active">Activos</option>
@@ -598,7 +679,7 @@ const PlatformAdmin: React.FC = () => {
                 onChange={(event) =>
                   setBillingFilter(event.target.value as 'all' | 'trial' | 'active' | 'past_due' | 'suspended' | 'cancelled')
                 }
-                className="rounded-xl border border-white/15 bg-slate-950/40 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
               >
                 <option value="all">Facturacion</option>
                 <option value="trial">Trial</option>
@@ -610,7 +691,7 @@ const PlatformAdmin: React.FC = () => {
             </div>
 
             {loading ? (
-              <div className="py-14 text-center text-slate-300">Cargando tenants...</div>
+              <div className="py-14 text-center text-slate-700">Cargando usuarios...</div>
             ) : (
               <div className="space-y-3">
                 {filteredTenants.map((tenant) => {
@@ -619,11 +700,11 @@ const PlatformAdmin: React.FC = () => {
                   const routersUsage = usagePercent(tenant.routers_total, tenant.max_routers)
 
                   return (
-                    <article key={tenant.id} className="rounded-xl border border-white/10 bg-slate-950/35 p-4">
+                    <article key={tenant.id} className="rounded-xl border border-gray-100 bg-gray-50/50 p-4 transition-colors hover:bg-gray-50">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <h3 className="text-base font-semibold text-white">{tenant.name}</h3>
+                            <h3 className="text-base font-semibold text-slate-900">{tenant.name}</h3>
                             <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] ${tenant.is_active ? 'bg-emerald-500/20 text-emerald-200' : 'bg-rose-500/20 text-rose-200'}`}>
                               {tenant.is_active ? 'activo' : 'inactivo'}
                             </span>
@@ -634,13 +715,13 @@ const PlatformAdmin: React.FC = () => {
                               {tenant.billing_status}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-300">{tenant.host || `${tenant.slug}.fastisp.cloud`}</p>
-                          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-300">
+                          <p className="text-xs text-slate-700">{tenant.host || `${tenant.slug}.fastisp.cloud`}</p>
+                          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-700">
                             <p>
-                              <span className="text-slate-400">Creado:</span> {formatDateTime(tenant.created_at)}
+                              <span className="text-slate-500">Creado:</span> {formatDateTime(tenant.created_at)}
                             </p>
                             <p>
-                              <span className="text-slate-400">Trial hasta:</span> {formatDateTime(tenant.trial_ends_at)}
+                              <span className="text-slate-500">Trial hasta:</span> {formatDateTime(tenant.trial_ends_at)}
                             </p>
                           </div>
                         </div>
@@ -648,7 +729,7 @@ const PlatformAdmin: React.FC = () => {
                           <button
                             onClick={() => void toggleTenantStatus(tenant)}
                             disabled={busy}
-                            className="inline-flex items-center gap-1 rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/10 disabled:opacity-60"
+                            className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-gray-50 disabled:opacity-60 shadow-sm"
                           >
                             <BoltIcon className="h-4 w-4" />
                             {tenant.is_active ? 'Desactivar' : 'Activar'}
@@ -656,21 +737,21 @@ const PlatformAdmin: React.FC = () => {
                           <button
                             onClick={() => openEditTenant(tenant)}
                             disabled={busy}
-                            className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/40 bg-cyan-500/20 px-3 py-1.5 text-xs font-semibold text-cyan-100 hover:bg-cyan-500/30 disabled:opacity-60"
+                            className="inline-flex items-center gap-1 rounded-lg border border-coral-200 bg-coral-50 px-3 py-1.5 text-xs font-semibold text-coral-600 hover:bg-coral-100 disabled:opacity-60"
                           >
                             Editar
                           </button>
                           <button
                             onClick={() => openBillingEditor(tenant)}
                             disabled={busy}
-                            className="inline-flex items-center gap-1 rounded-lg border border-violet-400/40 bg-violet-500/20 px-3 py-1.5 text-xs font-semibold text-violet-100 hover:bg-violet-500/30 disabled:opacity-60"
+                            className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-600 hover:bg-violet-100 disabled:opacity-60"
                           >
                             Suscripcion
                           </button>
                           <button
                             onClick={() => openCreateAdmin(tenant)}
                             disabled={busy}
-                            className="inline-flex items-center gap-1 rounded-lg border border-emerald-400/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-100 hover:bg-emerald-500/30 disabled:opacity-60"
+                            className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-100 disabled:opacity-60"
                           >
                             <UserPlusIcon className="h-4 w-4" />
                             Crear admin
@@ -678,44 +759,53 @@ const PlatformAdmin: React.FC = () => {
                           <button
                             onClick={() => openTenantAdminMode(tenant)}
                             disabled={busy}
-                            className="inline-flex items-center gap-1 rounded-lg border border-amber-300/40 bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-100 hover:bg-amber-500/30 disabled:opacity-60"
+                            className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-600 hover:bg-amber-100 disabled:opacity-60"
                           >
                             Entrar panel ISP
+                          </button>
+                          <button
+                            onClick={() => openDeleteConfirm(tenant)}
+                            disabled={busy}
+                            className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-500 hover:bg-rose-50 disabled:opacity-60 shadow-sm"
+                            title="Eliminar ISP permanentemente"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                            Eliminar
                           </button>
                         </div>
                       </div>
 
                       <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
-                        <div className="rounded-lg border border-white/10 bg-slate-900/55 p-2">
-                          <div className="flex items-center justify-between text-[11px] text-slate-200">
+                        <div className="rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600 font-medium">
                             <span>Admins</span>
                             <span>{tenant.admins_total}/{tenant.max_admins}</span>
                           </div>
-                          <div className="mt-1 h-1.5 rounded-full bg-white/10">
+                          <div className="mt-1 h-1.5 rounded-full bg-gray-100">
                             <div
                               className={`h-1.5 rounded-full ${adminsUsage >= 90 ? 'bg-rose-400' : adminsUsage >= 75 ? 'bg-amber-300' : 'bg-emerald-300'}`}
                               style={{ width: `${adminsUsage}%` }}
                             />
                           </div>
                         </div>
-                        <div className="rounded-lg border border-white/10 bg-slate-900/55 p-2">
-                          <div className="flex items-center justify-between text-[11px] text-slate-200">
+                        <div className="rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600 font-medium">
                             <span>Clientes</span>
                             <span>{tenant.clients_total}/{tenant.max_clients}</span>
                           </div>
-                          <div className="mt-1 h-1.5 rounded-full bg-white/10">
+                          <div className="mt-1 h-1.5 rounded-full bg-gray-100">
                             <div
                               className={`h-1.5 rounded-full ${clientsUsage >= 90 ? 'bg-rose-400' : clientsUsage >= 75 ? 'bg-amber-300' : 'bg-emerald-300'}`}
                               style={{ width: `${clientsUsage}%` }}
                             />
                           </div>
                         </div>
-                        <div className="rounded-lg border border-white/10 bg-slate-900/55 p-2">
-                          <div className="flex items-center justify-between text-[11px] text-slate-200">
+                        <div className="rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600 font-medium">
                             <span>Routers</span>
                             <span>{tenant.routers_total}/{tenant.max_routers}</span>
                           </div>
-                          <div className="mt-1 h-1.5 rounded-full bg-white/10">
+                          <div className="mt-1 h-1.5 rounded-full bg-gray-100">
                             <div
                               className={`h-1.5 rounded-full ${routersUsage >= 90 ? 'bg-rose-400' : routersUsage >= 75 ? 'bg-amber-300' : 'bg-emerald-300'}`}
                               style={{ width: `${routersUsage}%` }}
@@ -724,18 +814,18 @@ const PlatformAdmin: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-200 md:grid-cols-4">
-                        <p><span className="text-slate-400">Usuarios:</span> {tenant.users_total}</p>
-                        <p><span className="text-slate-400">Subs:</span> {tenant.subscriptions_total}</p>
-                        <p><span className="text-slate-400">Ciclo:</span> {tenant.billing_cycle}</p>
-                        <p><span className="text-slate-400">Precio:</span> ${Number(tenant.monthly_price || 0).toFixed(2)}</p>
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600 md:grid-cols-4 font-medium">
+                        <p><span className="text-slate-500">Usuarios:</span> {tenant.users_total}</p>
+                        <p><span className="text-slate-500">Subs:</span> {tenant.subscriptions_total}</p>
+                        <p><span className="text-slate-500">Ciclo:</span> {tenant.billing_cycle}</p>
+                        <p><span className="text-slate-500">Precio:</span> ${Number(tenant.monthly_price || 0).toFixed(2)}</p>
                       </div>
                     </article>
                   )
                 })}
                 {!filteredTenants.length && (
-                  <div className="rounded-xl border border-dashed border-white/20 py-8 text-center text-sm text-slate-400">
-                    No hay tenants para este filtro.
+                  <div className="rounded-xl border border-dashed border-gray-300 py-8 text-center text-sm text-slate-500">
+                    No hay usuarios para este filtro.
                   </div>
                 )}
               </div>
@@ -744,29 +834,29 @@ const PlatformAdmin: React.FC = () => {
         </section>
 
         <aside className="space-y-6">
-          <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-5">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
-              <PlusCircleIcon className="h-5 w-5 text-cyan-300" />
-              <h2 className="text-lg font-bold text-white">Alta de tenant</h2>
+              <PlusCircleIcon className="h-5 w-5 text-coral-500" />
+              <h2 className="text-lg font-bold text-slate-900">Alta de usuario ISP</h2>
             </div>
             <form onSubmit={submitCreateTenant} className="space-y-3">
               <input
                 value={tenantForm.name}
                 onChange={(event) => setTenantForm((prev) => ({ ...prev, name: event.target.value }))}
                 placeholder="Nombre comercial ISP"
-                className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
               />
               <input
                 value={tenantForm.slug}
                 onChange={(event) => setTenantForm((prev) => ({ ...prev, slug: event.target.value }))}
                 placeholder="Slug (opcional)"
-                className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
               />
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 <select
                   value={tenantForm.plan_code}
                   onChange={(event) => applyPlanTemplateToCreate(event.target.value)}
-                  className="rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
                 >
                   {planCodes.map((planCode) => (
                     <option key={planCode} value={planCode}>
@@ -777,7 +867,7 @@ const PlatformAdmin: React.FC = () => {
                 <select
                   value={tenantForm.billing_status}
                   onChange={(event) => setTenantForm((prev) => ({ ...prev, billing_status: event.target.value }))}
-                  className="rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
                 >
                   <option value="trial">Trial</option>
                   <option value="active">Activa</option>
@@ -790,7 +880,7 @@ const PlatformAdmin: React.FC = () => {
                 <select
                   value={tenantForm.billing_cycle}
                   onChange={(event) => setTenantForm((prev) => ({ ...prev, billing_cycle: event.target.value }))}
-                  className="rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
                 >
                   <option value="monthly">Ciclo mensual</option>
                   <option value="quarterly">Ciclo trimestral</option>
@@ -800,7 +890,7 @@ const PlatformAdmin: React.FC = () => {
                   value={tenantForm.monthly_price}
                   onChange={(event) => setTenantForm((prev) => ({ ...prev, monthly_price: event.target.value }))}
                   placeholder="Precio mensual (opcional)"
-                  className="rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
                 />
               </div>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
@@ -808,80 +898,86 @@ const PlatformAdmin: React.FC = () => {
                   value={tenantForm.max_admins}
                   onChange={(event) => setTenantForm((prev) => ({ ...prev, max_admins: event.target.value }))}
                   placeholder="Max admins"
-                  className="rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
                 />
                 <input
                   value={tenantForm.max_routers}
                   onChange={(event) => setTenantForm((prev) => ({ ...prev, max_routers: event.target.value }))}
                   placeholder="Max routers"
-                  className="rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
                 />
                 <input
                   value={tenantForm.max_clients}
                   onChange={(event) => setTenantForm((prev) => ({ ...prev, max_clients: event.target.value }))}
                   placeholder="Max clientes"
-                  className="rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
                 />
               </div>
-              <div className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100">
+              <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs text-cyan-800">
                 <p>
                   <span className="font-semibold">Creacion:</span> fecha y hora automaticas del servidor.
                 </p>
                 {tenantForm.billing_status === 'trial' && (
-                  <p className="mt-1 text-cyan-200">
+                  <p className="mt-1 text-cyan-700">
                     <span className="font-semibold">Fin de trial:</span> se calcula automaticamente al crear.
                   </p>
                 )}
               </div>
-              <label className="flex items-center gap-2 text-xs text-slate-300">
+              <label className="flex items-center gap-2 text-xs text-slate-600 font-medium">
                 <input
                   type="checkbox"
                   checked={tenantForm.is_active}
                   onChange={(event) => setTenantForm((prev) => ({ ...prev, is_active: event.target.checked }))}
-                  className="rounded border-slate-500 bg-slate-900"
+                  className="rounded border-gray-300 bg-white"
                 />
-                Crear tenant activo
+                Crear usuario activo
               </label>
+              <div className="flex items-center gap-2 pt-1">
+                <div className="h-px flex-1 bg-gray-200" />
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Crear usuario admin</span>
+                <div className="h-px flex-1 bg-gray-200" />
+              </div>
               <input
+                type="email"
                 value={tenantForm.admin_email}
                 onChange={(event) => setTenantForm((prev) => ({ ...prev, admin_email: event.target.value }))}
-                placeholder="Admin email inicial (opcional)"
-                className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none"
+                placeholder="Correo electrónico del admin"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
               />
               <input
                 value={tenantForm.admin_name}
                 onChange={(event) => setTenantForm((prev) => ({ ...prev, admin_name: event.target.value }))}
-                placeholder="Nombre admin inicial"
-                className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none"
+                placeholder="Nombre completo del admin"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
               />
               <input
                 type="password"
                 value={tenantForm.admin_password}
                 onChange={(event) => setTenantForm((prev) => ({ ...prev, admin_password: event.target.value }))}
-                placeholder="Password admin inicial (opcional)"
-                className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none"
+                placeholder="Contraseña (se auto-genera si está vacío)"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-coral-400 focus:ring-2 focus:ring-coral-500/10 focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={busy}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-400 disabled:opacity-60"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-coral-500 px-3 py-2 text-sm font-semibold text-white hover:bg-coral-600 shadow-lg shadow-coral-500/20 disabled:opacity-60"
               >
                 <PlusCircleIcon className="h-4 w-4" />
-                Crear tenant
+                {busy ? 'Creando...' : 'Crear usuario y cuenta admin'}
               </button>
             </form>
           </div>
 
           {createdTenantCredential && (
-            <div className="rounded-2xl border border-emerald-300/25 bg-emerald-500/10 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-200">Credenciales generadas</p>
-              <p className="mt-2 text-xs text-emerald-100">
-                Tenant: <strong>{createdTenantCredential.tenant}</strong>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-600">Credenciales generadas</p>
+              <p className="mt-2 text-xs text-emerald-800">
+                Usuario: <strong>{createdTenantCredential.tenant}</strong>
               </p>
-              <p className="text-xs text-emerald-100">
+              <p className="text-xs text-emerald-800">
                 Email: <strong>{createdTenantCredential.email}</strong>
               </p>
-              <p className="text-xs text-emerald-100">
+              <p className="text-xs text-emerald-800">
                 Password: <strong>{createdTenantCredential.password}</strong>
               </p>
             </div>
@@ -890,27 +986,27 @@ const PlatformAdmin: React.FC = () => {
       </main>
 
       {editingTenant && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-900 p-5">
-            <h3 className="text-lg font-bold text-white">Editar tenant</h3>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-50 backdrop-blur-sm p-4" onClick={closeAllModals}>
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <h3 className="text-lg font-bold text-slate-900">Editar usuario ISP</h3>
             <form onSubmit={submitEditTenant} className="mt-4 space-y-3">
               <input
                 value={editForm.name}
                 onChange={(event) => setEditForm((prev) => ({ ...prev, name: event.target.value }))}
                 placeholder="Nombre"
-                className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:outline-none"
               />
               <input
                 value={editForm.slug}
                 onChange={(event) => setEditForm((prev) => ({ ...prev, slug: event.target.value }))}
                 placeholder="Slug"
-                className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:outline-none"
               />
               <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setEditingTenant(null)} className="rounded-lg border border-white/20 px-3 py-2 text-sm text-slate-200 hover:bg-white/10">
+                <button type="button" onClick={closeAllModals} className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-slate-600 hover:bg-gray-50 font-medium">
                   Cancelar
                 </button>
-                <button type="submit" disabled={busy} className="rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-400 disabled:opacity-60">
+                <button type="submit" disabled={busy} className="rounded-lg bg-coral-500 px-3 py-2 text-sm font-bold text-white hover:bg-coral-600 shadow-lg shadow-coral-500/20 disabled:opacity-60">
                   Guardar cambios
                 </button>
               </div>
@@ -920,15 +1016,15 @@ const PlatformAdmin: React.FC = () => {
       )}
 
       {billingTarget && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4">
-          <div className="w-full max-w-xl rounded-2xl border border-white/15 bg-slate-900 p-5">
-            <h3 className="text-lg font-bold text-white">Suscripcion de {billingTarget.name}</h3>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-50 backdrop-blur-sm p-4" onClick={closeAllModals}>
+          <div className="w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <h3 className="text-lg font-bold text-slate-900">Suscripción de {billingTarget.name}</h3>
             <form onSubmit={submitBillingUpdate} className="mt-4 space-y-3">
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 <select
                   value={billingForm.plan_code}
                   onChange={(event) => applyPlanTemplateToBilling(event.target.value)}
-                  className="rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:outline-none"
                 >
                   {planCodes.map((planCode) => (
                     <option key={planCode} value={planCode}>
@@ -939,7 +1035,7 @@ const PlatformAdmin: React.FC = () => {
                 <select
                   value={billingForm.billing_status}
                   onChange={(event) => setBillingForm((prev) => ({ ...prev, billing_status: event.target.value }))}
-                  className="rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:outline-none"
                 >
                   <option value="trial">Trial</option>
                   <option value="active">Activa</option>
@@ -952,7 +1048,7 @@ const PlatformAdmin: React.FC = () => {
                 <select
                   value={billingForm.billing_cycle}
                   onChange={(event) => setBillingForm((prev) => ({ ...prev, billing_cycle: event.target.value }))}
-                  className="rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:outline-none"
                 >
                   <option value="monthly">Ciclo mensual</option>
                   <option value="quarterly">Ciclo trimestral</option>
@@ -962,7 +1058,7 @@ const PlatformAdmin: React.FC = () => {
                   value={billingForm.monthly_price}
                   onChange={(event) => setBillingForm((prev) => ({ ...prev, monthly_price: event.target.value }))}
                   placeholder="Precio mensual"
-                  className="rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:outline-none"
                 />
               </div>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
@@ -970,32 +1066,32 @@ const PlatformAdmin: React.FC = () => {
                   value={billingForm.max_admins}
                   onChange={(event) => setBillingForm((prev) => ({ ...prev, max_admins: event.target.value }))}
                   placeholder="Max admins"
-                  className="rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:outline-none"
                 />
                 <input
                   value={billingForm.max_routers}
                   onChange={(event) => setBillingForm((prev) => ({ ...prev, max_routers: event.target.value }))}
                   placeholder="Max routers"
-                  className="rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:outline-none"
                 />
                 <input
                   value={billingForm.max_clients}
                   onChange={(event) => setBillingForm((prev) => ({ ...prev, max_clients: event.target.value }))}
                   placeholder="Max clientes"
-                  className="rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:outline-none"
                 />
               </div>
               <input
                 type="datetime-local"
                 value={billingForm.trial_ends_at}
                 onChange={(event) => setBillingForm((prev) => ({ ...prev, trial_ends_at: event.target.value }))}
-                className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:outline-none"
               />
               <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setBillingTarget(null)} className="rounded-lg border border-white/20 px-3 py-2 text-sm text-slate-200 hover:bg-white/10">
+                <button type="button" onClick={closeAllModals} className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-slate-600 hover:bg-gray-50 font-medium">
                   Cancelar
                 </button>
-                <button type="submit" disabled={busy} className="rounded-lg bg-violet-500 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-60">
+                <button type="submit" disabled={busy} className="rounded-lg bg-violet-500 px-3 py-2 text-sm font-bold text-white hover:bg-violet-600 shadow-lg shadow-violet-500/20 disabled:opacity-60">
                   Guardar suscripcion
                 </button>
               </div>
@@ -1005,39 +1101,75 @@ const PlatformAdmin: React.FC = () => {
       )}
 
       {adminTarget && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-900 p-5">
-            <h3 className="text-lg font-bold text-white">Crear admin para {adminTarget.name}</h3>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-50 backdrop-blur-sm p-4" onClick={closeAllModals}>
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <h3 className="text-lg font-bold text-slate-900">Crear admin para {adminTarget.name}</h3>
             <form onSubmit={submitCreateTenantAdmin} className="mt-4 space-y-3">
               <input
                 value={adminForm.email}
                 onChange={(event) => setAdminForm((prev) => ({ ...prev, email: event.target.value }))}
                 placeholder="Email admin"
-                className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:outline-none"
               />
               <input
                 value={adminForm.name}
                 onChange={(event) => setAdminForm((prev) => ({ ...prev, name: event.target.value }))}
                 placeholder="Nombre admin"
-                className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:outline-none"
               />
               <input
                 type="password"
                 value={adminForm.password}
                 onChange={(event) => setAdminForm((prev) => ({ ...prev, password: event.target.value }))}
                 placeholder="Password (opcional)"
-                className="w-full rounded-xl border border-white/15 bg-slate-950/45 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 focus:border-coral-400 focus:outline-none"
               />
               <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setAdminTarget(null)} className="rounded-lg border border-white/20 px-3 py-2 text-sm text-slate-200 hover:bg-white/10">
+                <button type="button" onClick={closeAllModals} className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-slate-600 hover:bg-gray-50 font-medium">
                   Cancelar
                 </button>
-                <button type="submit" disabled={busy} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-400 disabled:opacity-60">
+                <button type="submit" disabled={busy} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 disabled:opacity-60">
                   <UserPlusIcon className="h-4 w-4" />
                   Crear admin
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={closeAllModals}>
+          <div className="w-full max-w-md rounded-2xl border border-rose-100 bg-white p-6 shadow-2xl animate-in fade-in zoom-in duration-200" onClick={(event) => event.stopPropagation()}>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 mb-4">
+              <TrashIcon className="h-6 w-6" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900">¿Eliminar ISP?</h3>
+            <p className="mt-3 text-sm text-slate-600 leading-relaxed">
+              Estás a punto de eliminar permanentemente a <span className="font-bold text-slate-900">"{deleteTarget.name}"</span>. 
+              Esta acción <span className="text-rose-600 font-bold underline">no se puede deshacer</span> y borrará:
+            </p>
+            <ul className="mt-3 space-y-1 text-xs text-slate-500 list-disc list-inside">
+              <li>Todos los usuarios y cuentas administrativas</li>
+              <li>Historial de clientes y suscripciones</li>
+              <li>Configuraciones de routers y métricas</li>
+              <li>Reglas de red y mapas GIS</li>
+            </ul>
+            <div className="mt-6 flex flex-col gap-2">
+              <button
+                onClick={() => void deleteTenant()}
+                disabled={busy}
+                className="w-full rounded-xl bg-rose-500 py-3 text-sm font-bold text-white hover:bg-rose-600 shadow-lg shadow-rose-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
+              >
+                {busy ? 'Eliminando...' : 'Sí, eliminar ISP permanentemente'}
+              </button>
+              <button
+                onClick={closeAllModals}
+                disabled={busy}
+                className="w-full rounded-xl border border-gray-200 bg-white py-3 text-sm font-bold text-slate-600 hover:bg-gray-50 transition-all"
+              >
+                Cancelar y conservar
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -38,24 +38,24 @@ const PaymentProofModal: React.FC<Props> = ({ invoiceId, open, onClose, onSaved 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur">
-      <div className="bg-slate-900/90 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md p-6 text-slate-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur">
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-md p-6 text-slate-800">
         <h3 className="text-xl font-semibold mb-4">Comprobante de pago</h3>
         <div className="space-y-3">
           <div>
-            <label className="text-sm text-slate-200">Monto</label>
+            <label className="text-sm text-slate-600">Monto</label>
             <input
               type="number"
               step="0.01"
-              className="mt-1 w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-slate-100"
+              className="mt-1 w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-slate-800"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
           </div>
           <div>
-            <label className="text-sm text-slate-200">Método</label>
+            <label className="text-sm text-slate-700">Método</label>
             <select
-              className="mt-1 w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-slate-100"
+              className="mt-1 w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-slate-800"
               value={method}
               onChange={(e) => setMethod(e.target.value)}
             >
@@ -67,20 +67,20 @@ const PaymentProofModal: React.FC<Props> = ({ invoiceId, open, onClose, onSaved 
             </select>
           </div>
           <div>
-            <label className="text-sm text-slate-200">Referencia</label>
+            <label className="text-sm text-slate-700">Referencia</label>
             <input
               type="text"
-              className="mt-1 w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-slate-100"
+              className="mt-1 w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-slate-800"
               value={reference}
               onChange={(e) => setReference(e.target.value)}
               placeholder="OP-123, voucher, etc."
             />
           </div>
           <div>
-            <label className="text-sm text-slate-200">URL de comprobante (Drive, foto, etc.)</label>
+            <label className="text-sm text-slate-700">URL de comprobante (Drive, foto, etc.)</label>
             <input
               type="url"
-              className="mt-1 w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-slate-100"
+              className="mt-1 w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-slate-800"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://..."
@@ -88,7 +88,7 @@ const PaymentProofModal: React.FC<Props> = ({ invoiceId, open, onClose, onSaved 
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-white/10 text-slate-200 hover:bg-white/20">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-white/10 text-slate-700 hover:bg-white/20">
             Cancelar
           </button>
           <button

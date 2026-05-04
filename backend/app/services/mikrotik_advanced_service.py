@@ -4,7 +4,7 @@ Advanced MikroTik Service with v6/v7 support
 from typing import Any, Dict
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from routeros_api.exceptions import RouterOsApiError
 
 from app.models import Client, Plan, MikroTikRouter
@@ -24,24 +24,33 @@ class MikroTikAdvancedService:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.disconnect()
 
-    def __init__(self, router_id: str):
+    def __init__(self, router_id):
         self.connection = None
         self.api = None
-        self.router_id = router_id
+        try:
+            self.router_id = int(router_id)
+        except (TypeError, ValueError):
+            self.router_id = router_id
         self.router = None
         self.routeros_version = None
         self.capsman_supported = False
         self.connect()
-    
+
     def connect(self) -> bool:
         """Establish connection to MikroTik router using the connection pool"""
         try:
-            self.router = db.session.get(MikroTikRouter, self.router_id)
+            try:
+                normalized_id = int(self.router_id)
+            except (TypeError, ValueError):
+                logger.error(f"Invalid router_id: {self.router_id}")
+                return False
+            self.router_id = normalized_id
+            self.router = db.session.get(MikroTikRouter, normalized_id)
             if not self.router:
-                logger.error(f"Router {self.router_id} not found in database.")
+                logger.error(f"Router {normalized_id} not found in database.")
                 return False
 
-            self.api, self.connection = mikrotik_connection_pool.get_connection(self.router_id)
+            self.api, self.connection = mikrotik_connection_pool.get_connection(normalized_id)
             
             # Detect router info
             self._detect_router_info()
@@ -49,7 +58,7 @@ class MikroTikAdvancedService:
 
             # Update last seen
             if self.router:
-                self.router.last_seen = datetime.utcnow()
+                self.router.last_seen = datetime.now(timezone.utc)
                 db.session.commit()
             
             return True

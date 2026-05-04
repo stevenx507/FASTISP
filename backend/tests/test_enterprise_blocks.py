@@ -53,6 +53,9 @@ def test_system_settings_are_persisted_in_database(client, app):
     payload = get_response.get_json()
     assert payload['settings']['auto_suspend_overdue'] is False
     assert payload['settings']['backup_retention_days'] == 21
+    assert 'vps_update' in payload
+    assert 'checks' in payload['vps_update']
+    assert 'deployment' in payload['vps_update']
 
     with app.app_context():
         auto_suspend = (
@@ -170,7 +173,7 @@ def test_maintenance_windows_can_silence_router_alerts(client, app):
     baseline_payload = baseline.get_json()
     assert any(alert['severity'] == 'critical' for alert in baseline_payload['alerts'])
 
-    now = datetime.utcnow().replace(microsecond=0)
+    now = datetime.now(timezone.utc).replace(microsecond=0)
     create_window = client.post(
         '/api/admin/network/maintenance',
         json={

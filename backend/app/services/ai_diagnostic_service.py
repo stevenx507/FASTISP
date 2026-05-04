@@ -1,6 +1,6 @@
 # backend/app/services/ai_diagnostic_service.py
 import os
-import openai
+import google.generativeai as genai
 import json
 from app.services.mikrotik_service import MikroTikService
 from app.models import MikroTikRouter
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class AIDiagnosticService:
     """
-    Servicio para realizar diagnósticos de red en routers MikroTik utilizando un modelo de IA.
+    Servicio para realizar diagnósticos de red en routers MikroTik utilizando Google Gemini (Gratis).
     """
     def __init__(self, router_id: int):
         self.router_id = router_id
@@ -21,11 +21,12 @@ class AIDiagnosticService:
         if not self.router:
             raise ValueError("Router no encontrado")
         
-        # Configurar la clave de API de OpenAI
-        # Se espera que la clave esté en las variables de entorno, p.ej., OPENAI_API_KEY
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        if not openai.api_key:
-            logger.warning("La variable de entorno OPENAI_API_KEY no está configurada.")
+        # Configurar Gemini
+        api_key = os.getenv("GEMINI_API_KEY")
+        if api_key:
+            genai.configure(api_key=api_key)
+        else:
+            logger.warning("La variable de entorno GEMINI_API_KEY no está configurada.")
 
     def get_diagnostic_data(self) -> dict:
         """
@@ -48,38 +49,38 @@ class AIDiagnosticService:
 
     def run_diagnosis(self) -> dict:
         """
-        Ejecuta el diagnóstico completo: recopila datos, los envía a la IA y devuelve el análisis.
+        Ejecuta el diagnóstico completo usando Google Gemini.
         """
-        if not openai.api_key:
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
             return {
-                "error": "El servicio de IA no está configurado. Falta la clave de API de OpenAI."
+                "error": "El servicio de IA (Gemini) no está configurado. Falta la clave GEMINI_API_KEY."
             }
             
         try:
             # 1. Recopilar datos reales
             diagnostic_data = self.get_diagnostic_data()
             
-            # 2. Formatear el prompt para la IA
+            # 2. Formatear el prompt
             prompt = self._format_prompt(diagnostic_data)
             
-            # 3. Enviar a la IA
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo", # o "gpt-4"
-                messages=[
-                    {"role": "system", "content": "Eres un experto en redes MikroTik. Analiza los siguientes datos y proporciona un diagnóstico claro en español, identificando problemas potenciales y sugiriendo soluciones específicas con comandos de RouterOS si es posible. Formatea la salida con Markdown."},
-                    {"role": "user", "content": prompt}
-                ]
-            )
-            ai_analysis = response.choices[0].message['content']
+            # 3. Inicializar modelo y generar contenido
+            # Usamos gemini-1.5-flash por su velocidad y nivel gratuito generoso
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            chat_session = model.start_chat(history=[])
+            system_instruction = "Eres un experto en redes MikroTik. Analiza los siguientes datos y proporciona un diagnóstico claro en español, identificando problemas potenciales y sugiriendo soluciones específicas con comandos de RouterOS si es posible. Formatea la salida con Markdown."
+            
+            response = chat_session.send_message(f"{system_instruction}\n\n{prompt}")
+            
+            if response and response.text:
+                return {"analysis": response.text}
+            else:
+                return {"error": "Gemini devolvió una respuesta vacía o bloqueada."}
 
-            return {"analysis": ai_analysis}
-
-        except ConnectionError as ce:
-            logger.error(f"Error de conexión durante el diagnóstico con IA: {ce}")
-            return {"error": str(ce)}
         except Exception as e:
-            logger.error(f"Error durante el diagnóstico con IA: {e}")
-            return {"error": f"Ocurrió un error inesperado: {str(e)}"}
+            logger.error(f"Error durante el diagnóstico con Gemini: {e}")
+            return {"error": f"Error en diagnóstico Gemini: {str(e)}"}
 
     def _format_prompt(self, data: dict) -> str:
         """

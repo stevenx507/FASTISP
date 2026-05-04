@@ -6,329 +6,137 @@ import {
   ShieldCheckIcon,
   UserGroupIcon,
   WifiIcon,
+  SparklesIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline'
-import AIDiagnosis from './AIDiagnosis'
-import ActionsHeader from './ActionsHeader'
-import ConnectionsTab from './ConnectionsTab'
-import OverviewTab from './OverviewTab'
-import QueuesTab from './QueuesTab'
-import SidePanels from './SidePanels'
+import AIDiagnosis from './mikrotik/AIDiagnosis'
+import ActionsHeader from './mikrotik/ActionsHeader'
+import ConnectionsTab from './mikrotik/ConnectionsTab'
+import OverviewTab from './mikrotik/OverviewTab'
+import QueuesTab from './mikrotik/QueuesTab'
+import LogsTab from './mikrotik/LogsTab'
+import SidePanels from './mikrotik/SidePanels'
 import config from '../lib/config'
 import { useAuthStore } from '../store/authStore'
-import { RouterItem, RouterStats, Toast } from './types'
+import { 
+  RouterItem, 
+  RouterStats, 
+  Toast, 
+  RouterFormState, 
+  RouterSnmpFormState,
+  RouterQuickConnectResponse,
+  EnterpriseProfilesPayload,
+  EnterpriseHardeningResult,
+  EnterpriseFailoverResult,
+  EnterpriseChangeLogEntry,
+  RouterBackToHomeBootstrapData,
+  RouterConnectionDiagnosticsPayload,
+  RouterReadinessPayload,
+  RouterSnmpProfilePayload,
+  RouterSnmpPollResponse,
+  RouterQuickScripts,
+  RouterQuickGuidance,
+  RouterConnectionPlan,
+  RouterConnectionPlanAction,
+  ExpressStepState,
+  RouterAccessProfile,
+  RouterBackToHomeUser,
+  RouterBackToHomeScripts,
+  RouterBackToHomeStatus,
+  RouterWireGuardProfile,
+  RouterWireGuardRegisterAttempt,
+  RouterWireGuardRegisterVpsSync,
+  RouterWireGuardRegisterResponse,
+  RouterBackToHomeBootstrapResponse,
+  EnterpriseProfileOption,
+  EnterpriseProfilesResponse,
+  EnterpriseHardeningResponse,
+  EnterpriseFailoverTarget,
+  EnterpriseFailoverReport,
+  EnterpriseFailoverResponse,
+  EnterpriseChangeLogResponse,
+  WireGuardImportData,
+  WireGuardImportSuggestions,
+  WireGuardImportResponse,
+  RouterReadinessCheck,
+  RouterReadinessBlocker,
+  RouterReadinessResponse,
+  WireGuardOnboardResponse,
+  TenantScopePayload,
+  RouterOnboardingProfile,
+  RouterOnboardingProfileResponse,
+  LogItem,
+  RouterListResponse,
+  RouterCreateResponse,
+  SstpTunnelData,
+  RememberConnectionDiagnosticsOptions,
+  RouterConnectionActionResponse,
+  RouterSnmpProfileResponse,
+  RouterConnectionSnapshot
+} from './mikrotik/types'
 
-interface RouterListResponse {
-  success: boolean
-  routers: unknown[]
+import RoutersTable from './mikrotik/RoutersTable'
+import RouterFormModal from './mikrotik/RouterFormModal'
+import ConfigTab from './mikrotik/ConfigTab'
+import SecurityTab from './mikrotik/SecurityTab'
+import TrafficFlowTab from './mikrotik/TrafficFlowTab'
+import VpnTab from './mikrotik/VpnTab'
+
+const CONNECTION_POLL_INTERVAL_MS = 60000
+
+const resolveConnectionFeedback = (
+  payload: { diagnostics?: RouterConnectionDiagnosticsPayload | null; error?: string | null } | null | undefined,
+  fallback: string
+) => {
+  const summary = String(payload?.diagnostics?.summary || '').trim()
+  if (summary) return summary
+  const error = String(payload?.error || '').trim()
+  return error || fallback
 }
 
-interface RouterCreateResponse {
-  success: boolean
-  router?: unknown
-  reachable?: boolean | null
-  error?: string
+const describeHostScope = (scope?: string) => {
+  if (scope === 'private') return 'IP privada'
+  if (scope === 'public') return 'IP publica'
+  if (scope === 'hostname') return 'hostname'
+  if (scope === 'link_local') return 'link-local'
+  if (scope === 'loopback') return 'loopback'
+  return 'sin clasificar'
 }
 
-interface RouterQuickScripts {
-  direct_api_script: string
-  wireguard_site_to_vps_script: string
-  bth_enable_minimal_script?: string
-  windows_login: string
-  linux_login: string
+const buildConnectionStatusKey = (diagnostics?: RouterConnectionDiagnosticsPayload | null) => {
+  if (!diagnostics) return 'unknown'
+  if (diagnostics.success) return 'connected'
+  return String(diagnostics.status || 'failed')
 }
 
-interface RouterQuickGuidance {
-  back_to_home: string[]
-  notes: string[]
+const getConnectionStatusLabel = (diagnostics?: RouterConnectionDiagnosticsPayload | null) => {
+  if (!diagnostics) return 'Sin test'
+  if (diagnostics.success) return 'API OK'
+  const status = String(diagnostics.status || '')
+  if (status === 'dns_unresolved') return 'DNS'
+  if (status === 'tcp_unreachable') return 'Puerto'
+  if (status === 'api_auth_failed') return 'Auth'
+  if (status === 'api_service_disabled') return 'Servicio'
+  if (status === 'api_timeout') return 'Timeout'
+  if (status === 'api_tls_mismatch') return 'TLS'
+  if (status === 'api_protocol_error') return 'Protocolo'
+  if (status === 'api_pool_exhausted') return 'Pool'
+  return 'Falla API'
 }
 
-interface RouterConnectionPlanAction {
-  id: string
-  label: string
-  description?: string
-  script_key?: string
-  requires_local_access?: boolean
-  auto_available?: boolean
+const getConnectionStatusTone = (diagnostics?: RouterConnectionDiagnosticsPayload | null) => {
+  if (!diagnostics) return 'bg-slate-500/10 text-slate-500 border border-slate-500/20'
+  return diagnostics.success 
+    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+    : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
 }
 
-interface RouterConnectionPlan {
-  status?: string
-  title?: string
-  summary?: string
-  recommended_transport?: string
-  actions?: RouterConnectionPlanAction[]
-}
-
-interface ExpressStepState {
-  id: string
-  label: string
-  status: 'pending' | 'running' | 'success' | 'failed' | 'skipped'
-  detail?: string
-}
-
-interface RouterAccessProfile {
-  requested_scope?: string
-  detected_scope?: string
-  effective_scope?: string
-  is_ip?: boolean
-  host?: string
-  allows_direct_inbound?: boolean
-  recommended_transport?: string
-  reason?: string
-}
-
-interface RouterBackToHomeUser {
-  name: string
-  allow_lan: boolean
-  disabled: boolean
-  expires: string
-}
-
-interface RouterBackToHomeScripts {
-  enable_script: string
-  add_vps_user_script: string
-  generate_private_key_hint: string
-}
-
-interface RouterBackToHomeStatus {
-  reachable?: boolean
-  routeros_version?: string | null
-  supported?: boolean | null
-  bth_users_supported?: boolean | null
-  ddns_enabled?: boolean | null
-  back_to_home_vpn?: string | null
-  vpn_status?: string | null
-  vpn_dns_name?: string | null
-  vpn_interface?: string | null
-  vpn_port?: string | null
-  users?: RouterBackToHomeUser[]
-  users_error?: string
-  scripts?: RouterBackToHomeScripts
-  managed_identity?: {
-    enabled?: boolean
-    source?: string
-    key_source?: string
-    user_name?: string
-    public_key?: string | null
-    tenant_id?: number | null
-    created_now?: boolean
-    error?: string | null
-  }
-  limitations?: string[]
-  error?: string
-}
-
-interface RouterWireGuardProfile {
-  endpoint?: string
-  endpoint_host?: string
-  endpoint_port?: number
-  server_public_key?: string
-  server_public_key_valid?: boolean
-  allowed_subnets?: string
-  ready?: boolean
-  issues?: string[]
-  source?: {
-    endpoint?: string
-    server_public_key?: string
-    allowed_subnets?: string
-  }
-}
-
-interface RouterQuickConnectResponse {
-  success: boolean
-  access_profile?: RouterAccessProfile
-  connection_plan?: RouterConnectionPlan
-  wireguard_profile?: RouterWireGuardProfile
-  scripts?: RouterQuickScripts
-  guidance?: RouterQuickGuidance
-  back_to_home?: RouterBackToHomeStatus
-}
-
-interface RouterWireGuardRegisterAttempt {
-  transport?: string
-  success?: boolean
-  mode?: string
-  message?: string
-}
-
-interface RouterWireGuardRegisterVpsSync {
-  success?: boolean
-  mode?: string
-  message?: string
-  manual_required?: boolean
-  manual_command?: string
-  attempts?: RouterWireGuardRegisterAttempt[]
-}
-
-interface RouterWireGuardRegisterResponse {
-  success?: boolean
-  error?: string
-  vps_sync?: RouterWireGuardRegisterVpsSync
-}
-
-interface RouterBackToHomeBootstrapData {
-  success?: boolean
-  error?: string
-  user_name?: string
-  allow_lan?: boolean
-  user_visible_after_run?: boolean
-  operational?: boolean
-  state?: string
-  message?: string
-  missing?: string[]
-  next_steps?: string[]
-}
-
-interface RouterBackToHomeBootstrapResponse {
-  success?: boolean
-  error?: string
-  bootstrap?: RouterBackToHomeBootstrapData
-  vps_sync?: RouterWireGuardRegisterVpsSync
-}
-
-interface EnterpriseProfileOption {
-  id: string
-  label: string
-  description?: string
-}
-
-interface EnterpriseProfilesPayload {
-  router_profiles?: EnterpriseProfileOption[]
-  site_profiles?: EnterpriseProfileOption[]
-}
-
-interface EnterpriseProfilesResponse {
-  success?: boolean
-  profiles?: EnterpriseProfilesPayload
-  error?: string
-}
-
-interface EnterpriseHardeningResponse {
-  success?: boolean
-  dry_run?: boolean
-  profile?: string
-  site_profile?: string
-  change_id?: string
-  message?: string
-  error?: string
-  commands?: string[]
-  rollback_commands?: string[]
-  result?: string
-  rollback_result?: Record<string, unknown> | null
-}
-
-interface EnterpriseFailoverTarget {
-  target: string
-  total_probes: number
-  success_probes: number
-  packet_loss: number
-  avg_latency_ms: number | null
-  status: 'ok' | 'warning' | 'critical'
-  error?: string
-}
-
-interface EnterpriseFailoverReport {
-  generated_at?: string
-  overall_status?: 'ok' | 'warning' | 'critical'
-  targets?: EnterpriseFailoverTarget[]
-}
-
-interface EnterpriseFailoverResponse {
-  success?: boolean
-  report?: EnterpriseFailoverReport
-  error?: string
-}
-
-interface EnterpriseChangeLogEntry {
-  change_id: string
-  status: string
-  category?: string
-  actor?: string
-  profile?: string
-  site_profile?: string
-  created_at?: string
-  rolled_back_at?: string
-}
-
-interface EnterpriseChangeLogResponse {
-  success?: boolean
-  changes?: EnterpriseChangeLogEntry[]
-  error?: string
-}
-
-interface WireGuardImportData {
-  endpoint?: string
-  endpoint_host?: string
-  endpoint_port?: number | null
-  interface_addresses?: string[]
-  interface_private_key?: string
-  peer_allowed_ips?: string[]
-}
-
-interface WireGuardImportSuggestions {
-  router_name?: string
-  router_ip_or_host?: string
-  api_port?: number
-  bth_private_key?: string
-  bth_user_name?: string
-  router_tunnel_ip?: string | null
-  router_management_ip_required?: boolean
-}
-
-interface WireGuardImportResponse {
-  success?: boolean
-  error?: string
-  source_file?: string
-  wireguard?: WireGuardImportData
-  suggestions?: WireGuardImportSuggestions
-}
-
-interface RouterReadinessCheck {
-  id: string
-  ok: boolean
-  detail?: string
-  severity?: string
-}
-
-interface RouterReadinessBlocker {
-  id: string
-  detail?: string
-}
-
-interface RouterReadinessPayload {
-  score?: number
-  checks?: RouterReadinessCheck[]
-  blockers?: RouterReadinessBlocker[]
-  recommendations?: string[]
-  write_probe_enabled?: boolean
-}
-
-interface RouterReadinessResponse {
-  success?: boolean
-  error?: string
-  readiness?: RouterReadinessPayload
-}
-
-interface WireGuardOnboardResponse {
-  success?: boolean
-  error?: string
-  created?: boolean
-  reused_existing?: boolean
-  updated_existing?: boolean
-  source_file?: string
-  wireguard?: WireGuardImportData
-  router?: unknown
-  readiness?: RouterReadinessPayload
-  bootstrap?: RouterBackToHomeBootstrapData
-  vps_sync?: RouterWireGuardRegisterVpsSync
-}
-
-interface RouterFormState {
-  name: string
-  ip_address: string
-  username: string
-  password: string
-  api_port: string
+const formatConnectionCheckedAt = (checkedAt?: number) => {
+  if (!checkedAt) return 'sin chequeo'
+  return new Date(checkedAt).toLocaleTimeString('es-CO', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 const normalizeRouterItem = (input: unknown): RouterItem => {
@@ -339,6 +147,12 @@ const normalizeRouterItem = (input: unknown): RouterItem => {
     ip_address: String(item.ip_address ?? ''),
     model: item.model ? String(item.model) : undefined,
     status: item.status ? String(item.status) : undefined,
+    username: item.username ? String(item.username) : undefined,
+    api_port: item.api_port ? Number(item.api_port) : 8728,
+    sstp_active: Boolean(item.sstp_active),
+    sstp_username: item.sstp_username ? String(item.sstp_username) : undefined,
+    vpn_ip: item.vpn_ip ? String(item.vpn_ip) : undefined,
+    last_seen: item.last_seen ? String(item.last_seen) : undefined,
   }
 }
 
@@ -383,7 +197,7 @@ const decodeWireGuardQrFromImage = async (file: File): Promise<string> => {
     return payload
   } finally {
     if (typeof (bitmap as ImageBitmap).close === 'function') {
-      ;(bitmap as ImageBitmap).close()
+      (bitmap as ImageBitmap).close()
     }
   }
 }
@@ -393,18 +207,138 @@ const normalizeUiError = (error: unknown, fallback: string): string => {
   if (!message) return fallback
   const lowered = message.toLowerCase()
   if (lowered.includes('unauthorized')) return 'Sesion expirada. Vuelve a iniciar sesion.'
-  if (lowered.includes('failed to fetch')) return 'No se pudo conectar al backend. Verifica VPS, dominio y red.'
+  if (lowered.includes('failed to fetch') || lowered.includes('networkerror') || lowered.includes('network request failed')) {
+    return 'No se pudo conectar al backend. Verifica VPS, dominio, red y que el proxy/API estén activos.'
+  }
   if (lowered.includes('abort')) return 'Solicitud interrumpida. Reintenta con sesion activa.'
   if (lowered.includes('qr')) return message
   if (lowered.includes('decode')) return 'No se pudo leer la imagen QR. Usa PNG/JPG nítido o importa ZIP/CONF.'
   return message
 }
 
+const readSnmpMetricSpec = (
+  source: RouterSnmpProfilePayload['scalar_oids'],
+  metricName: string
+): { oid: string; scale: string } => {
+  const metric = source?.[metricName]
+  if (!metric) return { oid: '', scale: '' }
+  if (typeof metric === 'string') return { oid: metric, scale: '' }
+  return {
+    oid: String(metric.oid || ''),
+    scale: metric.scale != null ? String(metric.scale) : '',
+  }
+}
+
+const buildSnmpFormFromProfile = (profile?: RouterSnmpProfilePayload | null): RouterSnmpFormState => {
+  const cpu = readSnmpMetricSpec(profile?.scalar_oids, 'cpu_percent')
+  const mem = readSnmpMetricSpec(profile?.scalar_oids, 'mem_percent')
+  const temperature = readSnmpMetricSpec(profile?.scalar_oids, 'temperature_c')
+  const voltage = readSnmpMetricSpec(profile?.scalar_oids, 'voltage_v')
+  const signal = readSnmpMetricSpec(profile?.scalar_oids, 'signal_level_dbm')
+  const optical = readSnmpMetricSpec(profile?.scalar_oids, 'optical_rx_dbm')
+  const onuOnline = readSnmpMetricSpec(profile?.scalar_oids, 'onu_online')
+  const onuOffline = readSnmpMetricSpec(profile?.scalar_oids, 'onu_offline')
+  const thresholds = profile?.thresholds || {}
+
+  return {
+    enabled: Boolean(profile?.enabled),
+    host: String(profile?.host || ''),
+    port: String(profile?.port ?? 161),
+    community: '',
+    timeout_seconds: String(profile?.timeout_seconds ?? 2),
+    retries: String(profile?.retries ?? 1),
+    poll_interfaces: profile?.poll_interfaces !== false,
+    interface_names: Array.isArray(profile?.interface_names) ? profile?.interface_names.join(', ') : '',
+    trap_enabled: Boolean(profile?.trap_enabled),
+    trap_port: String(profile?.trap_port ?? 162),
+    cpu_oid: cpu.oid,
+    mem_oid: mem.oid,
+    temperature_oid: temperature.oid,
+    temperature_scale: temperature.scale,
+    voltage_oid: voltage.oid,
+    voltage_scale: voltage.scale,
+    signal_oid: signal.oid,
+    signal_scale: signal.scale,
+    optical_oid: optical.oid,
+    optical_scale: optical.scale,
+    onu_online_oid: onuOnline.oid,
+    onu_offline_oid: onuOffline.oid,
+    threshold_temperature: thresholds.temperature_c != null ? String(thresholds.temperature_c) : '70',
+    threshold_voltage_min: thresholds.voltage_v_min != null ? String(thresholds.voltage_v_min) : '21.5',
+    threshold_signal_min: thresholds.signal_level_dbm_min != null ? String(thresholds.signal_level_dbm_min) : '-30',
+    threshold_optical_min: thresholds.optical_rx_dbm_min != null ? String(thresholds.optical_rx_dbm_min) : '-30',
+  }
+}
+
+const buildSnmpPayloadFromForm = (form: RouterSnmpFormState): RouterSnmpProfilePayload => {
+  const scalar_oids: NonNullable<RouterSnmpProfilePayload['scalar_oids']> = {}
+
+  const appendMetric = (metricName: string, oid: string, scaleText = '') => {
+    const normalizedOid = oid.trim()
+    if (!normalizedOid) return
+    const normalizedScale = scaleText.trim()
+    if (!normalizedScale || normalizedScale === '1') {
+      scalar_oids[metricName] = normalizedOid
+      return
+    }
+    const parsedScale = Number(normalizedScale)
+    scalar_oids[metricName] = Number.isFinite(parsedScale)
+      ? { oid: normalizedOid, scale: parsedScale }
+      : normalizedOid
+  }
+
+  appendMetric('cpu_percent', form.cpu_oid)
+  appendMetric('mem_percent', form.mem_oid)
+  appendMetric('temperature_c', form.temperature_oid, form.temperature_scale)
+  appendMetric('voltage_v', form.voltage_oid, form.voltage_scale)
+  appendMetric('signal_level_dbm', form.signal_oid, form.signal_scale)
+  appendMetric('optical_rx_dbm', form.optical_oid, form.optical_scale)
+  appendMetric('onu_online', form.onu_online_oid)
+  appendMetric('onu_offline', form.onu_offline_oid)
+
+  const thresholds: Record<string, number> = {}
+  const appendThreshold = (key: string, value: string) => {
+    const parsed = Number(value.trim())
+    if (Number.isFinite(parsed)) thresholds[key] = parsed
+  }
+  appendThreshold('temperature_c', form.threshold_temperature)
+  appendThreshold('voltage_v_min', form.threshold_voltage_min)
+  appendThreshold('signal_level_dbm_min', form.threshold_signal_min)
+  appendThreshold('optical_rx_dbm_min', form.threshold_optical_min)
+
+  const payload: RouterSnmpProfilePayload = {
+    enabled: form.enabled,
+    host: form.host.trim(),
+    port: Number(form.port || '161'),
+    timeout_seconds: Number(form.timeout_seconds || '2'),
+    retries: Number(form.retries || '1'),
+    poll_interfaces: form.poll_interfaces,
+    interface_names: form.interface_names
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean),
+    scalar_oids,
+    thresholds,
+    trap_enabled: form.trap_enabled,
+    trap_port: Number(form.trap_port || '162'),
+  }
+  if (form.community.trim()) payload.community = form.community
+  return payload
+}
+
+const formatSnmpMetric = (value: unknown, suffix = ''): string => {
+  if (value === null || value === undefined || value === '') return '-'
+  if (typeof value === 'number') return `${value}${suffix}`
+  const numeric = Number(value)
+  if (Number.isFinite(numeric)) return `${numeric}${suffix}`
+  return String(value)
+}
+
 const MikroTikManagement: React.FC = () => {
   const [routers, setRouters] = useState<RouterItem[]>([])
   const [selectedRouter, setSelectedRouter] = useState<RouterItem | null>(null)
   const [routerStats, setRouterStats] = useState<RouterStats | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'queues' | 'connections' | 'config' | 'security'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'queues' | 'connections' | 'config' | 'security' | 'traffic_flow' | 'ai_diagnosis' | 'logs' | 'vpn'>('overview')
 
   const [isLoading, setIsLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
@@ -420,6 +354,8 @@ const MikroTikManagement: React.FC = () => {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null)
   const [aiError, setAiError] = useState<string | null>(null)
   const [isAiLoading, setIsAiLoading] = useState(false)
+  const [logs, setLogs] = useState<LogItem[]>([])
+  const [logsLoading, setLogsLoading] = useState(false)
 
   const [toasts, setToasts] = useState<Toast[]>([])
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -431,6 +367,7 @@ const MikroTikManagement: React.FC = () => {
   const [quickConnect, setQuickConnect] = useState<RouterQuickConnectResponse | null>(null)
   const [quickConnectScope, setQuickConnectScope] = useState<'auto' | 'public' | 'private'>('auto')
   const [routerReadiness, setRouterReadiness] = useState<RouterReadinessPayload | null>(null)
+  const [routerConnectionSnapshots, setRouterConnectionSnapshots] = useState<Record<string, RouterConnectionSnapshot>>({})
   const [readinessLoading, setReadinessLoading] = useState(false)
   const [bootstrapResult, setBootstrapResult] = useState<RouterBackToHomeBootstrapData | null>(null)
   const [bthUserName, setBthUserName] = useState('noc-vps')
@@ -441,13 +378,33 @@ const MikroTikManagement: React.FC = () => {
   const [wireGuardWriteProbe, setWireGuardWriteProbe] = useState(false)
   const [wireGuardBootstrapOnboard, setWireGuardBootstrapOnboard] = useState(false)
   const [wireGuardOnboarding, setWireGuardOnboarding] = useState(false)
+  const [onboardingProfile, setOnboardingProfile] = useState<RouterOnboardingProfile | null>(null)
+  const [onboardingProfileLoading, setOnboardingProfileLoading] = useState(false)
+  const [savingOnboardingProfile, setSavingOnboardingProfile] = useState(false)
   const [routerForm, setRouterForm] = useState<RouterFormState>({
     name: '',
     ip_address: '',
     username: 'admin',
     password: '',
     api_port: '8728',
+    wan_port: '80',
+    lan_interface: 'ether1',
+    ip_ranges: '',
+    ros_version: '7',
+    coordinates: '',
+    comments: '',
+    use_sstp_script: true,
+    historial_trafico: false,
+    control_pppoe: false,
+    control_queue: false,
+    control_ap: false,
+    control_dhcp: false,
+    control_hotspot: false,
+    traffic_flow_enabled: false,
   })
+  const [showRouterModal, setShowRouterModal] = useState(false)
+  const [routerModalTab, setRouterModalTab] = useState<'general' | 'sstp' | 'traffic'>('general')
+  const [editingRouter, setEditingRouter] = useState<RouterItem | null>(null)
   const [securityBusy, setSecurityBusy] = useState(false)
   const [enterpriseProfiles, setEnterpriseProfiles] = useState<EnterpriseProfilesPayload | null>(null)
   const [hardeningProfile, setHardeningProfile] = useState('baseline')
@@ -461,9 +418,44 @@ const MikroTikManagement: React.FC = () => {
   const [enterpriseChangeLog, setEnterpriseChangeLog] = useState<EnterpriseChangeLogEntry[]>([])
   const [wireGuardImporting, setWireGuardImporting] = useState(false)
   const [wireGuardImportSummary, setWireGuardImportSummary] = useState<WireGuardImportResponse | null>(null)
+  const [sstpTunnel, setSstpTunnel] = useState<SstpTunnelData | null>(null)
+  const [sstpScript, setSstpScript] = useState('')
+  const [sstpProvisioning, setSstpProvisioning] = useState(false)
+  const [sstpScriptCopied, setSstpScriptCopied] = useState(false)
+  const [sstpLoadingForRouter, setSstpLoadingForRouter] = useState<string | null>(null)
+  const [vpnMode, setVpnMode] = useState<'native' | 'hub'>('hub')
+  const [hubProvisioning, setHubProvisioning] = useState(false)
+  const [hubScript, setHubScript] = useState('')
+  const [hubData, setHubData] = useState<any>(null)
+  const [routerSnmpProfile, setRouterSnmpProfile] = useState<RouterSnmpProfilePayload | null>(null)
+  const [routerSnmpForm, setRouterSnmpForm] = useState<RouterSnmpFormState>(() => buildSnmpFormFromProfile(null))
+  const [routerSnmpPollResult, setRouterSnmpPollResult] = useState<RouterSnmpPollResponse | null>(null)
+  const [routerSnmpRuntimeAvailable, setRouterSnmpRuntimeAvailable] = useState<boolean | null>(null)
+  const [routerSnmpLoading, setRouterSnmpLoading] = useState(false)
+  const [routerSnmpSaving, setRouterSnmpSaving] = useState(false)
+  const [routerSnmpPolling, setRouterSnmpPolling] = useState(false)
+  // Herramientas
+  const [herramientasOpen, setHerramientasOpen] = useState(false)
+  const [herramientasModal, setHerramientasModal] = useState<'arp' | 'ppp' | null>(null)
+  const [herramientasData, setHerramientasData] = useState<Record<string, unknown>[]>([])
+  const [herramientasLoading, setHerramientasLoading] = useState(false)
+  // Traffic Flow
+  const [tfScripts, setTfScripts] = useState<{ros6: string; ros7_lan: string; ros7_wan: string} | null>(null)
+  const [tfCollector, setTfCollector] = useState<{ip: string; port: number} | null>(null)
+  const [tfStats, setTfStats] = useState<{src_ip: string; mb_total: number; bytes_total: number; packets_total: number; last_seen: string | null}[]>([])
+  const [tfLoading, setTfLoading] = useState(false)
+  const [tfStatsLoading, setTfStatsLoading] = useState(false)
+  const [tfLanGw, setTfLanGw] = useState('')
+  const [tfWanGw, setTfWanGw] = useState('')
+  const [tfCopied, setTfCopied] = useState<string | null>(null)
+  const [tfHours, setTfHours] = useState(24)
+  const connectionStatusRef = useRef<Record<string, string>>({})
   const token = useAuthStore((state) => state.token)
+  const user = useAuthStore((state) => state.user)
   const tenantContextId = useAuthStore((state) => state.tenantContextId)
   const logout = useAuthStore((state) => state.logout)
+  const activeConnectionSnapshot = selectedRouter ? routerConnectionSnapshots[selectedRouter.id] || null : null
+  const activeConnectionDiagnostics = activeConnectionSnapshot?.diagnostics || null
 
   const addToast = useCallback((type: Toast['type'], message: string) => {
     const id = Date.now() + Math.floor(Math.random() * 1000)
@@ -505,6 +497,55 @@ const MikroTikManagement: React.FC = () => {
     }
   }, [])
 
+  const applyOnboardingProfileDefaults = useCallback((profile?: RouterOnboardingProfile | null) => {
+    if (!profile) return
+    setOnboardingProfile(profile)
+    setRouterForm((prev) => ({
+      ...prev,
+      username:
+        prev.username.trim() && prev.username.trim() !== 'admin'
+          ? prev.username
+          : String(profile.default_username || prev.username || 'admin'),
+      api_port:
+        prev.api_port.trim() && prev.api_port.trim() !== '8728'
+          ? prev.api_port
+          : String(profile.default_api_port || prev.api_port || '8728'),
+    }))
+    setBthUserName((prev) => (prev.trim() && prev.trim() !== 'noc-vps' ? prev : String(profile.default_bth_user_name || prev || 'noc-vps')))
+    setBthAllowLan(Boolean(profile.default_allow_lan))
+    setWireGuardBootstrapOnboard(Boolean(profile.auto_bootstrap_bth))
+  }, [])
+
+  const rememberConnectionDiagnostics = useCallback(
+    (
+      routerId: string,
+      diagnostics?: RouterConnectionDiagnosticsPayload | null,
+      options: RememberConnectionDiagnosticsOptions = {}
+    ) => {
+      if (!diagnostics) return
+
+      const normalizedRouterId = String(routerId)
+      const nextStatus = buildConnectionStatusKey(diagnostics)
+      const previousStatus = connectionStatusRef.current[normalizedRouterId]
+      connectionStatusRef.current[normalizedRouterId] = nextStatus
+
+      setRouterConnectionSnapshots((prev) => ({
+        ...prev,
+        [normalizedRouterId]: {
+          diagnostics,
+          checkedAt: Date.now(),
+        },
+      }))
+
+      if (options.notifyOnChange && previousStatus && previousStatus !== nextStatus) {
+        const summary = resolveConnectionFeedback({ diagnostics }, 'Estado de conexion actualizado')
+        const routerLabel = options.routerName ? ` ${options.routerName}` : ''
+        addToast(diagnostics.success ? 'success' : 'error', `Semaforo MikroTik${routerLabel}: ${summary}`)
+      }
+    },
+    [addToast]
+  )
+
   const apiFetch = useCallback(
     (path: string, options: RequestInit = {}) => {
       const headers: Record<string, string> = {
@@ -530,6 +571,210 @@ const MikroTikManagement: React.FC = () => {
     [API_BASE, authHeaders, logout, tenantContextId]
   )
 
+  const loadOnboardingProfile = useCallback(async () => {
+    setOnboardingProfileLoading(true)
+    try {
+      const response = await apiFetch('/api/mikrotik/onboarding/profile')
+      const payload = (await safeJson(response)) as RouterOnboardingProfileResponse | null
+      if (response.ok && payload?.success && payload.profile) {
+        applyOnboardingProfileDefaults(payload.profile)
+        return
+      }
+      setOnboardingProfile(null)
+    } catch (error) {
+      console.error('Error loading onboarding profile:', error)
+      addToast('error', normalizeUiError(error, 'No se pudo cargar el perfil de onboarding'))
+      setOnboardingProfile(null)
+    } finally {
+      setOnboardingProfileLoading(false)
+    }
+  }, [addToast, apiFetch, applyOnboardingProfileDefaults, safeJson])
+
+  const saveOnboardingProfile = useCallback(async () => {
+    if (!onboardingProfile) return
+    setSavingOnboardingProfile(true)
+    try {
+      const response = await apiFetch('/api/mikrotik/onboarding/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(onboardingProfile),
+      })
+      const payload = (await safeJson(response)) as RouterOnboardingProfileResponse | null
+      if (response.ok && payload?.success && payload.profile) {
+        applyOnboardingProfileDefaults(payload.profile)
+        addToast('success', 'Perfil MikroTik guardado para esta cuenta ISP')
+      } else {
+        addToast('error', payload?.error || 'No se pudo guardar el perfil MikroTik')
+      }
+    } catch (error) {
+      console.error('Error saving onboarding profile:', error)
+      addToast('error', 'Error de red guardando perfil MikroTik')
+    } finally {
+      setSavingOnboardingProfile(false)
+    }
+  }, [addToast, apiFetch, applyOnboardingProfileDefaults, onboardingProfile, safeJson])
+
+  const loadSstpTunnelForRouter = useCallback(async (routerId: string) => {
+    setSstpLoadingForRouter(routerId)
+    try {
+      const response = await apiFetch(`/api/mikrotik/routers/${routerId}/sstp/status`)
+      const payload = (await safeJson(response)) as { success?: boolean; tunnel?: SstpTunnelData | null } | null
+      if (response.ok && payload?.tunnel) {
+        setSstpTunnel(payload.tunnel)
+        setSstpScript(payload.tunnel.script || '')
+      } else {
+        setSstpTunnel(null)
+        setSstpScript('')
+      }
+    } catch {
+      setSstpTunnel(null)
+      setSstpScript('')
+    } finally {
+      setSstpLoadingForRouter(null)
+    }
+  }, [apiFetch, safeJson])
+
+  const provisionSstpForRouter = useCallback(async () => {
+    if (!selectedRouter) return
+    setSstpProvisioning(true)
+    try {
+      const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/sstp/provision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const payload = (await safeJson(response)) as SstpTunnelData | null
+      if (!response.ok || (payload as { error?: string })?.error) {
+        addToast('error', (payload as { error?: string })?.error || `Error ${response.status} al provisionar SSTP`)
+        return
+      }
+      setSstpTunnel(payload)
+      setSstpScript(payload?.script || '')
+      addToast('success', 'Túnel SSTP listo. Copia el script y pégalo en el MikroTik (New Terminal).')
+      setConnectionWizardStep(2)
+    } catch (error: unknown) {
+      addToast('error', normalizeUiError(error, 'Error al provisionar SSTP'))
+    } finally {
+      setSstpProvisioning(false)
+    }
+  }, [addToast, apiFetch, safeJson, selectedRouter])
+
+  const provisionHubForRouter = useCallback(async () => {
+    if (!selectedRouter) return
+    setHubProvisioning(true)
+    try {
+      const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/vpn-hub/provision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const payload = (await safeJson(response)) as any
+      if (!response.ok || payload?.error || !payload?.success) {
+        addToast('error', payload?.error || `Error ${response.status} al provisionar Túnel Hub`)
+        return
+      }
+      setHubData(payload)
+      setHubScript(payload?.script || '')
+      addToast('success', 'Túnel Hub (Estilo WispHub) listo. Copia el script y pégalo en tu MikroTik.')
+    } catch (error: unknown) {
+      addToast('error', normalizeUiError(error, 'Error al provisionar Túnel Hub'))
+    } finally {
+      setHubProvisioning(false)
+    }
+  }, [addToast, apiFetch, safeJson, selectedRouter])
+
+  const fetchConnectionDiagnostics = useCallback(
+    async (routerId: string) => {
+      const response = await apiFetch(`/api/mikrotik/routers/${routerId}/test-connection`)
+      const payload = (await safeJson(response)) as RouterConnectionActionResponse | null
+      return { ok: response.ok, payload }
+    },
+    [apiFetch, safeJson]
+  )
+
+  const loadRouterSnmpProfile = useCallback(
+    async (routerId: string) => {
+      setRouterSnmpLoading(true)
+      try {
+        const response = await apiFetch(`/api/mikrotik/routers/${routerId}/snmp-profile`)
+        const payload = (await safeJson(response)) as RouterSnmpProfileResponse | null
+        if (response.ok && payload?.success && payload.profile) {
+          setRouterSnmpProfile(payload.profile)
+          setRouterSnmpForm(buildSnmpFormFromProfile(payload.profile))
+          setRouterSnmpRuntimeAvailable(payload.runtime_available ?? null)
+          return
+        }
+        setRouterSnmpProfile(null)
+        setRouterSnmpForm(buildSnmpFormFromProfile(null))
+        setRouterSnmpRuntimeAvailable(payload?.runtime_available ?? null)
+      } catch (error) {
+        console.error('Error loading SNMP profile:', error)
+        setRouterSnmpProfile(null)
+        setRouterSnmpForm(buildSnmpFormFromProfile(null))
+        setRouterSnmpRuntimeAvailable(null)
+      } finally {
+        setRouterSnmpLoading(false)
+      }
+    },
+    [apiFetch, safeJson]
+  )
+
+  const saveRouterSnmpProfile = useCallback(async () => {
+    if (!selectedRouter) return
+    setRouterSnmpSaving(true)
+    try {
+      const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/snmp-profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildSnmpPayloadFromForm(routerSnmpForm)),
+      })
+      const payload = (await safeJson(response)) as RouterSnmpProfileResponse | null
+      if (!response.ok || !payload?.success || !payload.profile) {
+        addToast('error', payload?.error || 'No se pudo guardar el perfil SNMP')
+        return
+      }
+      setRouterSnmpProfile(payload.profile)
+      setRouterSnmpForm(buildSnmpFormFromProfile(payload.profile))
+      setRouterSnmpRuntimeAvailable(payload.runtime_available ?? null)
+      addToast('success', 'Perfil SNMP guardado')
+    } catch (error) {
+      console.error('Error saving SNMP profile:', error)
+      addToast('error', normalizeUiError(error, 'Error guardando perfil SNMP'))
+    } finally {
+      setRouterSnmpSaving(false)
+    }
+  }, [addToast, apiFetch, routerSnmpForm, safeJson, selectedRouter])
+
+  const runRouterSnmpPoll = useCallback(
+    async (persist = false) => {
+      if (!selectedRouter) return
+      setRouterSnmpPolling(true)
+      try {
+        const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/snmp/poll`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            persist,
+            profile: buildSnmpPayloadFromForm(routerSnmpForm),
+          }),
+        })
+        const payload = (await safeJson(response)) as RouterSnmpPollResponse | null
+        if (!response.ok || !payload?.success) {
+          addToast('error', payload?.error || 'No se pudo consultar SNMP')
+          return
+        }
+        setRouterSnmpPollResult(payload)
+        addToast('success', persist ? 'SNMP consultado y persistido' : 'SNMP consultado correctamente')
+      } catch (error) {
+        console.error('Error polling SNMP profile:', error)
+        addToast('error', normalizeUiError(error, 'Error consultando SNMP'))
+      } finally {
+        setRouterSnmpPolling(false)
+      }
+    },
+    [addToast, apiFetch, routerSnmpForm, safeJson, selectedRouter]
+  )
+
   const loadRouters = useCallback(async () => {
     try {
       const response = await apiFetch('/api/mikrotik/routers')
@@ -538,6 +783,14 @@ const MikroTikManagement: React.FC = () => {
       const source = payload?.success && Array.isArray(payload.routers) ? payload.routers : []
       const nextRouters = source.map(normalizeRouterItem).filter((item) => item.id && item.ip_address)
       setRouters(nextRouters)
+      setRouterConnectionSnapshots((prev) => {
+        const allowedIds = new Set(nextRouters.map((item) => item.id))
+        const filtered = Object.entries(prev).filter(([routerId]) => allowedIds.has(routerId))
+        return Object.fromEntries(filtered)
+      })
+      connectionStatusRef.current = Object.fromEntries(
+        Object.entries(connectionStatusRef.current).filter(([routerId]) => nextRouters.some((item) => item.id === routerId))
+      )
       setSelectedRouter((prev) => {
         if (!nextRouters.length) return null
         if (!prev) return nextRouters[0]
@@ -545,7 +798,7 @@ const MikroTikManagement: React.FC = () => {
       })
     } catch (error) {
       console.error('Error loading routers:', error)
-      addToast('error', 'No se pudieron cargar los routers')
+      addToast('error', normalizeUiError(error, 'No se pudieron cargar los routers'))
     }
   }, [addToast, apiFetch, safeJson])
 
@@ -575,7 +828,7 @@ const MikroTikManagement: React.FC = () => {
       } catch (error) {
         console.error('Error loading router stats:', error)
         setRouterStats({ health: null, queues: [], connections: [] })
-        addToast('error', 'Error de red al cargar estadisticas del router')
+        addToast('error', normalizeUiError(error, 'Error de red al cargar estadísticas del router'))
       } finally {
         setIsLoading(false)
       }
@@ -591,18 +844,23 @@ const MikroTikManagement: React.FC = () => {
         const response = await apiFetch(`/api/mikrotik/routers/${routerId}/quick-connect${query}`)
         const payload = (await safeJson(response)) as RouterQuickConnectResponse | null
         if (response.ok && payload?.success) {
+          if (payload.onboarding_profile) {
+            applyOnboardingProfileDefaults(payload.onboarding_profile)
+          }
           setQuickConnect(payload)
         } else {
           setQuickConnect(null)
+          addToast('error', 'No se pudo cargar la conexión rápida')
         }
       } catch (error) {
         console.error('Error loading quick connect:', error)
         setQuickConnect(null)
+        addToast('error', normalizeUiError(error, 'No se pudo cargar la conexión rápida'))
       } finally {
         setQuickLoading(false)
       }
     },
-    [apiFetch, safeJson]
+    [addToast, apiFetch, applyOnboardingProfileDefaults, safeJson]
   )
 
   const loadRouterReadiness = useCallback(
@@ -624,7 +882,7 @@ const MikroTikManagement: React.FC = () => {
         console.error('Error loading router readiness:', error)
         setRouterReadiness(null)
         if (runWriteProbe) {
-          addToast('error', 'Error de red ejecutando readiness')
+          addToast('error', normalizeUiError(error, 'Error de red ejecutando readiness'))
         }
       } finally {
         setReadinessLoading(false)
@@ -676,7 +934,8 @@ const MikroTikManagement: React.FC = () => {
 
   useEffect(() => {
     loadRouters()
-  }, [loadRouters])
+    loadOnboardingProfile()
+  }, [loadOnboardingProfile, loadRouters])
 
   useEffect(() => {
     if (!selectedRouter) return
@@ -693,7 +952,47 @@ const MikroTikManagement: React.FC = () => {
     setRouterReadiness(null)
     setHardeningResult(null)
     setFailoverResult(null)
-  }, [loadEnterpriseChangeLog, loadEnterpriseProfiles, loadQuickConnect, loadRouterReadiness, loadRouterStats, quickConnectScope, selectedRouter])
+    setSstpTunnel(null)
+    setSstpScript('')
+    setSstpScriptCopied(false)
+    setRouterSnmpProfile(null)
+    setRouterSnmpForm(buildSnmpFormFromProfile(null))
+    setRouterSnmpPollResult(null)
+    void loadSstpTunnelForRouter(selectedRouter.id)
+    void loadRouterSnmpProfile(selectedRouter.id)
+  }, [loadEnterpriseChangeLog, loadEnterpriseProfiles, loadQuickConnect, loadRouterReadiness, loadRouterSnmpProfile, loadRouterStats, loadSstpTunnelForRouter, quickConnectScope, selectedRouter])
+
+  useEffect(() => {
+    if (!selectedRouter || activeTab !== 'config') return
+
+    let cancelled = false
+
+    const runPoll = async (notifyOnChange = false) => {
+      try {
+        const { payload } = await fetchConnectionDiagnostics(selectedRouter.id)
+        if (cancelled || !payload?.diagnostics) return
+        rememberConnectionDiagnostics(selectedRouter.id, payload.diagnostics, {
+          notifyOnChange,
+          routerName: selectedRouter.name,
+        })
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Error polling connection diagnostics:', error)
+        }
+      }
+    }
+
+    void runPoll(false)
+
+    const timer = window.setInterval(() => {
+      void runPoll(true)
+    }, CONNECTION_POLL_INTERVAL_MS)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [activeTab, fetchConnectionDiagnostics, rememberConnectionDiagnostics, selectedRouter])
 
   const applyEnterpriseHardening = async () => {
     if (!selectedRouter) return
@@ -839,10 +1138,10 @@ const MikroTikManagement: React.FC = () => {
     if (!selectedRouter) return
     setActionLoading(true)
     try {
-      const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/test-connection`)
-      const data = (await safeJson(response)) as { success?: boolean; error?: string } | null
-      if (response.ok && data?.success) addToast('success', 'Conexion al router exitosa')
-      else addToast('error', data?.error || 'No se pudo conectar al router')
+      const { ok, payload: data } = await fetchConnectionDiagnostics(selectedRouter.id)
+      if (data?.diagnostics) rememberConnectionDiagnostics(selectedRouter.id, data.diagnostics)
+      if (ok && data?.success) addToast('success', resolveConnectionFeedback(data, 'Conexion al router exitosa'))
+      else addToast('error', resolveConnectionFeedback(data, 'No se pudo conectar al router'))
     } catch {
       addToast('error', 'Error de red al probar conexion')
     } finally {
@@ -868,6 +1167,22 @@ const MikroTikManagement: React.FC = () => {
     }
   }
 
+  const loadLogs = async () => {
+    if (!selectedRouter) return
+    setLogsLoading(true)
+    try {
+      const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/logs?limit=200`)
+      const data = (await safeJson(response)) as { success?: boolean; logs?: any[] } | null
+      if (response.ok && data?.success) {
+        setLogs(data.logs || [])
+      }
+    } catch (err) {
+      addToast('error', 'Error al cargar logs del router')
+    } finally {
+      setLogsLoading(false)
+    }
+  }
+
   const deleteSelectedRouter = async () => {
     if (!selectedRouter) return
     setActionLoading(true)
@@ -879,6 +1194,12 @@ const MikroTikManagement: React.FC = () => {
         setRouterStats(null)
         setQuickConnect(null)
         setRouterReadiness(null)
+        setRouterConnectionSnapshots((prev) => {
+          const next = { ...prev }
+          delete next[selectedRouter.id]
+          return next
+        })
+        delete connectionStatusRef.current[selectedRouter.id]
         setBootstrapResult(null)
         setEnterpriseProfiles(null)
         setEnterpriseChangeLog([])
@@ -930,12 +1251,16 @@ const MikroTikManagement: React.FC = () => {
         }
 
         setWireGuardImportSummary(payload)
+        if (payload.onboarding_profile) {
+          applyOnboardingProfileDefaults(payload.onboarding_profile)
+        }
         const suggestions = payload.suggestions || {}
         const suggestedIpOrHost = String(suggestions.router_ip_or_host || '').trim()
         setRouterForm((prev) => ({
           ...prev,
           name: prev.name.trim() ? prev.name : String(suggestions.router_name || prev.name || ''),
           ip_address: prev.ip_address.trim() ? prev.ip_address : (suggestedIpOrHost || String(prev.ip_address || '')),
+          username: prev.username.trim() ? prev.username : String(suggestions.default_username || prev.username || ''),
           api_port: String(suggestions.api_port || prev.api_port || '8728'),
         }))
 
@@ -960,7 +1285,7 @@ const MikroTikManagement: React.FC = () => {
         setWireGuardImporting(false)
       }
     },
-    [addToast, apiFetch, appendWireGuardSourceToFormData, bthPrivateKey, bthUserName, routerForm.ip_address, safeJson]
+    [addToast, apiFetch, appendWireGuardSourceToFormData, applyOnboardingProfileDefaults, bthPrivateKey, bthUserName, routerForm.ip_address, safeJson]
   )
 
   const onboardRouterFromWireGuardArchive = useCallback(
@@ -1011,6 +1336,9 @@ const MikroTikManagement: React.FC = () => {
           return
         }
 
+        if (payload.onboarding_profile) {
+          applyOnboardingProfileDefaults(payload.onboarding_profile)
+        }
         setRouterReadiness(payload.readiness || null)
         if (payload.bootstrap) {
           setBootstrapResult(payload.bootstrap)
@@ -1070,6 +1398,7 @@ const MikroTikManagement: React.FC = () => {
       wireGuardBootstrapOnboard,
       wireGuardWriteProbe,
       appendWireGuardSourceToFormData,
+      applyOnboardingProfileDefaults,
     ]
   )
 
@@ -1119,6 +1448,20 @@ const MikroTikManagement: React.FC = () => {
           username: routerForm.username.trim(),
           password: routerForm.password,
           api_port: Number(routerForm.api_port || '8728'),
+          wan_port: Number(routerForm.wan_port || '80'),
+          lan_interface: routerForm.lan_interface.trim() || 'ether1',
+          ip_ranges: routerForm.ip_ranges.trim() || null,
+          ros_version: routerForm.ros_version,
+          coordinates: routerForm.coordinates.trim() || null,
+          comments: routerForm.comments.trim() || null,
+          use_sstp_script: routerForm.use_sstp_script,
+          historial_trafico: routerForm.historial_trafico,
+          control_pppoe: routerForm.control_pppoe,
+          control_queue: routerForm.control_queue,
+          control_ap: routerForm.control_ap,
+          control_dhcp: routerForm.control_dhcp,
+          control_hotspot: routerForm.control_hotspot,
+          traffic_flow_enabled: routerForm.traffic_flow_enabled,
           is_active: true,
           test_connection: true,
         }),
@@ -1129,9 +1472,18 @@ const MikroTikManagement: React.FC = () => {
         return
       }
 
+      if (payload.onboarding_profile) {
+        applyOnboardingProfileDefaults(payload.onboarding_profile)
+      }
       const createdRouter = normalizeRouterItem(payload.router)
-      addToast('success', payload.reachable === false ? 'Router agregado, pero no responde aun' : 'Router agregado correctamente')
+      if (payload.diagnostics) rememberConnectionDiagnostics(createdRouter.id, payload.diagnostics)
+      const connectionMessage = resolveConnectionFeedback(
+        payload,
+        payload.reachable === false ? 'Router agregado, pero la API aun no responde.' : 'Router agregado correctamente.'
+      )
+      addToast(payload.reachable === false ? 'error' : 'success', payload.reachable === false ? `Router agregado. ${connectionMessage}` : connectionMessage)
       setRouterForm((prev) => ({ ...prev, name: '', ip_address: '', password: '' }))
+      setShowRouterModal(false)
       await loadRouters()
       setSelectedRouter(createdRouter)
       setActiveTab('config')
@@ -1173,15 +1525,15 @@ const MikroTikManagement: React.FC = () => {
     if (!selectedRouter) return
     setWizardValidating(true)
     try {
-      const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/test-connection`)
-      const payload = (await safeJson(response)) as { success?: boolean; error?: string } | null
+      const { ok, payload } = await fetchConnectionDiagnostics(selectedRouter.id)
+      if (payload?.diagnostics) rememberConnectionDiagnostics(selectedRouter.id, payload.diagnostics)
       await loadQuickConnect(selectedRouter.id, quickConnectScope)
       await loadRouterReadiness(selectedRouter.id)
       setConnectionWizardStep(3)
-      if (response.ok && payload?.success) {
-        addToast('success', 'Validacion completada: router alcanzable')
+      if (ok && payload?.success) {
+        addToast('success', resolveConnectionFeedback(payload, 'Validacion completada: router alcanzable'))
       } else {
-        addToast('error', payload?.error || 'Validacion fallida: router no alcanzable')
+        addToast('error', resolveConnectionFeedback(payload, 'Validacion fallida: router no alcanzable'))
       }
     } catch (error) {
       console.error('Error running wizard validation:', error)
@@ -1228,13 +1580,13 @@ const MikroTikManagement: React.FC = () => {
     const testConnectionStep = async (stepId: string, detailOnSuccess: string) => {
       updateStep(stepId, 'running')
       try {
-        const response = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/test-connection`)
-        const payload = (await safeJson(response)) as { success?: boolean; error?: string } | null
-        if (response.ok && payload?.success) {
+        const { ok, payload } = await fetchConnectionDiagnostics(selectedRouter.id)
+        if (payload?.diagnostics) rememberConnectionDiagnostics(selectedRouter.id, payload.diagnostics)
+        if (ok && payload?.success) {
           updateStep(stepId, 'success', detailOnSuccess)
           return true
         }
-        updateStep(stepId, 'failed', payload?.error || 'Router aun no responde por API')
+        updateStep(stepId, 'failed', resolveConnectionFeedback(payload, 'Router aun no responde por API'))
         return false
       } catch (error) {
         const detail = error instanceof Error ? error.message : 'Fallo de red en test'
@@ -1605,10 +1957,10 @@ const MikroTikManagement: React.FC = () => {
             value={changeTicket}
             onChange={(e) => setChangeTicket(e.target.value)}
             placeholder="Ticket de cambio (ej: CHG-2026-0001)"
-            className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-gray-900 md:max-w-md"
+            className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-amber-500/50 md:max-w-md"
           />
           <p className="text-xs text-amber-800">
-            Se usa para acciones live (reinicio, scripts, hardening y operacion Back To Home).
+            Se usa para acciones live (reinicio, scripts y hardening).
           </p>
         </div>
         <label className="mt-2 flex items-center gap-2 text-xs text-amber-900">
@@ -1622,156 +1974,118 @@ const MikroTikManagement: React.FC = () => {
         </label>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow">
-        <h3 className="mb-3 text-lg font-semibold text-gray-900">Alta rapida de MikroTik</h3>
-        <p className="mb-3 text-sm text-gray-600">
-          Agrega routers nuevos con sus credenciales de API. Luego usa la pestana Configuracion para scripts de conexion remota.
+      <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow">
+        <h3 className="mb-3 text-lg font-semibold text-slate-800">Alta rapida de MikroTik</h3>
+        <p className="mb-3 text-sm text-slate-500">
+          Agrega routers nuevos con sus credenciales de API. Luego usa la pestana Configuracion para provisionar el servidor SSTP nativo.
         </p>
-        <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-800">Importar QR / WireGuard</p>
-              <p className="text-xs text-blue-700">
-                Sube QR en imagen o ZIP/CONF para autocompletar tunel y vincular rapido. Back To Home usa identidad automatica por tenant.
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">Cuenta ISP actual</p>
+              <p className="mt-1 text-sm text-emerald-900">
+                {onboardingProfile?.account_label || user?.name || user?.email || 'Cuenta actual'}
+              </p>
+              <p className="text-xs text-emerald-700">
+                {onboardingProfile?.tenant_scope?.tenant_name || onboardingProfile?.tenant_scope?.tenant_slug || user?.email || 'Sin tenant explicito'}
+                {onboardingProfile?.tenant_scope?.tenant_id !== null && onboardingProfile?.tenant_scope?.tenant_id !== undefined
+                  ? ` | tenant #${onboardingProfile?.tenant_scope?.tenant_id}`
+                  : ''}
+              </p>
+              <p className="mt-1 text-xs text-emerald-700">
+                Este perfil aplica solo a la cuenta ISP/tenant seleccionada. Cada ISP puede usar sus propios defaults de nombre y API.
               </p>
             </div>
-            <button
-              onClick={handleWireGuardOnboardFilePick}
-              disabled={wireGuardOnboarding}
-              className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-            >
-              {wireGuardOnboarding ? 'Conectando...' : 'QR/ZIP + conexion auto'}
-            </button>
-            <button
-              onClick={handleWireGuardFilePick}
-              disabled={wireGuardImporting}
-              className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-            >
-              {wireGuardImporting ? 'Importando...' : 'Solo leer QR/ZIP'}
-            </button>
-            <input
-              ref={wireGuardFileInputRef}
-              type="file"
-              accept=".zip,.conf,.cfg,.txt,image/png,image/jpeg,image/webp,image/bmp"
-              className="hidden"
-              onChange={handleWireGuardFileChange}
-            />
-            <input
-              ref={wireGuardOnboardFileInputRef}
-              type="file"
-              accept=".zip,.conf,.cfg,.txt,image/png,image/jpeg,image/webp,image/bmp"
-              className="hidden"
-              onChange={handleWireGuardOnboardFileChange}
-            />
-          </div>
-          <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-blue-800 md:grid-cols-2">
-            <label className="flex items-center gap-2 rounded border border-blue-200 bg-white px-2 py-1">
-              <input
-                type="checkbox"
-                checked={wireGuardWriteProbe}
-                onChange={(e) => setWireGuardWriteProbe(e.target.checked)}
-                className="h-4 w-4"
-              />
-              Ejecutar write probe API durante onboarding
-            </label>
-            <label className="flex items-center gap-2 rounded border border-blue-200 bg-white px-2 py-1">
-              <input
-                type="checkbox"
-                checked={wireGuardBootstrapOnboard}
-                onChange={(e) => setWireGuardBootstrapOnboard(e.target.checked)}
-                className="h-4 w-4"
-              />
-              Bootstrap Back To Home automatico
-            </label>
-          </div>
-          {wireGuardImportSummary?.success && (
-            <div className="mt-2 rounded border border-blue-300 bg-white p-2 text-xs text-blue-900">
-              <p>
-                Archivo: <strong>{wireGuardImportSummary.source_file || '-'}</strong>
-              </p>
-              <p>
-                Endpoint: <strong>{wireGuardImportSummary.wireguard?.endpoint_host || '-'}</strong>
-                {wireGuardImportSummary.wireguard?.endpoint_port ? `:${wireGuardImportSummary.wireguard?.endpoint_port}` : ''}
-              </p>
-              <p>
-                Allowed IPs:{' '}
-                <strong>{(wireGuardImportSummary.wireguard?.peer_allowed_ips || []).join(', ') || '-'}</strong>
-              </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => applyOnboardingProfileDefaults(onboardingProfile)}
+                disabled={!onboardingProfile}
+                className="rounded-lg bg-white backdrop-blur-md px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60"
+              >
+                Aplicar defaults
+              </button>
+              <button
+                onClick={() => void saveOnboardingProfile()}
+                disabled={savingOnboardingProfile || !onboardingProfile}
+                className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+              >
+                {savingOnboardingProfile ? 'Guardando...' : 'Guardar perfil ISP'}
+              </button>
             </div>
-          )}
-          {wireGuardBootstrapOnboard && (
-            <p className="mt-2 text-xs text-blue-700">
-              Bootstrap en vivo requiere `change_ticket` y `preflight_ack=true` en este panel.
-            </p>
+          </div>
+
+          {onboardingProfileLoading && <p className="mt-2 text-xs text-emerald-700">Cargando perfil de onboarding...</p>}
+          {onboardingProfile && (
+            <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
+              <input
+                value={onboardingProfile.account_label || ''}
+                onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), account_label: e.target.value }))}
+                placeholder="Nombre de cuenta ISP"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-emerald-500/50"
+              />
+              <input
+                value={onboardingProfile.router_name_prefix || ''}
+                onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), router_name_prefix: e.target.value }))}
+                placeholder="Prefijo de routers"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-emerald-500/50"
+              />
+              <input
+                value={onboardingProfile.comment_prefix || ''}
+                onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), comment_prefix: e.target.value }))}
+                placeholder="Prefijo de comentarios"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-emerald-500/50"
+              />
+              <input
+                value={onboardingProfile.default_username || ''}
+                onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), default_username: e.target.value }))}
+                placeholder="Usuario API por defecto"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-emerald-500/50"
+              />
+              <input
+                value={String(onboardingProfile.default_api_port || '')}
+                onChange={(e) => setOnboardingProfile((prev) => ({ ...(prev || {}), default_api_port: Number(e.target.value || '8728') }))}
+                placeholder="Puerto API por defecto"
+                className="rounded border border-emerald-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-emerald-500/50"
+              />
+            </div>
           )}
         </div>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
-          <input
-            value={routerForm.name}
-            onChange={(e) => setRouterForm((prev) => ({ ...prev, name: e.target.value }))}
-            placeholder="Nombre"
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
-          />
-          <input
-            value={routerForm.ip_address}
-            onChange={(e) => setRouterForm((prev) => ({ ...prev, ip_address: e.target.value }))}
-            placeholder="IP o DNS (sin puerto)"
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
-          />
-          <input
-            value={routerForm.username}
-            onChange={(e) => setRouterForm((prev) => ({ ...prev, username: e.target.value }))}
-            placeholder="Usuario API"
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
-          />
-          <input
-            type="password"
-            value={routerForm.password}
-            onChange={(e) => setRouterForm((prev) => ({ ...prev, password: e.target.value }))}
-            placeholder="Password API"
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
-          />
-          <div className="flex items-center gap-2">
-            <input
-              value={routerForm.api_port}
-              onChange={(e) => setRouterForm((prev) => ({ ...prev, api_port: e.target.value }))}
-              placeholder="Puerto API"
-              className="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
-            />
-            <button
-              onClick={createRouter}
-              disabled={creatingRouter}
-              className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-            >
-              {creatingRouter ? 'Guardando...' : 'Agregar'}
-            </button>
-          </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setEditingRouter(null)
+              setRouterModalTab('general')
+              setShowRouterModal(true)
+            }}
+            className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 hover:scale-105 hover:shadow-emerald-500/50 transition-all duration-300"
+          >
+            <span className="text-lg font-bold group-hover:rotate-90 transition-transform duration-300">+</span> Añadir Router
+          </button>
+          <p className="text-xs text-slate-500">Haz click para abrir el Editor Router completo</p>
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow">
-        <h3 className="mb-3 text-lg font-semibold text-gray-900">Seleccionar Router</h3>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
-          {routers.map((router) => (
-            <button
-              key={router.id}
-              onClick={() => setSelectedRouter(router)}
-              className={`rounded-lg border p-4 text-left transition-all ${
-                selectedRouter?.id === router.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <ServerIcon className="h-6 w-6 text-green-500" />
-                <div>
-                  <div className="font-medium text-gray-900">{router.name}</div>
-                  <div className="text-sm text-gray-600">{router.ip_address}</div>
-                  <div className="text-xs text-gray-500">{router.model || '-'}</div>
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-        {!routers.length && <p className="mt-3 text-sm text-gray-500">No hay routers registrados todavia.</p>}
+      <RouterFormModal
+        isOpen={showRouterModal}
+        onClose={() => setShowRouterModal(false)}
+        editingRouter={editingRouter}
+        routerForm={routerForm}
+        setRouterForm={setRouterForm}
+        routerModalTab={routerModalTab}
+        setRouterModalTab={setRouterModalTab}
+        onSubmit={createRouter}
+        isSaving={creatingRouter}
+      />
+
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm mb-6">
+        <h3 className="mb-4 text-sm font-black text-slate-800 uppercase tracking-widest">Lista de Routers</h3>
+
+        <RoutersTable
+          routers={routers}
+          selectedRouter={selectedRouter}
+          setSelectedRouter={setSelectedRouter}
+          routerConnectionSnapshots={routerConnectionSnapshots}
+        />
       </div>
 
       {selectedRouter && (
@@ -1780,38 +2094,183 @@ const MikroTikManagement: React.FC = () => {
             <AIDiagnosis isLoading={isAiLoading} analysis={aiAnalysis} error={aiError} />
           </div>
 
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8">
-              {[
+          {/* ── Herramientas toolbar ── */}
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gray-100 bg-white px-6 py-4 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="h-10 w-10 rounded-xl bg-coral-50 flex items-center justify-center text-coral-500">
+                 <ServerIcon className="h-6 w-6" />
+              </div>
+              <div>
+                <span className="block text-sm font-black text-slate-800">{selectedRouter.name}</span>
+                <span className="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-wider">{selectedRouter.ip_address}</span>
+              </div>
+              {selectedRouter.sstp_active ? (
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black text-blue-600 border border-blue-100">TUNNEL ACTIVO</span>
+              ) : (
+                <span className="rounded-full bg-gray-50 px-3 py-1 text-[10px] font-black text-slate-500 border border-gray-100">MODO DIRECTO</span>
+              )}
+            </div>
+            <div className="relative flex items-center gap-2">
+              {/* Reboot */}
+              <button
+                onClick={() => openConfirm(`¿Reiniciar el router ${selectedRouter.name}?`, async () => {
+                  try {
+                    const res = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/reboot`, { method: 'POST' })
+                    const d = await res.json().catch(() => ({}))
+                    if (res.ok) addToast('success', 'Router reiniciado')
+                    else addToast('error', (d as {error?: string}).error || 'Error al reiniciar')
+                  } catch { addToast('error', 'Error de red') }
+                })}
+                className="rounded bg-rose-500/20 px-2 py-1 text-xs font-semibold text-rose-400 hover:bg-rose-500/30 border border-rose-500/30"
+              >
+                🔄 Reiniciar
+              </button>
+              {/* Herramientas dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setHerramientasOpen((p) => !p)}
+                  className="rounded bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-500"
+                >
+                  🔧 Herramientas ▾
+                </button>
+                {herramientasOpen && (
+                  <div className="absolute right-0 top-full z-50 mt-1 min-w-[180px] rounded-lg border border-gray-200 bg-white backdrop-blur-md py-1 shadow-xl">
+                    {[
+                      { label: '📍 Lista ARP', action: async () => {
+                        setHerramientasLoading(true); setHerramientasOpen(false); setHerramientasModal('arp')
+                        try {
+                          const r = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/arp`)
+                          const d = await r.json().catch(() => ({}))
+                          setHerramientasData((d as {arp?: Record<string, unknown>[]}).arp || [])
+                        } catch { addToast('error', 'Error cargando ARP') }
+                        setHerramientasLoading(false)
+                      }},
+                      { label: '📶 PPP Active Connections', action: async () => {
+                        setHerramientasLoading(true); setHerramientasOpen(false); setHerramientasModal('ppp')
+                        try {
+                          const r = await apiFetch(`/api/mikrotik/routers/${selectedRouter.id}/ppp/active`)
+                          const d = await r.json().catch(() => ({}))
+                          setHerramientasData((d as {sessions?: Record<string, unknown>[]}).sessions || [])
+                        } catch { addToast('error', 'Error cargando PPP') }
+                        setHerramientasLoading(false)
+                      }},
+                      { label: '📄 Logs del Router', action: () => { setSidePanel('logs'); setHerramientasOpen(false) }},
+                      { label: '💻 Clientes DHCP', action: () => { setSidePanel('dhcp'); setHerramientasOpen(false) }},
+                      { label: '📡 Clientes WiFi', action: () => { setSidePanel('wifi'); setHerramientasOpen(false) }},
+                    ].map((item) => (
+                      <button
+                        key={item.label}
+                        onClick={() => void item.action()}
+                        className="block w-full px-4 py-2 text-left text-xs text-slate-600 hover:bg-white"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Herramientas result modal */}
+          {herramientasModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setHerramientasModal(null)}>
+              <div className="w-full max-w-3xl rounded-xl bg-white backdrop-blur-md p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="font-bold text-slate-800">
+                    {herramientasModal === 'arp' ? '📍 Lista ARP' : '📶 PPP Active Connections'} — {selectedRouter.name}
+                  </h3>
+                  <button onClick={() => setHerramientasModal(null)} className="text-slate-500 hover:text-slate-500 text-lg">✕</button>
+                </div>
+                {herramientasLoading ? (
+                  <div className="py-8 text-center text-sm text-slate-500">Cargando...</div>
+                ) : herramientasData.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-slate-500">Sin datos disponibles.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-xs">
+                      <thead>
+                        <tr className="border-b bg-white text-[10px] font-semibold uppercase text-slate-500">
+                          {Object.keys(herramientasData[0]).map((k) => (
+                            <th key={k} className="px-3 py-1.5 text-left">{k}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {herramientasData.map((row, i) => (
+                          <tr key={i} className="border-b hover:bg-white">
+                            {Object.values(row).map((v, j) => (
+                              <td key={j} className="px-3 py-1.5 font-mono text-slate-600">{String(v ?? '-')}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <p className="mt-2 text-right text-[11px] text-slate-500">{herramientasData.length} registros</p>
+              </div>
+            </div>
+          )}
+
+          <div className="mb-8 overflow-x-auto pb-2">
+            <nav className="flex space-x-2">
+              {([
                 { id: 'overview', name: 'Resumen', icon: ChartBarIcon },
                 { id: 'queues', name: 'Colas', icon: UserGroupIcon },
                 { id: 'connections', name: 'Conexiones', icon: WifiIcon },
                 { id: 'config', name: 'Configuracion', icon: CogIcon },
+                { id: 'vpn', name: 'VPN', icon: ShieldCheckIcon },
                 { id: 'security', name: 'Seguridad', icon: ShieldCheckIcon },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as 'overview' | 'queues' | 'connections' | 'config' | 'security')}
-                  className={`flex items-center space-x-2 border-b-2 px-1 py-3 text-sm font-medium ${
-                    activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <tab.icon className="h-4 w-4" />
-                  <span>{tab.name}</span>
-                </button>
-              ))}
+                { id: 'traffic_flow', name: 'Traffic Flow', icon: ChartBarIcon },
+                { id: 'ai_diagnosis', name: 'IA Diagnosis', icon: SparklesIcon },
+                { id: 'logs', name: 'Logs', icon: DocumentTextIcon },
+              ] as const).map((tab) => {
+                const isActive = activeTab === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id)
+                      if (tab.id === 'logs') void loadLogs()
+                      if (tab.id === 'ai_diagnosis' && !aiAnalysis) void runAiDiagnosis()
+                    }}
+                    className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-5 py-2.5 text-sm font-bold transition-all duration-300 ${
+                      isActive 
+                        ? 'bg-coral-500 text-white shadow-lg shadow-coral-500/30 scale-105 z-10' 
+                        : 'bg-white text-slate-500 border border-gray-100 hover:bg-gray-50'
+                    }`}
+                  >
+                    <tab.icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                    <span>{tab.name}</span>
+                  </button>
+                )
+              })}
             </nav>
           </div>
 
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow">
+          <div className="rounded-2xl border border-slate-100 bg-white p-8 shadow-sm">
             {isLoading ? (
               <div className="py-12 text-center">
                 <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
-                <p className="mt-4 text-gray-600">Cargando informacion del router...</p>
+                <p className="mt-4 text-slate-600">Cargando informacion del router...</p>
               </div>
             ) : (
               <>
-                {activeTab === 'overview' && <OverviewTab routerStats={routerStats} />}
+                {activeTab === 'overview' && selectedRouter && (
+                  <OverviewTab
+                    selectedRouter={selectedRouter}
+                    routerConnectionSnapshots={routerConnectionSnapshots}
+                    diagnostics={activeConnectionDiagnostics}
+                    testConnection={testConnection}
+                    backupRouter={backupRouter}
+                    runAiDiagnosis={runAiDiagnosis}
+                    isAiLoading={isAiLoading}
+                    rebootRouter={rebootRouter}
+                    actionLoading={actionLoading}
+                    openConfirm={openConfirm}
+                  />
+                )}
                 {activeTab === 'queues' && (
                   <QueuesTab
                     routerStats={routerStats}
@@ -1832,771 +2291,134 @@ const MikroTikManagement: React.FC = () => {
                     openConfirm={openConfirm}
                   />
                 )}
+                {activeTab === 'ai_diagnosis' && (
+                  <AIDiagnosis analysis={aiAnalysis} isLoading={isAiLoading} error={aiError} onRetry={runAiDiagnosis} />
+                )}
+                {activeTab === 'logs' && (
+                  <LogsTab
+                    logs={logs}
+                    logsLoading={logsLoading}
+                    loadLogs={loadLogs}
+                  />
+                )}
                 {activeTab === 'config' && (
-                  <div className="space-y-4">
-                    <h4 className="text-lg font-semibold text-gray-900">Conexion remota rapida</h4>
-                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-gray-800">Perfil de acceso WAN</p>
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={quickConnectScope}
-                            onChange={(e) => setQuickConnectScope(e.target.value as 'auto' | 'public' | 'private')}
-                            className="rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900"
-                          >
-                            <option value="auto">Auto detectar</option>
-                            <option value="public">Forzar publica</option>
-                            <option value="private">Forzar privada</option>
-                          </select>
-                          <button
-                            onClick={() => selectedRouter && void loadQuickConnect(selectedRouter.id, quickConnectScope)}
-                            disabled={quickLoading}
-                            className="rounded bg-slate-700 px-2 py-1 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
-                          >
-                            Aplicar
-                          </button>
-                        </div>
-                      </div>
-                      {quickConnect?.access_profile && (
-                        <div className="mt-2 space-y-1 text-xs text-gray-700">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-slate-200 px-2 py-1 font-semibold text-slate-700">
-                              detectado: {quickConnect.access_profile.detected_scope || 'unknown'}
-                            </span>
-                            <span className="rounded-full bg-blue-100 px-2 py-1 font-semibold text-blue-700">
-                              efectivo: {quickConnect.access_profile.effective_scope || 'unknown'}
-                            </span>
-                            <span className="rounded-full bg-emerald-100 px-2 py-1 font-semibold text-emerald-700">
-                              recomendado: {quickConnect.access_profile.recommended_transport || '-'}
-                            </span>
-                          </div>
-                          <p>{quickConnect.access_profile.reason || '-'}</p>
-                        </div>
-                      )}
-                    </div>
-                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-gray-800">Readiness remoto del router</p>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button
-                            onClick={() => selectedRouter && void loadRouterReadiness(selectedRouter.id)}
-                            disabled={readinessLoading}
-                            className="rounded bg-slate-700 px-2 py-1 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
-                          >
-                            Refrescar
-                          </button>
-                          <button
-                            onClick={() => selectedRouter && void loadRouterReadiness(selectedRouter.id, true)}
-                            disabled={readinessLoading}
-                            className="rounded bg-indigo-600 px-2 py-1 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
-                          >
-                            Refrescar + write probe
-                          </button>
-                        </div>
-                      </div>
-                      {readinessLoading && <p className="text-xs text-gray-500">Evaluando readiness...</p>}
-                      {!readinessLoading && !routerReadiness && (
-                        <p className="text-xs text-gray-500">Sin datos de readiness para este router.</p>
-                      )}
-                      {!readinessLoading && routerReadiness && (
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">
-                              Score {routerReadiness.score ?? 0}%
-                            </span>
-                            <span className="rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700">
-                              Blockers {(routerReadiness.blockers || []).length}
-                            </span>
-                          </div>
-                          <ul className="space-y-1 text-xs text-gray-700">
-                            {(routerReadiness.checks || []).map((check) => {
-                              const severity = check.severity || (check.ok ? 'ok' : 'warning')
-                              const toneClass =
-                                severity === 'critical'
-                                  ? 'bg-rose-100 text-rose-700'
-                                  : severity === 'warning'
-                                    ? 'bg-amber-100 text-amber-700'
-                                    : 'bg-emerald-100 text-emerald-700'
-                              return (
-                                <li key={check.id} className="flex flex-wrap items-center gap-2">
-                                  <span className={`rounded px-2 py-0.5 font-semibold ${toneClass}`}>{check.id}</span>
-                                  <span>{check.detail || '-'}</span>
-                                </li>
-                              )
-                            })}
-                          </ul>
-                          {(routerReadiness.recommendations || []).length > 0 && (
-                            <div className="rounded border border-amber-200 bg-amber-50 p-2">
-                              <p className="text-xs font-semibold uppercase text-amber-700">Recomendaciones</p>
-                              <ul className="mt-1 space-y-1 text-xs text-amber-800">
-                                {(routerReadiness.recommendations || []).map((item, idx) => (
-                                  <li key={`${item}-${idx}`}>- {item}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {quickLoading && <p className="text-sm text-gray-500">Cargando scripts...</p>}
-                    {!quickLoading && !quickConnect?.scripts && (
-                      <p className="text-sm text-rose-600">No se pudieron cargar scripts para este router.</p>
-                    )}
-                    {quickConnect?.scripts && (
-                      <>
-                        {quickConnect.connection_plan && (
-                          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-                            <div className="flex flex-wrap items-start justify-between gap-2">
-                              <div>
-                                <p className="text-sm font-semibold text-emerald-800">
-                                  {quickConnect.connection_plan.title || 'Conexion Express'}
-                                </p>
-                                <p className="text-xs text-emerald-700">
-                                  {quickConnect.connection_plan.summary || 'Sigue los pasos recomendados.'}
-                                </p>
-                              </div>
-                              <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
-                                {quickConnect.connection_plan.recommended_transport || '-'}
-                              </span>
-                            </div>
-                            {quickConnect.wireguard_profile && (
-                              <div className={`mt-2 rounded border p-2 text-xs ${
-                                quickConnect.wireguard_profile.ready
-                                  ? 'border-emerald-200 bg-emerald-100 text-emerald-800'
-                                  : 'border-amber-200 bg-amber-50 text-amber-800'
-                              }`}>
-                                <p>
-                                  Perfil WG: <strong>{quickConnect.wireguard_profile.ready ? 'listo' : 'incompleto'}</strong> | endpoint:{' '}
-                                  <strong>{quickConnect.wireguard_profile.endpoint || '-'}</strong>
-                                </p>
-                                {!quickConnect.wireguard_profile.ready && (quickConnect.wireguard_profile.issues || []).length > 0 && (
-                                  <p className="mt-1">
-                                    {(quickConnect.wireguard_profile.issues || []).join(' | ')}
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {[1, 2, 3].map((step) => (
-                                <button
-                                  key={step}
-                                  onClick={() => setConnectionWizardStep(step as 1 | 2 | 3)}
-                                  className={`rounded px-3 py-1 text-xs font-semibold ${
-                                    connectionWizardStep === step
-                                      ? 'bg-emerald-700 text-white'
-                                      : 'bg-white text-emerald-800'
-                                  }`}
-                                >
-                                  Paso {step}
-                                </button>
-                              ))}
-                            </div>
-
-                            {connectionWizardStep === 1 && (
-                              <div className="mt-2 rounded border border-emerald-200 bg-white p-3">
-                                <p className="text-xs font-semibold uppercase text-emerald-800">Paso 1: Deteccion</p>
-                                <p className="mt-1 text-xs text-emerald-700">
-                                  Detecta automaticamente si conviene conexion directa o tunel (WireGuard/BTH).
-                                </p>
-                                <div className="mt-2 flex flex-wrap items-center gap-2">
-                                  <button
-                                    onClick={() => void runWizardDetection()}
-                                    disabled={quickLoading || readinessLoading}
-                                    className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
-                                  >
-                                    {quickLoading || readinessLoading ? 'Detectando...' : 'Detectar ruta'}
-                                  </button>
-                                  <button
-                                    onClick={() => setConnectionWizardStep(2)}
-                                    className="rounded bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-300"
-                                  >
-                                    Continuar al paso 2
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-
-                            {connectionWizardStep === 2 && (
-                              <div className="mt-2 rounded border border-emerald-200 bg-white p-3">
-                                <p className="text-xs font-semibold uppercase text-emerald-800">Paso 2: Ejecutar conexion</p>
-                                <p className="mt-1 text-xs text-emerald-700">
-                                  Conexion Express intenta Back To Home primero y usa WireGuard solo como opcion de respaldo.
-                                </p>
-                                <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-1">
-                                  <input
-                                    value={bthUserName}
-                                    onChange={(e) => setBthUserName(e.target.value)}
-                                    placeholder="Usuario BTH (ej: noc-vps)"
-                                    className="rounded border border-emerald-300 px-2 py-1 text-xs text-gray-900"
-                                  />
-                                </div>
-                                <label className="mt-2 flex items-center gap-2 text-xs text-emerald-800">
-                                  <input
-                                    type="checkbox"
-                                    checked={bthAllowLan}
-                                    onChange={(e) => setBthAllowLan(e.target.checked)}
-                                    className="rounded border-emerald-300"
-                                  />
-                                  Permitir acceso LAN en fallback BTH
-                                </label>
-                                <p className="mt-2 text-xs text-emerald-700">
-                                  Identidad BTH:{' '}
-                                  <strong>
-                                    {quickConnect.back_to_home?.managed_identity?.enabled ? 'automatica por tenant' : 'pendiente'}
-                                  </strong>
-                                </p>
-                                <div className="mt-2 flex flex-wrap items-center gap-2">
-                                  <button
-                                    onClick={() => void runConnectionExpress()}
-                                    disabled={expressConnecting || bthActionLoading || quickLoading}
-                                    className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
-                                  >
-                                    {expressConnecting ? 'Conectando...' : 'Conectar Router Ahora'}
-                                  </button>
-                                  <button
-                                    onClick={() => setConnectionWizardStep(3)}
-                                    className="rounded bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-300"
-                                  >
-                                    Ir al paso 3
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-
-                            {connectionWizardStep === 3 && (
-                              <div className="mt-2 rounded border border-emerald-200 bg-white p-3">
-                                <p className="text-xs font-semibold uppercase text-emerald-800">Paso 3: Validar</p>
-                                <p className="mt-1 text-xs text-emerald-700">
-                                  Verifica que el router responda y que la ruta remota quede operativa.
-                                </p>
-                                <div className="mt-2 flex flex-wrap items-center gap-2">
-                                  <span className={`rounded px-2 py-1 text-xs font-semibold ${routerReadiness?.checks?.find((item) => item.id === 'api_connectivity')?.ok ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                                    API {routerReadiness?.checks?.find((item) => item.id === 'api_connectivity')?.ok ? 'OK' : 'pendiente'}
-                                  </span>
-                                  <span className={`rounded px-2 py-1 text-xs font-semibold ${quickConnect.back_to_home?.reachable ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                                    Reachability {quickConnect.back_to_home?.reachable ? 'OK' : 'sin confirmar'}
-                                  </span>
-                                  <span className={`rounded px-2 py-1 text-xs font-semibold ${expressSteps.some((step) => step.status === 'failed') ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'}`}>
-                                    Fallback {expressSteps.some((step) => step.status === 'failed') ? 'con incidencias' : 'sin incidencias'}
-                                  </span>
-                                </div>
-                                <div className="mt-2 flex flex-wrap items-center gap-2">
-                                  <button
-                                    onClick={() => void runWizardValidation()}
-                                    disabled={wizardValidating || quickLoading || readinessLoading}
-                                    className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
-                                  >
-                                    {wizardValidating ? 'Validando...' : 'Validar conexion'}
-                                  </button>
-                                  <button
-                                    onClick={() => setConnectionWizardStep(1)}
-                                    className="rounded bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-300"
-                                  >
-                                    Reiniciar asistente
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-
-                            {expressSteps.length > 0 && (
-                              <div className="mt-2 space-y-1">
-                                {expressSteps.map((step) => {
-                                  const toneClass =
-                                    step.status === 'success'
-                                      ? 'bg-emerald-100 text-emerald-800'
-                                      : step.status === 'failed'
-                                        ? 'bg-rose-100 text-rose-800'
-                                        : step.status === 'running'
-                                          ? 'bg-blue-100 text-blue-800'
-                                          : step.status === 'skipped'
-                                            ? 'bg-slate-200 text-slate-700'
-                                            : 'bg-white text-slate-700'
-                                  return (
-                                    <div key={step.id} className={`rounded px-2 py-1 text-xs ${toneClass}`}>
-                                      <strong>{step.label}</strong>
-                                      {step.detail ? `: ${step.detail}` : ''}
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            )}
-
-                            <div className="mt-2 flex items-center justify-between rounded border border-emerald-200 bg-white p-2">
-                              <p className="text-xs text-emerald-800">Modo avanzado (scripts/manual)</p>
-                              <button
-                                onClick={() => setShowAdvancedScripts((prev) => !prev)}
-                                className="rounded bg-emerald-700 px-2 py-1 text-xs font-semibold text-white hover:bg-emerald-800"
-                              >
-                                {showAdvancedScripts ? 'Ocultar avanzado' : 'Mostrar avanzado'}
-                              </button>
-                            </div>
-
-                            {(quickConnect.connection_plan.actions || []).length > 0 && (
-                              <div className="mt-2 space-y-2">
-                                {(quickConnect.connection_plan.actions || []).map((action) => {
-                                  const scriptValue = resolveQuickScript(quickConnect.scripts, action.script_key)
-                                  return (
-                                    <div key={action.id} className="rounded border border-emerald-200 bg-white p-2">
-                                      <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <div>
-                                          <p className="text-xs font-semibold text-emerald-900">{action.label}</p>
-                                          <p className="text-xs text-emerald-800">{action.description || '-'}</p>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          {action.requires_local_access && (
-                                            <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                                              paso local
-                                            </span>
-                                          )}
-                                          {action.auto_available && (
-                                            <span className="rounded bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
-                                              auto
-                                            </span>
-                                          )}
-                                          {scriptValue && (
-                                            <button
-                                              onClick={() => copyScript(`script ${action.label}`, scriptValue)}
-                                              className="rounded bg-emerald-700 px-2 py-1 text-[10px] font-semibold text-white hover:bg-emerald-800"
-                                            >
-                                              Copiar script
-                                            </button>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        {showAdvancedScripts && (
-                          <>
-                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                          <div className="mb-2 flex items-center justify-between">
-                            <p className="text-sm font-semibold text-gray-800">Script acceso directo API/SSH</p>
-                            <button
-                              onClick={() => copyScript('script API', quickConnect.scripts?.direct_api_script || '')}
-                              className="rounded bg-gray-800 px-2 py-1 text-xs font-semibold text-white hover:bg-gray-700"
-                            >
-                              Copiar
-                            </button>
-                          </div>
-                          <pre className="max-h-52 overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-100">
-                            {quickConnect.scripts.direct_api_script}
-                          </pre>
-                        </div>
-                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                          <div className="mb-2 flex items-center justify-between">
-                            <p className="text-sm font-semibold text-gray-800">Script WireGuard sitio a VPS</p>
-                            <button
-                              onClick={() => copyScript('script WireGuard', quickConnect.scripts?.wireguard_site_to_vps_script || '')}
-                              className="rounded bg-gray-800 px-2 py-1 text-xs font-semibold text-white hover:bg-gray-700"
-                            >
-                              Copiar
-                            </button>
-                          </div>
-                          <pre className="max-h-52 overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-100">
-                            {quickConnect.scripts.wireguard_site_to_vps_script}
-                          </pre>
-                        </div>
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                          <div className="rounded-lg border border-gray-200 p-3">
-                            <p className="text-xs font-semibold uppercase text-gray-500">Login Windows/Linux</p>
-                            <p className="mt-2 rounded bg-slate-900 px-2 py-1 text-xs text-slate-100">{quickConnect.scripts.windows_login}</p>
-                            <p className="mt-2 rounded bg-slate-900 px-2 py-1 text-xs text-slate-100">{quickConnect.scripts.linux_login}</p>
-                          </div>
-                          <div className="rounded-lg border border-gray-200 p-3">
-                            <p className="text-xs font-semibold uppercase text-gray-500">Back To Home</p>
-                            <ul className="mt-2 space-y-1 text-xs text-gray-700">
-                              {(quickConnect.guidance?.back_to_home || []).map((step, idx) => (
-                                <li key={idx}>- {step}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-
-                        {quickConnect.back_to_home && (
-                          <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className={`rounded-full px-2 py-1 text-xs font-semibold ${quickConnect.back_to_home.reachable ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                                {quickConnect.back_to_home.reachable ? 'router reachable' : 'router unreachable'}
-                              </span>
-                              <span className={`rounded-full px-2 py-1 text-xs font-semibold ${quickConnect.back_to_home.supported ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                                {quickConnect.back_to_home.supported ? 'BTH soportado' : 'BTH no confirmado'}
-                              </span>
-                              {quickConnect.back_to_home.routeros_version && (
-                                <span className="rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700">
-                                  RouterOS {quickConnect.back_to_home.routeros_version}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-700">
-                              DDNS: <strong>{String(quickConnect.back_to_home.ddns_enabled ?? 'unknown')}</strong> | BTH VPN: <strong>{quickConnect.back_to_home.back_to_home_vpn || '-'}</strong> | Estado: <strong>{quickConnect.back_to_home.vpn_status || '-'}</strong>
-                            </p>
-                            <p className="text-xs text-gray-700">
-                              DNS: <strong>{quickConnect.back_to_home.vpn_dns_name || '-'}</strong> | Interfaz: <strong>{quickConnect.back_to_home.vpn_interface || '-'}</strong> | Puerto: <strong>{quickConnect.back_to_home.vpn_port || '-'}</strong>
-                            </p>
-
-                            <div className="rounded border border-gray-300 bg-white p-3">
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <p className="text-xs font-semibold uppercase text-gray-600">Acciones operativas BTH</p>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={confirmBootstrapBackToHome}
-                                    disabled={bthActionLoading || !quickConnect.back_to_home.reachable}
-                                    className="rounded bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-                                  >
-                                    {bthActionLoading ? 'Procesando...' : 'Bootstrap 1 clic'}
-                                  </button>
-                                  <button
-                                    onClick={confirmEnableBackToHome}
-                                    disabled={bthActionLoading || !quickConnect.back_to_home.reachable}
-                                    className="rounded bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-                                  >
-                                    {bthActionLoading ? 'Procesando...' : 'Solo habilitar BTH'}
-                                  </button>
-                                </div>
-                              </div>
-                              <p className="mt-2 text-xs text-gray-600">
-                                Bootstrap 1 clic aplica DDNS + BTH + usuario VPS. "Solo habilitar" mantiene el flujo manual.
-                              </p>
-
-                              <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-1">
-                                <input
-                                  value={bthUserName}
-                                  onChange={(e) => setBthUserName(e.target.value)}
-                                  placeholder="Usuario BTH (ej: noc-vps)"
-                                  className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
-                                />
-                              </div>
-
-                              <label className="mt-2 flex items-center gap-2 text-xs text-gray-700">
-                                <input
-                                  type="checkbox"
-                                  checked={bthAllowLan}
-                                  onChange={(e) => setBthAllowLan(e.target.checked)}
-                                  className="rounded border-gray-300"
-                                />
-                                Permitir acceso LAN desde este usuario BTH
-                              </label>
-                              <p className="mt-2 text-xs text-gray-600">
-                                Identidad BTH:{' '}
-                                <strong>
-                                  {quickConnect.back_to_home?.managed_identity?.enabled ? 'automatica por tenant' : 'automatica pendiente'}
-                                </strong>
-                              </p>
-
-                              <div className="mt-3">
-                                <button
-                                  onClick={confirmCreateBackToHomeUser}
-                                  disabled={bthActionLoading || quickConnect.back_to_home.bth_users_supported === false}
-                                  className="rounded bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-                                >
-                                  {bthActionLoading ? 'Procesando...' : 'Crear usuario BTH para VPS'}
-                                </button>
-                                {quickConnect.back_to_home.bth_users_supported === false && (
-                                  <p className="mt-2 text-xs text-amber-700">
-                                    Este router no expone API de usuarios BTH. Requiere RouterOS 7.14+.
-                                  </p>
-                                )}
-                              </div>
-
-                              {bootstrapResult && (
-                                <div className="mt-3 rounded border border-slate-300 bg-slate-50 p-2">
-                                  <p className="text-xs font-semibold uppercase text-slate-700">Resultado bootstrap</p>
-                                  <p className="mt-1 text-xs text-slate-700">
-                                    Usuario visible despues de ejecutar: <strong>{String(bootstrapResult.user_visible_after_run ?? false)}</strong>
-                                  </p>
-                                  {Array.isArray(bootstrapResult.missing) && bootstrapResult.missing.length > 0 && (
-                                    <ul className="mt-2 space-y-1 text-xs text-amber-700">
-                                      {bootstrapResult.missing.map((item, idx) => (
-                                        <li key={`${item}-${idx}`}>- {item}</li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                  {Array.isArray(bootstrapResult.next_steps) && bootstrapResult.next_steps.length > 0 && (
-                                    <ul className="mt-2 space-y-1 text-xs text-slate-700">
-                                      {bootstrapResult.next_steps.map((item, idx) => (
-                                        <li key={`${item}-${idx}`}>- {item}</li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            {quickConnect.back_to_home.scripts?.enable_script && (
-                              <div className="rounded border border-gray-300 bg-white p-2">
-                                <div className="mb-2 flex items-center justify-between">
-                                  <p className="text-xs font-semibold uppercase text-gray-600">Script habilitar Back To Home</p>
-                                  <button
-                                    onClick={() => copyScript('script BTH enable', quickConnect.back_to_home?.scripts?.enable_script || '')}
-                                    className="rounded bg-gray-800 px-2 py-1 text-xs font-semibold text-white hover:bg-gray-700"
-                                  >
-                                    Copiar
-                                  </button>
-                                </div>
-                                <pre className="max-h-40 overflow-auto rounded bg-slate-950 p-2 text-xs text-slate-100">
-                                  {quickConnect.back_to_home.scripts.enable_script}
-                                </pre>
-                              </div>
-                            )}
-
-                            {quickConnect.back_to_home.scripts?.add_vps_user_script && (
-                              <div className="rounded border border-gray-300 bg-white p-2">
-                                <div className="mb-2 flex items-center justify-between">
-                                  <p className="text-xs font-semibold uppercase text-gray-600">Script usuario BTH para VPS</p>
-                                  <button
-                                    onClick={() => copyScript('script BTH VPS', quickConnect.back_to_home?.scripts?.add_vps_user_script || '')}
-                                    className="rounded bg-gray-800 px-2 py-1 text-xs font-semibold text-white hover:bg-gray-700"
-                                  >
-                                    Copiar
-                                  </button>
-                                </div>
-                                <pre className="max-h-40 overflow-auto rounded bg-slate-950 p-2 text-xs text-slate-100">
-                                  {quickConnect.back_to_home.scripts.add_vps_user_script}
-                                </pre>
-                                <p className="mt-2 text-xs text-gray-600">
-                                  Generar private key WireGuard en VPS: <code>{quickConnect.back_to_home.scripts.generate_private_key_hint}</code>
-                                </p>
-                              </div>
-                            )}
-
-                            {Array.isArray(quickConnect.back_to_home.users) && quickConnect.back_to_home.users.length > 0 && (
-                              <div className="rounded border border-gray-300 bg-white p-2">
-                                <p className="text-xs font-semibold uppercase text-gray-600">Usuarios BTH actuales</p>
-                                <ul className="mt-2 space-y-2 text-xs text-gray-700">
-                                  {quickConnect.back_to_home.users.map((user, idx) => (
-                                    <li key={`${user.name}-${idx}`} className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 px-2 py-1">
-                                      <span>
-                                        {user.name} | allow-lan: {String(user.allow_lan)} | disabled: {String(user.disabled)} | expires: {user.expires || '-'}
-                                      </span>
-                                      <button
-                                        onClick={() => confirmRemoveBackToHomeUser(user.name)}
-                                        disabled={bthActionLoading || !user.name}
-                                        className="rounded bg-rose-600 px-2 py-1 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
-                                      >
-                                        Eliminar
-                                      </button>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-
-                            {Array.isArray(quickConnect.back_to_home.limitations) && quickConnect.back_to_home.limitations.length > 0 && (
-                              <div className="rounded border border-gray-300 bg-white p-2">
-                                <p className="text-xs font-semibold uppercase text-gray-600">Limitaciones BTH</p>
-                                <ul className="mt-2 space-y-1 text-xs text-gray-700">
-                                  {quickConnect.back_to_home.limitations.map((item, idx) => (
-                                    <li key={idx}>- {item}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-
-                            {quickConnect.back_to_home.users_error && (
-                              <p className="text-xs text-amber-700">No fue posible leer usuarios BTH: {quickConnect.back_to_home.users_error}</p>
-                            )}
-                            {quickConnect.back_to_home.error && (
-                              <p className="text-xs text-rose-700">Error BTH: {quickConnect.back_to_home.error}</p>
-                            )}
-                          </div>
-                        )}
-                        </>
-                        )}
-                      </>
-                    )}
-                  </div>
+                  <ConfigTab
+                    selectedRouter={selectedRouter}
+                    quickConnect={quickConnect}
+                    onboardingProfile={onboardingProfile}
+                    tenantContextId={tenantContextId}
+                    quickConnectScope={quickConnectScope}
+                    setQuickConnectScope={setQuickConnectScope}
+                    loadQuickConnect={loadQuickConnect}
+                    quickLoading={quickLoading}
+                    activeConnectionSnapshot={activeConnectionSnapshot}
+                    activeConnectionDiagnostics={activeConnectionDiagnostics}
+                    CONNECTION_POLL_INTERVAL_MS={CONNECTION_POLL_INTERVAL_MS}
+                    routerReadiness={routerReadiness}
+                    readinessLoading={readinessLoading}
+                    loadRouterReadiness={loadRouterReadiness}
+                    routerSnmpProfile={routerSnmpProfile}
+                    routerSnmpLoading={routerSnmpLoading}
+                    routerSnmpForm={routerSnmpForm}
+                    setRouterSnmpForm={setRouterSnmpForm}
+                    routerSnmpRuntimeAvailable={routerSnmpRuntimeAvailable}
+                    saveRouterSnmpProfile={saveRouterSnmpProfile}
+                    routerSnmpSaving={routerSnmpSaving}
+                    runRouterSnmpPoll={runRouterSnmpPoll}
+                    routerSnmpPolling={routerSnmpPolling}
+                    routerSnmpPollResult={routerSnmpPollResult}
+                    vpnMode={vpnMode}
+                    setVpnMode={setVpnMode}
+                    hubScript={hubScript}
+                    hubData={hubData}
+                    hubProvisioning={hubProvisioning}
+                    provisionHubForRouter={provisionHubForRouter}
+                    runWizardValidation={runWizardValidation}
+                    sstpTunnel={sstpTunnel}
+                    sstpProvisioning={sstpProvisioning}
+                    provisionSstpForRouter={provisionSstpForRouter}
+                    sstpScript={sstpScript}
+                    sstpLoadingForRouter={sstpLoadingForRouter}
+                    expressSteps={expressSteps}
+                    showAdvancedScripts={showAdvancedScripts}
+                    setShowAdvancedScripts={setShowAdvancedScripts}
+                    copyScript={copyScript}
+                    copyToClipboard={copyToClipboard}
+                    resolveQuickScript={resolveQuickScript}
+                    addToast={addToast}
+                  />
+                )}
+                {activeTab === 'vpn' && selectedRouter && (
+                  <VpnTab
+                    selectedRouter={selectedRouter}
+                    quickConnect={quickConnect}
+                    bthActionLoading={bthActionLoading}
+                    bthUserName={bthUserName}
+                    setBthUserName={setBthUserName}
+                    bthAllowLan={bthAllowLan}
+                    setBthAllowLan={setBthAllowLan}
+                    bootstrapResult={bootstrapResult}
+                    confirmEnableBackToHome={confirmEnableBackToHome}
+                    confirmCreateBackToHomeUser={confirmCreateBackToHomeUser}
+                    confirmBootstrapBackToHome={confirmBootstrapBackToHome}
+                    confirmRemoveBackToHomeUser={confirmRemoveBackToHomeUser}
+                  />
                 )}
                 {activeTab === 'security' && (
-                  <div className="space-y-4 text-sm text-gray-700">
-                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                      <h4 className="text-lg font-semibold text-gray-900">Operacion enterprise y seguridad</h4>
-                      <p className="mt-1 text-xs text-gray-600">
-                        Acciones live requieren ticket de cambio cuando la politica `change_control_required_for_live` esta activa.
-                      </p>
-                      {(quickConnect?.guidance?.notes || []).map((note, idx) => (
-                        <p key={idx} className="mt-2 text-xs text-gray-700">
-                          - {note}
-                        </p>
-                      ))}
-                    </div>
+                  <SecurityTab
+                    selectedRouter={selectedRouter}
+                    quickConnect={quickConnect}
+                    enterpriseProfiles={enterpriseProfiles}
+                    hardeningProfile={hardeningProfile}
+                    setHardeningProfile={setHardeningProfile}
+                    hardeningSiteProfile={hardeningSiteProfile}
+                    setHardeningSiteProfile={setHardeningSiteProfile}
+                    hardeningDryRun={hardeningDryRun}
+                    setHardeningDryRun={setHardeningDryRun}
+                    hardeningAutoRollback={hardeningAutoRollback}
+                    setHardeningAutoRollback={setHardeningAutoRollback}
+                    applyEnterpriseHardening={applyEnterpriseHardening}
+                    securityBusy={securityBusy}
+                    loadEnterpriseProfiles={loadEnterpriseProfiles}
+                    hardeningResult={hardeningResult}
+                    failoverTargets={failoverTargets}
+                    setFailoverTargets={setFailoverTargets}
+                    failoverCount={failoverCount}
+                    setFailoverCount={setFailoverCount}
+                    runEnterpriseFailoverTest={runEnterpriseFailoverTest}
+                    failoverResult={failoverResult}
+                    loadEnterpriseChangeLog={loadEnterpriseChangeLog}
+                    enterpriseChangeLog={enterpriseChangeLog}
+                    openConfirm={openConfirm}
+                    rollbackEnterpriseChange={rollbackEnterpriseChange}
+                  />
+                )}
 
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                      <div className="rounded-lg border border-gray-200 bg-white p-4">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-gray-900">Hardening runbook</p>
-                          <span className={`rounded px-2 py-1 text-xs font-semibold ${hardeningDryRun ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                            {hardeningDryRun ? 'dry-run' : 'live'}
-                          </span>
-                        </div>
-                        <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-                          <label className="text-xs text-gray-700">
-                            Perfil router
-                            <select
-                              value={hardeningProfile}
-                              onChange={(e) => setHardeningProfile(e.target.value)}
-                              className="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
-                            >
-                              {(enterpriseProfiles?.router_profiles || [{ id: 'baseline', label: 'Baseline' }]).map((item) => (
-                                <option key={item.id} value={item.id}>
-                                  {item.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <label className="text-xs text-gray-700">
-                            Perfil sitio
-                            <select
-                              value={hardeningSiteProfile}
-                              onChange={(e) => setHardeningSiteProfile(e.target.value)}
-                              className="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
-                            >
-                              {(enterpriseProfiles?.site_profiles || [{ id: 'access', label: 'Access' }]).map((item) => (
-                                <option key={item.id} value={item.id}>
-                                  {item.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        </div>
-
-                        <div className="mt-3 flex flex-wrap gap-3">
-                          <label className="flex items-center gap-2 text-xs text-gray-700">
-                            <input
-                              type="checkbox"
-                              checked={hardeningDryRun}
-                              onChange={(e) => setHardeningDryRun(e.target.checked)}
-                              className="rounded border-gray-300"
-                            />
-                            Ejecutar dry-run
-                          </label>
-                          <label className="flex items-center gap-2 text-xs text-gray-700">
-                            <input
-                              type="checkbox"
-                              checked={hardeningAutoRollback}
-                              onChange={(e) => setHardeningAutoRollback(e.target.checked)}
-                              className="rounded border-gray-300"
-                            />
-                            Auto rollback si falla live
-                          </label>
-                        </div>
-
-                        <div className="mt-3 flex items-center gap-2">
-                          <button
-                            onClick={applyEnterpriseHardening}
-                            disabled={securityBusy}
-                            className="rounded bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
-                          >
-                            {securityBusy ? 'Procesando...' : hardeningDryRun ? 'Ejecutar hardening dry-run' : 'Aplicar hardening live'}
-                          </button>
-                          <button
-                            onClick={() => selectedRouter && loadEnterpriseProfiles(selectedRouter.id)}
-                            disabled={securityBusy}
-                            className="rounded bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-300 disabled:opacity-60"
-                          >
-                            Refrescar perfiles
-                          </button>
-                        </div>
-
-                        {hardeningResult && (
-                          <div className="mt-3 rounded border border-gray-300 bg-gray-50 p-2">
-                            <p className="text-xs font-semibold uppercase text-gray-700">Resultado hardening</p>
-                            <p className="mt-1 text-xs text-gray-700">
-                              change_id: <strong>{hardeningResult.change_id || '-'}</strong> | modo:{' '}
-                              <strong>{hardeningResult.dry_run ? 'dry-run' : 'live'}</strong>
-                            </p>
-                            {hardeningResult.message && <p className="mt-1 text-xs text-gray-700">{hardeningResult.message}</p>}
-                            {hardeningResult.error && <p className="mt-1 text-xs text-rose-700">{hardeningResult.error}</p>}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="rounded-lg border border-gray-200 bg-white p-4">
-                        <p className="text-sm font-semibold text-gray-900">Failover test</p>
-                        <p className="mt-1 text-xs text-gray-600">
-                          Ejecuta probes desde el router para validar perdida de paquetes y latencia.
-                        </p>
-                        <textarea
-                          value={failoverTargets}
-                          onChange={(e) => setFailoverTargets(e.target.value)}
-                          rows={3}
-                          placeholder="1.1.1.1,8.8.8.8,9.9.9.9"
-                          className="mt-2 w-full rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
-                        />
-                        <div className="mt-2 flex items-center gap-2">
-                          <input
-                            value={failoverCount}
-                            onChange={(e) => setFailoverCount(e.target.value)}
-                            className="w-20 rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
-                          />
-                          <button
-                            onClick={runEnterpriseFailoverTest}
-                            disabled={securityBusy}
-                            className="rounded bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-                          >
-                            {securityBusy ? 'Procesando...' : 'Ejecutar failover test'}
-                          </button>
-                        </div>
-
-                        {failoverResult && (
-                          <div className="mt-3 rounded border border-gray-300 bg-gray-50 p-2">
-                            <p className="text-xs font-semibold uppercase text-gray-700">
-                              Estado general: <span className="font-bold">{failoverResult.overall_status || 'unknown'}</span>
-                            </p>
-                            <div className="mt-2 max-h-44 overflow-auto">
-                              {(failoverResult.targets || []).map((item, idx) => (
-                                <p key={`${item.target}-${idx}`} className="text-xs text-gray-700">
-                                  {item.target} | loss {item.packet_loss}% | avg {item.avg_latency_ms ?? '-'} ms | {item.status}
-                                </p>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="rounded-lg border border-gray-200 bg-white p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-gray-900">Change log y rollback</p>
-                        <button
-                          onClick={() => selectedRouter && loadEnterpriseChangeLog(selectedRouter.id)}
-                          disabled={securityBusy}
-                          className="rounded bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-300 disabled:opacity-60"
-                        >
-                          Refrescar log
-                        </button>
-                      </div>
-                      {!enterpriseChangeLog.length && <p className="mt-2 text-xs text-gray-500">No hay cambios registrados.</p>}
-                      <div className="mt-2 space-y-2">
-                        {enterpriseChangeLog.map((entry) => (
-                          <div key={entry.change_id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 px-2 py-2">
-                            <div className="text-xs text-gray-700">
-                              <p>
-                                <strong>{entry.change_id}</strong> | {entry.category || '-'} | {entry.status}
-                              </p>
-                              <p>
-                                actor: {entry.actor || '-'} | profile: {entry.profile || '-'} | site: {entry.site_profile || '-'}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() =>
-                                openConfirm(`Ejecutar rollback del cambio ${entry.change_id}?`, () => {
-                                  void rollbackEnterpriseChange(entry.change_id)
-                                })
-                              }
-                              disabled={securityBusy || entry.status !== 'applied'}
-                              className="rounded bg-rose-600 px-3 py-1 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
-                            >
-                              Rollback
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+                {activeTab === 'traffic_flow' && (
+                  <TrafficFlowTab
+                    selectedRouter={selectedRouter}
+                    apiFetch={apiFetch}
+                    addToast={addToast}
+                    tfCollector={tfCollector}
+                    setTfCollector={setTfCollector}
+                    tfLanGw={tfLanGw}
+                    setTfLanGw={setTfLanGw}
+                    tfWanGw={tfWanGw}
+                    setTfWanGw={setTfWanGw}
+                    tfScripts={tfScripts}
+                    setTfScripts={setTfScripts}
+                    tfLoading={tfLoading}
+                    setTfLoading={setTfLoading}
+                    tfCopied={tfCopied}
+                    setTfCopied={setTfCopied}
+                    tfHours={tfHours}
+                    setTfHours={setTfHours}
+                    tfStats={tfStats}
+                    setTfStats={setTfStats}
+                    tfStatsLoading={tfStatsLoading}
+                    setTfStatsLoading={setTfStatsLoading}
+                    copyToClipboard={copyToClipboard}
+                  />
                 )}
               </>
             )}
@@ -2614,7 +2436,7 @@ const MikroTikManagement: React.FC = () => {
 
       <div className="fixed bottom-4 right-4 z-50 space-y-2">
         {toasts.map((t) => (
-          <div key={t.id} className={`rounded px-4 py-2 text-white shadow ${t.type === 'success' ? 'bg-green-600' : t.type === 'error' ? 'bg-red-600' : 'bg-slate-700'}`}>
+          <div key={t.id} className={`rounded px-4 py-2 text-white shadow ${t.type === 'success' ? 'bg-green-600' : t.type === 'error' ? 'bg-red-600' : 'bg-gray-100'}`}>
             {t.message}
           </div>
         ))}
@@ -2622,17 +2444,17 @@ const MikroTikManagement: React.FC = () => {
 
       {confirmOpen && (
         <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmOpen(false)}></div>
+          <div className="absolute inset-0 bg-gray-100 backdrop-blur-sm" onClick={() => setConfirmOpen(false)}></div>
           <div className="absolute inset-0 flex items-center justify-center p-4">
-            <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-              <h4 className="mb-2 text-lg font-semibold text-gray-900">Confirmar accion</h4>
-              <p className="mb-4 text-gray-700">{confirmMessage}</p>
-              <div className="flex justify-end gap-2">
-                <button className="rounded bg-slate-200 px-4 py-2 hover:bg-slate-300" onClick={() => setConfirmOpen(false)}>
+            <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl border border-gray-100">
+              <h4 className="mb-2 text-xl font-black text-slate-800">Confirmar acción</h4>
+              <p className="mb-6 text-slate-500 leading-relaxed">{confirmMessage}</p>
+              <div className="flex justify-end gap-3">
+                <button className="rounded-xl bg-gray-50 px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-gray-100 transition-colors" onClick={() => setConfirmOpen(false)}>
                   Cancelar
                 </button>
                 <button
-                  className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                  className="rounded-xl bg-coral-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-coral-600 shadow-lg shadow-coral-500/20 transition-all"
                   onClick={() => {
                     setConfirmOpen(false)
                     if (confirmActionRef.current) confirmActionRef.current()

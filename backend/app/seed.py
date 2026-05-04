@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 import secrets
 
@@ -154,7 +154,7 @@ def seed_data():
         cycle_months=1,
         amount=120,
         status="active",
-        next_charge=datetime.utcnow().date() + timedelta(days=15),
+        next_charge=datetime.now(timezone.utc).date() + timedelta(days=15),
         method="Stripe",
         tenant_id=default_tenant.id,
     )
@@ -165,7 +165,7 @@ def seed_data():
         cycle_months=3,
         amount=320,
         status="past_due",
-        next_charge=datetime.utcnow().date() - timedelta(days=2),
+        next_charge=datetime.now(timezone.utc).date() - timedelta(days=2),
         method="Transferencia",
         tenant_id=default_tenant.id,
     )
@@ -176,7 +176,7 @@ def seed_data():
         cycle_months=6,
         amount=640,
         status="trial",
-        next_charge=datetime.utcnow().date() + timedelta(days=30),
+        next_charge=datetime.now(timezone.utc).date() + timedelta(days=30),
         method="Stripe",
         tenant_id=default_tenant.id,
     )
@@ -187,7 +187,7 @@ def seed_data():
         cycle_months=12,
         amount=1200,
         status="active",
-        next_charge=datetime.utcnow().date() + timedelta(days=320),
+        next_charge=datetime.now(timezone.utc).date() + timedelta(days=320),
         method="Stripe",
         tenant_id=default_tenant.id,
     )

@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:15
+    restart: unless-stopped
     environment:
       - POSTGRES_DB=ispmax
       - POSTGRES_USER=ispmax
@@ -9,45 +10,73 @@ services:
       - pgdata:/var/lib/postgresql/data
     networks:
       - ispmax-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ispmax -d ispmax"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required}"]
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required}", "--save", "60", "1", "--loglevel", "warning"]
     networks:
       - ispmax-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
   backend:
     build:
       context: ./backend
       target: production
+    restart: unless-stopped
     env_file:
       - .env.prod
     environment:
-      - CACHE_TYPE=SimpleCache
-      - CACHE_REDIS_URL=
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - CACHE_TYPE=RedisCache
+      - CACHE_REDIS_URL=redis://redis:6379/0
+      - GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+      - ALLOW_GOOGLE_LOGIN=true
       - ALLOW_INSECURE_GOOGLE_LOGIN=${ALLOW_INSECURE_GOOGLE_LOGIN:-false}
-    command: ["/bin/sh","-c","CACHE_TYPE=SimpleCache CACHE_REDIS_URL= gunicorn --bind 0.0.0.0:5000 --workers 2 wsgi:app"]
+      - DOCKER_HOST=tcp://docker-proxy:2375
+    command: ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--worker-class", "gevent", "--timeout", "120", "wsgi:app"]
     depends_on:
       - postgres
       - redis
+      - docker-proxy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 15s
+    ports:
+      - "2055:2055/udp"
     volumes:
       - backups:/app/backups
     networks:
       - ispmax-network
     labels:
       - "traefik.enable=true"
+      # Ruta principal: api.fastisp.cloud → backend
       - "traefik.http.routers.api.rule=Host(`${API_HOST:-api.fastisp.cloud}`)"
       - "traefik.http.routers.api.entrypoints=web,websecure"
       - "traefik.http.routers.api.tls.certresolver=myresolver"
       - "traefik.http.routers.api.priority=120"
-      - "traefik.http.routers.api.middlewares=secure-headers@docker,ipwhitelist@docker,geoip2@file"
+      - "traefik.http.routers.api.middlewares=secure-headers@docker,ipwhitelist@docker"
       - "traefik.http.services.api.loadbalancer.server.port=5000"
+      # Ruta alternativa: fastisp.cloud/api → backend (para VITE_API_URL=https://fastisp.cloud/api)
+      - "traefik.http.routers.api-path.rule=Host(`${FRONTEND_HOST:-fastisp.cloud}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.api-path.entrypoints=web,websecure"
+      - "traefik.http.routers.api-path.tls.certresolver=myresolver"
+      - "traefik.http.routers.api-path.priority=150"
+      - "traefik.http.routers.api-path.middlewares=secure-headers@docker,ipwhitelist@docker"
+      - "traefik.http.routers.api-path.service=api"
 
 
   frontend:
@@ -55,14 +84,17 @@ services:
       context: ./frontend
       target: production
       args:
-        - VITE_API_URL=${API_URL}
+        - VITE_API_URL=${VITE_API_URL:-/api}
         - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+        - VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
         - VITE_GRAFANA_URL=${VITE_GRAFANA_URL}
+    restart: unless-stopped
     env_file:
       - .env.prod
     environment:
-      - VITE_API_URL=${API_URL}
+      - VITE_API_URL=${VITE_API_URL:-/api}
       - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+      - VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
     networks:
       - ispmax-network
     labels:
@@ -71,23 +103,24 @@ services:
       - "traefik.http.routers.frontend.entrypoints=web,websecure"
       - "traefik.http.routers.frontend.tls.certresolver=myresolver"
       - "traefik.http.routers.frontend.priority=100"
-      - "traefik.http.routers.frontend.middlewares=secure-headers@docker,ipwhitelist@docker,geoip2@file"
+      - "traefik.http.routers.frontend.middlewares=secure-headers@docker,ipwhitelist@docker"
       - "traefik.http.routers.frontend-tenants.rule=HostRegexp(`{tenant:[a-z0-9-]+}.${TENANCY_ROOT_DOMAIN:-fastisp.cloud}`)"
       - "traefik.http.routers.frontend-tenants.entrypoints=web,websecure"
       - "traefik.http.routers.frontend-tenants.tls.certresolver=myresolver"
       - "traefik.http.routers.frontend-tenants.priority=10"
-      - "traefik.http.routers.frontend-tenants.middlewares=secure-headers@docker,ipwhitelist@docker,geoip2@file"
+      - "traefik.http.routers.frontend-tenants.middlewares=secure-headers@docker,ipwhitelist@docker"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
   celery-worker:
     build:
       context: ./backend
       target: production
+    restart: unless-stopped
     env_file:
       - .env.prod
     environment:
-      - CACHE_TYPE=SimpleCache
-      - CACHE_REDIS_URL=
+      - CACHE_TYPE=RedisCache
+      - CACHE_REDIS_URL=redis://redis:6379/0
     command: ["celery", "-A", "app.tasks", "worker", "--loglevel=info", "--concurrency=2"]
     depends_on:
       - backend
@@ -100,11 +133,12 @@ services:
     build:
       context: ./backend
       target: production
+    restart: unless-stopped
     env_file:
       - .env.prod
     environment:
-      - CACHE_TYPE=SimpleCache
-      - CACHE_REDIS_URL=
+      - CACHE_TYPE=RedisCache
+      - CACHE_REDIS_URL=redis://redis:6379/0
     command: ["celery", "-A", "app.tasks", "beat", "--loglevel=info"]
     depends_on:
       - backend
@@ -113,8 +147,55 @@ services:
     networks:
       - ispmax-network
 
+  softether-vpn:
+    # Imagen custom que incluye vpncmd_api.sh para provisioning SSTP desde el backend
+    build: ./softether
+    container_name: fastisp-softether
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    environment:
+      # Contrasena del servidor para siomiz/softethervpn base image
+      - SPW=${SOFTETHER_ADMIN_PASSWORD:-FastISP_VPN_2026!}
+      # Contrasena del hub para siomiz/softethervpn base image
+      - HPW=${SOFTETHER_HUB_PASSWORD:-FastISP_Hub_2026!}
+      # Variables usadas por vpncmd_api.sh y entrypoint.sh
+      - SOFTETHER_ADMIN_PASSWORD=${SOFTETHER_ADMIN_PASSWORD:-FastISP_VPN_2026!}
+      - SOFTETHER_HUB_PASSWORD=${SOFTETHER_HUB_PASSWORD:-FastISP_Hub_2026!}
+      - SOFTETHER_HUB_NAME=${SOFTETHER_HUB_NAME:-FASTISP}
+      - SOFTETHER_MGMT_PORT=${SOFTETHER_MGMT_PORT:-5555}
+    ports:
+      # Puerto SSTP para MikroTik (8443 para no conflictar con Traefik en 443)
+      - "8443:443"
+      # Puerto alternativo SSTP
+      - "992:992"
+      # OpenVPN
+      - "1194:1194/udp"
+    volumes:
+      - softether-data:/usr/vpnserver
+    networks:
+      - ispmax-network
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /usr/vpnserver/vpn_server.config || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy
+    restart: unless-stopped
+    environment:
+      - CONTAINERS=1
+      - EXEC=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - ispmax-network
+
   traefik:
-    image: traefik:v2.10
+    # Downgrade to v2.11 to fix API version mismatch
+    image: traefik:v2.11
     command:
       - --api.insecure=false
       - --providers.docker=true
@@ -122,6 +203,9 @@ services:
       - --providers.docker.network=ispmax-network
       - --providers.file.directory=/etc/traefik/dynamic
       - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
       - --entrypoints.websecure.address=:443
       - --certificatesresolvers.myresolver.acme.httpchallenge=true
       - --certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web
@@ -129,8 +213,8 @@ services:
       - --certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json
       - --entrypoints.websecure.forwardedheaders.insecure=true
       - --serverstransport.insecureskipverify=true
-      - --experimental.plugins.geoip2.modulename=github.com/traefik/plugin-geoip2
-      - --experimental.plugins.geoip2.version=v0.6.0
+    environment:
+      - DOCKER_API_VERSION=1.41
     ports:
       - "80:80"
       - "443:443"
@@ -149,14 +233,14 @@ services:
       - "traefik.http.middlewares.secure-headers.headers.stsSeconds=63072000"
       - "traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true"
       - "traefik.http.middlewares.secure-headers.headers.stsPreload=true"
-      - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=${WAF_IP_ALLOWLIST:?WAF_IP_ALLOWLIST is required}"
-      - "traefik.http.middlewares.geoip2.plugin.geoip2.databasePath=/geoip/GeoLite2-Country.mmdb"
-      - "traefik.http.middlewares.geoip2.plugin.geoip2.header=X-Country-Code"
+      - "traefik.http.middlewares.ipwhitelist.ipallowlist.sourcerange=${WAF_IP_ALLOWLIST:-0.0.0.0/0}"
 
 volumes:
   pgdata:
   backups:
   letsencrypt:
+  softether-data:
+  softether-logs:
 
 networks:
   ispmax-network:

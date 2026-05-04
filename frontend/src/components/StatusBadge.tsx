@@ -10,12 +10,12 @@ interface StatusBadgeProps {
 }
 
 const statusConfig = {
-  active: { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-500' },
-  inactive: { bg: 'bg-gray-100', text: 'text-gray-800', dot: 'bg-gray-500' },
-  pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', dot: 'bg-yellow-500' },
-  error: { bg: 'bg-red-100', text: 'text-red-800', dot: 'bg-red-500' },
-  success: { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-500' },
-  warning: { bg: 'bg-orange-100', text: 'text-orange-800', dot: 'bg-orange-500' }
+  active: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  inactive: { bg: 'bg-gray-100', text: 'text-slate-600', dot: 'bg-gray-400' },
+  pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
+  error: { bg: 'bg-rose-50', text: 'text-rose-700', dot: 'bg-rose-500' },
+  success: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  warning: { bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-500' }
 }
 
 const statusLabel = {
@@ -42,7 +42,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   return (
     <motion.span
       whileHover={{ scale: 1.05 }}
-      className={`inline-flex items-center gap-2 rounded-full font-medium ${config.bg} ${config.text} ${sizeClasses[size]}`}
+      className={`inline-flex items-center gap-2 rounded-full font-bold ${config.bg} ${config.text} ${sizeClasses[size]}`}
     >
       <span className={`w-2 h-2 rounded-full ${config.dot}`}></span>
       {label || statusLabel[status]}

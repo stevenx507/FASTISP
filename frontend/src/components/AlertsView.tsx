@@ -55,34 +55,34 @@ const severityConfig: Record<
 > = {
   critical: {
     icon: ExclamationTriangleIcon,
-    bg: 'bg-red-50',
-    border: 'border-red-200',
-    title: 'text-red-900',
-    text: 'text-red-700',
+    bg: 'bg-rose-500/10',
+    border: 'border-rose-500/30',
+    title: 'text-rose-300',
+    text: 'text-rose-400',
     leftBorder: 'border-l-4 border-l-red-600',
   },
   warning: {
     icon: ExclamationTriangleIcon,
-    bg: 'bg-yellow-50',
-    border: 'border-yellow-200',
-    title: 'text-yellow-900',
-    text: 'text-yellow-700',
+    bg: 'bg-amber-500/10',
+    border: 'border-amber-500/30',
+    title: 'text-amber-300',
+    text: 'text-amber-400',
     leftBorder: 'border-l-4 border-l-yellow-600',
   },
   info: {
     icon: InformationCircleIcon,
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
-    title: 'text-blue-900',
-    text: 'text-blue-700',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/30',
+    title: 'text-blue-200',
+    text: 'text-blue-300',
     leftBorder: 'border-l-4 border-l-blue-600',
   },
   success: {
     icon: CheckCircleIcon,
-    bg: 'bg-green-50',
-    border: 'border-green-200',
-    title: 'text-green-900',
-    text: 'text-green-700',
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-500/30',
+    title: 'text-emerald-300',
+    text: 'text-emerald-400',
     leftBorder: 'border-l-4 border-l-green-600',
   },
 }
@@ -191,17 +191,17 @@ const AlertsView: React.FC = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <BellIcon className="h-6 w-6 text-gray-700" />
+          <BellIcon className="h-6 w-6 text-slate-600" />
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Alertas del Sistema</h2>
-            <p className="text-sm text-gray-600">{visibleAlerts.length} alertas activas</p>
+            <h2 className="text-2xl font-bold text-white">Alertas del Sistema</h2>
+            <p className="text-sm text-slate-500">{visibleAlerts.length} alertas activas</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as 'all' | AlertSeverity)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-white/20 px-3 py-2 text-sm"
           >
             <option value="all">Todas</option>
             <option value="critical">critical</option>
@@ -212,7 +212,7 @@ const AlertsView: React.FC = () => {
           <button
             onClick={loadAlerts}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white disabled:opacity-60"
           >
             <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Actualizando...' : 'Actualizar'}
@@ -220,7 +220,7 @@ const AlertsView: React.FC = () => {
           {visibleAlerts.length > 0 && (
             <button
               onClick={dismissAllAlerts}
-              className="rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200"
+              className="rounded-lg bg-white/10 px-4 py-2 text-sm text-slate-600 hover:bg-white/15"
             >
               Descartar todas
             </button>
@@ -251,7 +251,7 @@ const AlertsView: React.FC = () => {
                       {alert.source} | {alert.timestamp.replace('T', ' ').slice(0, 16)}
                     </p>
                   </div>
-                  <button onClick={() => dismissAlert(alert.id)} className="rounded p-1 hover:bg-white">
+                  <button onClick={() => dismissAlert(alert.id)} className="rounded p-1 hover:bg-white backdrop-blur-md">
                     <XMarkIcon className={`h-5 w-5 ${config.text}`} />
                   </button>
                 </motion.div>
@@ -259,7 +259,7 @@ const AlertsView: React.FC = () => {
             })}
           </div>
         ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-12 text-center text-gray-500">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-12 text-center text-slate-500">
             <CheckCircleIcon className="mx-auto mb-3 h-12 w-12 opacity-50" />
             <p className="text-lg font-medium">Sistema en buen estado</p>
             <p className="text-sm">No hay alertas activas para el filtro seleccionado</p>
@@ -267,9 +267,9 @@ const AlertsView: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-6">
+      <div className="rounded-lg border border-gray-200 bg-white p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900">Historial descartado</h3>
+          <h3 className="font-semibold text-white">Historial descartado</h3>
           {dismissedAlerts.length > 0 && (
             <button onClick={restoreAll} className="text-xs font-semibold text-blue-600 hover:underline">
               Restaurar todo
@@ -278,12 +278,12 @@ const AlertsView: React.FC = () => {
         </div>
         <div className="space-y-2 text-sm">
           {dismissedAlerts.slice(0, 10).map((alert) => (
-            <div key={alert.id} className="flex items-center justify-between border-b py-2 text-gray-600 last:border-b-0">
+            <div key={alert.id} className="flex items-center justify-between border-b py-2 text-slate-500 last:border-b-0">
               <span>{alert.title}</span>
-              <span className="text-xs text-gray-500">{alert.timestamp.replace('T', ' ').slice(0, 16)}</span>
+              <span className="text-xs text-slate-500">{alert.timestamp.replace('T', ' ').slice(0, 16)}</span>
             </div>
           ))}
-          {!dismissedAlerts.length && <p className="text-sm text-gray-500">No hay alertas descartadas.</p>}
+          {!dismissedAlerts.length && <p className="text-sm text-slate-500">No hay alertas descartadas.</p>}
         </div>
       </div>
     </motion.div>

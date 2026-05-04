@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { apiClient } from '../../lib/apiClient'
@@ -34,7 +34,7 @@ const MaintenanceWindowsView: React.FC = () => {
   const [note, setNote] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'scheduled' | 'active' | 'finished'>('all')
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       const query = statusFilter === 'all' ? '' : `?status=${statusFilter}`
@@ -46,11 +46,11 @@ const MaintenanceWindowsView: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [statusFilter])
 
   useEffect(() => {
     load()
-  }, [statusFilter])
+  }, [load])
 
   const createWindow = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -97,13 +97,13 @@ const MaintenanceWindowsView: React.FC = () => {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Ventanas de Mantenimiento NOC</h2>
-          <p className="text-sm text-gray-600">Programa mantenimientos y silencia alertas por alcance.</p>
+          <h2 className="text-2xl font-bold text-white">Ventanas de Mantenimiento NOC</h2>
+          <p className="text-sm text-slate-500">Programa mantenimientos y silencia alertas por alcance.</p>
         </div>
         <button
           onClick={load}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white backdrop-blur-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white disabled:opacity-60"
         >
           <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Actualizando...' : 'Actualizar'}
@@ -111,38 +111,38 @@ const MaintenanceWindowsView: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <form onSubmit={createWindow} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-3 font-semibold text-gray-900">Nueva ventana</h3>
+        <form onSubmit={createWindow} className="rounded-xl border border-gray-200 bg-white backdrop-blur-md p-4 shadow-sm">
+          <h3 className="mb-3 font-semibold text-white">Nueva ventana</h3>
           <div className="space-y-3">
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Titulo"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm"
             />
-            <select value={scope} onChange={(e) => setScope(e.target.value as MaintenanceItem['scope'])} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <select value={scope} onChange={(e) => setScope(e.target.value as MaintenanceItem['scope'])} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm">
               <option value="all">all</option>
               <option value="router">router</option>
               <option value="billing">billing</option>
               <option value="network">network</option>
             </select>
-            <input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-            <input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-            <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" />
+            <input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" />
+            <label className="flex items-center gap-2 text-sm text-slate-600">
               <input type="checkbox" checked={muteAlerts} onChange={(e) => setMuteAlerts(e.target.checked)} />
               Silenciar alertas durante la ventana
             </label>
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Notas" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Notas" className="w-full rounded-lg border border-white/20 px-3 py-2 text-sm" />
             <button type="submit" disabled={saving} className="w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
               {saving ? 'Guardando...' : 'Crear ventana'}
             </button>
           </div>
         </form>
 
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm xl:col-span-2">
-          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-            <h3 className="font-semibold text-gray-900">Ventanas configuradas</h3>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-lg border border-gray-300 px-2 py-1 text-xs">
+        <div className="rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-sm xl:col-span-2">
+          <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
+            <h3 className="font-semibold text-white">Ventanas configuradas</h3>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-lg border border-white/20 px-2 py-1 text-xs">
               <option value="all">Todos</option>
               <option value="scheduled">scheduled</option>
               <option value="active">active</option>
@@ -150,8 +150,8 @@ const MaintenanceWindowsView: React.FC = () => {
             </select>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100 text-sm">
-              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+            <table className="min-w-full divide-y divide-white/5 text-sm">
+              <thead className="bg-white text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3 text-left">Titulo</th>
                   <th className="px-4 py-3 text-left">Scope</th>
@@ -161,18 +161,18 @@ const MaintenanceWindowsView: React.FC = () => {
                   <th className="px-4 py-3 text-left">Mute</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/5">
                 {items.map((item) => (
                   <tr key={item.id}>
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{item.title}</p>
-                      <p className="text-xs text-gray-500">{item.note || '-'}</p>
+                      <p className="font-medium text-white">{item.title}</p>
+                      <p className="text-xs text-slate-500">{item.note || '-'}</p>
                     </td>
-                    <td className="px-4 py-3 text-gray-700">{item.scope}</td>
-                    <td className="px-4 py-3 text-gray-700">{new Date(item.starts_at).toLocaleString()}</td>
-                    <td className="px-4 py-3 text-gray-700">{new Date(item.ends_at).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-slate-600">{item.scope}</td>
+                    <td className="px-4 py-3 text-slate-600">{new Date(item.starts_at).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-slate-600">{new Date(item.ends_at).toLocaleString()}</td>
                     <td className="px-4 py-3">
-                      <span className={`rounded-full px-2 py-1 text-xs font-semibold ${item.status === 'active' ? 'bg-emerald-100 text-emerald-700' : item.status === 'scheduled' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
+                      <span className={`rounded-full px-2 py-1 text-xs font-semibold ${item.status === 'active' ? 'bg-emerald-100 text-emerald-700' : item.status === 'scheduled' ? 'bg-blue-500/20 text-blue-300' : 'bg-slate-100 text-slate-700'}`}>
                         {item.status || '-'}
                       </span>
                     </td>
@@ -190,7 +190,7 @@ const MaintenanceWindowsView: React.FC = () => {
                 ))}
                 {!items.length && (
                   <tr>
-                    <td className="px-4 py-8 text-center text-sm text-gray-500" colSpan={6}>
+                    <td className="px-4 py-8 text-center text-sm text-slate-500" colSpan={6}>
                       Sin ventanas registradas.
                     </td>
                   </tr>
