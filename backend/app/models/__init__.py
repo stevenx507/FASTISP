@@ -13,3 +13,4 @@ from .infrastructure import NetworkNode, SstpTunnel, NapBox, FiberLine
 from .inventory import ProductCategory, Supplier, Product, InventoryMovement, ProductUnit
 from .traffic import TrafficFlowStats
 from .partner import Partner, PartnerCommission
+from .network import ClientDebtQuery, RemoteNatRule
