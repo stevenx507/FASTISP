@@ -613,6 +613,28 @@ class OLTScriptService:
             ),
         }
 
+    def run_action(
+        self,
+        device_id: str,
+        action: str,
+        payload: Optional[Dict[str, Any]] = None,
+        run_mode: str = "simulate",
+        actor: Optional[str] = None,
+        source_ip: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Generates and executes a script for a given action."""
+        generated = self.generate_script(device_id, action, payload)
+        if not generated.get("success"):
+            return generated
+
+        return self.execute_script(
+            device_id=device_id,
+            commands=generated["commands"],
+            run_mode=run_mode,
+            actor=actor,
+            source_ip=source_ip,
+        )
+
     def get_snapshot(self, device_id: str) -> Dict[str, Any]:
         device = self.get_device(device_id)
         if not device:

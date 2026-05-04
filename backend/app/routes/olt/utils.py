@@ -184,6 +184,9 @@ def _service():
     credentials_overrides = _load_custom_credentials()
     return OLTScriptService(extra_devices=extra_devices, credentials_overrides=credentials_overrides)
 
+def _resolve_olt_credentials(service, device: dict) -> dict:
+    return service._resolve_device_credentials(device)
+
 def _sanitize_olt_device(device: dict | None) -> dict:
     from app.services.snmp_service import snmp_service
     safe_device = dict(device or {})
