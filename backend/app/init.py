@@ -103,12 +103,24 @@ def create_app(config_name_or_class='development'):
     from app.routes.client_portal import client_portal_bp
     from app.routes.billing import billing_bp
     from app.routes.isp import isp_bp
+    from app.routes.support_routes import support_bp
+    from app.routes.misc_routes import misc_bp
+    from app.routes.network import network_bp
+    from app.routes.olt import olt_bp
+    from app.routes.mikrotik import mikrotik_bp
+    from app.routes.sstp import sstp_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api')
     app.register_blueprint(admin_bp, url_prefix='/api')
     app.register_blueprint(client_portal_bp, url_prefix='/api')
     app.register_blueprint(billing_bp, url_prefix='/api')
     app.register_blueprint(isp_bp)
+    app.register_blueprint(support_bp, url_prefix='/api')
+    app.register_blueprint(misc_bp, url_prefix='/api')
+    app.register_blueprint(network_bp, url_prefix='/api/network')
+    app.register_blueprint(olt_bp, url_prefix='/api/olt')
+    app.register_blueprint(mikrotik_bp, url_prefix='/api/mikrotik')
+    app.register_blueprint(sstp_bp, url_prefix='/api/sstp')
 
     @app.route('/api/health')
     def health():
