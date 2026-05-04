@@ -7,7 +7,7 @@ from .billing import (
     Invoice, PaymentRecord, Plan, Subscription, BillingPromise, 
     AdminExtraService, AdminHotspotVoucher, PlanBandwidthReuse, PlanDiscount
 )
-from .ops import AuditLog, AdminInstallation, AdminScreenAlert, AdminSystemJob, AdminSystemSetting, RolePermission
+from .ops import AuditLog, AdminInstallation, AdminScreenAlert, AdminSystemJob, AdminSystemSetting, RolePermission, NocMaintenanceWindow
 from .support import Ticket, TicketComment
 from .infrastructure import NetworkNode, SstpTunnel, NapBox, FiberLine
 from .inventory import ProductCategory, Supplier, Product, InventoryMovement, ProductUnit
