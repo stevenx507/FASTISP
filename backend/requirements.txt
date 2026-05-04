@@ -58,7 +58,7 @@ python-dateutil==2.8.2
 gunicorn==21.2.0
 gevent==23.9.1
 
-Flask-Caching==1.11.1
+Flask-Caching==2.3.0
 
 # Development & Linting
 ruff==0.1.9
