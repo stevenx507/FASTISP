@@ -57,15 +57,12 @@ def create_app(config_name_or_class='development'):
     mail.init_app(app)
     limiter.init_app(app)
     metrics.init_app(app)
-    
-    # ABSOLUTE BYPASS: Redis is failing on this environment, forcing simple cache.
-    cache_config = {
-        'CACHE_TYPE': 'simple',
-        'CACHE_DEFAULT_TIMEOUT': 300,
-        'CACHE_KEY_PREFIX': 'ispfast_emergency_'
-    }
-    cache.init_app(app, config=cache_config)
+    cache.init_app(app)
     socketio.init_app(app)
+
+    # Register error handlers
+    from app.errors import register_error_handlers
+    register_error_handlers(app)
 
     # CORS Configuration
     allowed_origins = app.config.get('CORS_ORIGINS') or []
@@ -104,16 +101,16 @@ def create_app(config_name_or_class='development'):
     from app.routes.auth import auth_bp
     from app.routes.admin import admin_bp
     from app.routes.client_portal import client_portal_bp
-    from app.routes.billing_routes import billing_bp
-    from app.routes.isp_management import bp as isp_management_bp
+    from app.routes.billing import billing_bp
+    from app.routes.isp import isp_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api')
     app.register_blueprint(admin_bp, url_prefix='/api')
     app.register_blueprint(client_portal_bp, url_prefix='/api')
     app.register_blueprint(billing_bp, url_prefix='/api')
-    app.register_blueprint(isp_management_bp)
+    app.register_blueprint(isp_bp)
 
-    @app.route('/health')
+    @app.route('/api/health')
     def health():
         return jsonify({'status': 'healthy', 'service': 'ispfast-backend'})
 

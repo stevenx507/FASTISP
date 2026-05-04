@@ -4,6 +4,8 @@ import secrets
 import hashlib
 import hmac
 import time
+import base64
+from cryptography.fernet import Fernet
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from flask import current_app
@@ -119,3 +121,27 @@ def verify_stripe_signature(payload: bytes, signature_header: str, secret: str, 
     signed_payload = f"{timestamp}.{payload_text}".encode("utf-8")
     expected = hmac.new(secret.encode("utf-8"), signed_payload, hashlib.sha256).hexdigest()
     return any(hmac.compare_digest(expected, sig) for sig in signatures)
+
+# --- Encryption Helpers ---
+
+def normalize_fernet_key(raw_key) -> bytes:
+    """
+    Normalize any secret string into a valid Fernet key (32 url-safe base64 bytes).
+    """
+    if isinstance(raw_key, str):
+        raw_key = raw_key.strip().encode('utf-8')
+    if len(raw_key) == 44:
+        try:
+            decoded = base64.urlsafe_b64decode(raw_key + b'==')
+            if len(decoded) == 32:
+                return raw_key
+        except Exception:
+            pass
+    digest = hashlib.sha256(raw_key).digest()
+    return base64.urlsafe_b64encode(digest)
+
+def get_fernet():
+    """Helper to get Fernet instance for encryption/decryption."""
+    raw = current_app.config['ENCRYPTION_KEY']
+    key = normalize_fernet_key(raw)
+    return Fernet(key)
